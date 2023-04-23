@@ -1,0 +1,35 @@
+{
+  "name": "turf",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnhyde/turf.git"
+  },
+  "keywords": [
+    "urbit",
+    "hoon"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^4.1.1",
+    "vite-plugin-solid": "^2.5.0"
+  },
+  "dependencies": {
+    "@urbit/http-api": "^2.3.0",
+    "@urbit/vite-plugin-urbit": "^1.0.0",
+    "dotenv-cli": "^7.2.1",
+    "solid-js": "^1.6.10"
+  },
+  "bugs": {
+    "url": "https://github.com/johnhyde/turf/issues"
+  },
+  "homepage": "https://github.com/johnhyde/turf#readme"
+}
