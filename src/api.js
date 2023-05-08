@@ -8,20 +8,38 @@ api.ship = window.ship;
 
 
 export class Tile {
-  constructor(tileImage) {
-    this.image = (tileImage instanceof ImageData) ? tileImage : new ImageData(32, 32);
+  constructor(tileImage, collidable = false) {
+    this.size = tileSizeDefault;
+    if (tileImage) {
+      if (!tileImage instanceof ImageData) throw new TypeError('tileImage must be an ImageData');
+      if (tileImage.width !== this.size.x || tileImage.height !== this.size.y) {
+        throw new Error(`tileImage must have width and height: ${this.size.x}x${this.size.y}`);
+      }
+      this.image = tileImage;
+    } else {
+      // this.image = new ImageData(this.size.x, this.size.y);
+      this.image = 'hi';
+    }
+    this.collidable = collidable;
+  }
+
+  duplicate() {
+    return new Tile(
+      // new ImageData(this.image.data, 32, 32),
+      new ImageData(this.image.data, this.size.x, this.height),
+      this.collidable
+    ); 
   }
 }
 
 export class Tiles {
-  constructor (x, y, tileImage) {
-    this.tiles = (new Array(x)).map(() => {
-      return (new Array(y)).map(() => {
+  constructor (size, tileImage) {
+    this.tiles = new Array(size.x).fill(0).map(() => {
+      return new Array(size.y).fill(0).map(() => {
         return new Tile(tileImage);
       });
     });
-    this.width = x;
-    this.height = y;
+    this.size = size;
   }
 }
 
@@ -29,9 +47,10 @@ export { api };
 
 const turfs = {};
 export async function getTurf(id) {
+  console.log('getting turf', id)
   const turf = {
     id,
-    tiles: new Tiles(20, 15),
+    tiles: new Tiles(vec2(20, 15)),
     players: [], //?
     chat: [
       { from: '~zod', msg: 'hey', at: Date.now(), real: true },
@@ -39,7 +58,7 @@ export async function getTurf(id) {
       { from: '~zod', msg: 'let us depart', at: Date.now(), real: true },
     ],
   };
-  turfs[id] = turf;
+  // turfs[id] = turf;
   return turf;
 }
 export function chat(turfId, msg) {
@@ -59,9 +78,9 @@ export async function sendChat(turfId, chat) {
   }, 2000);
 }
 
-export async function editTile(turfId, x, y, tileImg) {
+export async function editTile(turfId, pos, tileImg) {
   const tiles =  turfs[turfId].tiles;
-  if (x >= 0 && x < tiles.width && y >= 0 && y < tiles.height) {
-    tiles.tiles[x][y] = tileImg;
+  if (pos.x >= 0 && pos.x < tiles.size.x && pos.y >= 0 && pos.y < tiles.size.y) {
+    tiles.tiles[pos.x][pos.y] = tileImg;
   }
 }

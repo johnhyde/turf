@@ -1,28 +1,57 @@
-import { createSignal, createContext, useContext, mergeProps } from "solid-js";
+import { createSignal, createContext, createEffect, useContext, mergeProps } from "solid-js";
 import { createStore } from 'solid-js/store';
 import * as api from '~/api.js';
+// import { setTurf } from 'stores/game';
 
 export const StateContext = createContext();
 
-export function StateProvider(props) {
-  const [state, setState] = createStore({
-    turfs: [],
+export function getState() {
+  const [state, $state] = createStore({
+    turfs: {},
+    currentTurfId: null,
+    get currentTurf() { return this.turfs[this.currentTurfId]; },
     player: {
-      image: new ImageData(26, 36)
+      image: new ImageData(26, 36),
+    },
+    playerExistence: {
+      pos: vec2(),
     },
     name: 'hi there',
   });
-  const stateApi = mergeProps(state, {
+
+  const _state = mergeProps(state, {
     setName(name) {
-      setState('name', name);
+      $state('name', name);
     },
     async fetchTurf(id) {
-      setState('turfs', [...state.turfs, await api.getTurf(id)]);
+      console.log('fetching turf', id)
+      const turf = await api.getTurf(id);
+      $state('turfs', (turfs) => {
+        return {...turfs, [id]: turf};
+      });
+    },
+    async visitTurf(id) {
+      $state({ currentTurfId: id });
+      if (this.currentTurfId && !this.currentTurf) {
+        await this.fetchTurf(id);
+      }
+    },
+    setPos(pos) {
+      $state('playerExistence','pos', pos);
     },
   });
 
+  // createEffect(() => {
+  //   if (state.currentTurf) {
+  //     setTurf();
+  //   }
+  // });
+  return _state;
+}
+
+export function StateProvider(props) {
   return (
-    <StateContext.Provider value={stateApi}>
+    <StateContext.Provider value={getState()}>
       {props.children}
     </StateContext.Provider>
   );

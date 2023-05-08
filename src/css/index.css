@@ -1,4 +1,5 @@
 body {
+  height: 100vh;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -10,4 +11,22 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+#root {
+  display: flex;
+  height: 100%;
+  position: relative;
+  z-index: 100;
+}
+
+#sidebar {
+  height: 100%;
+  overflow-y: auto;
+}
+
+#game {
+  position: relative;
+  /* height: 500px; */
+  flex-grow: 1;
 }

@@ -149,10 +149,10 @@ const debugSaveCanvas = (canvas, filename = engineName + '.png') =>
 ///////////////////////////////////////////////////////////////////////////////
 // Engine debug function (called automatically)
 
-const debugInit = ()=>
+const debugInit = (rootEl)=>
 {
     // create link for saving screenshots
-    document.body.appendChild(downloadLink = document.createElement('a'));
+    rootEl.appendChild(downloadLink = document.createElement('a'));
     downloadLink.style.display = 'none';
 }
 
@@ -3790,7 +3790,7 @@ let glActiveTexture, glShader, glPositionData, glColorData, glBatchCount, glBatc
 ///////////////////////////////////////////////////////////////////////////////
 
 // Init WebGL, called automatically by the engine
-function glInit()
+function glInit(rootEl)
 {
     // create the canvas and tile texture
     glCanvas = document.createElement('canvas');
@@ -3799,7 +3799,7 @@ function glInit()
     glTileTexture = glCreateTexture(tileImage);
 
     // some browsers are much faster without copying the gl buffer so we just overlay it instead
-    glOverlay && document.body.appendChild(glCanvas);
+    glOverlay && rootEl.appendChild(glCanvas);
 
     // setup vertex and fragment shaders
     glShader = glCreateProgram(
@@ -4168,8 +4168,9 @@ const styleCanvas = 'position:absolute;top:50%;left:50%;transform:translate(-50%
  *  @param {Function} gameRenderPost  - Called after objects are rendered, draw effects or hud that appear above all objects
  *  @param {String} [tileImageSource] - Tile image to use, everything starts when the image is finished loading
  */
-function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, tileImageSource)
+function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost, tileImageSource, rootEl)
 {
+    rootEl = rootEl || document.body;
     // init engine when tiles load or fail to load
     tileImage.onerror = tileImage.onload = ()=>
     {
@@ -4178,17 +4179,17 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
         debug && (tileImage.onload=()=>ASSERT(1)); // tile sheet can not reloaded
 
         // setup html
-        document.body.style = styleBody;
-        document.body.appendChild(mainCanvas = document.createElement('canvas'));
+        rootEl.style = styleBody;
+        rootEl.appendChild(mainCanvas = document.createElement('canvas'));
         mainContext = mainCanvas.getContext('2d');
         mainCanvas.style = styleCanvas;
 
-        // init stuff and start engine
-        debugInit();
-        glEnable && glInit();
+        // // init stuff and start engine
+        debugInit(rootEl);
+        glEnable && glInit(rootEl);
 
         // create overlay canvas for hud to appear above gl canvas
-        document.body.appendChild(overlayCanvas = document.createElement('canvas'));
+        rootEl.appendChild(overlayCanvas = document.createElement('canvas'));
         overlayContext = overlayCanvas.getContext('2d');
         overlayCanvas.style = styleCanvas;
         
@@ -4214,14 +4215,17 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
         if (!debugSpeedUp)
             frameTimeBufferMS = min(frameTimeBufferMS, 50); // clamp incase of slow framerate
 
+        const rootWidth = (rootEl === document.body) ? innerWidth : rootEl.offsetWidth;
+        const rootHeight = (rootEl === document.body) ? innerHeight : rootEl.offsetHeight;
         if (canvasFixedSize.x)
         {
+            // TODO
             // clear set fixed size
             overlayCanvas.width  = mainCanvas.width  = canvasFixedSize.x;
             overlayCanvas.height = mainCanvas.height = canvasFixedSize.y;
             
             // fit to window by adding space on top or bottom if necessary
-            const aspect = innerWidth / innerHeight;
+            const aspect = rootWidth / rootHeight;
             const fixedAspect = mainCanvas.width / mainCanvas.height;
             mainCanvas.style.width  = overlayCanvas.style.width  = aspect < fixedAspect ? '100%' : '';
             mainCanvas.style.height = overlayCanvas.style.height = aspect < fixedAspect ? '' : '100%';
@@ -4234,8 +4238,11 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
         else
         {
             // clear and set size to same as window
-             overlayCanvas.width  = mainCanvas.width  = min(innerWidth,  canvasMaxSize.x);
-             overlayCanvas.height = mainCanvas.height = min(innerHeight, canvasMaxSize.y);
+             overlayCanvas.height = mainCanvas.height = min(rootHeight, canvasMaxSize.y);
+            if (mainCanvas.width !== rootWidth) {
+                overlayCanvas.width  = mainCanvas.width  = min(rootWidth,  canvasMaxSize.x);
+                console.log(rootWidth, rootHeight);
+            }
         }
         
         // save canvas size

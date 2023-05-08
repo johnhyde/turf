@@ -1,12 +1,15 @@
-import logo from 'assets/logo.svg';
-import styles from 'css/App.module.css';
+// import { onMount, untrack, getOwner } from 'solid-js';
 import { StateProvider } from 'stores/state.jsx';
-import StateSummary from '@/StateSummary.jsx';
+import StateSummary from '@/StateSummary';
+import Game from '@/Game';
 
+// const game = document.getElementById('game');
+// initEngine(null, game);
 function App() {
   return (
     <StateProvider>
-      <StateSummary></StateSummary>
+      <StateSummary/>
+      <Game/>
     </StateProvider>
   );
 }
