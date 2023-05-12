@@ -1,4 +1,5 @@
 import UrbitApi from '@urbit/http-api';
+import floorUrl from 'assets/sprites/floor.png';
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
@@ -18,7 +19,8 @@ export class Tile {
       this.image = tileImage;
     } else {
       // this.image = new ImageData(this.size.x, this.size.y);
-      this.image = 'hi';
+      // this.image = 'hi';
+      this.image = window.floor;
     }
     this.collidable = collidable;
   }
@@ -61,6 +63,7 @@ export async function getTurf(id) {
   // turfs[id] = turf;
   return turf;
 }
+
 export function chat(turfId, msg) {
   const chat = {
     from: '~' + window.ship,
@@ -84,3 +87,18 @@ export async function editTile(turfId, pos, tileImg) {
     tiles.tiles[pos.x][pos.y] = tileImg;
   }
 }
+
+const imgFloor = new Image();
+imgFloor.src = floorUrl;
+window.floor = null;
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+
+imgFloor.onload = () => createImageBitmap(imgFloor).then((bitmap) => {
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  ctx.drawImage(bitmap, 0, 0);
+  
+  window.floor = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+});

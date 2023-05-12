@@ -1,5 +1,15 @@
 # turf
 
+## Dev Setup
+
+- `npm install`
+- `npm run init`
+- Edit `VITE_SHIP_URL` in `.env.local` to point to your dev ship
+- `npm start`
+- Visit http://127.0.0.1:3000/ and sign in with your access code
+- Visit http://127.0.0.1:3000/apps/turf/
+
+# Vite Template Stuff
 ## Usage
 
 Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
