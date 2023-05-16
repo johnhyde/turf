@@ -1,5 +1,6 @@
 import UrbitApi from '@urbit/http-api';
 import floorUrl from 'assets/sprites/floor.png';
+import holeFloorUrl from 'assets/sprites/hole_floor.png';
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
@@ -88,17 +89,23 @@ export async function editTile(turfId, pos, tileImg) {
   }
 }
 
-const imgFloor = new Image();
-imgFloor.src = floorUrl;
-window.floor = null;
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
+const imgFloor = new Image();
+imgFloor.src = floorUrl;
+imgFloor.onload = addImage(imgFloor, 'floor');
 
-imgFloor.onload = () => createImageBitmap(imgFloor).then((bitmap) => {
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  ctx.drawImage(bitmap, 0, 0);
-  
-  window.floor = ctx.getImageData(0, 0, canvas.width, canvas.height);
+const imgHoleFloor = new Image();
+imgHoleFloor.src = holeFloorUrl;
+imgHoleFloor.onload = addImage(imgHoleFloor, 'hole_floor');
 
-});
+function addImage(image, id) {
+  return () => createImageBitmap(image).then((bitmap) => {
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    ctx.drawImage(bitmap, 0, 0);
+    
+    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    addTile(imageData, id);
+  });
+}

@@ -54,7 +54,9 @@ function gameInit()
     window.tileLayer = tileLayer = new TileLayer(vec2(), tiles.size);
     for (let x = tiles.tiles.length; x--;) {
       for (let y = tiles.tiles[x].length; y--;) {
-        tileLayer.setData(vec2(x, y), new TileLayerData(-1, undefined, undefined, randColor(new Color(1,.2,.2), new Color(.2,.1,.1))));
+        // tileLayer.setData(vec2(x, y), new TileLayerData(-1, undefined, undefined, randColor(new Color(1,.2,.2), new Color(.2,.1,.1))));
+        tileLayer.setData(vec2(x, y), new TileLayerData(randInt(0, 2)));
+        // tileLayer.setData(vec2(x, y), new TileLayerData(1));
       }
     }
     tileLayer.redraw();

@@ -1584,7 +1584,7 @@ class EngineObject
 /** Tile sheet for batch rendering system
  *  @type {Image}
  *  @memberof Draw */
-const tileImage = new Image();
+let tileImage = new Image();
 
 /** The primary 2D canvas visible to the user
  *  @type {HTMLCanvasElement}
@@ -1610,6 +1610,36 @@ let overlayContext;
  *  @type {Vector2}
  *  @memberof Draw */
 let mainCanvasSize = vec2();
+
+let tileCanvas;
+let tileContext;
+let tiles = {};
+
+function addTile(imagedata, id) {
+    const oldWidth = tileCanvas.width;
+    const wasImage = !!(tileCanvas.width && tileCanvas.height)
+    const oldImageData = wasImage ? tileContext.getImageData(0, 0, tileCanvas.width, tileCanvas.height) : null;
+    tileCanvas.height = Math.max(tileCanvas.height, imagedata.height);
+    tileCanvas.width = tileCanvas.width + imagedata.width;
+    if (wasImage) tileContext.putImageData(oldImageData, 0, 0);
+    tileContext.putImageData(imagedata, oldWidth, 0);
+    
+    let image = new Image();
+    image.onload = setupFromTileImage;
+    tileImage = image;
+    tileImage.src = tileCanvas.toDataURL();
+    tileImage.width = tileCanvas.width;
+    tileImage.height = tileCanvas.height;
+    let index = oldWidth/tileSizeDefault.x;
+    tiles[id] = index;
+    return index;
+}
+
+function setupFromTileImage() {
+    // save tile image info
+    tileImageFixBleed = vec2(tileFixBleedScale).divide(tileImageSize = vec2(tileImage.width, tileImage.height));
+    glTileTexture = glCreateTexture(tileImage);
+}
 
 /** Convert from screen to world space coordinates
  *  - if calling outside of render, you may need to manually set mainCanvasSize
@@ -4154,7 +4184,7 @@ let frameTimeLastMS = 0, frameTimeBufferMS = 0, tileImageSize, tileImageFixBleed
 let averageFPS, drawCount;
 
 // css text used for elements created by engine
-const styleBody = 'margin:0;overflow:hidden;background:#000' +
+const styleBody = 'margin:0;overflow:hidden;background:#080' +
     ';touch-action:none;user-select:none;-webkit-user-select:none;-moz-user-select:none';
 const styleCanvas = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)';
 
@@ -4174,8 +4204,19 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
     // init engine when tiles load or fail to load
     tileImage.onerror = tileImage.onload = ()=>
     {
+        // create canvas for tile image operations
+        tileCanvas = document.createElement('canvas');
+        tileContext = tileCanvas.getContext('2d');
+        if (tileImage.width && tileImage.height) {
+            createImageBitmap(tileImage).then((tileBM) => {
+                tileContext.drawImage(tileBM, 0, 0);
+            });
+        } else {
+            tileCanvas.width = 0;
+            tileCanvas.height = 0;
+        }
         // save tile image info
-        tileImageFixBleed = vec2(tileFixBleedScale).divide(tileImageSize = vec2(tileImage.width, tileImage.height));
+        setupFromTileImage();
         debug && (tileImage.onload=()=>ASSERT(1)); // tile sheet can not reloaded
 
         // setup html

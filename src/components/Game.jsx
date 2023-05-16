@@ -9,7 +9,7 @@ function Game() {
   });
 
   return (
-    <div id="game">
+    <div id="game" style={{ 'background-color': 'blue' }}>
     </div>
   );
 }
