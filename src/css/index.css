@@ -1,6 +1,4 @@
 body {
-  height: 100vh;
-  margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -16,17 +14,29 @@ code {
 #root {
   display: flex;
   height: 100%;
-  position: relative;
+  /* position: relative; */
   z-index: 100;
 }
 
 #sidebar {
   height: 100%;
   overflow-y: auto;
+  padding: 4px;
+}
+
+#sidebar div, #sidebar p, #sidebar input, #sidebar button {
+  margin: 4px;
+}
+
+#shell {
+  /* width: 500px;
+  height: 500px; */
+  flex-grow: 1;
 }
 
 #game {
-  position: relative;
-  /* height: 500px; */
+  /* position: relative; */
+  /* width: 500px;
+  height: 500px; */
   flex-grow: 1;
 }

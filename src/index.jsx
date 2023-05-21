@@ -2,6 +2,7 @@
 import { render } from 'solid-js/web';
 import { createRoot } from "solid-js";
 
+import 'css/reset.css';
 import 'css/index.css';
 import App from './App';
 import { initEngine } from 'stores/game';

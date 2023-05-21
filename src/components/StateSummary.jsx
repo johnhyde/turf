@@ -2,12 +2,13 @@ import { createSignal } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { bind } from 'lib/bind';
 // import api from '~/api.js';
+import { vec2 } from 'lib/utils';
 
 function Turf(props) {
   const state = useState();
   return <>
     <p>
-      <button onClick={[state.visitTurf.bind(state), props.turf.id]}>{props.turf.id}</button>: {props.turf.tiles.size.x}x{props.turf.tiles.size.y}
+      <button onClick={[state.visitTurf.bind(state), props.turf.id]}>{props.turf.id}</button>: {props.turf.tileset.size.x}x{props.turf.tileset.size.y}
     </p>
     <For each={props.turf.chat}>{(chat, i) => (
       <p>
@@ -26,7 +27,7 @@ function StateSummary() {
   }
 
   return (
-    <div style={{ 'background-color': 'white' }} id="sidbar">
+    <div style={{ 'background-color': 'white' }} id="sidebar">
       <p>
         name: {state.name}
       </p>

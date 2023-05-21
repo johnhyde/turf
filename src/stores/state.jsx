@@ -1,6 +1,7 @@
 import { createSignal, createContext, createEffect, useContext, mergeProps } from "solid-js";
 import { createStore } from 'solid-js/store';
 import * as api from '~/api.js';
+import { vec2 } from 'lib/utils';
 // import { setTurf } from 'stores/game';
 
 export const StateContext = createContext();

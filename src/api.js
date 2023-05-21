@@ -1,28 +1,65 @@
 import UrbitApi from '@urbit/http-api';
 import floorUrl from 'assets/sprites/floor.png';
-import holeFloorUrl from 'assets/sprites/hole_floor.png';
+import holeFloorUrl from 'assets/sprites/hole-floor.png';
+import playerUrl from 'assets/sprites/player.png';
+import grassUrl from 'assets/sprites/grass.png';
+import longGrassUrl from 'assets/sprites/long-grass.png';
+import { vec2, randInt } from 'lib/utils';
+import * as me from 'melonjs';
+
+window.imgData = {};
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+
+addImage(floorUrl, 'floor');
+addImage(holeFloorUrl, 'hole_floor');
+addImage(playerUrl, 'player');
+addImage(grassUrl, 'grass');
+addImage(longGrassUrl, 'longGrass');
+
+function addImage(url, id) {
+  const image = new Image();
+  image.src = url;
+  image.onload = () => createImageBitmap(image).then((bitmap) => {
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    ctx.drawImage(bitmap, 0, 0);
+    
+    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // addTile(imageData, id);
+    let dataUrl = canvas.toDataURL();
+    imgData[id] = dataUrl;
+    me.loader.load({ name: id, type:'image', src: dataUrl }, () => console.log('loaded ' + id, dataUrl));
+  });
+}
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
 api.ship = window.ship;
 // api.connect();
+const turfSize = vec2(4);
+const tileSize = vec2(32);
 
+export class Item {
+  constructor(name, size, image, collidable = false) {}
+}
 
-
-export class Tile {
-  constructor(tileImage, collidable = false) {
-    this.size = tileSizeDefault;
-    if (tileImage) {
-      if (!tileImage instanceof ImageData) throw new TypeError('tileImage must be an ImageData');
-      if (tileImage.width !== this.size.x || tileImage.height !== this.size.y) {
-        throw new Error(`tileImage must have width and height: ${this.size.x}x${this.size.y}`);
-      }
-      this.image = tileImage;
-    } else {
-      // this.image = new ImageData(this.size.x, this.size.y);
-      // this.image = 'hi';
-      this.image = window.floor;
-    }
+export class Tile extends Item {
+  constructor(tileSize, tileImage, collidable = false) {
+    super();
+    this.size = tileSize;
+    this.image = tileImage;
+    // if (tileImage) {
+    //   if (!tileImage instanceof ImageData) throw new TypeError('tileImage must be an ImageData');
+    //   if (tileImage.width !== this.size.x || tileImage.height !== this.size.y) {
+    //     throw new Error(`tileImage must have width and height: ${this.size.x}x${this.size.y}`);
+    //   }
+    //   this.image = tileImage;
+    // } else {
+    //   // this.image = new ImageData(this.size.x, this.size.y);
+    //   // this.image = 'hi';
+    //   this.image = window.floor;
+    // }
     this.collidable = collidable;
   }
 
@@ -35,14 +72,12 @@ export class Tile {
   }
 }
 
-export class Tiles {
-  constructor (size, tileImage) {
-    this.tiles = new Array(size.x).fill(0).map(() => {
-      return new Array(size.y).fill(0).map(() => {
-        return new Tile(tileImage);
-      });
-    });
+export class Tileset {
+  constructor (size, tileSize) {
+    this.data = new Array(size.x * size.y).fill(0).map(() => randInt(3, 1));
+    this.tiles = [new Tile(tileSize, 'floor'), new Tile(tileSize, 'hole_floor')];
     this.size = size;
+    this.tileSize = tileSize;
   }
 }
 
@@ -51,9 +86,13 @@ export { api };
 const turfs = {};
 export async function getTurf(id) {
   console.log('getting turf', id)
+  const size = turfSize;
   const turf = {
     id,
-    tiles: new Tiles(vec2(20, 15)),
+    size,
+    tileSize,
+    tileset: new Tileset(size, tileSize),
+    items: [],
     players: [], //?
     chat: [
       { from: '~zod', msg: 'hey', at: Date.now(), real: true },
@@ -87,25 +126,4 @@ export async function editTile(turfId, pos, tileImg) {
   if (pos.x >= 0 && pos.x < tiles.size.x && pos.y >= 0 && pos.y < tiles.size.y) {
     tiles.tiles[pos.x][pos.y] = tileImg;
   }
-}
-
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
-const imgFloor = new Image();
-imgFloor.src = floorUrl;
-imgFloor.onload = addImage(imgFloor, 'floor');
-
-const imgHoleFloor = new Image();
-imgHoleFloor.src = holeFloorUrl;
-imgHoleFloor.onload = addImage(imgHoleFloor, 'hole_floor');
-
-function addImage(image, id) {
-  return () => createImageBitmap(image).then((bitmap) => {
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    ctx.drawImage(bitmap, 0, 0);
-    
-    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    addTile(imageData, id);
-  });
 }

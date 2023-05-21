@@ -7,7 +7,22 @@
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "_glob": "bin/install.sh -g $GLOBBER_DESK",
+    "_desk": "bin/install.sh $TURF_DESK",
+    "_desk2": "bin/install.sh $TURF_DESK2",
+    "_desks": "bin/install.sh $TURF_DESK && bin/install.sh $TURF_DESK2",
+    "_desk-watch": "bin/install.sh -w $TURF_DESK",
+    "glob": "dotenv -c local npm run _glob",
+    "desk": "dotenv -c local npm run _desk",
+    "desk2": "dotenv -c local npm run _desk2",
+    "desks": "dotenv -c local npm run _desks",
+    "deskw": "dotenv -c local npm run _desk-watch",
+    "dist": "npm run build && npm run glob",
+    "_get-glob": "bin/get_glob.sh $GLOBBER_DESK",
+    "get-glob": "dotenv -c local npm run _get-glob",
+    "_commit": "bin/commit.sh $TURF_DESK",
+    "commit": "dotenv -c local npm run _commit"
   },
   "repository": {
     "type": "git",
@@ -27,6 +42,7 @@
     "@urbit/http-api": "^2.3.0",
     "@urbit/vite-plugin-urbit": "^1.0.0",
     "dotenv-cli": "^7.2.1",
+    "melonjs": "^15.2.1",
     "solid-js": "^1.6.10"
   },
   "bugs": {
