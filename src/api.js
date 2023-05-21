@@ -35,10 +35,28 @@ function addImage(url, id) {
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
+// const api = new UrbitApi('http://127.0.0.1:8080', 'nilfel-nimfeb-navnux-tabned', window.desk);
 api.ship = window.ship;
+window.api = api;
 // api.connect();
 const turfSize = vec2(4);
 const tileSize = vec2(32);
+
+export function subscribeToTurf(e) {
+  return api.subscribe({
+    app: 'turf',
+    path: '/pond',
+    event: (...hm) => console.log('got a turf thing', hm),
+    err: () => {
+      console.error(`Subscription to turf/pond just got "err". Turf may not exist yet.`);
+    },
+    quit: () => {
+      console.error(`Subscription to turf/pond just got "quit"`);
+    }
+  })
+}
+window.subscribeToTurf = subscribeToTurf;
+subscribeToTurf();
 
 export class Item {
   constructor(name, size, image, collidable = false) {}

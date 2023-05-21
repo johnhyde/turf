@@ -202,6 +202,7 @@
   =*  rok  ((on aeon rock:lake) gte)
   =*  wav  ((on aeon wave:lake) lte)
   |%
+  ::
   ++  rule                                   ::  Set new retention policy.
     |=  [path=paths =^rule]
     ^-  pubs
@@ -227,10 +228,7 @@
     ^-  (quip card:agent:gall pubs)
     ?~  ((soft ^path) path)  ~|  %need-path  !!
     =/  buoy  (~(gut by pub) path *buoy)
-    =?  buoy  ?=(@ tid.buoy)
-      %*(. buoy(tid *tide) rok.tid (put:rok ~ +(tid.buoy) *rock:lake))
-    ?>  ?=(^ tid.buoy)
-    =*  tide  tid.buoy
+    ?@  tide=tid.buoy  ~|  %dead-path  !!  ::TODO is this good behavior?
     =/  next=aeon  +((latest tide))
     :-  %+  murn  ~(tap bi mem.tide)
         |=  [=ship =dude =@da]
@@ -294,6 +292,12 @@
   ++  kill                                   ::  subs to not expect updates.
     (curr edit |=(=buoy buoy(tid (latest tid.buoy))))
   ::                                         ::  Reopen list of killed paths.
+  ++  live                                   ::  No-ops on live paths.
+    %+  curr  edit
+    |=  =buoy
+    ?^  tid.buoy  buoy
+    %*(. buoy(tid *tide) rok.tid (put:rok ~ +(tid.buoy) *rock:lake))
+  ::
   ++  read                                   ::  See current published states.
     ^-  (map paths [allowed=(unit (set ship)) =rock:lake])
     %-  malt  %+  murn  ~(tap by pub)

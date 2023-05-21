@@ -5,15 +5,19 @@
 ++  name  %pond
 +$  rock  (unit turf)
 +$  wave
-  $@  %del-turf
+  $@  ?(%del-turf %inc-counter)
   $%  set-turf
   ==
-:: +$  set-turf  [%set-turf =turf]
 ++  wash
   |=  [=rock =wave]
   ^-  ^rock
   ?@  wave
-    ~  :: %del-turf
+    ?-  wave
+      %del-turf  ~
+        %inc-counter
+      ?~  rock  rock
+      rock(item-counter.plot.u +(item-counter.plot.u.rock))
+    ==
   :: ?-  -:wave
   `turf.wave  :: %set-turf
 --

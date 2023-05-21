@@ -38,22 +38,43 @@
   |=  [size=vec2 id=item-id]
   ^-  spaces
   %-  malt
-  =|  spaces=(list [vec2 space])
+  =|  spaces=(list [svec2 space])
   =+  total=(mul size)
   =|  count=@ud
   |-  ^-  _spaces
   ?:  =(total count)
     spaces
-  =/  pos=vec2
-    :-  (mod count x.size)
-    (div count x.size)
+  =/  pos=svec2
+    :-  (sun:si (mod count x.size))
+    (sun:si (div count x.size))
   =/  =space
     :_  ~
     :-  ~
     ^-  item-instance
-    [count id 0 *vec2]
+    [count id 0 *svec2]
   %=  $
     count  +(count)
     spaces  [[pos space] spaces]
   ==
+++  spaces-to-grid
+  |=  [=spaces size=vec2 offset=svec2]
+  =/  ssize  (vec2-to-svec2 size)
+  ^-  grid
+  =/  ending=svec2  (sum-svec2 offset ssize)
+  :: =|  cols=grid
+  |-  ^-  grid
+  ?:  =(x.offset x.ending)  ~
+  :-  |-  ^-  col
+      ?:  =(y.offset y.ending)  ~
+      :-  (~(gut by spaces) offset [~ ~])
+      $(y.offset (sum:si y.offset --1))
+  $(x.offset (sum:si x.offset --1))
+++  vec2-to-svec2
+  |=  =vec2
+  ^-  svec2
+  [(sun:si x.vec2) (sun:si y.vec2)]
+++  sum-svec2
+  |=  [a=svec2 b=svec2]
+  ^-  svec2
+  [(sum:si x.a x.b) (sum:si x.a x.b)]
 --

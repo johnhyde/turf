@@ -9,7 +9,7 @@
       chats=(list chat)
   ==
 +$  player
-  $:  pos=vec2
+  $:  pos=svec2
       dir=?(%right %up %left %down)
       =avatar
   ==
@@ -25,7 +25,7 @@
 ::
 +$  plot
   $:  size=_(vec2 4 4)
-      origin=vec2  :: Where is the top left corner? May change due to resizing
+      offset=svec2  :: Where is the top left corner? May change due to resizing
       tile-size=_(vec2 [32 32])
       =spaces
       =library
@@ -34,18 +34,22 @@
 +$  turf-id  [=ship =path]
 +$  item-id  path
 +$  vec2  [x=@ud y=@ud]
-+$  spaces  (map vec2 space)
++$  svec2  [x=@sd y=@sd]
++$  spaces  (map svec2 space)
++$  grid  (list col)
++$  col  (list space)
 +$  library  (map item-id item)
 +$  space
   $:  tile=(unit item-instance)
       items=(list item-instance)
   ==
 +$  item-instance
-  $:  id=@ud
+  $:  id=item-instance-id
       =item-id
       variation=@ud
-      offset=vec2
+      offset=svec2
   ==
++$  item-instance-id  @ud
 +$  item
   $:  name=@t
       type=item-type
@@ -67,12 +71,11 @@
   ==
 +$  trigger  ?(%step %leave %bump %interact)
 +$  effect
-  $%  [%port dest=turf-id]
+  $%  [%port for=turf-id]
+      [%jump to=svec2]
       [%read note=@t]
-      [%swap with=item-id] :: for opening/closing doors
-      [%cust =cage]
+      [%swap with=item-id]  :: for opening/closing doors
   ==
 ::
-+$  sub-pond-path  ,[%pond *]
-+$  pub-pond-path  ,[%pond *]
++$  pond-path  ,[%pond *]
 --
