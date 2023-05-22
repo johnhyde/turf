@@ -14,12 +14,12 @@
       =avatar
   ==
 +$  avatar
-  $:  items=(list item-instance)
-      color=@t
+  $:  color=@t
+      items=(list solid-item)
   ==
 +$  chat
-  $:  =ship
-      =time
+  $:  from=ship
+      at=time
       text=cord
   ==
 ::
@@ -40,16 +40,20 @@
 +$  col  (list space)
 +$  library  (map item-id item)
 +$  space
-  $:  tile=(unit item-instance)
-      items=(list item-instance)
+  $:  tile=(unit hollow-item)
+      items=(list hollow-item)
   ==
-+$  item-instance
-  $:  id=item-instance-id
-      =item-id
++$  solid-item
+  $:  item
+      hollow-item
+  ==
++$  hollow-item
+  $:  =item-id
+      id=item-shell-id
       variation=@ud
       offset=svec2
   ==
-+$  item-instance-id  @ud
++$  item-shell-id  @ud
 +$  item
   $:  name=@t
       type=item-type

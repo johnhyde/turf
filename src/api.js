@@ -46,7 +46,7 @@ export function subscribeToTurf(e) {
   return api.subscribe({
     app: 'turf',
     path: '/pond',
-    event: (...hm) => console.log('got a turf thing', hm),
+    event: (res, mark) => console.log('got a turf thing: ' + mark, res),
     err: () => {
       console.error(`Subscription to turf/pond just got "err". Turf may not exist yet.`);
     },

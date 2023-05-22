@@ -17,43 +17,27 @@
     ?@  wave
       %+  frond  wave  b+%.y
     %+  frond  -.wave
-    (turf turf.wave)
+    ?-  -.wave
+        %set-turf
+      (turf turf.wave)
+        %chat
+      (chat chat.wave)
+    ==
   ++  turf
     |=  =^turf
+    =,  ephemera.turf
     =,  plot.turf
     |^  ^-  json
     %-  pairs
-    :~  size+(vec2 size)
+    :~  players+(pairs (turn ~(tap by players) player))
+        chats+a+(turn chats chat)
+        size+(vec2 size)
         offset+(svec2 offset)
         tile-size+(vec2 tile-size)
         spaces+spaces
         library+library
         item-counter+(numb item-counter)
     ==
-    ++  vec2
-      |=  =^vec2
-      ^-  json
-      %-  pairs
-      :~  x+(numb x.vec2)
-          y+(numb y.vec2)
-      ==
-    ++  svec2
-      |=  =^svec2
-      ^-  json
-      %-  pairs
-      :~  x+(snumb x.svec2)
-          y+(snumb y.svec2)
-      ==
-    ++  snumb
-      |=  a=@s
-      ^-  json
-      =/  [sign=? abs=@u]
-        (old:si a)
-      =/  num  (numb abs)
-      ?>  ?=(%n -.num)
-      ?:  sign  num
-      :-  %n
-      `@t`(cat 3 '-' +.num)
     ++  spaces
       ^-  json
       :-  %a
@@ -62,73 +46,132 @@
       |=  =col
       ^-  json
       a+(turn col space)
-    ++  space
-      |=  =^space
-      ^-  json
-      %-  pairs
-      :~  tile+(fall ((lift item-instance) tile.space) ~)
-          items+a+(turn items.space item-instance)
-      ==
-    ++  item-instance
-      |=  inst=^item-instance
-      ^-  json
-      %-  pairs
-      =,  inst
-      :~  id+(numb id)
-          item-id+(path item-id)
-          variation+(numb variation)
-          offset+(svec2 offset)
-      ==
     ++  library
       ^-  json
       %-  pairs
       %+  turn  ~(tap by ^library)
       |=  [=item-id =item]
       :-  (spat item-id)
-      %-  pairs
-      =,  item
-      :~  name+s+name
-          type+s+type
-          collidable+b+collidable
-          variations+a+(turn variations look)
-          effects+(pairs (turn ~(tap by effects) effect))
-      ==
-    ++  look
-      |=  =^look
-      ^-  json
-      %-  pairs
-      :~  back+(fall ((lift sprite) back.look) ~)
-          fore+(fall ((lift sprite) fore.look) ~)
-      ==
-    ++  sprite
-      |=  =^sprite
-      ^-  json
-      ?@  sprite  s+sprite
-      %-  pairs
-      :~  type+s+type.sprite
-          frames+a+(turn frames.sprite (lead %s))
-      ==
-    ++  effect
-      |=  [=trigger =^effect]
-      :-  trigger
-      ^-  json
-      %-  pairs
-      :~  type+s+-.effect
-          :-  %arg
-          ^-  json
-          ?-  -.effect
-            %port  (turf-id +.effect)
-            %jump  (svec2 +.effect)
-            %read  s+note.effect
-            %swap  (path +.effect)
-      ==  ==
-    ++  turf-id
-      |=  id=^turf-id
-      ^-  json
-      %-  pairs
-      :~  ship+(ship ship.id)
-          path+(path path.id)
-      ==
+      (pairs (item-pairs item))
     --
+  ++  vec2
+    |=  =^vec2
+    ^-  json
+    %-  pairs
+    :~  x+(numb x.vec2)
+        y+(numb y.vec2)
+    ==
+  ++  svec2
+    |=  =^svec2
+    ^-  json
+    %-  pairs
+    :~  x+(snumb x.svec2)
+        y+(snumb y.svec2)
+    ==
+  ++  snumb
+    |=  a=@s
+    ^-  json
+    =/  [sign=? abs=@u]
+      (old:si a)
+    =/  num  (numb abs)
+    ?>  ?=(%n -.num)
+    ?:  sign  num
+    :-  %n
+    `@t`(cat 3 '-' +.num)
+  ++  player
+    |=  [who=^ship =^player]
+    :-  (scot %p who)
+    ^-  json
+    %-  pairs
+    :~  pos+(svec2 pos.player)
+        dir+s+dir.player
+        avatar+(avatar avatar.player)
+    ==
+  ++  avatar
+    |=  =^avatar
+    ^-  json
+    %-  pairs
+    :~  color+s+color.avatar
+        items+a+(turn items.avatar solid-item)
+    ==
+  ++  chat
+    |=  =^chat
+    ^-  json
+    %-  pairs
+    :~  from+(ship from.chat)
+        at+(time at.chat)
+        text+s+text.chat
+    ==
+  ++  space
+    |=  =^space
+    ^-  json
+    %-  pairs
+    :~  tile+(fall ((lift hollow-item) tile.space) ~)
+        items+a+(turn items.space hollow-item)
+    ==
+  ++  solid-item
+    |=  item=^solid-item
+    ^-  json
+    %-  pairs
+    (weld (item-pairs -.item) (hollow-item-pairs +.item))
+  ++  hollow-item
+    |=  item=^hollow-item
+    ^-  json
+    (pairs (hollow-item-pairs item))
+  ++  hollow-item-pairs
+    |=  item=^hollow-item
+    ^-  (list [@t json])
+    =,  item
+    :~  id+(numb id)
+        item-id+(path item-id)
+        variation+(numb variation)
+        offset+(svec2 offset)
+    ==
+  ++  item-pairs
+    |=  =item
+    ^-  (list [@t json])
+    =,  item
+    :~  name+s+name
+        type+s+type
+        collidable+b+collidable
+        variations+a+(turn variations look)
+        effects+(pairs (turn ~(tap by effects) effect))
+    ==
+  ++  look
+    |=  =^look
+    ^-  json
+    %-  pairs
+    :~  back+(fall ((lift sprite) back.look) ~)
+        fore+(fall ((lift sprite) fore.look) ~)
+    ==
+  ++  sprite
+    |=  =^sprite
+    ^-  json
+    ?@  sprite  s+sprite
+    %-  pairs
+    :~  type+s+type.sprite
+        frames+a+(turn frames.sprite (lead %s))
+    ==
+  ++  effect
+    |=  [=trigger =^effect]
+    :-  trigger
+    ^-  json
+    %-  pairs
+    :~  type+s+-.effect
+        :-  %arg
+        ^-  json
+        ?-  -.effect
+          %port  (turf-id +.effect)
+          %jump  (svec2 +.effect)
+          %read  s+note.effect
+          %swap  (path +.effect)
+    ==  ==
+  ++  turf-id
+    |=  id=^turf-id
+    ^-  json
+    %-  pairs
+    :~  ship+(ship ship.id)
+        path+(path path.id)
+    ==
   --
 --

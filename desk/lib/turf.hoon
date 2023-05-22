@@ -4,12 +4,14 @@
 =,  sur
 |%
 ++  default-turf
+  |=  our=ship
   ^-  turf
   =|  =turf
   %=  turf
       library.plot  default-library
       spaces.plot   (fill-space size.plot.turf /floor/wood)
       item-counter.plot  (mul size.plot.turf)
+      players.ephemera  (~(put by players.ephemera.turf) our new-player)
   ==
 ++  default-library
   ^-  library
@@ -34,6 +36,15 @@
       [`png ~]~
       ~
   ==
+++  new-item
+  |=  [=item-type name=@t =png]
+  ^-  item
+  :*  name
+      item-type
+      %.n
+      [`png ~]~
+      ~
+  ==
 ++  fill-space
   |=  [size=vec2 id=item-id]
   ^-  spaces
@@ -50,8 +61,8 @@
   =/  =space
     :_  ~
     :-  ~
-    ^-  item-instance
-    [count id 0 *svec2]
+    ^-  hollow-item
+    [id count 0 *svec2]
   %=  $
     count  +(count)
     spaces  [[pos space] spaces]
@@ -77,4 +88,12 @@
   |=  [a=svec2 b=svec2]
   ^-  svec2
   [(sum:si x.a x.b) (sum:si x.a x.b)]
+++  new-player
+  ^-  player
+  :*  pos=*svec2
+      %down
+      color='#d23'
+      :~  `solid-item`[(new-item %garb 'Scarecrow Body' player.sprites) /body/scarecrow 0 0 *svec2]
+      ==
+  ==
 --

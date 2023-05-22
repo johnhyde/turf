@@ -83,24 +83,29 @@
     =+  dppath=/pond
   ?+    mark  (on-poke:def mark vase)
       %test
-    :: ~&  default-turf
+    :: ~&  (default-turf our.bowl)
     `this
   ::
   :: Pub Pokes
   ::
       %init-turf
     =.  pub-pond  (secret:du-pond [dppath]~)
-    =^  cards  state  (give-pond:hc dppath set-turf+default-turf)
+    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf our.bowl))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %set-turf
-    =^  cards  state  (give-pond:hc dppath set-turf+default-turf)
+    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf our.bowl))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %edit-turf
     =^  cards  state  (give-pond:hc dppath %inc-counter)
+    ~&  >  "pub-pond is: {<read:du-pond>}"
+    cards^this
+  ::
+      %chat
+    =^  cards  state  (give-pond:hc dppath chat+[our.bowl now.bowl !<(@t vase)])
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
