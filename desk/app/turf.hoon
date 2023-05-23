@@ -99,7 +99,7 @@
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
-      %edit-turf
+      %inc
     =^  cards  state  (give-pond:hc dppath %inc-counter)
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this

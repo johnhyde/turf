@@ -1,22 +1,30 @@
 import { createEffect, createRoot, runWithOwner } from "solid-js";
 import { useState } from 'stores/state';
 import { vec2 } from 'lib/utils';
+import { extractLibrarySprites, spriteName } from 'lib/pond';
 import * as me from 'melonjs';
 
 let owner;
 
 window.me = me;
 
-export function initEngine(_owner, game) {
+export function initEngine(_owner, containerId) {
   owner = _owner;
   me.device.onReady(() => {
-    onLoad();
+    onLoad(containerId);
   });
 }
 
-function onLoad() {
+function onLoad(containerId) {
   // init the video
-  if (!me.video.init(500, 500, {parent : "game", scaleMethod: 'flex', renderer : me.video.AUTO, preferWebGL1 : false, subPixel : false })) {
+  if (!me.video.init(500, 500, {
+    parent: containerId,
+    scaleTarget: containerId,
+    scaleMethod: 'flex',
+    renderer: me.video.AUTO,
+    preferWebGL1: false,
+    subPixel : false
+  })) {
     alert("Your browser does not support HTML5 canvas.");
     return;
   }
@@ -32,17 +40,30 @@ function onLoad() {
         // cameraPos = player.pos.clone();
       });
       let lastTurfId = undefined;
-      createEffect(() => {
+      createEffect(async () => {
         if (lastTurfId !== state.currentTurfId) {
           if (lastTurfId) destroyCurrentTurf();
           lastTurfId = state.currentTurfId;
           if (state.currentTurf) {
+            let hm = await loadTurfSprites(state.currentTurf);
             initTurf(state.currentTurf);
           }
         }
       });
+      // createEffect(() => {
+      //   if (state.currentTurf) {
+      //     loadTurfSprites(state.currentTurf)
+      //   }
+      // });
     });
   });
+
+  async function loadTurfSprites(turf) {
+    const sprites = extractLibrarySprites(turf.library);
+    return Promise.all(Object.entries(sprites).map(([id, item]) => {
+      return loadImage(id, item.sprite);
+    }));
+  }
   let level;
   
   function destroyCurrentTurf() {
@@ -109,9 +130,12 @@ class TurfScreen extends me.Stage {
 
 function generateMap(turf) {
   const itemIndexMap = {};
-  const tileset = Object.entries(turf.library).map(([id, item], i) => {
-    itemIndexMap[i] = id;
-    
+  const tiles = Object.entries(extractLibrarySprites(turf.library)).map(([id, item], i) => {
+    itemIndexMap[id] = i + 1;
+    return {
+      id: i,
+      image: id,
+    };
   });
   return  {
     "backgroundcolor": "#d0f4f7",
@@ -131,7 +155,9 @@ function generateMap(turf) {
         "width": turf.size.x,
         "height": turf.size.y,
         data: turf.spaces.flat().map((space) => {
-
+          if (!space.tile) return 0;
+          const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
+          return itemIndexMap[sprite] || 0;
         }),
         // "properties":[
         //        {
@@ -165,15 +191,19 @@ function generateMap(turf) {
         firstgid: 1,
         "tilewidth": turf.tileSize.x,
         "tileheight": turf.tileSize.y,
-        tiles: turf.tileset.tiles.map((tile, i) => {
-          return {
-            id: i,
-            image: tile.image,
-          };
-        }),
+        tiles,
       }
     ],
     "type": "map",
     // "version": "1.8",
   }
+}
+
+async function loadImage(id, url) {
+  return new Promise((resolve, reject) => {
+    me.loader.load({ name: id, type:'image', src: url }, () => {
+      console.log('loaded ' + id, url)
+      resolve()
+    });
+  })
 }

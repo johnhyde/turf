@@ -48,6 +48,9 @@ function StateSummary() {
       <h3>Current Turf:</h3>
       <p>{state.currentTurfId}</p>
       <Show when={state.currentTurf} fallback={<p>No current turf</p>}>
+        <p>
+          {state.currentTurf.chats.length}
+        </p>
         <Turf id={state.currentTurfId} turf={state.currentTurf} />
       </Show>
       <h3>Turfs</h3>
@@ -59,7 +62,7 @@ function StateSummary() {
         )}</For>
       </ul>
       <button onClick={[state.setName, 'haha, victoey']}>change name</button>
-      <button onClick={addTurf}>add turf</button>
+      {/* <button onClick={addTurf}>add turf</button> */}
       <button onClick={subToTurf}>sub to turf</button>
     </div>
   );

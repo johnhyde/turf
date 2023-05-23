@@ -4,7 +4,7 @@ import { initEngine } from 'stores/game';
 function Game() {
   const owner = getOwner();
   onMount(() => {
-    initEngine(owner, game);
+    initEngine(owner, 'game');
     // initEngine(owner);
   });
 

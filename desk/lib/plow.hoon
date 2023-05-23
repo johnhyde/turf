@@ -125,7 +125,7 @@
     ^-  (list [@t json])
     =,  item
     :~  id+(numb id)
-        item-id+(path item-id)
+        'itemId'^(path item-id)
         variation+(numb variation)
         offset+(svec2 offset)
     ==

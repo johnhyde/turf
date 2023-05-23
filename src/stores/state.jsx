@@ -41,7 +41,9 @@ export function getState() {
           });
         } else if (res.wave) {
           $state('turfs', id, (turf) => {
-            return washTurf(turf, res.wave);
+            const newTurf = washTurf(turf, res.wave);
+            console.log('new turf after wave', newTurf);
+            return newTurf;
           });
         } else {
           console.error('Pond response not a rock or wave???', res);

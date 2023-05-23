@@ -42,7 +42,11 @@ window.api = api;
 const turfSize = vec2(4);
 const tileSize = vec2(32);
 
-export function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
+export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
+  const existingSubs = [...api.outstandingSubscriptions].filter(([subId, sub]) => {
+    return sub.path == id;
+  });
+  await Promise.all(existingSubs.map(([subId, sub]) => api.unsubscribe(subId)));
   return api.subscribe({
     app: 'turf',
     path: id,
