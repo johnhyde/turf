@@ -2,6 +2,7 @@ import { createSignal, createContext, createEffect, useContext, mergeProps } fro
 import { createStore } from 'solid-js/store';
 import * as api from '~/api.js';
 import { vec2 } from 'lib/utils';
+import { rockToTurf, washTurf } from 'lib/pond';
 // import { setTurf } from 'stores/game';
 
 export const StateContext = createContext();
@@ -30,6 +31,25 @@ export function getState() {
       $state('turfs', (turfs) => {
         return {...turfs, [id]: turf};
       });
+    },
+    async subToTurf(id='/pond') {
+      const onPondRes = (res) => {
+        if (res.rock) {
+          $state('turfs', (turfs) => {
+            console.log(rockToTurf(res.rock));
+            return {...turfs, [id]: rockToTurf(res.rock, id)};
+          });
+        } else if (res.wave) {
+          $state('turfs', id, (turf) => {
+            return washTurf(turf, res.wave);
+          });
+        } else {
+          console.error('Pond response not a rock or wave???', res);
+        }
+      };
+      const onPondErr = () => {};
+      const onPondQuit = () => {};
+      api.subscribeToTurf(id, onPondRes, onPondErr, onPondQuit);
     },
     async visitTurf(id) {
       $state({ currentTurfId: id });

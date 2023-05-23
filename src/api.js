@@ -42,21 +42,26 @@ window.api = api;
 const turfSize = vec2(4);
 const tileSize = vec2(32);
 
-export function subscribeToTurf(e) {
+export function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
   return api.subscribe({
     app: 'turf',
-    path: '/pond',
-    event: (res, mark) => console.log('got a turf thing: ' + mark, res),
-    err: () => {
-      console.error(`Subscription to turf/pond just got "err". Turf may not exist yet.`);
+    path: id,
+    event: (res) => {
+      console.log('got a turf thing: ', res);
+      onRes(res);
     },
-    quit: () => {
-      console.error(`Subscription to turf/pond just got "quit"`);
+    err: (err) => {
+      console.error(`Subscription to turf/pond just got "err". Turf may not exist yet.`, err);
+      onErr(err);
+    },
+    quit: (data) => {
+      console.error(`Subscription to turf/pond just got "quit"`, data);
+      onQuit(data);
     }
   })
 }
 window.subscribeToTurf = subscribeToTurf;
-subscribeToTurf();
+// subscribeToTurf();
 
 export class Item {
   constructor(name, size, image, collidable = false) {}

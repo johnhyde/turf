@@ -14,15 +14,17 @@
     |=  =wave:pond
     ^-  json
     %+  frond  %wave
-    ?@  wave
-      %+  frond  wave  b+%.y
-    %+  frond  -.wave
-    ?-  -.wave
-        %set-turf
-      (turf turf.wave)
-        %chat
-      (chat chat.wave)
-    ==
+    %-  pairs
+    :~  :-  %type
+        s+?@(wave wave -.wave)
+      ::
+        :-  %arg
+        ?-  -.wave
+            %set-turf
+          (turf turf.wave)
+            %chat
+          (chat chat.wave)
+    ==  ==
   ++  turf
     |=  =^turf
     =,  ephemera.turf
@@ -33,10 +35,10 @@
         chats+a+(turn chats chat)
         size+(vec2 size)
         offset+(svec2 offset)
-        tile-size+(vec2 tile-size)
+        'tileSize'^(vec2 tile-size)
         spaces+spaces
         library+library
-        item-counter+(numb item-counter)
+        'itemCounter'^(numb item-counter)
     ==
     ++  spaces
       ^-  json
@@ -98,7 +100,7 @@
     |=  =^chat
     ^-  json
     %-  pairs
-    :~  from+(ship from.chat)
+    :~  from+s+(scot %p from.chat)
         at+(time at.chat)
         text+s+text.chat
     ==
@@ -170,7 +172,7 @@
     |=  id=^turf-id
     ^-  json
     %-  pairs
-    :~  ship+(ship ship.id)
+    :~  ship+s+(scot %p ship.id)
         path+(path path.id)
     ==
   --

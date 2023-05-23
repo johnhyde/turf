@@ -108,6 +108,11 @@ class TurfScreen extends me.Stage {
 }
 
 function generateMap(turf) {
+  const itemIndexMap = {};
+  const tileset = Object.entries(turf.library).map(([id, item], i) => {
+    itemIndexMap[i] = id;
+    
+  });
   return  {
     "backgroundcolor": "#d0f4f7",
     // "compressionlevel": -1,
@@ -123,9 +128,11 @@ function generateMap(turf) {
         "offsetx":0,
         "offsety":0,
         "opacity":1,
-        "width": turf.tileset.size.x,
-        "height": turf.tileset.size.y,
-        data: turf.tileset.data,
+        "width": turf.size.x,
+        "height": turf.size.y,
+        data: turf.spaces.flat().map((space) => {
+
+        }),
         // "properties":[
         //        {
         //         "name":"anchorPoint",

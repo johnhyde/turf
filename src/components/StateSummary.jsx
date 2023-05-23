@@ -8,11 +8,11 @@ function Turf(props) {
   const state = useState();
   return <>
     <p>
-      <button onClick={[state.visitTurf.bind(state), props.turf.id]}>{props.turf.id}</button>: {props.turf.tileset.size.x}x{props.turf.tileset.size.y}
+      <button onClick={[state.visitTurf.bind(state), props.id]}>{props.id}</button>: {props.turf.size.x}x{props.turf.size.y}
     </p>
-    <For each={props.turf.chat}>{(chat, i) => (
+    <For each={props.turf.chats}>{(chat, i) => (
       <p>
-        {chat.from}: {chat.msg}
+        {chat.from}: {chat.text}
       </p>
     )}</For>
   </>;
@@ -24,6 +24,9 @@ function StateSummary() {
   const $pos = (p) => state.setPos(p);
   function addTurf() {
     state.fetchTurf(('' + Math.random()).substring(2, 8));
+  }
+  function subToTurf() {
+    state.subToTurf();
   }
 
   return (
@@ -45,18 +48,19 @@ function StateSummary() {
       <h3>Current Turf:</h3>
       <p>{state.currentTurfId}</p>
       <Show when={state.currentTurf} fallback={<p>No current turf</p>}>
-        <Turf turf={state.currentTurf} />
+        <Turf id={state.currentTurfId} turf={state.currentTurf} />
       </Show>
       <h3>Turfs</h3>
       <ul>
         <For each={Object.entries(state.turfs)}>{([id, turf], i) => (
           <li>
-            <Turf turf={turf} />
+            <Turf id={id} turf={turf} />
           </li>
         )}</For>
       </ul>
       <button onClick={[state.setName, 'haha, victoey']}>change name</button>
       <button onClick={addTurf}>add turf</button>
+      <button onClick={subToTurf}>sub to turf</button>
     </div>
   );
 }
