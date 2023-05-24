@@ -104,6 +104,11 @@
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
+      %set-tile
+    =^  cards  state  (give-pond:hc dppath set-tile+!<([svec2 path] vase))
+    ~&  >  "pub-pond is: {<read:du-pond>}"
+    cards^this
+  ::
       %chat
     =^  cards  state  (give-pond:hc dppath chat+[our.bowl now.bowl !<(@t vase)])
     ~&  >  "pub-pond is: {<read:du-pond>}"
