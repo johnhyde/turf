@@ -96,4 +96,17 @@
       :~  `solid-item`[(new-item %garb 'Scarecrow Body' player.sprites) /body/scarecrow 0 0 *svec2]
       ==
   ==
+::
+++  set-tile
+  |=  [=turf pos=svec2 =item-id variation=@ud]
+  =.  spaces.turf
+    %+  ~(put by spaces.turf)
+      pos
+    =<  %=  .
+            tileitem-id  
+        ==
+    %+  ~(gut by spaces.turf)
+      pos
+    *space
+  turf
 --
