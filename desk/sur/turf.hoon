@@ -24,7 +24,7 @@
   ==
 ::
 +$  plot
-  $:  size=_(vec2 4 4)
+  $:  size=_(vec2 16 8)
       offset=svec2  :: Where is the top left corner? May change due to resizing
       tile-size=_(vec2 [32 32])
       =spaces
@@ -62,6 +62,7 @@
       effects=(map trigger effect)
   ==
 +$  item-type  ?(%tile %wall %item %garb)
++$  space-item-type  ?(%tile %wall %item)
 +$  look
   $:  back=(unit sprite)
       fore=(unit sprite)
@@ -80,6 +81,8 @@
       [%read note=@t]
       [%swap with=item-id]  :: for opening/closing doors
   ==
+::
++$  hollow-item-spec  [pos=svec2 =item-id variation=@ud]
 ::
 +$  pond-path  ,[%pond *]
 --

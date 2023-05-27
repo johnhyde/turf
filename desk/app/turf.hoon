@@ -1,5 +1,6 @@
 /-  *turf, pond
 /+  *turf, *sss, default-agent, dbug, verb, agentio
+/%  pond-mark  %sss-pond
 =/  res-pond  (response:poke pond *)
 =/  sub-pond-init  (mk-subs pond pond-path)
 =/  pub-pond-init  (mk-pubs pond pond-path)  ::NOTE $? can be used!
@@ -83,19 +84,22 @@
     =+  dppath=/pond
   ?+    mark  (on-poke:def mark vase)
       %test
-    :: ~&  (default-turf our.bowl)
+    :: ~&  (default-turf:gen our.bowl)
     `this
   ::
   :: Pub Pokes
   ::
+      %rock-turf
+    =^  cards  state  (give-pond-rock dppath %.n)
+    cards^this
       %init-turf
     =.  pub-pond  (secret:du-pond [dppath]~)
-    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf our.bowl))
+    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl [16 8] [--0 --0]))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %set-turf
-    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf our.bowl))
+    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl !<([[@ud @ud] [@sd @sd]] vase)))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -104,8 +108,8 @@
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
-      %set-tile
-    =^  cards  state  (give-pond:hc dppath set-tile+!<([svec2 path] vase))
+      %add-item
+    =^  cards  state  (give-pond:hc dppath add-item+!<(hollow-item-spec vase))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -193,7 +197,7 @@
   ?+  path  (on-watch:def path)
       [%pond *]
     ?>  =(our src):bowl
-    =^  cards  state  (give-pond-rock path)
+    =^  cards  state  (give-pond-rock path %.y)
     cards^this
   ==
 ++  on-leave
@@ -253,10 +257,14 @@
     [%give %fact [`path`ppath]~ %sss-pond !>(res)]
   cards^state
 ++  give-pond-rock
-  |=  [ppath=pond-path]
+  |=  [ppath=path on-watch=?]
+  ?>  ?=(%pond -.ppath)
   ^-  (quip card _state)
   :_  state
   =/  =rock:pond  rock:(~(got by read:du-pond) ppath)
   =/  res=res-pond  [[ppath]~ dap.bowl 0 %scry %rock rock]
-  [%give %fact ~ %sss-pond !>(res)]~
+  =/  give-paths
+    ?:  on-watch  ~
+    [`path`ppath]~
+  [%give %fact give-paths %sss-pond !>(res)]~
 --

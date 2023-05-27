@@ -11,11 +11,11 @@ window.imgData = {};
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-addImage(floorUrl, 'floor');
-addImage(holeFloorUrl, 'hole_floor');
-addImage(playerUrl, 'player');
-addImage(grassUrl, 'grass');
-addImage(longGrassUrl, 'longGrass');
+// addImage(floorUrl, 'floor');
+// addImage(holeFloorUrl, 'hole_floor');
+// addImage(playerUrl, 'player');
+// addImage(grassUrl, 'grass');
+// addImage(longGrassUrl, 'longGrass');
 
 function addImage(url, id) {
   const image = new Image();
@@ -64,8 +64,10 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
     }
   })
 }
-window.subscribeToTurf = subscribeToTurf;
-// subscribeToTurf();
+
+export function sendPondWave(mark, data) {
+  
+}
 
 export class Item {
   constructor(name, size, image, collidable = false) {}

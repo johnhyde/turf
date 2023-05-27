@@ -1,24 +1,57 @@
-import { createSignal, createContext, createEffect, useContext, mergeProps } from "solid-js";
-import { createStore } from 'solid-js/store';
+import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps } from "solid-js";
+import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from '~/api.js';
-import { vec2 } from 'lib/utils';
+import { vec2, flattenGrid } from 'lib/utils';
 import { rockToTurf, washTurf } from 'lib/pond';
 // import { setTurf } from 'stores/game';
 
 export const StateContext = createContext();
 
 export function getState() {
+  let playersList, spacesList;
   const [state, $state] = createStore({
     turfs: {},
     currentTurfId: null,
-    get currentTurf() { return this.turfs[this.currentTurfId]; },
-    player: {
-      image: new ImageData(26, 36),
-    },
-    playerExistence: {
-      pos: vec2(),
+    get player() {
+      const player = this.current.turf?.players[our];
+      if (!player) return null;
+      const parent = this;
+      return {
+        ...player,
+        get uPos() {
+          return vec2(this.pos).sub(parent.current.turf?.offset || vec2());
+        },
+      };
     },
     name: 'hi there',
+    get current() {
+      const parent = this;
+      const current = {
+        get id() {
+          return parent.currentTurfId;
+        },
+        get turf() {
+          return parent.turfs[this.id];
+        },
+        get playersList() {
+          return playersList();
+        },
+        get spacesList() {
+          return spacesList();
+        }
+      };
+      return current;
+    },
+  });
+  playersList = createMemo(() => {
+    if (!state.current.turf) return null;
+    console.log('calcing playlist')
+    return Object.entries(state.current.turf.players);
+  });
+  spacesList = createMemo(() => {
+    if (!state.current.turf) return null;
+    console.log('calcing spaces list')
+    return flattenGrid(state.current.turf.spaces);
   });
 
   const _state = mergeProps(state, {
@@ -32,40 +65,43 @@ export function getState() {
         return {...turfs, [id]: turf};
       });
     },
-    async subToTurf(id='/pond') {
-      const onPondRes = (res) => {
+    onPondRes(id='/pond') {
+      return (res) => {
         if (res.rock) {
-          $state('turfs', (turfs) => {
-            console.log(rockToTurf(res.rock));
-            return {...turfs, [id]: rockToTurf(res.rock, id)};
-          });
+          const newTurf = rockToTurf(res.rock);
+          console.log(newTurf);
+          $state('turfs', id, reconcile(newTurf));
         } else if (res.wave) {
-          $state('turfs', id, (turf) => {
-            const newTurf = washTurf(turf, res.wave);
-            console.log('new turf after wave', newTurf);
-            return newTurf;
-          });
+          $state('turfs', id, washTurf(res.wave));
         } else {
           console.error('Pond response not a rock or wave???', res);
         }
       };
+    },
+    async subToTurf(id='/pond') {
       const onPondErr = () => {};
       const onPondQuit = () => {};
-      api.subscribeToTurf(id, onPondRes, onPondErr, onPondQuit);
+      api.subscribeToTurf(id, this.onPondRes(id), onPondErr, onPondQuit);
     },
     async visitTurf(id) {
       $state({ currentTurfId: id });
-      if (this.currentTurfId && !this.currentTurf) {
+      if (this.currentTurfId && !this.current.turf) {
         await this.fetchTurf(id);
       }
     },
     setPos(pos) {
-      $state('playerExistence','pos', pos);
+      console.log('setting pos');
+      $state('turfs', this.currentTurfId, 'players', our, 'pos', pos);
+      api.sendPondWave('move-player', {
+        turfId: this.currentTurfId,
+        ship: our,
+        pos,
+      });
     },
   });
 
   // createEffect(() => {
-  //   if (state.currentTurf) {
+  //   if (state.current.turf) {
   //     setTurf();
   //   }
   // });

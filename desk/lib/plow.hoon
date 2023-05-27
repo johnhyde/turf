@@ -22,6 +22,8 @@
         ?-  -.wave
             %set-turf
           (turf turf.wave)
+            %add-item
+          (hollow-item-spec +.wave)
             %chat
           (chat chat.wave)
     ==  ==
@@ -138,6 +140,15 @@
         collidable+b+collidable
         variations+a+(turn variations look)
         effects+(pairs (turn ~(tap by effects) effect))
+    ==
+  ++  hollow-item-spec
+    |=  item-spec=^hollow-item-spec
+    =,  item-spec
+    ^-  json
+    %-  pairs
+    :~  pos+(svec2 pos)
+        'itemId'^(path item-id)
+        variation+(numb variation)
     ==
   ++  look
     |=  =^look

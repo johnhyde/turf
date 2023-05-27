@@ -6,8 +6,8 @@
 +$  rock  (unit turf)
 +$  wave
   $@  ?(%del-turf %inc-counter)
-  $%  set-turf
-      set-tile
+  $%  set-turf-wave
+      add-item-wave
       chat-wave
   ==
 ++  wash
@@ -26,13 +26,13 @@
     ==
   ?-  -.wave
     %set-turf  `turf.wave
-    %set-tile  (set-tile rock +.wave)
+    %add-item  `(add-hollow-item u.rock +.wave)
       %chat
     rock(chats.ephemera.u [chat.wave chats.ephemera.u.rock])
   ==
 --
 |%
-+$  set-turf  [%set-turf =turf]
-+$  set-tile  [%set-tile pos=svec2 =item-id variation=@ud]
++$  set-turf-wave  [%set-turf =turf]
++$  add-item-wave  [%add-item hollow-item-spec]
 +$  chat-wave  [%chat =chat]
 --

@@ -9,6 +9,7 @@ import { initEngine } from 'stores/game';
 
 window.desk = window.desk || 'turf';
 window.ship = window.ship || 'zod';
+window.our = '~' + ship;
 
 // const root = document.getElementById('root');
 

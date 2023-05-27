@@ -5,6 +5,7 @@ function Game() {
   const owner = getOwner();
   onMount(() => {
     initEngine(owner, 'game');
+    // m
     // initEngine(owner);
   });
 

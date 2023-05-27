@@ -3,50 +3,64 @@
 =<  [sur .]
 =,  sur
 |%
-++  default-turf
-  |=  our=ship
-  ^-  turf
-  =|  =turf
-  %=  turf
-      library.plot  default-library
-      spaces.plot   (fill-space size.plot.turf /floor/wood)
-      item-counter.plot  (mul size.plot.turf)
-      players.ephemera  (~(put by players.ephemera.turf) our new-player)
+++  gen
+  |%
+  ++  default-turf
+    |=  [our=ship size=vec2 offset=svec2]
+    ^-  turf
+    =|  =turf
+    %=  turf
+        size.plot          size
+        library.plot       default-library
+        spaces.plot        (fill-space size offset /floor/wood)
+        offset.plot        offset
+        item-counter.plot  (mul size)
+        players.ephemera   (~(put by players.ephemera.turf) our (new-player offset))
+    ==
+  ++  default-library
+    ^-  library
+    %-  malt
+    ^-  (list [item-id item])
+    =,  sprites
+    :~  :-  /floor/wood
+        (new-tile 'Wood Floor' floor)
+      ::
+        :-  /grass
+        (new-tile 'Grass' grass)
+      ::
+        :-  /grass/long
+        (new-tile 'Long Grass' long-grass)
+    ==
+  ++  new-tile
+    |=  [name=@t =png]
+    ^-  item
+    :*  name
+        %tile
+        %.n
+        [`png ~]~
+        ~
+    ==
+  ++  new-item
+    |=  [=item-type name=@t =png]
+    ^-  item
+    :*  name
+        item-type
+        %.n
+        [`png ~]~
+        ~
+    ==
+++  new-player
+  |=  pos=svec2
+  ^-  player
+  :*  pos
+      %down
+      color='#d23'
+      :~  `solid-item`[(new-item %garb 'Scarecrow Body' player.sprites) /body/scarecrow 0 0 *svec2]
+      ==
   ==
-++  default-library
-  ^-  library
-  %-  malt
-  ^-  (list [item-id item])
-  =,  sprites
-  :~  :-  /floor/wood
-      (new-tile 'Wood Floor' floor)
-    ::
-      :-  /grass
-      (new-tile 'Grass' grass)
-    ::
-      :-  /grass/long
-      (new-tile 'Long Grass' long-grass)
-  ==
-++  new-tile
-  |=  [name=@t =png]
-  ^-  item
-  :*  name
-      %tile
-      %.n
-      [`png ~]~
-      ~
-  ==
-++  new-item
-  |=  [=item-type name=@t =png]
-  ^-  item
-  :*  name
-      item-type
-      %.n
-      [`png ~]~
-      ~
-  ==
+  --
 ++  fill-space
-  |=  [size=vec2 id=item-id]
+  |=  [size=vec2 offset=svec2 id=item-id]
   ^-  spaces
   %-  malt
   =|  spaces=(list [svec2 space])
@@ -58,6 +72,7 @@
   =/  pos=svec2
     :-  (sun:si (mod count x.size))
     (sun:si (div count x.size))
+  =.  pos  (sum-svec2 pos offset)
   =/  =space
     :_  ~
     :-  ~
@@ -87,26 +102,35 @@
 ++  sum-svec2
   |=  [a=svec2 b=svec2]
   ^-  svec2
-  [(sum:si x.a x.b) (sum:si x.a x.b)]
-++  new-player
-  ^-  player
-  :*  pos=*svec2
-      %down
-      color='#d23'
-      :~  `solid-item`[(new-item %garb 'Scarecrow Body' player.sprites) /body/scarecrow 0 0 *svec2]
-      ==
-  ==
+  [(sum:si x.a x.b) (sum:si y.a y.b)]
 ::
-++  set-tile
-  |=  [=turf pos=svec2 =item-id variation=@ud]
-  =.  spaces.turf
-    %+  ~(put by spaces.turf)
+++  get-space
+  |=  [=turf pos=svec2]
+  ^-  space
+  (~(gut by spaces.plot.turf) pos *space)
+++  get-item-type
+  |=  [=turf =item-id]
+  ^-  (unit item-type)
+  =/  item  (~(get by library.plot.turf) item-id)
+  ?~  item  ~
+  `type.u.item
+++  add-hollow-item
+  |=  [=turf spec=hollow-item-spec]
+  ^-  ^turf
+  =,  spec
+  =*  item-counter  item-counter.plot.turf
+  =/  item-type  (get-item-type turf item-id)
+  ?~  item-type  turf
+  ?.  ?=(space-item-type u.item-type)  turf
+  =/  new-item=hollow-item
+    [item-id item-counter variation *svec2]
+  =.  spaces.plot.turf
+    %+  ~(put by spaces.plot.turf)
       pos
-    =<  %=  .
-            tileitem-id  
-        ==
-    %+  ~(gut by spaces.turf)
-      pos
-    *space
+    =/  =space  (get-space turf pos)
+    ?:  =(%tile u.item-type)
+      space(tile `new-item)
+    space(items [new-item items.space])
+  =.  item-counter  +(item-counter)
   turf
 --

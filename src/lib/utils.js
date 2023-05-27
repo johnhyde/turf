@@ -1,4 +1,4 @@
-import { Vector2d } from 'melonjs';
+import * as me from 'melonjs';
 
 /** 
  * Create a 2d vector, can take another Vector2d to copy, 2 scalars, or 1 scalar
@@ -12,7 +12,16 @@ import { Vector2d } from 'melonjs';
  * b = vec2();         // set b to (0, 0)
  * @memberof Utilities
  */
-export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2d(x, y == undefined? x : y) : new Vector2d(x.x, x.y);
+export const vec2 = (x=0, y)=> x.x == undefined ? new me.Vector2d(x, y == undefined? x : y) : new me.Vector2d(x.x, x.y);
+window.vec2 = vec2;
+
+export function swapAxes(array2d) {
+  return array2d[0].map((_, colIndex) => array2d.map(row => row[colIndex]));
+}
+
+export function flattenGrid(array2d) {
+  return swapAxes(array2d).flat();
+}
 
 
 /** Random global functions

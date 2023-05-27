@@ -1,44 +1,73 @@
-import { unwrap } from "solid-js/store";
+import { unwrap, produce, reconcile } from "solid-js/store";
 import { vec2 } from 'lib/utils';
 
 export function rockToTurf(rock, id) {
   rock.id = id;
-  return js.turf(rock);
+  js.turf(rock);
+  return rock;
 }
 
-export function washTurf(turf, wave) {
-  turf = unwrap(turf);
+export function washTurf(wave) {
+  const pondWaves = {
+    'inc-counter':
+      (turf) => {
+        turf.itemCounter++;
+      },
+    'add-item':
+      (turf) => {
+        const { pos, itemId, variation } = wave.arg;
+        const normPos = vec2(pos).sub(turf.offset);
+        const itemType = turf.library[itemId]?.type;
+        const newItem = {
+          itemId,
+          id: turf.itemCounter,
+          variation,
+          offset: vec2(),
+        }
+        if (itemType === 'tile') {
+          turf.spaces[normPos.x][normPos.y].tile = newItem;
+          turf.itemCounter++;
+        } else if (itemType == 'wall' || itemType == 'item') {
+          turf.spaces[normPos.x][normPos.y].items.unshift(newItem);
+          turf.itemCounter++;
+        }
+      },
+    'chat':
+      (turf) => {
+        turf.chats.unshift(wave.arg);
+      },
+  };
+
   switch (wave.type) {
     case 'del-turf':
-      turf = null;
-      break;
-    case 'inc-counter':
-      turf['item-counter']++;
-      break;
+      return null;
     case 'set-turf':
-      turf = wave.arg;
-      break;
-    case 'chat':
-      turf.chats.unshift(wave.arg);
-      break;
+      return (turf) => {
+        const newTurf = {
+          id: turf.id,
+          ...wave.arg,
+        };
+        return js.turf(newTurf);
+      };
     default:
+      return produce((turf) => {
+        pondWaves[wave.type](turf);
+        js.turf(turf);
+      });
   }
-  turf = js.turf(turf);
-  return turf;
 }
 
+// We mutate everything I guess!
 const js = {
   turf(turf) {
-    turf = this.deepVec2(turf)
-    turf.chats = turf.chats.map(this.chat.bind(this));
+    this.deepVec2(turf)
+    turf.chats.forEach(this.chat.bind(this));
     return turf;
   },
   chat(chat) {
     chat.at = new Date(chat.at);
-    return chat;
   },
   deepVec2(obj) {
-    obj = JSON.parse(JSON.stringify(obj));
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         const value = obj[key];
@@ -47,12 +76,11 @@ const js = {
           if (Object.keys(value).sort().join() == 'x,y' && value.constructor.name == 'Object') {
             obj[key] = this.vec2(value);
           } else {
-            obj[key] = this.deepVec2(value);
+            this.deepVec2(value);
           }
         }
       }
     }
-    return obj;
   },
   vec2(vec) {
     return vec2(vec.x, vec.y);
@@ -80,6 +108,29 @@ export function extractLibrarySprites(library) {
   return sprites;
 }
 
-export function spriteName(id, variation, layer) {
-  return id.replace(/\//g, '-') + '_' + (variation || '0') + (layer ? '_' + layer : '');
+export function extractPlayerSprites(players) {
+  const sprites = {};
+  Object.entries(players).forEach(([patp, player]) => {
+    player.avatar.items.forEach((item) => {
+      item.variations.forEach((variation, i) => {
+        if (variation.back) {
+          sprites[spriteName(item.itemId, i, 'back', patp)] = {
+            item,
+            sprite: variation.back,
+          };
+        }
+        if (variation.fore) {
+          sprites[spriteName(item.itemId, i, 'fore', patp)] = {
+            item,
+            sprite: variation.fore,
+          };
+        }
+      });
+    });
+  });
+  return sprites;
+}
+
+export function spriteName(id, variation, layer, patp='') {
+  return patp + id.replace(/\//g, '-') + '_' + (variation || '0') + (layer ? '_' + layer : '');
 }
