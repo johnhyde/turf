@@ -65,8 +65,20 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
   })
 }
 
-export function sendPondWave(mark, data) {
-  
+export async function sendPondWave(id, mark, data) {
+  let result = await api.poke({
+    app: 'turf',
+    mark: 'sss-pond',
+    json: {
+      path: id,
+      dude: 'turf-client',
+      aeon: 0,
+      type: 'scry',
+      what: 'wave',
+      wave: !data ? mark : { [mark]: data },
+    },
+  });
+  return result;
 }
 
 export class Item {

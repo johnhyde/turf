@@ -36,6 +36,13 @@ export function washTurf(wave) {
       (turf) => {
         turf.chats.unshift(wave.arg);
       },
+    'move':
+      (turf) => {
+        const player = turf.players[wave.arg.ship];
+        if (player) {
+          player.pos = wave.arg.pos;
+        }
+      }
   };
 
   switch (wave.type) {

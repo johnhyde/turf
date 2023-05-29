@@ -1,5 +1,5 @@
 /-  *turf, pond
-/+  *turf
+/+  *turf, sss
 |%
 ++  enjs
   =,  enjs:format
@@ -26,6 +26,8 @@
           (hollow-item-spec +.wave)
             %chat
           (chat chat.wave)
+            %move
+          (move +.wave)
     ==  ==
   ++  turf
     |=  =^turf
@@ -186,5 +188,44 @@
     :~  ship+s+(scot %p ship.id)
         path+(path path.id)
     ==
+  ++  move
+    |=  [shp=^ship pos=^svec2]
+    ^-  json
+    %-  pairs
+    :~  ship+s+(scot %p shp)
+        pos+(svec2 pos)
+    ==
+  --
+++  dejs
+  =,  dejs:format
+  |%
+    :: todo: support rocks as well as waves
+    ++  pond-res
+      |=  jon=json
+      ^-  (response:poke:sss pond pond-path)
+      %-  %-  ot
+          ~[path+pa dude+so aeon+ni type+_%scry what+_%wave wave+pond-wave]
+      jon
+    ++  pond-wave
+      |=  jon=json
+      ^-  wave:pond
+      ?:  ?=([%s *] jon)
+        ;;(wave:pond (so jon))
+      ?>  ?=([%o *] jon)
+      %-  %-  of
+          :~  move+(ot ~[ship+(se %p) pos+svec2])
+              :: todo: set-turf, add-item, chat
+          ==
+      jon
+    ::
+    ++  svec2
+      |=  jon=json
+      ^-  ^svec2
+      ((ot ~[x+ns y+ns]) jon)
+    ++  ns  :: signed integer!
+      |=  jon=json
+      ^-  @sd
+      ?>  ?=([%n *] jon)
+      (need (toi:rd (ne jon)))
   --
 --

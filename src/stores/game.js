@@ -48,16 +48,17 @@ function onLoad(containerId) {
       const [loader, { mutate, refetch }] = createResource(
         () => state.current.turf,
         (turf) => loadSprites(turf));
-      // createEffect(() => {
-      //   let pos = state.player?.pos;
-      //   console.log('pos', pos);
-      //   if (pos && player) {
-      //     player.tilePos = pos;
-      //     me.game.repaint();
-      //     // me.event.emit("propertyChanged", [ player ]);
-      //   }
-      //   // cameraPos = player.pos.clone();
-      // });
+      createEffect(() => {
+        let pos = state.player?.uPos;
+        console.log('pos', pos);
+        if (pos && player) {
+          player.tilePos = pos;
+          me.state.resume();
+          // me.game.repaint();
+          // me.event.emit("propertyChanged", [ player ]);
+        }
+        // cameraPos = player.pos.clone();
+      });
       createEffect((lastTurfId) => {
         if (loader.state === 'ready') {
           const turfChanged = lastTurfId !== state.currentTurfId;
@@ -194,20 +195,20 @@ class Player extends me.Sprite {
     if (pos.equals(this.targetPos)) {
       // console.log('at target')
       if (me.input.isKeyPressed("left")) {
-        console.log('go left')
+        // console.log('go left')
         this.tilePos.x--;
       }
       if (me.input.isKeyPressed("right")) {
-        console.log('go right')
+        // console.log('go right')
         this.tilePos.x++;
       }
       
       if (me.input.isKeyPressed("up")) {
-        console.log('go up')
+        // console.log('go up')
         this.tilePos.y--;
       }
       if (me.input.isKeyPressed("down")) {
-        console.log('go down')
+        // console.log('go down')
         this.tilePos.y++;
       }
     }

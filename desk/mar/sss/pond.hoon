@@ -1,6 +1,6 @@
-/-  pond
+/-  pond, turf
 /+  *sss, *plow
-|_  res=(response:poke pond *)
+|_  res=(response:poke pond pond-path:turf)
   ++  grow
     |%
     ++  noun  res
@@ -14,6 +14,7 @@
   ++  grab
     |%
     ++  noun  (response:poke pond *)
+    ++  json  pond-res:dejs
     --
   ++  grad  %noun
   --

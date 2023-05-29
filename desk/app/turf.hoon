@@ -79,8 +79,8 @@
   |=  [=mark =vase]
   ^-  (quip card _this)
   :: ?>  =(our src):bowl
-  ~&  >>  "sub-pond was: {<read:da-pond>}"
-  ~&  >>  "pub-pond was: {<read:du-pond>}"
+  :: ~&  >>  "sub-pond was: {<read:da-pond>}"
+  :: ~&  >>  "pub-pond was: {<read:du-pond>}"
     =+  dppath=/pond
   ?+    mark  (on-poke:def mark vase)
       %test
@@ -92,6 +92,7 @@
       %rock-turf
     =^  cards  state  (give-pond-rock dppath %.n)
     cards^this
+  ::
       %init-turf
     =.  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl [16 8] [--0 --0]))
@@ -177,7 +178,16 @@
     :: ==
   ::
       %sss-pond
-    =^  cards  sub-pond  (apply:da-pond !<(into:da-pond (fled vase)))
+    =/  res  !<(into:da-pond (fled vase))
+    ?:  =(%turf-client dude.res)
+      ?>  =(our src):bowl
+      ~|  %turf-client-may-only-send-waves
+      ?>  ?=(%scry type.res)
+      ?>  ?=(%wave what.res)
+      =^  cards  state  (give-pond:hc ;;(path path.res) wave.res)
+      ~&  >  "accepting wave from client: {<?^(wave.res -.wave.res wave.res)>}"
+      cards^this
+    =^  cards  sub-pond  (apply:da-pond res)
     ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::

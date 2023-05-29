@@ -90,10 +90,9 @@ export function getState() {
       }
     },
     setPos(pos) {
-      console.log('setting pos');
+      // console.log('setting pos');
       $state('turfs', this.currentTurfId, 'players', our, 'pos', pos);
-      api.sendPondWave('move-player', {
-        turfId: this.currentTurfId,
+      api.sendPondWave(this.currentTurfId, 'move', {
         ship: our,
         pos,
       });
