@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { bind } from 'lib/bind';
-// import api from '~/api.js';
+import * as api from '~/api.js';
 import { vec2 } from 'lib/utils';
 
 function Turf(props) {
@@ -27,6 +27,9 @@ function StateSummary() {
   }
   function subToTurf() {
     state.subToTurf();
+  }
+  function unsubToTurf() {
+    api.unsubscribeToTurf();
   }
   function addItem(itemId) {
     state.onPondRes(state.currentTurfId)({
@@ -85,6 +88,7 @@ function StateSummary() {
       <button onClick={[state.setName, 'haha, victoey']}>change name</button>
       {/* <button onClick={addTurf}>add turf</button> */}
       <button onClick={subToTurf}>sub to turf</button>
+      <button onClick={unsubToTurf}>unsub to turfs</button>
       <button onClick={[addItem, '/grass']}>grass</button>
       <button onClick={[addItem, '/floor/wood']}>floor</button>
     </div>

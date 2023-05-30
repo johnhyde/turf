@@ -40,7 +40,8 @@ export function washTurf(wave) {
       (turf) => {
         const player = turf.players[wave.arg.ship];
         if (player) {
-          player.pos = wave.arg.pos;
+          const bounds = getTurfBounds(turf);
+          player.pos = vec2(wave.arg.pos).maxV(bounds.topLeft).minV(bounds.botRight.sub(vec2(1)));
         }
       }
   };
@@ -94,6 +95,13 @@ const js = {
   },
 };
 
+export function getTurfBounds(turf) {
+  return {
+    topLeft: vec2(turf.offset),
+    botRight: vec2(turf.offset).add(turf.size),
+  };
+}
+
 export function extractLibrarySprites(library) {
   const sprites = {};
   Object.entries(library).forEach(([itemId, item]) => {
@@ -140,4 +148,17 @@ export function extractPlayerSprites(players) {
 
 export function spriteName(id, variation, layer, patp='') {
   return patp + id.replace(/\//g, '-') + '_' + (variation || '0') + (layer ? '_' + layer : '');
+}
+
+export function extractItems(turf) {
+  const items = [];
+  turf.spaces.forEach((col, i) => {
+    col.forEach((space, j) => {
+      const pos = vec2(i, j);
+      space.items.forEach((item) => {
+        items.push([pos, item]);
+      });
+    });
+  });
+  return items;
 }

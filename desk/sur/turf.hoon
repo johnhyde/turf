@@ -35,6 +35,8 @@
 +$  item-id  path
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
++$  off-size  [offset=svec2 size=vec2]
++$  tl-br  [tl=svec2 br=svec2]
 +$  spaces  (map svec2 space)
 +$  grid  (list col)
 +$  col  (list space)

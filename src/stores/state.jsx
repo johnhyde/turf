@@ -18,12 +18,10 @@ export function getState() {
       const parent = this;
       return {
         ...player,
-        get uPos() {
-          return vec2(this.pos).sub(parent.current.turf?.offset || vec2());
-        },
       };
     },
     name: 'hi there',
+    editing: false,
     get current() {
       const parent = this;
       const current = {
@@ -89,13 +87,27 @@ export function getState() {
         await this.fetchTurf(id);
       }
     },
+    sendWave(mark, data, id) {
+      id = id || this.currentTurfId;
+      this.onPondRes(this.currentTurfId, {
+        wave: {
+          type: mark,
+          arg: data
+        }
+      })
+      api.sendPondWave(this.currentTurfId, mark, data);
+    },
     setPos(pos) {
-      // console.log('setting pos');
-      $state('turfs', this.currentTurfId, 'players', our, 'pos', pos);
-      api.sendPondWave(this.currentTurfId, 'move', {
+      this.sendWave('move', {
         ship: our,
         pos,
       });
+    },
+    setEditing(_editing) {
+      $state('editing', _editing);
+    },
+    toggleEditing() {
+      $state('editing', (_editing) => !_editing);
     },
   });
 

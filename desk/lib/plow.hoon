@@ -47,7 +47,7 @@
     ++  spaces
       ^-  json
       :-  %a
-      =+  grid=(spaces-to-grid ^spaces size offset)
+      =+  grid=(spaces-to-grid ^spaces offset size)
       %+  turn  grid
       |=  =col
       ^-  json

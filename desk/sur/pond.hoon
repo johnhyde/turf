@@ -34,11 +34,12 @@
       %move
     =*  players  players.ephemera.turf
     ?.  (~(has by players) ship.wave)  rock
+    =/  pos  (clamp-pos pos.wave offset.plot.turf size.plot.turf)
     =.  players
       %+  ~(jab by players)
         ship.wave
       |=  =player
-      player(pos pos.wave)
+      player(pos pos)
     rock
   ==
 --

@@ -9,14 +9,18 @@
     |=  [our=ship size=vec2 offset=svec2]
     ^-  turf
     =|  =turf
-    %=  turf
+    =.  turf
+      %=  turf
         size.plot          size
         library.plot       default-library
-        spaces.plot        (fill-space size offset /floor/wood)
+        spaces.plot  (fill-space size offset /floor/wood)
         offset.plot        offset
         item-counter.plot  (mul size)
         players.ephemera   (~(put by players.ephemera.turf) our (new-player offset))
-    ==
+      ==
+    =/  mid-size  ((merge-svec2 fra:si) (sign-vec2 size) [--2 --2])
+    =/  tree-pos  (sum-svec2 offset mid-size)
+    (add-hollow-item turf [tree-pos /tree 0])
   ++  default-library
     ^-  library
     %-  malt
@@ -30,6 +34,17 @@
       ::
         :-  /grass/long
         (new-tile 'Long Grass' long-grass)
+      ::
+        :-  /table/round
+        =/  table  (new-item %item 'Round Table' table)
+        table(collidable %.y)
+      ::
+        :-  /stool
+        (new-item %item 'Stool' stool)
+      ::
+        :-  /tree
+        =/  tree  (new-item %item 'Tree' tree)
+        tree(collidable %.y)
     ==
   ++  new-tile
     |=  [name=@t =png]
@@ -83,26 +98,55 @@
     spaces  [[pos space] spaces]
   ==
 ++  spaces-to-grid
-  |=  [=spaces size=vec2 offset=svec2]
-  =/  ssize  (vec2-to-svec2 size)
+  |=  [=spaces os=off-size]
   ^-  grid
-  =/  ending=svec2  (sum-svec2 offset ssize)
+  =+  (os-to-tl-br os)  :: add tl and br to subject
   :: =|  cols=grid
   |-  ^-  grid
-  ?:  =(x.offset x.ending)  ~
+  ?:  =(x.tl x.br)  ~
   :-  |-  ^-  col
-      ?:  =(y.offset y.ending)  ~
-      :-  (~(gut by spaces) offset [~ ~])
-      $(y.offset (sum:si y.offset --1))
-  $(x.offset (sum:si x.offset --1))
-++  vec2-to-svec2
+      ?:  =(y.tl y.br)  ~
+      :-  (~(gut by spaces) tl [~ ~])
+      $(y.tl (sum:si y.tl --1))
+  $(x.tl (sum:si x.tl --1))
+::
+++  clamp-pos
+  |=  [pos=svec2 os=off-size]
+  ^-  svec2
+  =+  (os-to-tl-br os)  :: add tl and br to subject
+  (max-svec2 tl (min-svec2 pos (sum-svec2 br [-1 -1])))
+::
+++  os-to-tl-br
+  |=  os=off-size
+  ^-  tl-br
+  =/  ssize  (sign-vec2 size.os)
+  =/  bot-right  (sum-svec2 offset.os ssize)
+  [offset.os bot-right]
+++  sign-vec2
   |=  =vec2
   ^-  svec2
   [(sun:si x.vec2) (sun:si y.vec2)]
-++  sum-svec2
+++  merge-svec2
+  |=  fun=$-([@sd @sd] @sd)
   |=  [a=svec2 b=svec2]
   ^-  svec2
-  [(sum:si x.a x.b) (sum:si y.a y.b)]
+  [(fun x.a x.b) (fun y.a y.b)]
+++  sum-svec2  (merge-svec2 sum:si)
+++  min-svec2  (merge-svec2 min-si)
+++  max-svec2  (merge-svec2 max-si)
+++  min-si
+  |=  [a=@s b=@s]
+  ?:  (lth-si a b)
+    a
+  b
+++  max-si
+  |=  [a=@s b=@s]
+  ?:  (lth-si a b)
+    b
+  a
+++  lth-si
+  |=  [a=@s b=@s]
+  =(-1 (cmp:si a b))
 ::
 ++  get-space
   |=  [=turf pos=svec2]

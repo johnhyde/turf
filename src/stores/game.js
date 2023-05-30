@@ -2,7 +2,7 @@ import { createEffect, createRoot, createResource, runWithOwner, mapArray, index
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
 import { vec2, flattenGrid } from 'lib/utils';
-import { extractLibrarySprites, extractPlayerSprites, spriteName } from 'lib/pond';
+import { extractLibrarySprites, extractPlayerSprites, spriteName, extractItems } from 'lib/pond';
 import * as me from 'melonjs';
 
 import voidUrl from 'assets/sprites/void.png';
@@ -20,7 +20,7 @@ export function initEngine(_owner, containerId) {
   });
 }
 
-let level, layer, tileset, itemIndexMap, player;
+let level, layer, world, itemIndexMap, player, items = {};
 
 function onLoad(containerId) {
   // init the video
@@ -49,8 +49,8 @@ function onLoad(containerId) {
         () => state.current.turf,
         (turf) => loadSprites(turf));
       createEffect(() => {
-        let pos = state.player?.uPos;
-        console.log('pos', pos);
+        let pos = state.player?.pos;
+        // console.log('pos', pos);
         if (pos && player) {
           player.tilePos = pos;
           me.state.resume();
@@ -66,7 +66,7 @@ function onLoad(containerId) {
           if (turfChanged ||
               state.current.turf.size.x != level.cols ||
               state.current.turf.size.y != level.rows) {
-            if (lastTurfId) destroyCurrentTurf();
+            if (lastTurfId || state.current.turf) destroyCurrentTurf();
             if (state.current.turf) {
               initTurf(state.current.turf, state.player);
             }
@@ -107,8 +107,42 @@ function onLoad(containerId) {
   
   function destroyCurrentTurf() {
     me.game.world.reset();
+    player = null;
+    items = {};
   }
   async function initTurf(turf, _player) {
+    const bounds = {
+      x: turf.offset.x * turf.tileSize.x,
+      y: turf.offset.y * turf.tileSize.y,
+      w: turf.size.x * turf.tileSize.x,
+      h: turf.size.y * turf.tileSize.y,
+    };
+    function _setBounds(width, height) {
+      // adjust the viewport bounds if level is smaller
+      me.game.viewport.setBounds(
+        -turf.tileSize.x - ~~(Math.max(-5, width - bounds.w) / 2),
+        -(turf.tileSize.y * 2) - ~~(Math.max(-5, height - bounds.h) / 2),
+        // bounds.x - (Math.max(-5, width - bounds.w) / 2),
+        // bounds.y - (Math.max(-5, height - bounds.h) / 2),
+        // bounds.x,
+        // bounds.y,
+        turf.tileSize.x + Math.max(bounds.w, width),
+        turf.tileSize.y + Math.max(bounds.h, height)
+      );
+      // center the map if smaller than the current viewport
+      // container.pos.set(
+      //   Math.max(0, ~~((width - bounds.w) / 2)),
+      //   Math.max(0, ~~((height - bounds.h) / 2)),
+      //   // don't change the container z position if defined
+      //   container.pos.z
+      // );
+    }
+    me.event.off(me.event.VIEWPORT_ONRESIZE, _setBounds);
+    // force viewport bounds update
+    _setBounds(me.game.viewport.width, me.game.viewport.height);
+    // Replace the resize handler
+    me.event.on(me.event.VIEWPORT_ONRESIZE, _setBounds);
+  
     // turf = unwrap(turf);
     console.log("init turf tile layer", turf);
     me.game.world.gravity.set(0, 0);
@@ -119,13 +153,25 @@ function onLoad(containerId) {
     const map = generateMap(turf);
     window.level = level = new me.TMXTileMap(turf.id, map);
     window.layer = layer = level.getLayers()[0];
+    window.world = world = new me.Container(-bounds.x, -bounds.y, bounds.w, bounds.h);
+    world.autoDepth = false;
+    // layer.pos.x = turf.offset.x * turf.tileSize.x;
+    // layer.pos.y = turf.offset.y * turf.tileSize.y;
     // tileset = layer.tileset;
-    const item = _player.avatar.items[0];
-    player = new Player(_player.uPos.x, _player.uPos.y, { image: spriteName(item.itemId, 0, 'back', our) });
+    const garb = _player.avatar.items[0];
+    player = new Player(_player.pos.x, _player.pos.y, { image: spriteName(garb.itemId, 0, 'back', our) });
     window.player = player;
+    extractItems(turf).forEach(([pos, item]) => {
+      let sprite = new TurfSprite(pos.x, pos.y, { image: spriteName(item.itemId, 0, 'back') });
+      items[item.id] = sprite;
+      world.addChild(sprite);
+    });
 
-    level.addTo(me.game.world, true, true);
-    me.game.world.addChild(player);
+    // level.addTo(world, true, false);
+
+    level.addTo(me.game.world, true, false);
+    world.addChild(player);
+    me.game.world.addChild(world);
     me.state.resume();
     // setTimeout(() => me.game.repaint(), 0);
     // me.game.repaint();
@@ -141,21 +187,58 @@ function onLoad(containerId) {
     // me.game.viewport.focusOn(floor);
   }
 }
+
+function itemPosToGamePos(pos) {
+  return vec2(pos).add(vec2(0.5, 0.5)).scale(32);
+}
+
 function playerPosToGamePos(pos) {
   return vec2(pos).add(vec2(0.5, 0.6)).scale(32);
 }
 
-class Player extends me.Sprite {
-  constructor(x, y, settings) {
+class TurfSprite extends me.Sprite {
+  constructor(x, y, settings = {}) {
     const tilePos = vec2(x, y);
-    const pos = playerPosToGamePos(tilePos)
+    const tilePosConverter = settings.tilePosConverter || itemPosToGamePos;
+    const pos = tilePosConverter(tilePos)
     super(pos.x, pos.y, {
       ...settings,
-      anchorPoint: settings.anchorPoint || vec2(0.5, 1),
-      alwaysUpdate: settings.alwaysUpdate || true,
+      anchorPoint: settings.anchorPoint || vec2(0.5, 0.5),
     });
+    this.updateWhenPaused = true;
+    this.tilePosConverter = tilePosConverter;
     this._tilePos = tilePos;
-    this.targetPos = pos;
+    this.pos.z = this._tilePos.y;
+
+    this.zOffset = settings.zOffset || 0;
+    this.updateTargetPos();
+  }
+
+  get tilePos() {
+    return this._tilePos;
+  }
+  set tilePos(tilePos) {
+    this._tilePos = tilePos;
+    this.updateTargetPos();
+  }
+  updateTargetPos() {
+    this.targetPos = this.tilePosConverter(this._tilePos);
+    this.pos.z = this._tilePos.y + this.zOffset;
+    this.ancestor?.sort();
+    console.log('set z to ', this.pos.z);
+  }
+}
+
+class Player extends TurfSprite {
+  constructor(x, y, settings = {}) {
+    super(x, y, {
+      ...settings,
+      anchorPoint: settings.anchorPoint || vec2(0.5, 1),
+      tilePosConverter: playerPosToGamePos,
+      zOffset: 0.5
+    });
+    this.alwaysUpdate = true;
+    this.targetPos = this.pos;
     this.step = 17;
 
     this.body = new me.Body(this, (new me.Rect(16, 16, 16, 16)));
@@ -167,17 +250,6 @@ class Player extends me.Sprite {
     me.input.bindKey(me.input.KEY.RIGHT, "right");
     me.input.bindKey(me.input.KEY.UP,    "up");
     me.input.bindKey(me.input.KEY.DOWN,  "down");
-  }
-
-  get tilePos() {
-    return this._tilePos;
-  }
-  set tilePos(tilePos) {
-    this._tilePos = tilePos;
-    this.updateTargetPos();
-  }
-  updateTargetPos() {
-    this.targetPos = playerPosToGamePos(this._tilePos)
   }
 
   update(dt) {
@@ -192,38 +264,41 @@ class Player extends me.Sprite {
       dirty = true;
     }
     pos = vec2(this.pos.toVector3d());
+    let newTilePos = vec2(this.tilePos);
     if (pos.equals(this.targetPos)) {
       // console.log('at target')
       if (me.input.isKeyPressed("left")) {
         // console.log('go left')
-        this.tilePos.x--;
+        // this.tilePos.x--;
+        newTilePos.x--;
       }
       if (me.input.isKeyPressed("right")) {
         // console.log('go right')
-        this.tilePos.x++;
+        // this.tilePos.x++;
+        newTilePos.x++;
       }
       
       if (me.input.isKeyPressed("up")) {
         // console.log('go up')
-        this.tilePos.y--;
+        // this.tilePos.y--;
+        newTilePos.y--;
       }
       if (me.input.isKeyPressed("down")) {
         // console.log('go down')
-        this.tilePos.y++;
+        // this.tilePos.y++;
+        newTilePos.y++;
       }
     }
-    this.updateTargetPos();
-
+    const tilePosChanged = !newTilePos.equals(oldTilePos);
+    // const tilePosChanged = !this.tilePos.equals(oldTilePos);
     // check if we moved (an "idle" animation would definitely be cleaner)
-    if (dirty || !this.tilePos.equals(oldTilePos)) {
-      if (!this.tilePos.equals(oldTilePos)) {
-        // runWithOwner(owner, () => {
-        //   const state = useState();
-          state.setPos(vec2(this.tilePos).add(state.current.turf?.offset || vec2()));
-        // });
+    if (dirty || tilePosChanged) {
+      if (tilePosChanged) {
+        console.log('changed!');
+        this.tilePos = newTilePos;
+        state.setPos(newTilePos);
       }
       super.update(dt);
-      // console.log('render!');
       return true;
     }
   }
@@ -376,16 +451,33 @@ function generateMap(turf) {
     height: turf.size.y,
     tilewidth: turf.tileSize.x,
     tileheight: turf.tileSize.y,
+    // infinite: true,
     infinite: false,
     layers:  [
       {
         id:1,
         name:"tiles",
+        // x: turf.offset.x,
+        // y: turf.offset.y,
+        width: turf.size.x,
+        height: turf.size.y,
         offsetx:0,
         offsety:0,
         opacity:1,
-        width: turf.size.x,
-        height: turf.size.y,
+        // chunks: [
+        //   {
+        //     x: turf.offset.x,
+        //     y: turf.offset.y,
+        //     width: turf.size.x,
+        //     height: turf.size.y,
+        //     data: flattenGrid(turf.spaces).map((space) => {
+        //       if (!space.tile) return 1;
+        //       const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
+        //       if (!itemIndexMap[sprite]) return 1;
+        //       return itemIndexMap[sprite];
+        //     }),
+        //   },
+        // ],
         data: flattenGrid(turf.spaces).map((space) => {
           if (!space.tile) return 1;
           const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
@@ -398,11 +490,11 @@ function generateMap(turf) {
         //         type:"string",
         //         value:"json:{\"x\":0,\"y\":1}"
         //        }, 
-               {
-                name:"ratio",
-                type:"string",
-                value:"0.25"
-               }, 
+              //  {
+              //   name:"ratio",
+              //   type:"string",
+              //   value:"1"
+              //  }, 
         //        {
         //         name:"repeat",
         //         type:"string",
@@ -411,9 +503,19 @@ function generateMap(turf) {
         ],
         type:"tilelayer",
         visible:true,
-        x:0,
-        y:0,
-       }
+        // x:0,
+        // y:0,
+       },
+      //  {
+      //   id: 2,
+      //   name: 'items',
+      //   type: 'objectgroup',
+      //   objects: extractItems(turf).map(([pos, item]) => {
+      //     x: pos.x,
+      //     y: pos.y,
+
+      //   }),
+      //  }
     ],
     // "nextlayerid": 12,
     // "nextobjectid": 36,

@@ -1,9 +1,12 @@
 import UrbitApi from '@urbit/http-api';
-import floorUrl from 'assets/sprites/floor.png';
-import holeFloorUrl from 'assets/sprites/hole-floor.png';
-import playerUrl from 'assets/sprites/player.png';
-import grassUrl from 'assets/sprites/grass.png';
-import longGrassUrl from 'assets/sprites/long-grass.png';
+// import floorUrl from 'assets/sprites/floor.png';
+// import holeFloorUrl from 'assets/sprites/hole-floor.png';
+// import playerUrl from 'assets/sprites/player.png';
+// import grassUrl from 'assets/sprites/grass.png';
+// import longGrassUrl from 'assets/sprites/long-grass.png';
+import tableUrl from 'assets/sprites/table.png';
+import stoolUrl from 'assets/sprites/stool.png';
+import treeUrl from 'assets/sprites/tree-tall.png';
 import { vec2, randInt } from 'lib/utils';
 import * as me from 'melonjs';
 
@@ -16,6 +19,9 @@ const ctx = canvas.getContext('2d');
 // addImage(playerUrl, 'player');
 // addImage(grassUrl, 'grass');
 // addImage(longGrassUrl, 'longGrass');
+// addImage(tableUrl, 'tableUrl');
+// addImage(stoolUrl, 'stoolUrl');
+// addImage(treeUrl, 'treeUrl');
 
 function addImage(url, id) {
   const image = new Image();
@@ -42,16 +48,23 @@ window.api = api;
 const turfSize = vec2(4);
 const tileSize = vec2(32);
 
+export async function unsubscribeToTurf(id) {
+  let existingSubs = [...api.outstandingSubscriptions];
+  if (id) {
+    existingSubs = existingSubs.filter(([_, sub]) => {
+      return sub.path == id;
+    });
+  }
+  await Promise.all(existingSubs.map(([subId, _]) => api.unsubscribe(subId)));
+}
+
 export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
-  const existingSubs = [...api.outstandingSubscriptions].filter(([subId, sub]) => {
-    return sub.path == id;
-  });
-  await Promise.all(existingSubs.map(([subId, sub]) => api.unsubscribe(subId)));
+  await unsubscribeToTurf(id);
   return api.subscribe({
     app: 'turf',
     path: id,
     event: (res) => {
-      console.log('got a turf thing: ', res);
+      // console.log('got a turf thing: ', res);
       onRes(res);
     },
     err: (err) => {
