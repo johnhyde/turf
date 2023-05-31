@@ -59,21 +59,20 @@ function onLoad(containerId) {
         }
         // cameraPos = player.pos.clone();
       });
-      createEffect((lastTurfId) => {
+      createEffect(on(() => [
+        loader.state,
+        state.current.id,
+        state.current.turf?.size,
+        state.current.turf?.offset,
+      ], (_, __, lastTurfId) => {
         if (loader.state === 'ready') {
-          const turfChanged = lastTurfId !== state.currentTurfId;
-        // console.log('turf changed?', turfChanged);
-          if (turfChanged ||
-              state.current.turf.size.x != level.cols ||
-              state.current.turf.size.y != level.rows) {
-            if (lastTurfId || state.current.turf) destroyCurrentTurf();
-            if (state.current.turf) {
-              initTurf(state.current.turf, state.player);
-            }
-            return state.currentTurfId;
+          if (lastTurfId || state.current.turf) destroyCurrentTurf();
+          if (state.current.turf) {
+            initTurf(state.current.turf, state.player);
           }
-        }
-      });
+          return state.current.id;
+        };
+      }));
       createEffect(on(() => JSON.stringify(state.current.spacesList), (_, lastSpaces) => {
         lastSpaces = JSON.parse(lastSpaces || '[]');
         console.log('running tile effect');
@@ -120,22 +119,18 @@ function onLoad(containerId) {
     function _setBounds(width, height) {
       // adjust the viewport bounds if level is smaller
       me.game.viewport.setBounds(
-        -turf.tileSize.x - ~~(Math.max(-5, width - bounds.w) / 2),
-        -(turf.tileSize.y * 2) - ~~(Math.max(-5, height - bounds.h) / 2),
-        // bounds.x - (Math.max(-5, width - bounds.w) / 2),
-        // bounds.y - (Math.max(-5, height - bounds.h) / 2),
-        // bounds.x,
-        // bounds.y,
-        turf.tileSize.x + Math.max(bounds.w, width),
-        turf.tileSize.y + Math.max(bounds.h, height)
+        // -turf.tileSize.x - ~~(Math.max(-5, width - bounds.w) / 2),
+        // -(turf.tileSize.y * 3) - ~~(Math.max(-5, height - bounds.h) / 2),
+        // -~~(Math.max(0, width - bounds.w) / 2),
+        // -~~(Math.max(0, height - bounds.h) / 2),
+        Math.min(-(turf.tileSize.x * 1), -~~(Math.max(0, width - bounds.w) / 2)),
+        Math.min(-(turf.tileSize.y * 3), -~~(Math.max(0, height - bounds.h) / 2)),
+        Math.max(-turf.tileSize.x*2 + bounds.w, width),
+        Math.max(-turf.tileSize.y*2 + bounds.h, height),
+        // Math.max(bounds.w, width),
+        // Math.max(bounds.h, height),
+        // 64,64
       );
-      // center the map if smaller than the current viewport
-      // container.pos.set(
-      //   Math.max(0, ~~((width - bounds.w) / 2)),
-      //   Math.max(0, ~~((height - bounds.h) / 2)),
-      //   // don't change the container z position if defined
-      //   container.pos.z
-      // );
     }
     me.event.off(me.event.VIEWPORT_ONRESIZE, _setBounds);
     // force viewport bounds update
@@ -155,6 +150,7 @@ function onLoad(containerId) {
     window.layer = layer = level.getLayers()[0];
     window.world = world = new me.Container(-bounds.x, -bounds.y, bounds.w, bounds.h);
     world.autoDepth = false;
+    world.alwaysUpdate = true;
     // layer.pos.x = turf.offset.x * turf.tileSize.x;
     // layer.pos.y = turf.offset.y * turf.tileSize.y;
     // tileset = layer.tileset;
@@ -304,124 +300,6 @@ class Player extends TurfSprite {
   }
 }
 
-class TurfScreen extends me.Stage {
-  constructor(turf) {
-    super();
-    this.turf = turf;
-  }
-   /**
-     *  action to perform on state change
-     */
-   onResetEvent() {
-    // load a level
-      me.level.load(this.turf.id);
-
-      // // reset the score
-      // game.data.score = 0;
-
-      // // add our HUD to the game world
-      // if (typeof this.HUD === "undefined") {
-      //     this.HUD = new UIContainer();
-      // }
-      // me.game.world.addChild(this.HUD);
-
-      // // display if debugPanel is enabled or on mobile
-      // if ((me.plugins.debugPanel && me.plugins.debugPanel.panel.visible) || me.device.touch) {
-      //     if (typeof this.virtualJoypad === "undefined") {
-      //         this.virtualJoypad = new VirtualJoypad();
-      //     }
-      //     me.game.world.addChild(this.virtualJoypad);
-      // }
-
-      // // play some music
-      // me.audio.playTrack("dst-gameforest");
-  }
-
-  /**
-   *  action to perform on state change
-   */
-  onDestroyEvent() {
-      // me.game.world.removeChild(this.HUD);
-  }
-}
-
-function generateLayer(turf) {
-  const itemIndexMap = {};
-  const tiles = Object.entries(extractLibrarySprites(turf.library)).map(([id, item], i) => {
-    itemIndexMap[id] = i + 1;
-    return {
-      id: i,
-      image: id,
-    };
-  });
-  const tileset = new me.TMXTileset({
-    firstgid: 1,
-    tilewidth: turf.tileSize.x,
-    tileheight: turf.tileSize.y,
-    tiles,
-  });
-  return  {
-    backgroundcolor: "#d0f4f7",
-    // compressionlevel: -1,
-    width: turf.size.x,
-    height: turf.size.y,
-    tilewidth: turf.tileSize.x,
-    tileheight: turf.tileSize.y,
-    infinite: false,
-    layers:  [
-      {
-        id:1,
-        name:"tiles",
-        offsetx:0,
-        offsety:0,
-        opacity:1,
-        width: turf.size.x,
-        height: turf.size.y,
-        data: flattenGrid(turf.spaces).map((space) => {
-          if (!space.tile) return 0;
-          const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
-          return itemIndexMap[sprite] || 0;
-        }),
-        // properties:[
-        //        {
-        //         name:"anchorPoint",
-        //         type:"string",
-        //         value:"json:{\"x\":0,\"y\":1}"
-        //        }, 
-        //        {
-        //         name:"ratio",
-        //         type:"string",
-        //         value:"0.25"
-        //        }, 
-        //        {
-        //         name:"repeat",
-        //         type:"string",
-        //         value:"repeat-x"
-        //        }],
-        type:"tilelayer",
-        visible:true,
-        x:0,
-        y:0,
-       }
-    ],
-    // "nextlayerid": 12,
-    // "nextobjectid": 36,
-    orientation: "orthogonal",
-    renderorder: "right-down",
-    // "tiledversion": "1.8.5",
-    tilesets: [
-      {
-        firstgid: 1,
-        tilewidth: turf.tileSize.x,
-        tileheight: turf.tileSize.y,
-        tiles,
-      }
-    ],
-    type: "map",
-    // "version": "1.8",
-  }
-}
-
 const coreTiles = [
   {
     id: 0,
@@ -438,90 +316,35 @@ function generateMap(turf) {
       image: id,
     };
   });
-  // const tileset = new me.TMXTileset({
-  //   firstgid: 1,
-  //   tilewidth: turf.tileSize.x,
-  //   tileheight: turf.tileSize.y,
-  //   tiles,
-  // });
   return {
     backgroundcolor: "#d0f4f7",
-    // compressionlevel: -1,
     width: turf.size.x,
     height: turf.size.y,
     tilewidth: turf.tileSize.x,
     tileheight: turf.tileSize.y,
-    // infinite: true,
     infinite: false,
     layers:  [
       {
         id:1,
         name:"tiles",
-        // x: turf.offset.x,
-        // y: turf.offset.y,
         width: turf.size.x,
         height: turf.size.y,
         offsetx:0,
         offsety:0,
         opacity:1,
-        // chunks: [
-        //   {
-        //     x: turf.offset.x,
-        //     y: turf.offset.y,
-        //     width: turf.size.x,
-        //     height: turf.size.y,
-        //     data: flattenGrid(turf.spaces).map((space) => {
-        //       if (!space.tile) return 1;
-        //       const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
-        //       if (!itemIndexMap[sprite]) return 1;
-        //       return itemIndexMap[sprite];
-        //     }),
-        //   },
-        // ],
         data: flattenGrid(turf.spaces).map((space) => {
           if (!space.tile) return 1;
           const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
           if (!itemIndexMap[sprite]) return 1;
           return itemIndexMap[sprite];
         }),
-        properties:[
-        //        {
-        //         name:"anchorPoint",
-        //         type:"string",
-        //         value:"json:{\"x\":0,\"y\":1}"
-        //        }, 
-              //  {
-              //   name:"ratio",
-              //   type:"string",
-              //   value:"1"
-              //  }, 
-        //        {
-        //         name:"repeat",
-        //         type:"string",
-        //         value:"repeat-x"
-              //  }
-        ],
+        properties:[],
         type:"tilelayer",
         visible:true,
-        // x:0,
-        // y:0,
        },
-      //  {
-      //   id: 2,
-      //   name: 'items',
-      //   type: 'objectgroup',
-      //   objects: extractItems(turf).map(([pos, item]) => {
-      //     x: pos.x,
-      //     y: pos.y,
-
-      //   }),
-      //  }
     ],
-    // "nextlayerid": 12,
-    // "nextobjectid": 36,
     orientation: "orthogonal",
     renderorder: "right-down",
-    // "tiledversion": "1.8.5",
     tilesets: [
       {
         firstgid: 1,
@@ -539,7 +362,6 @@ function generateMap(turf) {
       }
     ],
     type: "map",
-    // "version": "1.8",
   };
 }
 

@@ -3,6 +3,7 @@ import { useState } from 'stores/state.jsx';
 import { bind } from 'lib/bind';
 import * as api from '~/api.js';
 import { vec2 } from 'lib/utils';
+import EditPane from '@/EditPane';
 
 function Turf(props) {
   const state = useState();
@@ -49,8 +50,13 @@ function StateSummary() {
 
   return (
     <div style={{ 'background-color': 'white' }} id="sidebar">
+      {!state.editor.editing ? <div>
+        <p>
+          Play Mode
+        </p>
+        <button onClick={state.toggleEditing.bind(state)}>Edit</button>
+      </div> : <EditPane/>}
       <p>
-        name: {state.name}
       </p>
       <p>
         turf count: {Object.keys(state.turfs).length}

@@ -11,7 +11,7 @@ export function getState() {
   let playersList, spacesList;
   const [state, $state] = createStore({
     turfs: {},
-    currentTurfId: null,
+    currentTurfId: '/pond',
     get player() {
       const player = this.current.turf?.players[our];
       if (!player) return null;
@@ -21,7 +21,10 @@ export function getState() {
       };
     },
     name: 'hi there',
-    editing: false,
+    editor: {
+      editing: false,
+      selectedItemId: null,
+    },
     get current() {
       const parent = this;
       const current = {
@@ -103,19 +106,22 @@ export function getState() {
         pos,
       });
     },
-    setEditing(_editing) {
-      $state('editing', _editing);
+    setEditing(editing) {
+      $state('editor', 'editing', editing);
     },
     toggleEditing() {
-      $state('editing', (_editing) => !_editing);
+      $state('editor', 'editing', (editing) => !editing);
     },
+    selectItem(id) {
+      $state('editor', 'selectedItemId', id);
+    }
   });
 
-  // createEffect(() => {
-  //   if (state.current.turf) {
-  //     setTurf();
-  //   }
-  // });
+  createEffect(() => {
+    if (state.current.id && !state.current.turf) {
+      _state.subToTurf(state.current.id);
+    }
+  });
   return _state;
 }
 

@@ -154,7 +154,7 @@ export function extractItems(turf) {
   const items = [];
   turf.spaces.forEach((col, i) => {
     col.forEach((space, j) => {
-      const pos = vec2(i, j);
+      const pos = vec2(i, j).add(turf.offset);
       space.items.forEach((item) => {
         items.push([pos, item]);
       });
