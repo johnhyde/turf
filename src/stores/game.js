@@ -148,12 +148,9 @@ function onLoad(containerId) {
     const map = generateMap(turf);
     window.level = level = new me.TMXTileMap(turf.id, map);
     window.layer = layer = level.getLayers()[0];
-    window.world = world = new me.Container(-bounds.x, -bounds.y, bounds.w, bounds.h);
+    window.world = world = new OffsetContainer(-bounds.x, -bounds.y, 0, 0, bounds.w, bounds.h);
     world.autoDepth = false;
     world.alwaysUpdate = true;
-    // layer.pos.x = turf.offset.x * turf.tileSize.x;
-    // layer.pos.y = turf.offset.y * turf.tileSize.y;
-    // tileset = layer.tileset;
     const garb = _player.avatar.items[0];
     player = new Player(_player.pos.x, _player.pos.y, { image: spriteName(garb.itemId, 0, 'back', our) });
     window.player = player;
@@ -163,24 +160,10 @@ function onLoad(containerId) {
       world.addChild(sprite);
     });
 
-    // level.addTo(world, true, false);
-
     level.addTo(me.game.world, true, false);
     world.addChild(player);
     me.game.world.addChild(world);
     me.state.resume();
-    // setTimeout(() => me.game.repaint(), 0);
-    // me.game.repaint();
-    // ({ layer, tileset } = generateLayer(turf));
-    // me.game.world.addChild(layer);
-    // me.loader.load({
-    //   name: turf.id,
-    //   type: 'tmx',
-    //   data: generateMap(turf),
-    // }, () => {
-    //   me.state.change(me.state.PLAY);
-    // })
-    // me.game.viewport.focusOn(floor);
   }
 }
 
@@ -190,6 +173,20 @@ function itemPosToGamePos(pos) {
 
 function playerPosToGamePos(pos) {
   return vec2(pos).add(vec2(0.5, 0.6)).scale(32);
+}
+
+class OffsetContainer extends me.Container {
+  constructor(offsetX = 0, offsetY = 0, x = 0, y = 0, width, height, root = false) {
+    super(offsetX, offsetY, width, height, root);
+    this.origin = vec2(x, y);
+  }
+
+  updateBounds(_) {
+    let bounds = this.getBounds();
+    const origin = this.origin || vec2();
+    bounds.setMinMax(origin.x, origin.y, this.width + origin.x, this.height + origin.y);
+    return bounds;
+  }
 }
 
 class TurfSprite extends me.Sprite {
@@ -221,7 +218,7 @@ class TurfSprite extends me.Sprite {
     this.targetPos = this.tilePosConverter(this._tilePos);
     this.pos.z = this._tilePos.y + this.zOffset;
     this.ancestor?.sort();
-    console.log('set z to ', this.pos.z);
+    // console.log('set z to ', this.pos.z);
   }
 }
 
@@ -290,7 +287,7 @@ class Player extends TurfSprite {
     // check if we moved (an "idle" animation would definitely be cleaner)
     if (dirty || tilePosChanged) {
       if (tilePosChanged) {
-        console.log('changed!');
+        // console.log('changed!');
         this.tilePos = newTilePos;
         state.setPos(newTilePos);
       }
