@@ -1,17 +1,17 @@
 import { getOwner, onMount } from 'solid-js';
-import { initEngine } from 'stores/game';
+import { initEngine } from '~/melon/game';
+import { startPhaser } from '~/phaser/game';
 
 function Game() {
   const owner = getOwner();
   onMount(() => {
-    initEngine(owner, 'game');
-    // m
-    // initEngine(owner);
+    // initEngine(owner, 'game');
+    startPhaser(owner, gameContainer);
   });
 
   return (
     <div id="shell">
-      <div id="game" style={{ 'background-color': 'blue' }}>
+      <div id="gameContainer" style={{ 'background-color': 'blue' }}>
       </div>
     </div>
   );

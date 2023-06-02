@@ -118,19 +118,21 @@ function onLoad(containerId) {
     };
     function _setBounds(width, height) {
       // adjust the viewport bounds if level is smaller
-      me.game.viewport.setBounds(
+      const vpBounds = {
         // -turf.tileSize.x - ~~(Math.max(-5, width - bounds.w) / 2),
         // -(turf.tileSize.y * 3) - ~~(Math.max(-5, height - bounds.h) / 2),
         // -~~(Math.max(0, width - bounds.w) / 2),
         // -~~(Math.max(0, height - bounds.h) / 2),
-        Math.min(-(turf.tileSize.x * 1), -~~(Math.max(0, width - bounds.w) / 2)),
-        Math.min(-(turf.tileSize.y * 3), -~~(Math.max(0, height - bounds.h) / 2)),
-        Math.max(-turf.tileSize.x*2 + bounds.w, width),
-        Math.max(-turf.tileSize.y*2 + bounds.h, height),
+        x: Math.min(-(turf.tileSize.x * 1), -~~(Math.max(0, width - bounds.w) / 2)),
+        y: Math.min(-(turf.tileSize.y * 3), -~~(Math.max(0, height - bounds.h) / 2)),
+        w: Math.max(-turf.tileSize.x*2 + bounds.w, width),
+        h: Math.max(-turf.tileSize.y*2 + bounds.h, height),
         // Math.max(bounds.w, width),
         // Math.max(bounds.h, height),
         // 64,64
-      );
+      };
+      console.log('vpBounds', vpBounds);
+      me.game.viewport.setBounds(vpBounds.x, vpBounds.y, vpBounds.w, vpBounds.h);
     }
     me.event.off(me.event.VIEWPORT_ONRESIZE, _setBounds);
     // force viewport bounds update
@@ -237,7 +239,7 @@ class Player extends TurfSprite {
     this.body = new me.Body(this, (new me.Rect(16, 16, 16, 16)));
     this.body.setMaxVelocity(2.5, 2.5);
     this.body.setFriction(0.4,0.4);
-    me.game.viewport.follow(this, me.game.viewport.AXIS.BOTH);
+    // me.game.viewport.follow(this, me.game.viewport.AXIS.BOTH);
 
     me.input.bindKey(me.input.KEY.LEFT,  "left");
     me.input.bindKey(me.input.KEY.RIGHT, "right");

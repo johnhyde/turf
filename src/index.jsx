@@ -5,7 +5,6 @@ import { createRoot } from "solid-js";
 import 'css/reset.css';
 import 'css/index.css';
 import App from './App';
-import { initEngine } from 'stores/game';
 
 window.desk = window.desk || 'turf';
 window.ship = window.ship || 'zod';
