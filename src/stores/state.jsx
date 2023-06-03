@@ -25,6 +25,7 @@ export function getState() {
       editing: false,
       selectedItemId: null,
     },
+    scale: 1,
     get current() {
       const parent = this;
       const current = {
@@ -56,6 +57,7 @@ export function getState() {
   });
 
   const _state = mergeProps(state, {
+    $: $state,
     setName(name) {
       $state('name', name);
     },
@@ -69,7 +71,7 @@ export function getState() {
     onPondRes(id='/pond') {
       return (res) => {
         if (res.rock) {
-          const newTurf = rockToTurf(res.rock);
+          const newTurf = rockToTurf(res.rock, id);
           console.log(newTurf);
           $state('turfs', id, reconcile(newTurf));
         } else if (res.wave) {

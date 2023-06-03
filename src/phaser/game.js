@@ -1,23 +1,37 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, flattenGrid } from 'lib/utils';
+import { vec2, flattenGrid, near } from 'lib/utils';
 import { extractLibrarySprites, extractPlayerSprites, spriteName, extractItems } from 'lib/pond';
 import * as me from 'melonjs';
 
 import voidUrl from 'assets/sprites/void.png';
 import treeUrl from 'assets/sprites/tree.png';
+import { swapAxes } from "../lib/utils";
 
 let owner;
-var game, scene, itemIndexMap, player, items = {};
+var game, scene, cam, cursors, keys = {}, player, tiles;
+var itemIndexMap, items = {};
 
 window.me = me;
 
 async function loadImage(id, url) {
   return new Promise((resolve, reject) => {
+    // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
+    game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, () => {
+      console.log('loaded image', id);
+      resolve();
+    });
+    game.textures.addListener(Phaser.Textures.Events.ERROR, (key) => {
+      console.error('could not load image', key);
+      if (key === 'id') {
+        reject();
+      }
+    });
+    game.textures.addBase64(id, url);
     // me.loader.load({ name: id, type:'image', src: url }, () => {
     //   console.log('loaded ' + id, url)
-      resolve();
+      // resolve();
     // });
 
   })
@@ -28,44 +42,96 @@ export function startPhaser(_owner, container) {
   createRoot(() => {
     runWithOwner(owner, () => {
       const [loaded, $loaded] = createSignal(false);
-      console.log('container', container.width, container.height);
+      console.log('container', container.clientWidth, container.clientHeight);
       var config = {
         type: Phaser.AUTO,
         parent: container,
-        width: container.width || 500,
-        height: container.height || 500,
+        width: ~~container.clientWidth || 500,
+        height: ~~container.clientHeight || 500,
+        pixelArt: true,
+        roundPixels: true,
+        // zoom: 1,
         scene: {
           init,
           preload: preload,
           create: create,
           update: update
-        }
+        },
+        physics: {
+          default: 'arcade',
+          arcade: {
+
+          },
+        },
       };
 
       window.game = game = new Phaser.Game(config);
 
       function init() {
-        scene = this;
+        // window.scene = scene = game.scene.scenes[0];
+        window.scene = scene = this;
+        window.cam = cam = scene.cameras.main;
         $loaded(true);
       }
 
       function preload() {
         console.log('preload');
-        this.load.image('sky', treeUrl);
       }
 
       function create() {
-        this.add.image(400, 300, 'sky');
+        cursors = this.input.keyboard.createCursorKeys();
+        keys.f = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']);
       }
 
       function update() {
+        if (!cam.roundPixels) cam.setRoundPixels(true);
+        if (player) updatePlayer();
+        if (keys.f.isDown) {
+          keys.f.reset();
+          game.scale.startFullscreen();
+        }
+        // console.log('f key', keys.f)
+      }
+      function updatePlayer() {
+        if (cursors.left.isDown) {
+          player.setVelocityX(-160);
+        } else if (cursors.right.isDown) {
+          player.setVelocityX(160);
+        } else {
+          player.setVelocityX(0);
+        }
+        if (cursors.up.isDown) {
+          player.setVelocityY(-160);
+        } else if (cursors.down.isDown) {
+          player.setVelocityY(160);
+        } else {
+          player.setVelocityY(0);
+        }
       }
 
       console.log("loading the game engine");
 
       const state = useState();
       window.state = state;
-      console.log("run with owner");
+
+      function setGameSize() {
+        console.log('resized')
+        const el = game.scale.isFullscreen ? game.canvas.parentElement : container;
+        const width = ~~(state.scale * el.clientWidth);
+        const height = ~~(state.scale * el.clientHeight);
+        if (!near(width, game.scale.width, 1) || !near(height, game.scale.height, 1)) {
+          game.scale.resize(width, height);
+          game.canvas.style.setProperty('width', '100%');
+          game.canvas.style.setProperty('height', '100%');
+        }
+      }
+      window.addEventListener('resize', setGameSize, false);
+      game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
+      game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
+      createEffect(() => {
+        setGameSize();
+      })
+      setGameSize();
       const [loader, { mutate, refetch }] = createResource(
         () => state.current.turf,
         (turf) => loadSprites(turf));
@@ -76,20 +142,20 @@ export function startPhaser(_owner, container) {
       //     player.tilePos = pos;
       //   }
       // });
-      // createEffect(on(() => [
-      //   loader.state,
-      //   state.current.id,
-      //   state.current.turf?.size,
-      //   state.current.turf?.offset,
-      // ], (_, __, lastTurfId) => {
-      //   if (loader.state === 'ready') {
-      //     if (lastTurfId || state.current.turf) destroyCurrentTurf();
-      //     if (state.current.turf) {
-      //       initTurf(state.current.turf, state.player);
-      //     }
-      //     return state.current.id;
-      //   };
-      // }));
+      createEffect(on(() => [
+        loader.state,
+        state.current.id,
+        state.current.turf?.size,
+        state.current.turf?.offset,
+      ], (_, __, lastTurfId) => {
+        if (loader.state === 'ready') {
+          if (lastTurfId || state.current.turf) destroyCurrentTurf();
+          if (state.current.turf) {
+            initTurf(state.current.turf, state.player);
+          }
+          return state.current.id;
+        };
+      }));
       // createEffect(on(() => JSON.stringify(state.current.spacesList), (_, lastSpaces) => {
       //   lastSpaces = JSON.parse(lastSpaces || '[]');
       //   console.log('running tile effect');
@@ -112,19 +178,23 @@ export function startPhaser(_owner, container) {
   });
 
   async function loadSprites(turf) {
+    console.log('loading sprites');
     const sprites = {
       ...extractLibrarySprites(turf.library),
       ...extractPlayerSprites(turf.players),
     };
-    return Promise.all(Object.entries(sprites).map(([id, item]) => {
+    const promises = Object.entries(sprites).map(([id, item]) => {
       return loadImage(id, item.sprite);
-    }));
+    });
+    promises.push(loadImage('void', voidUrl));
+    return Promise.all(promises);
   }
   
   function destroyCurrentTurf() {
     player = null;
     items = {};
   }
+  let setBounds;
   async function initTurf(turf, _player) {
     const bounds = {
       x: turf.offset.x * turf.tileSize.x,
@@ -132,45 +202,58 @@ export function startPhaser(_owner, container) {
       w: turf.size.x * turf.tileSize.x,
       h: turf.size.y * turf.tileSize.y,
     };
-    function _setBounds(width, height) {
+    function _setBounds() {
+      // const width = ~~container.clientWidth;
+      // const height = ~~container.clientHeight;
+      const width = ~~game.scale.width;
+      const height = ~~game.scale.height;
       // adjust the viewport bounds if level is smaller
-      const vpBounds = {
-        // -turf.tileSize.x - ~~(Math.max(-5, width - bounds.w) / 2),
-        // -(turf.tileSize.y * 3) - ~~(Math.max(-5, height - bounds.h) / 2),
-        // -~~(Math.max(0, width - bounds.w) / 2),
-        // -~~(Math.max(0, height - bounds.h) / 2),
-        x: Math.min(-(turf.tileSize.x * 1), -~~(Math.max(0, width - bounds.w) / 2)),
-        y: Math.min(-(turf.tileSize.y * 3), -~~(Math.max(0, height - bounds.h) / 2)),
-        w: Math.max(-turf.tileSize.x*2 + bounds.w, width),
-        h: Math.max(-turf.tileSize.y*2 + bounds.h, height),
-        // Math.max(bounds.w, width),
-        // Math.max(bounds.h, height),
-        // 64,64
+      const buffer = {
+        l: turf.tileSize.x * 1,
+        t: turf.tileSize.y * 3,
+        r: turf.tileSize.x * 1,
+        b: turf.tileSize.y * 1,
       };
-      console.log('vpBounds', vpBounds);
+      const bbounds = {
+        x: bounds.x + Math.min(-buffer.l, -~~(Math.max(0, width - bounds.w) / 2)),
+        y: bounds.y + Math.min(-buffer.t, -~~(Math.max(0, height - bounds.h) / 2)),
+        w: Math.max(buffer.l + buffer.r + bounds.w, width),
+        h: Math.max(buffer.t + buffer.b + bounds.h, height),
+      };
+      console.log('bbounds', bbounds);
+      scene.cameras.main.setBounds(bbounds.x, bbounds.y, bbounds.w, bbounds.h)
     }
-  
+    window.removeEventListener('resize', setBounds);
+    createEffect(on(() => state.scale, () => {
+      setBounds();
+    }))
+    _setBounds();
+    setBounds = _setBounds;
+    window.addEventListener('resize', setBounds);
     console.log("init turf tile layer", turf);
     
-    const map = generateMap(turf);
-    // window.level = level = new me.TMXTileMap(turf.id, map);
-    // window.layer = layer = level.getLayers()[0];
-    // window.world = world = new OffsetContainer(-bounds.x, -bounds.y, 0, 0, bounds.w, bounds.h);
-    world.autoDepth = false;
-    world.alwaysUpdate = true;
+    const [level, tilesetData] = generateMap(turf);
+    const map = scene.make.tilemap({ data: level, tileWidth: turf.tileSize.x, tileHeight: turf.tileSize.y });
+    const tilesets = tilesetData.map((tileset, i) => {
+      return map.addTilesetImage(tileset.image, undefined, undefined, undefined, undefined, undefined, i + 1);
+    });
+    const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
+    window.tiles = tiles = layer;
     const garb = _player.avatar.items[0];
-    // player = new Player(_player.pos.x, _player.pos.y, { image: spriteName(garb.itemId, 0, 'back', our) });
+    const playerPos = vec2(_player.pos).scale(32);
+    player = scene.physics.add.image(playerPos.x, playerPos.y, spriteName(garb.itemId, 0, 'back', our));
+    player.tilePos = vec2(_player.pos);
+    cam.startFollow(player);
     window.player = player;
     extractItems(turf).forEach(([pos, item]) => {
-      // let sprite = new TurfSprite(pos.x, pos.y, { image: spriteName(item.itemId, 0, 'back') });
-      // items[item.id] = sprite;
+      const itemPos = vec2(pos).scale(32);
+      let sprite = scene.add.image(itemPos.x, itemPos.y, spriteName(item.itemId, 0, 'back'));
+      // sprite.originX = 0;
+      // sprite.originY = 0;
+    // let sprite = new TurfSprite(pos.x, pos.y, { image: spriteName(item.itemId, 0, 'back') });
+      items[item.id] = sprite;
       // world.addChild(sprite);
     });
-
-    // level.addTo(me.game.world, true, false);
-    // world.addChild(player);
-    // me.game.world.addChild(world);
-    // me.state.resume();
   }
 }
 
@@ -196,113 +279,6 @@ class OffsetContainer extends me.Container {
   }
 }
 
-class TurfSprite extends me.Sprite {
-  constructor(x, y, settings = {}) {
-    const tilePos = vec2(x, y);
-    const tilePosConverter = settings.tilePosConverter || itemPosToGamePos;
-    const pos = tilePosConverter(tilePos)
-    super(pos.x, pos.y, {
-      ...settings,
-      anchorPoint: settings.anchorPoint || vec2(0.5, 0.5),
-    });
-    this.updateWhenPaused = true;
-    this.tilePosConverter = tilePosConverter;
-    this._tilePos = tilePos;
-    this.pos.z = this._tilePos.y;
-
-    this.zOffset = settings.zOffset || 0;
-    this.updateTargetPos();
-  }
-
-  get tilePos() {
-    return this._tilePos;
-  }
-  set tilePos(tilePos) {
-    this._tilePos = tilePos;
-    this.updateTargetPos();
-  }
-  updateTargetPos() {
-    this.targetPos = this.tilePosConverter(this._tilePos);
-    this.pos.z = this._tilePos.y + this.zOffset;
-    this.ancestor?.sort();
-    // console.log('set z to ', this.pos.z);
-  }
-}
-
-class Player extends TurfSprite {
-  constructor(x, y, settings = {}) {
-    super(x, y, {
-      ...settings,
-      anchorPoint: settings.anchorPoint || vec2(0.5, 1),
-      tilePosConverter: playerPosToGamePos,
-      zOffset: 0.5
-    });
-    this.alwaysUpdate = true;
-    this.targetPos = this.pos;
-    this.step = 17;
-
-    this.body = new me.Body(this, (new me.Rect(16, 16, 16, 16)));
-    this.body.setMaxVelocity(2.5, 2.5);
-    this.body.setFriction(0.4,0.4);
-    // me.game.viewport.follow(this, me.game.viewport.AXIS.BOTH);
-
-    me.input.bindKey(me.input.KEY.LEFT,  "left");
-    me.input.bindKey(me.input.KEY.RIGHT, "right");
-    me.input.bindKey(me.input.KEY.UP,    "up");
-    me.input.bindKey(me.input.KEY.DOWN,  "down");
-  }
-
-  update(dt) {
-    const oldTilePos = vec2(this.tilePos);
-    let dirty = false;
-    let pos = vec2(this.pos.toVector3d());
-    if (!pos.equals(this.targetPos)) {
-      const newPos = pos.moveTowards(this.targetPos, this.step*dt/100);
-      // console.log('move towards target');
-      this.pos.x = newPos.x;
-      this.pos.y = newPos.y;
-      dirty = true;
-    }
-    pos = vec2(this.pos.toVector3d());
-    let newTilePos = vec2(this.tilePos);
-    if (pos.equals(this.targetPos)) {
-      // console.log('at target')
-      if (me.input.isKeyPressed("left")) {
-        // console.log('go left')
-        // this.tilePos.x--;
-        newTilePos.x--;
-      }
-      if (me.input.isKeyPressed("right")) {
-        // console.log('go right')
-        // this.tilePos.x++;
-        newTilePos.x++;
-      }
-      
-      if (me.input.isKeyPressed("up")) {
-        // console.log('go up')
-        // this.tilePos.y--;
-        newTilePos.y--;
-      }
-      if (me.input.isKeyPressed("down")) {
-        // console.log('go down')
-        // this.tilePos.y++;
-        newTilePos.y++;
-      }
-    }
-    const tilePosChanged = !newTilePos.equals(oldTilePos);
-    // const tilePosChanged = !this.tilePos.equals(oldTilePos);
-    // check if we moved (an "idle" animation would definitely be cleaner)
-    if (dirty || tilePosChanged) {
-      if (tilePosChanged) {
-        // console.log('changed!');
-        this.tilePos = newTilePos;
-        state.setPos(newTilePos);
-      }
-      super.update(dt);
-      return true;
-    }
-  }
-}
 
 const coreTiles = [
   {
@@ -313,6 +289,7 @@ const coreTiles = [
 
 function generateMap(turf) {
   itemIndexMap = {};
+  // const tiles = Object.entries(extractLibrarySprites(turf.library)).map(([id, item], i) => {
   const tiles = Object.entries(extractLibrarySprites(turf.library)).map(([id, item], i) => {
     itemIndexMap[id] = i + coreTiles.length + 1;
     return {
@@ -320,7 +297,7 @@ function generateMap(turf) {
       image: id,
     };
   });
-  return {
+  const map =  {
     backgroundcolor: "#d0f4f7",
     width: turf.size.x,
     height: turf.size.y,
@@ -336,12 +313,12 @@ function generateMap(turf) {
         offsetx:0,
         offsety:0,
         opacity:1,
-        data: flattenGrid(turf.spaces).map((space) => {
+        data: swapAxes(turf.spaces).map((row) => row.map((space) => {
           if (!space.tile) return 1;
           const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
           if (!itemIndexMap[sprite]) return 1;
           return itemIndexMap[sprite];
-        }),
+        })),
         properties:[],
         type:"tilelayer",
         visible:true,
@@ -367,4 +344,5 @@ function generateMap(turf) {
     ],
     type: "map",
   };
+  return [map.layers[0].data, [...coreTiles, ...tiles]];
 }

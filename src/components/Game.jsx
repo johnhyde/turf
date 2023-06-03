@@ -11,7 +11,7 @@ function Game() {
 
   return (
     <div id="shell">
-      <div id="gameContainer" style={{ 'background-color': 'blue' }}>
+      <div id="gameContainer" style={{ 'background-color': 'green' }}>
       </div>
     </div>
   );

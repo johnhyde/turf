@@ -16,7 +16,7 @@ export function washTurf(wave) {
     'add-item':
       (turf) => {
         const { pos, itemId, variation } = wave.arg;
-        const normPos = vec2(pos).sub(turf.offset);
+        const normPos = vec2(pos).subtract(turf.offset);
         const itemType = turf.library[itemId]?.type;
         const newItem = {
           itemId,
@@ -41,7 +41,7 @@ export function washTurf(wave) {
         const player = turf.players[wave.arg.ship];
         if (player) {
           const bounds = getTurfBounds(turf);
-          player.pos = vec2(wave.arg.pos).maxV(bounds.topLeft).minV(bounds.botRight.sub(vec2(1)));
+          player.pos = vec2(wave.arg.pos).maxV(bounds.topLeft).minV(bounds.botRight.subtract(vec2(1)));
         }
       }
   };
