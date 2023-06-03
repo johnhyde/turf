@@ -34,9 +34,10 @@ code {
   flex-grow: 1;
 }
 
-#game {
+#gameContainer {
   /* position: relative; */
   /* width: 500px;
   height: 500px; */
+  height: 100%;
   flex-grow: 1;
 }

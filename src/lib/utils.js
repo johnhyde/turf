@@ -1,10 +1,11 @@
 import * as me from 'melonjs';
+const Vector2 = Phaser.Math.Vector2;
 
 /** 
- * Create a 2d vector, can take another Vector2d to copy, 2 scalars, or 1 scalar
+ * Create a 2d vector, can take another Vector2 to copy, 2 scalars, or 1 scalar
  * @param {Number} [x=0]
  * @param {Number} [y=0]
- * @return {Vector2d}
+ * @return {Vector2}
  * @example
  * let a = vec2(0, 1); // vector with coordinates (0, 1)
  * let b = vec2(a);    // copy a into b
@@ -12,8 +13,16 @@ import * as me from 'melonjs';
  * b = vec2();         // set b to (0, 0)
  * @memberof Utilities
  */
-export const vec2 = (x=0, y)=> x.x == undefined ? new me.Vector2d(x, y == undefined? x : y) : new me.Vector2d(x.x, x.y);
+export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(x, y == undefined? x : y) : new Vector2(x.x, x.y);
 window.vec2 = vec2;
+
+export function minV(a, b) {
+  return vec2(Math.min(a.x, b.x), Math.min(a.y, b.y));
+}
+
+export function maxV(a, b) {
+  return vec2(Math.max(a.x, b.x), Math.max(a.y, b.y));
+}
 
 export function swapAxes(array2d) {
   return array2d[0].map((_, colIndex) => array2d.map(row => row[colIndex]));
@@ -21,6 +30,10 @@ export function swapAxes(array2d) {
 
 export function flattenGrid(array2d) {
   return swapAxes(array2d).flat();
+}
+
+export function near(a, b, epsilon=1e-2) {
+  return Math.abs(a - b) <= epsilon;
 }
 
 
@@ -46,18 +59,18 @@ export const randInt = (a=1, b=0)=> rand(a,b)|0;
  *  @memberof Random */
 export const randSign = ()=> (rand(2)|0) * 2 - 1;
 
-/** Returns a random Vector2d within a circular shape
+/** Returns a random Vector2 within a circular shape
  *  @param {Number} [radius=1]
  *  @param {Number} [minRadius=0]
- *  @return {Vector2d}
+ *  @return {Vector2}
  *  @memberof Random */
-export const randInCircle = (radius=1, minRadius=0)=> radius > 0 ? randVector(radius * rand(minRadius / radius, 1)**.5) : new Vector2d;
+export const randInCircle = (radius=1, minRadius=0)=> radius > 0 ? randVector(radius * rand(minRadius / radius, 1)**.5) : new Vector2;
 
-/** Returns a random Vector2d with the passed in length
+/** Returns a random Vector2 with the passed in length
  *  @param {Number} [length=1]
- *  @return {Vector2d}
+ *  @return {Vector2}
  *  @memberof Random */
-export const randVector = (length=1)=> new Vector2d(length, 0).rotate(rand(2*PI));
+export const randVector = (length=1)=> new Vector2(length, 0).rotate(rand(2*PI));
 
 /** Returns a random color between the two passed in colors, combine components if linear
  *  @param {Color}   [colorA=new Color(1,1,1,1)]

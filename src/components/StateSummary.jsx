@@ -9,7 +9,7 @@ function Turf(props) {
   const state = useState();
   return <>
     <p>
-      <button onClick={[state.visitTurf.bind(state), props.id]}>{props.id}</button>: {props.turf.size.x}x{props.turf.size.y}
+      <button onClick={[state.visitTurf.bind(state), props.id]}>{props.id}</button>: {props.turf.size.x}x{props.turf.size.y}; offset: {props.turf.offset.x}x{props.turf.offset.y}
     </p>
     <For each={props.turf.chats}>{(chat, i) => (
       <p>
@@ -71,6 +71,12 @@ function StateSummary() {
       <div>
         <input type="number" use:bind={[() => pos().x, (x) => $pos(vec2(Number(x), pos().y))]} />
         <input type="number" use:bind={[() => pos().y, (y) => $pos(vec2(pos().x, Number(y)))]} />
+      </div>
+      <p>
+        view scale
+      </p>
+      <div>
+        <input type="range" min="0.25" max="1.5" step="0.25" use:bind={[() => state.scale, (s) => state.$('scale', s)]} />
       </div>
       {/* <pre>
         {JSON.stringify(state.current.turf, null, 2)}

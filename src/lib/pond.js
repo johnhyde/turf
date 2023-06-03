@@ -1,5 +1,5 @@
 import { unwrap, produce, reconcile } from "solid-js/store";
-import { vec2 } from 'lib/utils';
+import { vec2, minV, maxV } from 'lib/utils';
 
 export function rockToTurf(rock, id) {
   rock.id = id;
@@ -16,7 +16,9 @@ export function washTurf(wave) {
     'add-item':
       (turf) => {
         const { pos, itemId, variation } = wave.arg;
-        const normPos = vec2(pos).sub(turf.offset);
+        const normPos = vec2(pos).subtract(turf.offset);
+        if (normPos.x < 0 || normPos.y < 0) return;
+        if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
         const itemType = turf.library[itemId]?.type;
         const newItem = {
           itemId,
@@ -41,7 +43,7 @@ export function washTurf(wave) {
         const player = turf.players[wave.arg.ship];
         if (player) {
           const bounds = getTurfBounds(turf);
-          player.pos = vec2(wave.arg.pos).maxV(bounds.topLeft).minV(bounds.botRight.sub(vec2(1)));
+          player.pos = minV(maxV(vec2(wave.arg.pos), bounds.topLeft), bounds.botRight.subtract(vec2(1)));
         }
       }
   };
