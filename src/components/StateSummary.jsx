@@ -9,7 +9,7 @@ function Turf(props) {
   const state = useState();
   return <>
     <p>
-      <button onClick={[state.visitTurf.bind(state), props.id]}>{props.id}</button>: {props.turf.size.x}x{props.turf.size.y}
+      <button onClick={[state.visitTurf.bind(state), props.id]}>{props.id}</button>: {props.turf.size.x}x{props.turf.size.y}; offset: {props.turf.offset.x}x{props.turf.offset.y}
     </p>
     <For each={props.turf.chats}>{(chat, i) => (
       <p>

@@ -1,7 +1,7 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, flattenGrid, near } from 'lib/utils';
+import { vec2, minV, flattenGrid, near } from 'lib/utils';
 import { extractLibrarySprites, extractPlayerSprites, spriteName, extractItems } from 'lib/pond';
 import * as me from 'melonjs';
 
@@ -78,34 +78,59 @@ export function startPhaser(_owner, container) {
         console.log('preload');
       }
 
+      let updateTime;
       function create() {
+        updateTime = Date.now();
         cursors = this.input.keyboard.createCursorKeys();
         keys.f = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']);
       }
 
       function update() {
+        const now = Date.now();
+        const dt = now - updateTime;
+        updateTime = now;
         if (!cam.roundPixels) cam.setRoundPixels(true);
-        if (player) updatePlayer();
+        if (player) updatePlayer(dt);
         if (keys.f.isDown) {
           keys.f.reset();
           game.scale.startFullscreen();
         }
         // console.log('f key', keys.f)
       }
-      function updatePlayer() {
-        if (cursors.left.isDown) {
-          player.setVelocityX(-160);
-        } else if (cursors.right.isDown) {
-          player.setVelocityX(160);
-        } else {
-          player.setVelocityX(0);
+      function updatePlayer(dt) {
+        const speed = 170;
+        let targetPos = vec2(player.tilePos).scale(32);
+        let pos = vec2(player.x, player.y);
+        if (!pos.equals(targetPos)) {
+          const dif = vec2(targetPos).subtract(pos);
+          const step = speed * dt / 1000;
+          if (step > dif.length()) {
+            player.setPosition(targetPos.x, targetPos.y);
+          } else {
+            const change = vec2(dif).normalize().scale(step);
+            player.x += change.x;
+            player.y += change.y;
+          }
         }
-        if (cursors.up.isDown) {
-          player.setVelocityY(-160);
-        } else if (cursors.down.isDown) {
-          player.setVelocityY(160);
-        } else {
-          player.setVelocityY(0);
+        const oldTilePos = vec2(player.tilePos);
+        targetPos = vec2(player.tilePos).scale(32);
+        pos = vec2(player.x, player.y);
+        if (pos.equals(targetPos)) {
+          if (cursors.left.isDown) {
+            player.tilePos.x--;
+          } else if (cursors.right.isDown) {
+            player.tilePos.x++;
+          }
+          if (cursors.up.isDown) {
+            player.tilePos.y--;
+          } else if (cursors.down.isDown) {
+            player.tilePos.y++;
+          }
+          const tilePosChanged = !player.tilePos.equals(oldTilePos);
+          if (tilePosChanged) {
+            console.log('changed!');
+            state.setPos(player.tilePos);
+          }
         }
       }
 
@@ -135,13 +160,13 @@ export function startPhaser(_owner, container) {
       const [loader, { mutate, refetch }] = createResource(
         () => state.current.turf,
         (turf) => loadSprites(turf));
-      // createEffect(() => {
-      //   let pos = state.player?.pos;
-      //   // console.log('pos', pos);
-      //   if (pos && player) {
-      //     player.tilePos = pos;
-      //   }
-      // });
+      createEffect(() => {
+        let pos = state.player?.pos;
+        // console.log('pos', pos);
+        if (pos && player) {
+          player.tilePos = pos;
+        }
+      });
       createEffect(on(() => [
         loader.state,
         state.current.id,
@@ -156,24 +181,24 @@ export function startPhaser(_owner, container) {
           return state.current.id;
         };
       }));
-      // createEffect(on(() => JSON.stringify(state.current.spacesList), (_, lastSpaces) => {
-      //   lastSpaces = JSON.parse(lastSpaces || '[]');
-      //   console.log('running tile effect');
-      //   const turf = state.current.turf;
-      //   if (turf && loader.state == 'ready') {
-      //     state.current.spacesList.map((space, i) => {
-      //       if (space.tile && space.tile.itemId !== lastSpaces[i]?.tile?.itemId) {
-      //         const pos = vec2(i % turf.size.x, Math.floor(i / turf.size.x))
-      //         console.log('updating tile ', pos);
-      //         const gid = itemIndexMap[spriteName(space.tile.itemId, 0, 'back')];
-      //         const tile = new me.Tile(0, 0, gid, layer.tilesets.tilesets[1]);
-      //         layer.setTile(tile, pos.x, pos.y);
-      //       }
-      //     });
-      //     me.game.repaint();
-      //   }
-      //   return [];
-      // }, { defer: false }));
+      createEffect(on(() => JSON.stringify(state.current.spacesList), (_, lastSpaces) => {
+        lastSpaces = JSON.parse(lastSpaces || '[]');
+        console.log('running tile effect');
+        const turf = state.current.turf;
+        if (turf && loader.state == 'ready') {
+          state.current.turf.spaces.map((col, i) => {
+            col.map((space, j) => {
+              if (space.tile && space.tile.itemId !== lastSpaces[i]?.tile?.itemId) {
+                const pos = vec2(i, j);
+                console.log('updating tile ', pos);
+                const gid = itemIndexMap[spriteName(space.tile.itemId, 0, 'back')];
+                tiles.putTileAt(gid, pos.x, pos.y);
+              }
+            });
+          });
+        }
+        return [];
+      }, { defer: false }));
     });
   });
 
@@ -191,6 +216,7 @@ export function startPhaser(_owner, container) {
   }
   
   function destroyCurrentTurf() {
+    game.scene.start(scene);
     player = null;
     items = {};
   }
@@ -239,46 +265,25 @@ export function startPhaser(_owner, container) {
     });
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
     window.tiles = tiles = layer;
+
+    extractItems(turf).forEach(([pos, item]) => {
+      const itemPos = vec2(pos).scale(turf.tileSize.x);
+      let sprite = scene.add.image(itemPos.x, itemPos.y, spriteName(item.itemId, 0, 'back'));
+      sprite.setDisplayOrigin((sprite.width - 32)/2, (sprite.height - 32)/2);
+      items[item.id] = sprite;
+    });
+
     const garb = _player.avatar.items[0];
     const playerPos = vec2(_player.pos).scale(32);
     player = scene.physics.add.image(playerPos.x, playerPos.y, spriteName(garb.itemId, 0, 'back', our));
+    // player.setDisplayOrigin((player.width - 32)/2, player.height - 32);
+    player.setOrigin(0, 0.6);
     player.tilePos = vec2(_player.pos);
+    player.oldTilePos = vec2(_player.pos);
     cam.startFollow(player);
     window.player = player;
-    extractItems(turf).forEach(([pos, item]) => {
-      const itemPos = vec2(pos).scale(32);
-      let sprite = scene.add.image(itemPos.x, itemPos.y, spriteName(item.itemId, 0, 'back'));
-      // sprite.originX = 0;
-      // sprite.originY = 0;
-    // let sprite = new TurfSprite(pos.x, pos.y, { image: spriteName(item.itemId, 0, 'back') });
-      items[item.id] = sprite;
-      // world.addChild(sprite);
-    });
   }
 }
-
-function itemPosToGamePos(pos) {
-  return vec2(pos).add(vec2(0.5, 0.5)).scale(32);
-}
-
-function playerPosToGamePos(pos) {
-  return vec2(pos).add(vec2(0.5, 0.6)).scale(32);
-}
-
-class OffsetContainer extends me.Container {
-  constructor(offsetX = 0, offsetY = 0, x = 0, y = 0, width, height, root = false) {
-    super(offsetX, offsetY, width, height, root);
-    this.origin = vec2(x, y);
-  }
-
-  updateBounds(_) {
-    let bounds = this.getBounds();
-    const origin = this.origin || vec2();
-    bounds.setMinMax(origin.x, origin.y, this.width + origin.x, this.height + origin.y);
-    return bounds;
-  }
-}
-
 
 const coreTiles = [
   {
@@ -289,7 +294,6 @@ const coreTiles = [
 
 function generateMap(turf) {
   itemIndexMap = {};
-  // const tiles = Object.entries(extractLibrarySprites(turf.library)).map(([id, item], i) => {
   const tiles = Object.entries(extractLibrarySprites(turf.library)).map(([id, item], i) => {
     itemIndexMap[id] = i + coreTiles.length + 1;
     return {
@@ -297,52 +301,11 @@ function generateMap(turf) {
       image: id,
     };
   });
-  const map =  {
-    backgroundcolor: "#d0f4f7",
-    width: turf.size.x,
-    height: turf.size.y,
-    tilewidth: turf.tileSize.x,
-    tileheight: turf.tileSize.y,
-    infinite: false,
-    layers:  [
-      {
-        id:1,
-        name:"tiles",
-        width: turf.size.x,
-        height: turf.size.y,
-        offsetx:0,
-        offsety:0,
-        opacity:1,
-        data: swapAxes(turf.spaces).map((row) => row.map((space) => {
-          if (!space.tile) return 1;
-          const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
-          if (!itemIndexMap[sprite]) return 1;
-          return itemIndexMap[sprite];
-        })),
-        properties:[],
-        type:"tilelayer",
-        visible:true,
-       },
-    ],
-    orientation: "orthogonal",
-    renderorder: "right-down",
-    tilesets: [
-      {
-        firstgid: 1,
-        name: 'core tiles',
-        tilewidth: turf.tileSize.x,
-        tileheight: turf.tileSize.y,
-        tiles: coreTiles,
-      },
-      {
-        firstgid: coreTiles.length + 1,
-        name: 'library tiles',
-        tilewidth: turf.tileSize.x,
-        tileheight: turf.tileSize.y,
-        tiles,
-      }
-    ],
-    type: "map",
-  };
-  return [map.layers[0].data, [...coreTiles, ...tiles]];
+  const data = swapAxes(turf.spaces).map((row) => row.map((space) => {
+    if (!space.tile) return 1;
+    const sprite = spriteName(space.tile.itemId, space.tile.variation, 'back');
+    if (!itemIndexMap[sprite]) return 1;
+    return itemIndexMap[sprite];
+  }));
+  return [data, [...coreTiles, ...tiles]];
 }
