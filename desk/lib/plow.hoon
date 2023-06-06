@@ -22,8 +22,10 @@
         ?-  -.wave
             %set-turf
           (turf turf.wave)
-            %add-item
-          (hollow-item-spec +.wave)
+            %add-husk
+          (husk-spec +.wave)
+            %del-shade
+          (frond 'shadeId' (numb +.wave))
             %chat
           (chat chat.wave)
             %move
@@ -41,8 +43,9 @@
         offset+(svec2 offset)
         'tileSize'^(vec2 tile-size)
         spaces+spaces
-        library+library
-        'itemCounter'^(numb item-counter)
+        skye+skye
+        cave+cave
+        'stuffCounter'^(numb stuff-counter)
     ==
     ++  spaces
       ^-  json
@@ -52,13 +55,23 @@
       |=  =col
       ^-  json
       a+(turn col space)
-    ++  library
+    ++  skye
       ^-  json
       %-  pairs
-      %+  turn  ~(tap by ^library)
-      |=  [=item-id =item]
-      :-  (spat item-id)
-      (pairs (item-pairs item))
+      %+  turn  ~(tap by ^skye)
+      |=  [=form-id =form]
+      :-  (spat form-id)
+      (pairs (form-pairs form))
+    ++  cave
+      ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^cave)
+      |=  [=shade-id =shade]
+      ^-  [@ta json]
+      =/  id  (numb shade-id)
+      ?>  ?=([%n @ta] id)
+      :-  ^-  @ta  +:id
+      (pairs (shade-pairs shade))
     --
   ++  vec2
     |=  =^vec2
@@ -98,7 +111,7 @@
     ^-  json
     %-  pairs
     :~  color+s+color.avatar
-        items+a+(turn items.avatar solid-item)
+        things+a+(turn things.avatar thing)
     ==
   ++  chat
     |=  =^chat
@@ -112,52 +125,60 @@
     |=  =^space
     ^-  json
     %-  pairs
-    :~  tile+(fall ((lift hollow-item) tile.space) ~)
-        items+a+(turn items.space hollow-item)
+    :~  tile+(fall (bind tile.space husk) ~)
+        shades+a+(turn shades.space numb)
     ==
-  ++  solid-item
-    |=  item=^solid-item
+  ++  thing
+    |=  =^thing
     ^-  json
     %-  pairs
-    (weld (item-pairs -.item) (hollow-item-pairs +.item))
-  ++  hollow-item
-    |=  item=^hollow-item
+    (weld (husk-pairs -.thing) (form-pairs +.thing))
+  ++  husk
+    |=  =^husk
     ^-  json
-    (pairs (hollow-item-pairs item))
-  ++  hollow-item-pairs
-    |=  item=^hollow-item
+    (pairs (husk-pairs husk))
+  ++  husk-pairs
+    |=  =^husk
     ^-  (list [@t json])
-    =,  item
-    :~  id+(numb id)
-        'itemId'^(path item-id)
+    =,  husk
+    :~  'formId'^(path form-id)
         variation+(numb variation)
         offset+(svec2 offset)
-    ==
-  ++  item-pairs
-    |=  =item
-    ^-  (list [@t json])
-    =,  item
-    :~  name+s+name
-        type+s+type
-        collidable+b+collidable
-        variations+a+(turn variations look)
+        collidable+(fall (bind collidable |=(c=? b+c)) ~)
         effects+(pairs (turn ~(tap by effects) effect))
     ==
-  ++  hollow-item-spec
-    |=  item-spec=^hollow-item-spec
-    =,  item-spec
+  ++  shade-pairs
+    |=  =^shade
+    ^-  (list [@t json])
+    :-  pos+(svec2 pos.shade)
+    (husk-pairs +.shade)
+  ++  form-pairs
+    |=  =form
+    ^-  (list [@t json])
+    =,  form
+    :~  name+s+name
+        type+s+type
+        variations+a+(turn variations look)
+        offset+(svec2 offset)
+        collidable+b+collidable
+        effects+(pairs (turn ~(tap by effects) effect))
+        seeds+(pairs (turn ~(tap by seeds) effect-type))
+    ==
+  ++  husk-spec
+    |=  =^husk-spec
+    =,  husk-spec
     ^-  json
     %-  pairs
     :~  pos+(svec2 pos)
-        'itemId'^(path item-id)
+        'formId'^(path form-id)
         variation+(numb variation)
     ==
   ++  look
     |=  =^look
     ^-  json
     %-  pairs
-    :~  back+(fall ((lift sprite) back.look) ~)
-        fore+(fall ((lift sprite) fore.look) ~)
+    :~  back+(fall (bind back.look sprite) ~)
+        fore+(fall (bind fore.look sprite) ~)
     ==
   ++  sprite
     |=  =^sprite
@@ -181,6 +202,9 @@
           %read  s+note.effect
           %swap  (path +.effect)
     ==  ==
+  ++  effect-type
+    |=  [=trigger =^effect-type]
+    [trigger s+effect-type]
   ++  turf-id
     |=  id=^turf-id
     ^-  json
@@ -214,7 +238,9 @@
       ?>  ?=([%o *] jon)
       %-  %-  of
           :~  move+(ot ~[ship+(se %p) pos+svec2])
-              :: todo: set-turf, add-item, chat
+              add-husk+(ot ~[pos+svec2 'formId'^pa variation+ni])
+              del-shade+(ot ~['shadeId'^ni])
+              :: todo: set-turf, chat
           ==
       jon
     ::

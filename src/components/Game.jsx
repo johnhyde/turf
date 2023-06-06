@@ -1,5 +1,4 @@
 import { getOwner, onMount } from 'solid-js';
-import { initEngine } from '~/melon/game';
 import { startPhaser } from '~/phaser/game';
 
 function Game() {

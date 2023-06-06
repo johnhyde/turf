@@ -7,7 +7,8 @@
 +$  wave
   $@  ?(%del-turf %inc-counter)
   $%  set-turf-wave
-      add-item-wave
+      add-husk-wave
+      del-shade-wave
       chat-wave
       move-wave
   ==
@@ -24,11 +25,12 @@
     ?-  wave
       %del-turf  ~
         %inc-counter
-      rock(item-counter.plot.u +(item-counter.plot.turf))
+      rock(stuff-counter.plot.u +(stuff-counter.plot.turf))
     ==
   ?-  -.wave
     %set-turf  `turf.wave
-    %add-item  `(add-hollow-item turf +.wave)
+    %add-husk  `(add-husk turf +.wave)
+    %del-shade  `(del-shade turf +.wave)
       %chat
     rock(chats.ephemera.u [chat.wave chats.ephemera.turf])
       %move
@@ -45,7 +47,8 @@
 --
 |%
 +$  set-turf-wave  [%set-turf =turf]
-+$  add-item-wave  [%add-item hollow-item-spec]
++$  add-husk-wave  [%add-husk husk-spec]
++$  del-shade-wave  [%del-shade =shade-id]
 +$  chat-wave  [%chat =chat]
 +$  move-wave  [%move =ship pos=svec2]
 --

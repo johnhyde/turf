@@ -1,4 +1,3 @@
-import * as me from 'melonjs';
 const Vector2 = Phaser.Math.Vector2;
 
 /** 
@@ -34,6 +33,14 @@ export function flattenGrid(array2d) {
 
 export function near(a, b, epsilon=1e-2) {
   return Math.abs(a - b) <= epsilon;
+}
+
+export function pixelsToTiles(pixels, tileSize=32) {
+  pixels = vec2(pixels);
+  return vec2(
+    Math.floor(pixels.x/tileSize),
+    Math.floor(pixels.y/tileSize),
+  );
 }
 
 

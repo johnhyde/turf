@@ -23,7 +23,15 @@ export function getState() {
     name: 'hi there',
     editor: {
       editing: false,
-      selectedItemId: null,
+      selectedFormId: null,
+      selectedTool: null,
+      tools: {
+        BRUSH: 'brush',
+        ERASER: 'eraser',
+      },
+      get eraser() {
+        return this.selectedTool === this.tools.ERASER;
+      },
     },
     scale: 1,
     get current() {
@@ -40,7 +48,12 @@ export function getState() {
         },
         get spacesList() {
           return spacesList();
-        }
+        },
+        get selectedForm() {
+          if (!parent.editor.editing) return null;
+          if (!this.turf) return null;
+          return parent.current.turf.skye[parent.editor.selectedFormId];
+        },
       };
       return current;
     },
@@ -75,6 +88,7 @@ export function getState() {
           console.log(newTurf);
           $state('turfs', id, reconcile(newTurf));
         } else if (res.wave) {
+          console.log('getting wave', res.wave.type);
           $state('turfs', id, washTurf(res.wave));
         } else {
           console.error('Pond response not a rock or wave???', res);
@@ -93,13 +107,14 @@ export function getState() {
       }
     },
     sendWave(mark, data, id) {
+      console.log('sending wave', mark);
       id = id || this.currentTurfId;
-      this.onPondRes(this.currentTurfId, {
+      this.onPondRes(this.currentTurfId)({
         wave: {
           type: mark,
           arg: data
         }
-      })
+      });
       api.sendPondWave(this.currentTurfId, mark, data);
     },
     setPos(pos) {
@@ -108,15 +123,39 @@ export function getState() {
         pos,
       });
     },
+    addHusk(pos, formId) {
+      const normPos = vec2(pos).subtract(this.current.turf.offset);
+      const currentSpace = this.current.turf.spaces[normPos.x]?.[normPos.y]
+      const currentTile = currentSpace?.tile;
+      const currentShades = (currentSpace?.shades || []).map(sid => this.current.turf.cave[sid]);
+      const tileAlreadyHere = currentTile?.formId === formId;
+      const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
+      if (!tileAlreadyHere && !shadeAlreadyHere) {
+        this.sendWave('add-husk', {
+          pos,
+          formId,
+          variation: 0,
+        });
+      }
+    },
+    delShade(shadeId) {
+      this.sendWave('del-shade', {
+        shadeId: Number.parseInt(shadeId),
+      });
+    },
     setEditing(editing) {
       $state('editor', 'editing', editing);
     },
     toggleEditing() {
       $state('editor', 'editing', (editing) => !editing);
     },
-    selectItem(id) {
-      $state('editor', 'selectedItemId', id);
-    }
+    selectForm(id) {
+      $state('editor', 'selectedFormId', id);
+      this.selectTool(this.editor.tools.BRUSH);
+    },
+    selectTool(tool) {
+      $state('editor', 'selectedTool', tool);
+    },
   });
 
   createEffect(() => {

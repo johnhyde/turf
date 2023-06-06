@@ -32,7 +32,7 @@ function StateSummary() {
   function unsubToTurf() {
     api.unsubscribeToTurf();
   }
-  function addItem(itemId) {
+  function addHusk(formId) {
     state.onPondRes(state.currentTurfId)({
       "wave": {
         "arg": {
@@ -41,9 +41,9 @@ function StateSummary() {
             "y": 0
           },
           "variation": 0,
-          itemId,
+          formId,
         },
-        "type": "add-item"
+        "type": "add-husk"
       }
     });
   }
@@ -97,12 +97,8 @@ function StateSummary() {
           </li>
         )}</For>
       </ul>
-      <button onClick={[state.setName, 'haha, victoey']}>change name</button>
-      {/* <button onClick={addTurf}>add turf</button> */}
       <button onClick={subToTurf}>sub to turf</button>
       <button onClick={unsubToTurf}>unsub to turfs</button>
-      <button onClick={[addItem, '/grass']}>grass</button>
-      <button onClick={[addItem, '/floor/wood']}>floor</button>
     </div>
   );
 }

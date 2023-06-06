@@ -65,7 +65,7 @@
   cards^this
   --
 ::
-::  The SSS library will give your agent pokes with the following marks:
+::  The SSS skye will give your agent pokes with the following marks:
 ::
 ::  - %sss-on-rock
 ::    Received whenever a state you're subscribed to has updated.
@@ -109,8 +109,8 @@
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
-      %add-item
-    =^  cards  state  (give-pond:hc dppath add-item+!<(hollow-item-spec vase))
+      %add-husk
+    =^  cards  state  (give-pond:hc dppath add-husk+!<(husk-spec vase))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::

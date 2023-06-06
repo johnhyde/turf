@@ -6,9 +6,8 @@ import UrbitApi from '@urbit/http-api';
 // import longGrassUrl from 'assets/sprites/long-grass.png';
 import tableUrl from 'assets/sprites/table.png';
 import stoolUrl from 'assets/sprites/stool.png';
-import treeUrl from 'assets/sprites/tree-tall.png';
+import treeUrl from 'assets/sprites/tree.png';
 import { vec2, randInt } from 'lib/utils';
-import * as me from 'melonjs';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -21,7 +20,7 @@ const ctx = canvas.getContext('2d');
 // addImage(longGrassUrl, 'longGrass');
 // addImage(tableUrl, 'tableUrl');
 // addImage(stoolUrl, 'stoolUrl');
-// addImage(treeUrl, 'treeUrl');
+addImage(treeUrl, 'treeUrl');
 
 function addImage(url, id) {
   const image = new Image();
@@ -35,7 +34,7 @@ function addImage(url, id) {
     // addTile(imageData, id);
     let dataUrl = canvas.toDataURL();
     imgData[id] = dataUrl;
-    me.loader.load({ name: id, type:'image', src: dataUrl }, () => console.log('loaded ' + id, dataUrl));
+    console.log('loaded ' + id, dataUrl);
   });
 }
 
@@ -94,69 +93,9 @@ export async function sendPondWave(id, mark, data) {
   return result;
 }
 
-export class Item {
-  constructor(name, size, image, collidable = false) {}
-}
-
-export class Tile extends Item {
-  constructor(tileSize, tileImage, collidable = false) {
-    super();
-    this.size = tileSize;
-    this.image = tileImage;
-    // if (tileImage) {
-    //   if (!tileImage instanceof ImageData) throw new TypeError('tileImage must be an ImageData');
-    //   if (tileImage.width !== this.size.x || tileImage.height !== this.size.y) {
-    //     throw new Error(`tileImage must have width and height: ${this.size.x}x${this.size.y}`);
-    //   }
-    //   this.image = tileImage;
-    // } else {
-    //   // this.image = new ImageData(this.size.x, this.size.y);
-    //   // this.image = 'hi';
-    //   this.image = window.floor;
-    // }
-    this.collidable = collidable;
-  }
-
-  duplicate() {
-    return new Tile(
-      // new ImageData(this.image.data, 32, 32),
-      new ImageData(this.image.data, this.size.x, this.height),
-      this.collidable
-    ); 
-  }
-}
-
-export class Tileset {
-  constructor (size, tileSize) {
-    this.data = new Array(size.x * size.y).fill(0).map(() => randInt(3, 1));
-    this.tiles = [new Tile(tileSize, 'floor'), new Tile(tileSize, 'hole_floor')];
-    this.size = size;
-    this.tileSize = tileSize;
-  }
-}
-
 export { api };
 
 const turfs = {};
-export async function getTurf(id) {
-  console.log('getting turf', id)
-  const size = turfSize;
-  const turf = {
-    id,
-    size,
-    tileSize,
-    tileset: new Tileset(size, tileSize),
-    items: [],
-    players: [], //?
-    chat: [
-      { from: '~zod', msg: 'hey', at: Date.now(), real: true },
-      { from: '~bus', msg: 'oh hi bro', at: Date.now(), real: true},
-      { from: '~zod', msg: 'let us depart', at: Date.now(), real: true },
-    ],
-  };
-  // turfs[id] = turf;
-  return turf;
-}
 
 export function chat(turfId, msg) {
   const chat = {

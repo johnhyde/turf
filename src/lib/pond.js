@@ -11,27 +11,44 @@ export function washTurf(wave) {
   const pondWaves = {
     'inc-counter':
       (turf) => {
-        turf.itemCounter++;
+        turf.stuffCounter++;
       },
-    'add-item':
+    'add-husk':
       (turf) => {
-        const { pos, itemId, variation } = wave.arg;
+        const { pos, formId, variation } = wave.arg;
         const normPos = vec2(pos).subtract(turf.offset);
         if (normPos.x < 0 || normPos.y < 0) return;
         if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
-        const itemType = turf.library[itemId]?.type;
-        const newItem = {
-          itemId,
-          id: turf.itemCounter,
+        const formType = turf.skye[formId]?.type;
+        const newHusk = {
+          formId,
           variation,
           offset: vec2(),
+          collidable: null,
+          effects: {},
         }
-        if (itemType === 'tile') {
-          turf.spaces[normPos.x][normPos.y].tile = newItem;
-          turf.itemCounter++;
-        } else if (itemType == 'wall' || itemType == 'item') {
-          turf.spaces[normPos.x][normPos.y].items.unshift(newItem);
-          turf.itemCounter++;
+        if (formType === 'tile') {
+          turf.spaces[normPos.x][normPos.y].tile = newHusk;
+        } else if (formType == 'wall' || formType == 'item') {
+          turf.spaces[normPos.x][normPos.y].shades.unshift(turf.stuffCounter);
+          turf.cave[turf.stuffCounter] = {
+            pos,
+            ...newHusk,
+          }
+          turf.stuffCounter++;
+        }
+      },
+    'del-shade':
+      (turf) => {
+        const { shadeId } = wave.arg;
+        const shade = turf.cave[shadeId];
+        if (shade) {
+          const normPos = vec2(shade.pos).subtract(turf.offset);
+          const space = turf.spaces[normPos.x]?.[normPos.y];
+          if (space) {
+            space.shades = [space.shades || []].filter((shadeId) => shadeId !== shadeId);
+          }
+          delete turf.cave[shadeId];
         }
       },
     'chat':
@@ -104,21 +121,15 @@ export function getTurfBounds(turf) {
   };
 }
 
-export function extractLibrarySprites(library) {
+export function extractSkyeSprites(skye) {
   const sprites = {};
-  Object.entries(library).forEach(([itemId, item]) => {
-    item.variations.forEach((variation, i) => {
+  Object.entries(skye).forEach(([formId, form]) => {
+    form.variations.forEach((variation, i) => {
       if (variation.back) {
-        sprites[spriteName(itemId, i, 'back')] = {
-          item,
-          sprite: variation.back,
-        };
+        sprites[spriteName(formId, i, 'back')] = variation.back;
       }
       if (variation.fore) {
-        sprites[spriteName(itemId, i, 'fore')] = {
-          item,
-          sprite: variation.fore,
-        };
+        sprites[spriteName(formId, i, 'fore')] = variation.fore;
       }
     });
   });
@@ -128,19 +139,13 @@ export function extractLibrarySprites(library) {
 export function extractPlayerSprites(players) {
   const sprites = {};
   Object.entries(players).forEach(([patp, player]) => {
-    player.avatar.items.forEach((item) => {
-      item.variations.forEach((variation, i) => {
+    player.avatar.things.forEach((thing) => {
+      thing.variations.forEach((variation, i) => {
         if (variation.back) {
-          sprites[spriteName(item.itemId, i, 'back', patp)] = {
-            item,
-            sprite: variation.back,
-          };
+          sprites[spriteName(thing.formId, i, 'back', patp)] = variation.back;
         }
         if (variation.fore) {
-          sprites[spriteName(item.itemId, i, 'fore', patp)] = {
-            item,
-            sprite: variation.fore,
-          };
+          sprites[spriteName(thing.formId, i, 'fore', patp)] = variation.fore;
         }
       });
     });
@@ -152,15 +157,15 @@ export function spriteName(id, variation, layer, patp='') {
   return patp + id.replace(/\//g, '-') + '_' + (variation || '0') + (layer ? '_' + layer : '');
 }
 
-export function extractItems(turf) {
-  const items = [];
+export function extractShades(turf) {
+  const husks = [];
   turf.spaces.forEach((col, i) => {
     col.forEach((space, j) => {
       const pos = vec2(i, j).add(turf.offset);
-      space.items.forEach((item) => {
-        items.push([pos, item]);
+      space.husks.forEach((form) => {
+        husks.push([pos, form]);
       });
     });
   });
-  return items;
+  return husks;
 }

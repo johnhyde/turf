@@ -15,7 +15,7 @@
   ==
 +$  avatar
   $:  color=@t
-      items=(list solid-item)
+      things=(list thing)
   ==
 +$  chat
   $:  from=ship
@@ -28,11 +28,13 @@
       offset=svec2  :: Where is the top left corner? May change due to resizing
       tile-size=_(vec2 [32 32])
       =spaces
-      =library
-      item-counter=@ud
+      =skye
+      =cave
+      stuff-counter=@ud
   ==
 +$  turf-id  [=ship =path]
-+$  item-id  path
++$  form-id  path
++$  shade-id  @ud
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
 +$  off-size  [offset=svec2 size=vec2]
@@ -40,31 +42,44 @@
 +$  spaces  (map svec2 space)
 +$  grid  (list col)
 +$  col  (list space)
-+$  library  (map item-id item)
++$  skye  (map form-id form)
++$  cave  (map shade-id shade)
 +$  space
-  $:  tile=(unit hollow-item)
-      items=(list hollow-item)
+  $:  tile=(unit husk)
+      shades=(list shade-id)
   ==
-+$  solid-item
-  $:  item
-      hollow-item
++$  thing
+  $:  husk
+      =form
   ==
-+$  hollow-item
-  $:  =item-id
-      id=item-shell-id
++$  husk
+  $:  =form-id
       variation=@ud
-      offset=svec2
+      husk-bits
   ==
-+$  item-shell-id  @ud
-+$  item
++$  husk-bits
+  $:  offset=svec2  :: added to form offset
+      collidable=(unit ?)  :: use form collidable if null
+      effects=(map trigger effect)  :: override form effects and implement form seeds
+  ==
++$  shade
+  $:  pos=svec2
+      husk
+  ==
++$  form
   $:  name=@t
-      type=item-type
-      collidable=?
+      type=form-type
       variations=(list look)
-      effects=(map trigger effect)
+      form-bits
   ==
-+$  item-type  ?(%tile %wall %item %garb)
-+$  space-item-type  ?(%tile %wall %item)
++$  form-bits
+  $:  offset=svec2
+      collidable=?
+      effects=(map trigger effect)
+      seeds=(map trigger effect-type)
+  ==
++$  form-type  ?(%tile %wall %item %garb)
++$  space-form-type  ?(%tile %wall %item)
 +$  look
   $:  back=(unit sprite)
       fore=(unit sprite)
@@ -77,14 +92,16 @@
       frames=(list png)
   ==
 +$  trigger  ?(%step %leave %bump %interact)
++$  possible-effect  $@(effect-type effect)
++$  effect-type  ?(%port %jump %read %swap)
 +$  effect
   $%  [%port for=turf-id]
       [%jump to=svec2]
       [%read note=@t]
-      [%swap with=item-id]  :: for opening/closing doors
+      [%swap with=form-id]  :: for opening/closing doors
   ==
 ::
-+$  hollow-item-spec  [pos=svec2 =item-id variation=@ud]
++$  husk-spec  [pos=svec2 =form-id variation=@ud]
 ::
 +$  pond-path  ,[%pond *]
 --

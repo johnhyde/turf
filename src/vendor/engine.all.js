@@ -395,7 +395,7 @@ const debugRender = ()=>
 }
 /**
  * LittleJS Utility Classes and Functions
- * <br> - General purpose math library
+ * <br> - General purpose math skye
  * <br> - Vector2 - fast, simple, easy 2D vector class
  * <br> - Color - holds a rgba color with some math functions
  * <br> - Timer - tracks time automatically
@@ -579,7 +579,7 @@ const randSeeded = (a=1, b=0)=>
 const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(x, y == undefined? x : y) : new Vector2(x.x, x.y);
 
 /** 
- * 2D Vector object with vector math library
+ * 2D Vector object with vector math skye
  * <br> - Functions do not change this so they can be chained together
  * @example
  * let a = new Vector2(2, 3); // vector with coordinates (2, 3)

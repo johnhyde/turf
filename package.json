@@ -42,7 +42,6 @@
     "@urbit/http-api": "^2.3.0",
     "@urbit/vite-plugin-urbit": "^1.0.0",
     "dotenv-cli": "^7.2.1",
-    "melonjs": "^15.2.1",
     "solid-js": "^1.6.10"
   },
   "bugs": {

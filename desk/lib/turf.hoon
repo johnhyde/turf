@@ -11,20 +11,19 @@
     =|  =turf
     =.  turf
       %=  turf
-        size.plot          size
-        library.plot       default-library
-        spaces.plot  (fill-space size offset /floor/wood)
-        offset.plot        offset
-        item-counter.plot  (mul size)
-        players.ephemera   (~(put by players.ephemera.turf) our (new-player offset))
+        size.plot           size
+        skye.plot           default-skye
+        spaces.plot         (fill-space size offset /floor/wood)
+        offset.plot         offset
+        players.ephemera    (~(put by players.ephemera.turf) our (new-player offset))
       ==
     =/  mid-size  ((merge-svec2 fra:si) (sign-vec2 size) [--2 --2])
     =/  tree-pos  (sum-svec2 offset mid-size)
-    (add-hollow-item turf [tree-pos /tree 0])
-  ++  default-library
-    ^-  library
+    (add-husk turf [tree-pos /tree 0])
+  ++  default-skye
+    ^-  skye
     %-  malt
-    ^-  (list [item-id item])
+    ^-  (list [form-id form])
     =,  sprites
     :~  :-  /floor/wood
         (new-tile 'Wood Floor' floor)
@@ -32,37 +31,36 @@
         :-  /grass
         (new-tile 'Grass' grass)
       ::
-        :-  /grass/long
-        (new-tile 'Long Grass' long-grass)
-      ::
         :-  /table/round
-        =/  table  (new-item %item 'Round Table' table)
+        =/  table  (new-form %item 'Round Table' table)
         table(collidable %.y)
       ::
         :-  /stool
-        (new-item %item 'Stool' stool)
+        (new-form %item 'Stool' stool)
       ::
         :-  /tree
-        =/  tree  (new-item %item 'Tree' tree)
+        =/  tree  (new-form-offset %item 'Tree' tree [--16 --42])
         tree(collidable %.y)
     ==
   ++  new-tile
     |=  [name=@t =png]
-    ^-  item
+    ^-  form
     :*  name
-        %tile
-        %.n
-        [`png ~]~
-        ~
+        type=%tile
+        variations=[`png ~]~
+        *form-bits
     ==
-  ++  new-item
-    |=  [=item-type name=@t =png]
-    ^-  item
+  ++  new-form
+    |=  [=form-type name=@t =png]
+    (new-form-offset form-type name png *svec2)
+  ++  new-form-offset
+    |=  [=form-type name=@t =png offset=svec2]
+    ^-  form
     :*  name
-        item-type
-        %.n
-        [`png ~]~
-        ~
+        type=form-type
+        variations=[`png ~]~
+        offset
+        +:*form-bits
     ==
 ++  new-player
   |=  pos=svec2
@@ -70,12 +68,14 @@
   :*  pos
       %down
       color='#d23'
-      :~  `solid-item`[(new-item %garb 'Scarecrow Body' player.sprites) /body/scarecrow 0 0 *svec2]
+      :~  ^-  thing
+          :-   [/body/scarecrow 0 *husk-bits]
+          (new-form %garb 'Scarecrow Body' player.sprites)
       ==
   ==
   --
 ++  fill-space
-  |=  [size=vec2 offset=svec2 id=item-id]
+  |=  [size=vec2 offset=svec2 id=form-id]
   ^-  spaces
   %-  malt
   =|  spaces=(list [svec2 space])
@@ -91,8 +91,8 @@
   =/  =space
     :_  ~
     :-  ~
-    ^-  hollow-item
-    [id count 0 *svec2]
+    ^-  husk
+    [id 0 *husk-bits]
   %=  $
     count  +(count)
     spaces  [[pos space] spaces]
@@ -149,32 +149,74 @@
   =(-1 (cmp:si a b))
 ::
 ++  get-space
-  |=  [=turf pos=svec2]
+  |=  [=spaces pos=svec2]
   ^-  space
-  (~(gut by spaces.plot.turf) pos *space)
-++  get-item-type
-  |=  [=turf =item-id]
-  ^-  (unit item-type)
-  =/  item  (~(get by library.plot.turf) item-id)
-  ?~  item  ~
-  `type.u.item
-++  add-hollow-item
-  |=  [=turf spec=hollow-item-spec]
+  (~(gut by spaces) pos *space)
+++  get-form-type
+  |=  [=turf =form-id]
+  ^-  (unit form-type)
+  =/  form  (~(get by skye.plot.turf) form-id)
+  ?~  form  ~
+  `type.u.form
+++  jab-by-spaces
+  |=  [=spaces pos=svec2 fun=$-(space space)]
+  ^-  ^spaces
+  %+  ~(put by spaces)
+    pos
+  (fun (get-space spaces pos))
+::
+:: resets husk-bits for tile - [offset collidable effects]
+:: does not verify form
+++  add-tile
+  |=  [=turf spec=husk-spec]
   ^-  ^turf
   =,  spec
-  =*  item-counter  item-counter.plot.turf
-  =/  item-type  (get-item-type turf item-id)
-  ?~  item-type  turf
-  ?.  ?=(space-item-type u.item-type)  turf
-  =/  new-item=hollow-item
-    [item-id item-counter variation *svec2]
+  =/  new-husk=husk
+    [form-id variation *husk-bits]
   =.  spaces.plot.turf
-    %+  ~(put by spaces.plot.turf)
-      pos
-    =/  =space  (get-space turf pos)
-    ?:  =(%tile u.item-type)
-      space(tile `new-item)
-    space(items [new-item items.space])
-  =.  item-counter  +(item-counter)
+    %^  jab-by-spaces  spaces.plot.turf  pos
+    |=  =space  ^-  _space
+    space(tile `new-husk)
+  turf
+::
+:: does not verify form
+++  add-shade
+  |=  [=turf spec=husk-spec]
+  ^-  ^turf
+  =,  spec
+  =*  stuff-counter  stuff-counter.plot.turf
+  =/  new-husk=husk
+    [form-id variation *husk-bits]
+  =.  cave.plot.turf
+    %+  ~(put by cave.plot.turf)
+      stuff-counter
+    [pos new-husk]
+  =.  spaces.plot.turf
+    %^  jab-by-spaces  spaces.plot.turf  pos
+    |=  =space  ^-  _space
+    space(shades [stuff-counter shades.space])
+  =.  stuff-counter  +(stuff-counter)
+  turf
+++  add-husk  :: verifies form
+  |=  [=turf spec=husk-spec]
+  ^-  ^turf
+  =,  spec
+  =/  form-type  (get-form-type turf form-id)
+  ?~  form-type  turf
+  ?.  ?=(space-form-type u.form-type)  turf
+  ?:  =(%tile u.form-type)
+    (add-tile turf spec)
+  (add-shade turf spec)
+::
+++  del-shade
+  |=  [=turf id=shade-id]
+  ^-  ^turf
+  =/  shade  (~(gut by cave.plot.turf) id ~)
+  ?~  shade  turf
+  =.  cave.plot.turf  (~(del by cave.plot.turf) id)
+  =.  spaces.plot.turf
+    %^  jab-by-spaces  spaces.plot.turf  pos.shade
+    |=  =space
+    space(shades (skip shades.space |=(sid=@ =(sid id))))
   turf
 --
