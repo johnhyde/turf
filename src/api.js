@@ -1,4 +1,5 @@
 import UrbitApi from '@urbit/http-api';
+import { createUniqueId } from 'solid-js';
 // import floorUrl from 'assets/sprites/floor.png';
 // import holeFloorUrl from 'assets/sprites/hole-floor.png';
 // import playerUrl from 'assets/sprites/player.png';
@@ -44,8 +45,6 @@ const api = new UrbitApi('', '', window.desk);
 api.ship = window.ship;
 window.api = api;
 // api.connect();
-const turfSize = vec2(4);
-const tileSize = vec2(32);
 
 export async function unsubscribeToTurf(id) {
   let existingSubs = [...api.outstandingSubscriptions];
@@ -77,43 +76,18 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
   })
 }
 
-export async function sendPondWave(id, mark, data) {
-  let result = await api.poke({
+export async function sendPondWave(id, mark, data, stirId) {
+  stirId = stirId || createUniqueId();
+  await api.poke({
     app: 'turf',
     mark: 'stir-pond',
     json: {
       path: id,
-      id: 'hmmb',
+      id: stirId,
       wave: !data ? mark : { [mark]: data },
     },
   });
-  return result;
+  return stirId;
 }
 
 export { api };
-
-const turfs = {};
-
-export function chat(turfId, msg) {
-  const chat = {
-    from: '~' + window.ship,
-    msg,
-    at: Date.now(),
-    real: false,
-  };
-  turfs[turfId].chat.push(chat);
-  sendChat(turfId, chat);
-}
-
-export async function sendChat(turfId, chat) {
-  setTimeout(() => {
-    chat.real = true;
-  }, 2000);
-}
-
-export async function editTile(turfId, pos, tileImg) {
-  const tiles =  turfs[turfId].tiles;
-  if (pos.x >= 0 && pos.x < tiles.size.x && pos.y >= 0 && pos.y < tiles.size.y) {
-    tiles.tiles[pos.x][pos.y] = tileImg;
-  }
-}

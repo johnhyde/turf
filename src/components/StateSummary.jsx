@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js';
+import { createSignal, createMemo } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { bind } from 'lib/bind';
 import * as api from '~/api.js';
@@ -6,10 +6,11 @@ import { vec2 } from 'lib/utils';
 import EditPane from '@/EditPane';
 
 function Turf(props) {
+  if (!props.turf) return null;
   const state = useState();
   return <>
     <p>
-      <button onClick={[state.visitTurf.bind(state), props.id]}>{props.id}</button>: {props.turf.size.x}x{props.turf.size.y}; offset: {props.turf.offset.x}x{props.turf.offset.y}
+      {props.turf.size.x}x{props.turf.size.y}; offset: {props.turf.offset.x}x{props.turf.offset.y}
     </p>
     <For each={props.turf.chats}>{(chat, i) => (
       <p>
@@ -59,7 +60,7 @@ function StateSummary() {
       <p>
       </p>
       <p>
-        turf count: {Object.keys(state.turfs).length}
+        turf count: {Object.keys(state.ponds).length}
       </p>
       <p>
         Player Pos: {pos().x}x{pos().y}
@@ -79,25 +80,25 @@ function StateSummary() {
         <input type="range" min="0.25" max="1.5" step="0.25" use:bind={[() => state.scale, (s) => state.$('scale', s)]} />
       </div>
       {/* <pre>
-        {JSON.stringify(state.current.turf, null, 2)}
+        {JSON.stringify(state.e, null, 2)}
       </pre> */}
       <h3>Current Turf:</h3>
       <p>{state.currentTurfId}</p>
-      <Show when={state.current.turf} fallback={<p>No current turf</p>}>
+      <Show when={state.e} fallback={<p>No current turf</p>}>
         <p>
-          {state.current.turf.chats.length}
+          {state.e.chats.length}
         </p>
-        <Turf id={state.currentTurfId} turf={state.current.turf} />
+        <Turf id={state.currentTurfId} turf={state.e} />
       </Show>
       <h3>Turfs</h3>
       <ul>
-        <For each={Object.entries(state.turfs)}>{([id, turf], i) => (
+        <For each={Object.entries(state.ponds)}>{([id, pond], i) => (
           <li>
-            <Turf id={id} turf={turf} />
+            <Turf id={id} turf={pond.turf} />
           </li>
         )}</For>
       </ul>
-      <button onClick={subToTurf}>sub to turf</button>
+      <button onClick={subToTurf}>pond to turf</button>
       <button onClick={unsubToTurf}>unsub to turfs</button>
     </div>
   );

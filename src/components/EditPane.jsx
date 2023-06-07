@@ -14,7 +14,7 @@ export default function EditPane() {
       <p>
         Edit Mode
       </p>
-      <For each={Object.entries(state.current.turf?.skye || {})} fallback={<div>Loading...</div>}>
+      <For each={Object.entries(state.e?.skye || {})} fallback={<div>Loading...</div>}>
         {([id, form], i) => (
           <img
             src={form.variations[0].back}

@@ -13,6 +13,7 @@ var game, scene, cam, cursors, keys = {}, player, tiles;
 var formIndexMap, shades = {};
 
 async function loadImage(id, url) {
+  if (game.textures.exists(id)) return;
   return new Promise((resolve, reject) => {
     // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, () => {
@@ -97,7 +98,7 @@ export function startPhaser(_owner, container) {
         const alpha = 1;
         let draw = false;
         function mapEdit(pointer) {
-          if (state.current.selectedForm) {
+          if (state.c.selectedForm) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
             state.addHusk(pos, state.editor.selectedFormId);
@@ -198,35 +199,39 @@ export function startPhaser(_owner, container) {
       })
       setGameSize();
       const [loader, { mutate, refetch }] = createResource(
-        () => state.current.turf,
+        () => state.e,
         (turf) => loadSprites(turf));
       createEffect(() => {
         let pos = state.player?.pos;
-        // console.log('pos', pos);
-        if (pos && player) {
-          player.tilePos = pos;
+        if (pos) {
+          // make sure to use x and y so solid knows to track them
+          // we aren't tracking player, so that's no help
+          let posV = vec2(pos.x, pos.y)
+          if (player) {
+            player.tilePos = posV;
+          }
         }
       });
       createEffect(on(() => [
         loader.state,
-        state.current.id,
-        state.current.turf?.size,
-        state.current.turf?.offset,
+        state.c.id,
+        state.e?.size,
+        state.e?.offset,
       ], (_, __, lastTurfId) => {
         if (loader.state === 'ready') {
-          if (lastTurfId || state.current.turf) destroyCurrentTurf();
-          if (state.current.turf) {
-            initTurf(state.current.turf, state.player);
+          if (lastTurfId || state.e) destroyCurrentTurf();
+          if (state.e) {
+            initTurf(state.e, state.player);
           }
-          return state.current.id;
+          return state.c.id;
         };
       }));
-      createEffect(on(() => JSON.stringify(state.current.turf?.spaces), (_, lastSpaces) => {
+      createEffect(on(() => JSON.stringify(state.e?.spaces), (_, lastSpaces) => {
         lastSpaces = JSON.parse(lastSpaces || '[]');
         // console.log('running tile effect');
-        const turf = state.current.turf;
+        const turf = state.e;
         if (turf && loader.state == 'ready') {
-          state.current.turf.spaces.map((col, i) => {
+          state.e.spaces.map((col, i) => {
             col.map((space, j) => {
               const lastTileFormId = lastSpaces[i] ? lastSpaces[i][j]?.tile?.formId : undefined;
               if (space.tile && space.tile.formId !== lastTileFormId) {
@@ -240,15 +245,15 @@ export function startPhaser(_owner, container) {
         }
         return [];
       }, { defer: false }));
-      createEffect(on(() => JSON.stringify(state.current.turf?.cave), () => {
-        if (state.current.turf && loader.state == 'ready') {
-          const ids = [...Object.keys(shades), ...Object.keys(state.current.turf.cave)];
+      createEffect(on(() => JSON.stringify(state.e?.cave), () => {
+        if (state.e && loader.state == 'ready') {
+          const ids = [...Object.keys(shades), ...Object.keys(state.e.cave)];
           ids.forEach((id) => {
             let sprite;
             const shadeObject = shades[id];
-            const shadeData = state.current.turf.cave[id];
+            const shadeData = state.e.cave[id];
             if (!shadeObject) {
-              shades[id] = createShade(shadeData, id, state.current.turf);
+              shades[id] = createShade(shadeData, id, state.e);
             } else if (!shadeData) {
               shades[id].destroy();
               delete shades[id];
@@ -259,7 +264,7 @@ export function startPhaser(_owner, container) {
             }
           });
         }
-        // return JSON.stringify(state.current.turf.cave);
+        // return JSON.stringify(state.e.cave);
       }, { defer: false }));
     });
   });

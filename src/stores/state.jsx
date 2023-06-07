@@ -2,18 +2,17 @@ import { createSignal, createContext, createEffect, createMemo, useContext, merg
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from '~/api.js';
 import { vec2, flattenGrid } from 'lib/utils';
-import { rockToTurf, washTurf } from 'lib/pond';
-// import { setTurf } from 'stores/game';
+import { getPond, Pond, rockToTurf, washTurf } from 'lib/pond';
 
 export const StateContext = createContext();
 
 export function getState() {
   let playersList, spacesList;
   const [state, $state] = createStore({
-    turfs: {},
+    ponds: {},
     currentTurfId: '/pond',
     get player() {
-      const player = this.current.turf?.players[our];
+      const player = this.e?.players[our];
       if (!player) return null;
       const parent = this;
       return {
@@ -40,8 +39,14 @@ export function getState() {
         get id() {
           return parent.currentTurfId;
         },
+        get pond() {
+          return parent.ponds[this.id];
+        },
         get turf() {
-          return parent.turfs[this.id];
+          return this.pond?.turf;
+        },
+        get ether() {
+          return this.pond?.ether;
         },
         get playersList() {
           return playersList();
@@ -52,21 +57,33 @@ export function getState() {
         get selectedForm() {
           if (!parent.editor.editing) return null;
           if (!this.turf) return null;
-          return parent.current.turf.skye[parent.editor.selectedFormId];
+          return this.turf.skye[parent.editor.selectedFormId];
         },
       };
       return current;
     },
+    get c() {
+      return this.current;
+    },
+    get p() {
+      return this.c.pond;
+    },
+    get t() {
+      return this.p?.turf;
+    },
+    get e() {
+      return this.p?.ether;
+    },
   });
   playersList = createMemo(() => {
-    if (!state.current.turf) return null;
+    if (!state.e) return null;
     console.log('calcing playlist')
-    return Object.entries(state.current.turf.players);
+    return Object.entries(state.e.players);
   });
   spacesList = createMemo(() => {
-    if (!state.current.turf) return null;
+    if (!state.e) return null;
     console.log('calcing spaces list')
-    return flattenGrid(state.current.turf.spaces);
+    return flattenGrid(state.e.spaces);
   });
 
   const _state = mergeProps(state, {
@@ -74,48 +91,19 @@ export function getState() {
     setName(name) {
       $state('name', name);
     },
-    async fetchTurf(id) {
-      console.log('fetching turf', id)
-      const turf = await api.getTurf(id);
-      $state('turfs', (turfs) => {
-        return {...turfs, [id]: turf};
-      });
-    },
-    onPondRes(id='/pond') {
-      return (res) => {
-        if (res.rock) {
-          const newTurf = rockToTurf(res.rock, id);
-          console.log(newTurf);
-          $state('turfs', id, reconcile(newTurf));
-        } else if (res.wave) {
-          console.log('getting wave', res.wave.type);
-          $state('turfs', id, washTurf(res.wave));
-        } else {
-          console.error('Pond response not a rock or wave???', res);
-        }
-      };
-    },
-    async subToTurf(id='/pond') {
-      const onPondErr = () => {};
-      const onPondQuit = () => {};
-      api.subscribeToTurf(id, this.onPondRes(id), onPondErr, onPondQuit);
-    },
-    async visitTurf(id) {
-      $state({ currentTurfId: id });
-      if (this.currentTurfId && !this.current.turf) {
-        await this.fetchTurf(id);
+    subToTurf(id='/pond') {
+      if (!state.ponds[id]) {
+        $state('ponds', id, new Pond(id));
+      } else {
+        state.ponds[id].subscribe();
       }
     },
     sendWave(mark, data, id) {
-      console.log('sending wave', mark);
       id = id || this.currentTurfId;
-      this.onPondRes(this.currentTurfId)({
-        wave: {
-          type: mark,
-          arg: data
-        }
-      });
-      api.sendPondWave(this.currentTurfId, mark, data);
+      const pond = this.ponds[id];
+      if (pond) {
+        pond.sendWave(mark, data, id);
+      }
     },
     setPos(pos) {
       this.sendWave('move', {
@@ -124,10 +112,10 @@ export function getState() {
       });
     },
     addHusk(pos, formId) {
-      const normPos = vec2(pos).subtract(this.current.turf.offset);
-      const currentSpace = this.current.turf.spaces[normPos.x]?.[normPos.y]
+      const normPos = vec2(pos).subtract(this.e.offset);
+      const currentSpace = this.e.spaces[normPos.x]?.[normPos.y]
       const currentTile = currentSpace?.tile;
-      const currentShades = (currentSpace?.shades || []).map(sid => this.current.turf.cave[sid]);
+      const currentShades = (currentSpace?.shades || []).map(sid => this.e.cave[sid]);
       const tileAlreadyHere = currentTile?.formId === formId;
       const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
       if (!tileAlreadyHere && !shadeAlreadyHere) {
@@ -158,11 +146,7 @@ export function getState() {
     },
   });
 
-  createEffect(() => {
-    if (state.current.id && !state.current.turf) {
-      _state.subToTurf(state.current.id);
-    }
-  });
+  _state.subToTurf(state.c.id);
   return _state;
 }
 
