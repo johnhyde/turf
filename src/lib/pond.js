@@ -1,7 +1,7 @@
-import { batch, on, createEffect, createMemo, createSignal, mergeProps, getOwner, createUniqueId } from "solid-js";
+import { batch, on, createEffect, createMemo, createSignal, mergeProps, getOwner } from "solid-js";
 import { createStore, unwrap, produce, reconcile } from "solid-js/store";
 import * as api from '~/api.js';
-import { vec2, minV, maxV } from 'lib/utils';
+import { vec2, minV, maxV, uuidv4 } from 'lib/utils';
 
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id) {
@@ -26,24 +26,44 @@ export class Pond { // we use a class so we can put it inside a store without ge
 
   async sendWave(mark, data) {
     console.log('sending wave', mark);
-    const uuid = createUniqueId();
-    this.$('pulses', (pulses) => [...pulses, {
+    const uuid = uuidv4();
+    this.addPulse({
       id: uuid,
       wave: {
         type: mark,
         arg: data,
       },
-    }]);
-    api.sendPondWave(this.id, mark, data, uuid);
+    });
+    this.sendWavePoke(mark, data, uuid);
+  }
+  async sendWavePoke(mark, data, uuid, retries = 0) {
+    try {
+      await api.sendPondWave(this.id, mark, data, uuid);
+    } catch (e) {
+      if (e.message === 'Failed to fetch') {
+        // internet connectivity issue
+        if (retries < 4) { // 15 seconds before pulse is discarded (1+2+4+8)
+          const timeout = Math.pow(2, retries)*1000;
+          retries++;
+          console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
+          setTimeout(() => this.sendWavePoke(mark, data, uuid, retries), timeout);
+        } else {
+          console.warn('Failed to send wave, no more retries');
+          this.removePulse(uuid);
+        }
+      } else {
+        throw e;
+      }
+    }
   }
 
   onPondRes(res) {
-    if (res.rock) {
+    if (res.hasOwnProperty('rock')) {
       const newTurf = rockToTurf(res.rock, this.id);
-      console.log(newTurf);
+      console.log('new turf from rock', newTurf);
       this.$('turf', reconcile(newTurf, { merge: true }));
-    } else if (res.wave) {
-      console.log('getting wave', res.wave.type);
+    } else if (res.hasOwnProperty('wave')) {
+      console.log('getting wave', res.wave?.type || 'no-op');
       batch(() => {
         if (res.id) {
           const pulseI = this.pulses.findIndex(p => p.id === res.id);
@@ -52,7 +72,9 @@ export class Pond { // we use a class so we can put it inside a store without ge
             this.$('pulses', p => p.slice(pulseI + 1));
           }
         }
-        this.$('turf', washTurf(res.wave));
+        if (res.wave) {
+          this.$('turf', washTurf(res.wave));
+        }
       });
     } else {
       console.error('Pond response not a rock or wave???', res);
@@ -63,6 +85,15 @@ export class Pond { // we use a class so we can put it inside a store without ge
     const onPondErr = () => {};
     const onPondQuit = () => {};
     api.subscribeToTurf(this.id, this.onPondRes.bind(this), onPondErr, onPondQuit);
+  }
+
+  addPulse(pulse) {
+    this.$('pulses', (pulses) => [...pulses, pulse]);
+  }
+
+  removePulse(uuid) {
+    const pulseI = this.pulses.findIndex(p => p.id === uuid);
+    this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
   }
 }
 
@@ -153,8 +184,8 @@ export function washTurf(wave) {
         const player = turf.players[wave.arg.ship];
         if (player) {
           const bounds = getTurfBounds(turf);
-          // player.pos = minV(maxV(vec2(wave.arg.pos), bounds.topLeft), bounds.botRight.subtract(vec2(1)));
           const newPos = minV(maxV(vec2(wave.arg.pos), bounds.topLeft), bounds.botRight.subtract(vec2(1)));
+          // const newPos = vec2(wave.arg.pos);
           player.pos.x = newPos.x;
           player.pos.y = newPos.y;
         }
@@ -170,7 +201,7 @@ export function washTurf(wave) {
           id: turf.id,
           ...wave.arg,
         };
-        return reconcile(js.turf(newTurf), { merge: true });
+        return js.turf(newTurf);
       };
     default:
       return produce((turf) => {

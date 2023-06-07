@@ -2,9 +2,24 @@
 /+  *turf, sss
 |%
 ++  filter-wave
-  |=  =wave:pond
+  |=  [=rock:pond =wave:pond]
   ^-  (unit wave:pond)
-  `wave
+  ?~  rock  `wave
+  =*  turf  u.rock
+  ?@  wave
+    `wave
+  ?+  -.wave  `wave
+      %move
+    =*  players  players.ephemera.turf
+    =/  player  (~(get by players) ship.wave)
+    ?~  player  ~
+    =/  pos  (clamp-pos pos.wave offset.plot.turf size.plot.turf)
+    =/  player-colliding  (get-collidable turf pos.u.player)
+    =/  will-be-colliding  (get-collidable turf pos)
+    ?:  &(will-be-colliding !player-colliding)
+      ~
+    `wave(pos pos)
+  ==
 ::
 ++  enjs
   =,  enjs:format

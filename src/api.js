@@ -1,5 +1,4 @@
 import UrbitApi from '@urbit/http-api';
-import { createUniqueId } from 'solid-js';
 // import floorUrl from 'assets/sprites/floor.png';
 // import holeFloorUrl from 'assets/sprites/hole-floor.png';
 // import playerUrl from 'assets/sprites/player.png';
@@ -8,7 +7,7 @@ import { createUniqueId } from 'solid-js';
 import tableUrl from 'assets/sprites/table.png';
 import stoolUrl from 'assets/sprites/stool.png';
 import treeUrl from 'assets/sprites/tree.png';
-import { vec2, randInt } from 'lib/utils';
+import { vec2, randInt, uuidv4 } from 'lib/utils';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -77,7 +76,7 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
 }
 
 export async function sendPondWave(id, mark, data, stirId) {
-  stirId = stirId || createUniqueId();
+  stirId = stirId || uuidv4();
   await api.poke({
     app: 'turf',
     mark: 'stir-pond',
@@ -86,6 +85,10 @@ export async function sendPondWave(id, mark, data, stirId) {
       id: stirId,
       wave: !data ? mark : { [mark]: data },
     },
+    onError: (e) => {
+      console.error('caught error in sending wave', e);
+      debugger;
+    }
   });
   return stirId;
 }

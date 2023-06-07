@@ -90,6 +90,7 @@ export function startPhaser(_owner, container) {
       function create() {
         updateTime = Date.now();
         cursors = this.input.keyboard.createCursorKeys();
+        keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
         keys.f = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']);
         const graphics = this.add.graphics();
 
@@ -154,23 +155,26 @@ export function startPhaser(_owner, container) {
           }
         }
         const oldTilePos = vec2(player.tilePos);
+        const newTilePos = vec2(player.tilePos);
         targetPos = vec2(player.tilePos).scale(32);
         pos = vec2(player.x, player.y);
         if (pos.equals(targetPos)) {
-          if (cursors.left.isDown) {
-            player.tilePos.x--;
-          } else if (cursors.right.isDown) {
-            player.tilePos.x++;
+          if (cursors.left.isDown || keys.a.isDown) {
+            newTilePos.x--;
           }
-          if (cursors.up.isDown) {
-            player.tilePos.y--;
-          } else if (cursors.down.isDown) {
-            player.tilePos.y++;
+          if (cursors.right.isDown || keys.d.isDown) {
+            newTilePos.x++;
           }
-          const tilePosChanged = !player.tilePos.equals(oldTilePos);
+          if (cursors.up.isDown || keys.w.isDown) {
+            newTilePos.y--;
+          }
+          if (cursors.down.isDown || keys.s.isDown) {
+            newTilePos.y++;
+          }
+          const tilePosChanged = !newTilePos.equals(oldTilePos);
           if (tilePosChanged) {
             console.log('changed!');
-            state.setPos(player.tilePos);
+            state.setPos(newTilePos);
           }
         }
       }

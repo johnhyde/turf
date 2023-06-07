@@ -153,10 +153,14 @@
   |=  [=spaces pos=svec2]
   ^-  space
   (~(gut by spaces) pos *space)
+++  get-form
+  |=  [=turf =form-id]
+  ^-  (unit form)
+  (~(get by skye.plot.turf) form-id)
 ++  get-form-type
   |=  [=turf =form-id]
   ^-  (unit form-type)
-  =/  form  (~(get by skye.plot.turf) form-id)
+  =/  form  (get-form turf form-id)
   ?~  form  ~
   `type.u.form
 ++  jab-by-spaces
@@ -165,6 +169,31 @@
   %+  ~(put by spaces)
     pos
   (fun (get-space spaces pos))
+::
+++  is-husk-collidable
+  |=  [=turf =husk]
+  ^-  ?
+  ?^  collidable.husk
+    u.collidable.husk
+  =/  form  (get-form turf form-id.husk)
+  ?~  form  %.n
+  collidable.u.form
+::
+++  get-collidable
+  |=  [=turf pos=svec2]
+  ^-  ?
+  =/  space  (get-space spaces.plot.turf pos)
+  ?:  &(?=(^ tile.space) (is-husk-collidable turf u.tile.space))
+    %.y
+  =/  shades  shades.space
+  |-  ^-  ?
+  ?~  shades  %.n
+  =/  shade  (~(get by cave.plot.turf) i.shades)
+  ?:  &(?=(^ shade) (is-husk-collidable turf +.u.shade))
+    %.y
+  $(shades t.shades)
+
+  
 ::
 :: resets husk-bits for tile - [offset collidable effects]
 :: does not verify form

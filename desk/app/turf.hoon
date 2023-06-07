@@ -163,7 +163,10 @@
     =+  !<(stir:pond (fled vase))
     ?>  =(our src):bowl
     ~&  >  "accepting wave from client: {<?^(wave -.wave wave)>}"
-    =/  fwave  (filter-wave:plow wave)
+    =/  pub  (~(get by read:du-pond) ppath)
+    =/  fwave=(unit wave:pond)
+      ?~  pub  ~
+      (filter-wave:plow rock.u.pub wave)
     =^  cards  state  (give-stir:hc ;;(path ppath) id fwave)
     cards^this
   ::

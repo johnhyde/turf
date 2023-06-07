@@ -37,6 +37,7 @@
 +$  shade-id  @ud
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
++$  flug  $~(%.n ?)  :: flag which is false by default
 +$  off-size  [offset=svec2 size=vec2]
 +$  tl-br  [tl=svec2 br=svec2]
 +$  spaces  (map svec2 space)
@@ -59,7 +60,7 @@
   ==
 +$  husk-bits
   $:  offset=svec2  :: added to form offset
-      collidable=(unit ?)  :: use form collidable if null
+      collidable=(unit flug)  :: use form collidable if null
       effects=(map trigger effect)  :: override form effects and implement form seeds
   ==
 +$  shade
@@ -74,7 +75,7 @@
   ==
 +$  form-bits
   $:  offset=svec2
-      collidable=?
+      collidable=flug
       effects=(map trigger effect)
       seeds=(map trigger effect-type)
   ==
