@@ -1,6 +1,11 @@
 /-  *turf, pond
 /+  *turf, sss
 |%
+++  filter-wave
+  |=  =wave:pond
+  ^-  (unit wave:pond)
+  `wave
+::
 ++  enjs
   =,  enjs:format
   |%
@@ -11,9 +16,13 @@
     ?~  rock  ~
     (turf u.rock)
   ++  pond-wave
-    |=  =wave:pond
+    |=  [id=stir-id:pond uwave=(unit wave:pond)]
     ^-  json
-    %+  frond  %wave
+    %-  pairs
+    :_  :-  id+(fall (bind id |=(i=@t s+i)) ~)  ~
+    :-  %wave
+    ?~  uwave  ~
+    =*  wave  u.uwave
     %-  pairs
     :~  :-  %type
         s+?@(wave wave -.wave)
@@ -222,13 +231,14 @@
   --
 ++  dejs
   =,  dejs:format
+  =*  soft  dejs-soft:format
   |%
     :: todo: support rocks as well as waves
-    ++  pond-res
+    ++  stir-pond
       |=  jon=json
-      ^-  (response:poke:sss pond pond-path)
+      ^-  stir:pond
       %-  %-  ot
-          ~[path+pa dude+so aeon+ni type+_%scry what+_%wave wave+pond-wave]
+          ~[path+pa id+so:soft wave+pond-wave]
       jon
     ++  pond-wave
       |=  jon=json

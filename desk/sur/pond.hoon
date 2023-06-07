@@ -3,15 +3,8 @@
 =<
 |%
 ++  name  %pond
-+$  rock  (unit turf)
-+$  wave
-  $@  ?(%del-turf %inc-counter)
-  $%  set-turf-wave
-      add-husk-wave
-      del-shade-wave
-      chat-wave
-      move-wave
-  ==
++$  rock  ^rock
++$  wave  ^wave
 ++  wash
   |=  [=rock =wave]
   ^-  ^rock
@@ -46,9 +39,25 @@
   ==
 --
 |%
++$  rock  (unit turf)
++$  wave
+  $@  ?(%del-turf %inc-counter)
+  $%  set-turf-wave
+      add-husk-wave
+      del-shade-wave
+      chat-wave
+      move-wave
+  ==
 +$  set-turf-wave  [%set-turf =turf]
 +$  add-husk-wave  [%add-husk husk-spec]
 +$  del-shade-wave  [%del-shade =shade-id]
 +$  chat-wave  [%chat =chat]
 +$  move-wave  [%move =ship pos=svec2]
+::
++$  stir-id  (unit @t)
++$  stir  [ppath=pond-path id=stir-id =wave]
++$  stirred
+    $%  [what=%rock =rock]
+        [what=%wave id=stir-id wave=(unit wave)]
+    ==
 --

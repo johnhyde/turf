@@ -62,18 +62,19 @@
         offset
         +:*form-bits
     ==
-++  new-player
-  |=  pos=svec2
-  ^-  player
-  :*  pos
-      %down
-      color='#d23'
-      :~  ^-  thing
-          :-   [/body/scarecrow 0 *husk-bits]
-          (new-form %garb 'Scarecrow Body' player.sprites)
-      ==
-  ==
+  ++  new-player
+    |=  pos=svec2
+    ^-  player
+    :*  pos
+        %down
+        color='#d23'
+        :~  ^-  thing
+            :-   [/body/scarecrow 0 *husk-bits]
+            (new-form %garb 'Scarecrow Body' player.sprites)
+        ==
+    ==
   --
+::
 ++  fill-space
   |=  [size=vec2 offset=svec2 id=form-id]
   ^-  spaces

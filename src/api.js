@@ -80,13 +80,10 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
 export async function sendPondWave(id, mark, data) {
   let result = await api.poke({
     app: 'turf',
-    mark: 'sss-pond',
+    mark: 'stir-pond',
     json: {
       path: id,
-      dude: 'turf-client',
-      aeon: 0,
-      type: 'scry',
-      what: 'wave',
+      id: 'hmmb',
       wave: !data ? mark : { [mark]: data },
     },
   });

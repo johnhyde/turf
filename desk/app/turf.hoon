@@ -1,6 +1,7 @@
 /-  *turf, pond
-/+  *turf, *sss, default-agent, dbug, verb, agentio
-/%  pond-mark  %sss-pond
+/+  *turf, *sss, plow, default-agent, dbug, verb, agentio
+/%  stir-mark  %stir-pond
+/%  stirred-mark  %stirred-pond
 =/  res-pond  (response:poke pond *)
 =/  sub-pond-init  (mk-subs pond pond-path)
 =/  pub-pond-init  (mk-pubs pond pond-path)  ::NOTE $? can be used!
@@ -158,6 +159,14 @@
     ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
+      %stir-pond
+    =+  !<(stir:pond (fled vase))
+    ?>  =(our src):bowl
+    ~&  >  "accepting wave from client: {<?^(wave -.wave wave)>}"
+    =/  fwave  (filter-wave:plow wave)
+    =^  cards  state  (give-stir:hc ;;(path ppath) id fwave)
+    cards^this
+  ::
   :: Boilerplate
   ::
       %sss-on-rock
@@ -179,14 +188,6 @@
   ::
       %sss-pond
     =/  res  !<(into:da-pond (fled vase))
-    ?:  =(%turf-client dude.res)
-      ?>  =(our src):bowl
-      ~|  %turf-client-may-only-send-waves
-      ?>  ?=(%scry type.res)
-      ?>  ?=(%wave what.res)
-      =^  cards  state  (give-pond:hc ;;(path path.res) wave.res)
-      ~&  >  "accepting wave from client: {<?^(wave.res -.wave.res wave.res)>}"
-      cards^this
     =^  cards  sub-pond  (apply:da-pond res)
     ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
@@ -255,26 +256,28 @@
             (du pub-pond bowl -:!>(*result:du))
 
 ++  scrio  ~(scry agentio bowl)
-++  give-pond
-  |=  [ppath=path =wave:pond]
+++  give-stir
+  |=  [ppath=path id=stir-id:pond wave=(unit wave:pond)]
   ?>  ?=(%pond -.ppath)
   ^-  (quip card _state)
-  =^  cards  pub-pond  (give:du-pond ppath wave)
-  =.  cards
-    =/  res=res-pond  [[ppath]~ dap.bowl 0 %scry %wave wave]
-    :_  cards
-    ^-  card
-    [%give %fact [`path`ppath]~ %sss-pond !>(res)]
-  cards^state
+  =/  cards=(list card)
+    =/  =stirred:pond  [%wave id wave]
+    [%give %fact [`path`ppath]~ %stirred-pond !>(stirred)]~
+  ?~  wave  cards^state
+  =^  sss-cards  pub-pond  (give:du-pond ppath u.wave)
+  [(weld sss-cards cards) state]
+++  give-pond
+  |=  [ppath=path =wave:pond]
+  (give-stir ppath ~ `wave)
 ++  give-pond-rock
   |=  [ppath=path on-watch=?]
   ?>  ?=(%pond -.ppath)
   ^-  (quip card _state)
   :_  state
   =/  =rock:pond  rock:(~(got by read:du-pond) ppath)
-  =/  res=res-pond  [[ppath]~ dap.bowl 0 %scry %rock rock]
+  =/  =stirred:pond  [%rock rock]
   =/  give-paths
     ?:  on-watch  ~
     [`path`ppath]~
-  [%give %fact give-paths %sss-pond !>(res)]~
+  [%give %fact give-paths %stirred-pond !>(stirred)]~
 --
