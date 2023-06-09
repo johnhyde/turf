@@ -263,18 +263,23 @@ export function extractSkyeSprites(skye) {
   return sprites;
 }
 
+function addThingSprites(sprites, thing, patp) {
+  thing.form.variations.forEach((variation, i) => {
+    if (variation.back) {
+      sprites[spriteName(thing.formId, i, 'back', patp)] = variation.back;
+    }
+    if (variation.fore) {
+      sprites[spriteName(thing.formId, i, 'fore', patp)] = variation.fore;
+    }
+  });
+}
+
 export function extractPlayerSprites(players) {
   const sprites = {};
   Object.entries(players).forEach(([patp, player]) => {
+    addThingSprites(sprites, player.avatar.body.thing, patp);
     player.avatar.things.forEach((thing) => {
-      thing.variations.forEach((variation, i) => {
-        if (variation.back) {
-          sprites[spriteName(thing.formId, i, 'back', patp)] = variation.back;
-        }
-        if (variation.fore) {
-          sprites[spriteName(thing.formId, i, 'fore', patp)] = variation.fore;
-        }
-      });
+      addThingSprites(sprites, thing, patp);
     });
   });
   return sprites;

@@ -14,6 +14,7 @@ export default function EditPane() {
       <p>
         Edit Mode
       </p>
+      <button onClick={selectEraser}>Erase</button>
       <For each={Object.entries(state.e?.skye || {})} fallback={<div>Loading...</div>}>
         {([id, form], i) => (
           <img
@@ -25,9 +26,9 @@ export default function EditPane() {
           />
         )}
       </For>
-      <button onClick={selectEraser}>Erase</button>
-      <button onClick={state.toggleEditing.bind(state)}>Cancel</button>
-      <button onClick={state.toggleEditing.bind(state)}>Save</button>
+      {/* <button onClick={state.toggleEditing.bind(state)}>Cancel</button> */}
+      {/* <button onClick={state.toggleEditing.bind(state)}>Save</button> */}
+      <button onClick={state.toggleEditing.bind(state)}>Done</button>
     </div>
   );
 }

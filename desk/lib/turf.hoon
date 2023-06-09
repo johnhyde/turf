@@ -13,7 +13,7 @@
       %=  turf
         size.plot           size
         skye.plot           default-skye
-        spaces.plot         (fill-space size offset /floor/wood)
+        spaces.plot         (fill-space size offset /grass)
         offset.plot         offset
         players.ephemera    (~(put by players.ephemera.turf) our (new-player offset))
       ==
@@ -42,14 +42,60 @@
         =/  tree  (new-form-offset %item 'Tree' tree [--16 --42])
         tree(collidable %.y)
     ==
+  ++  default-closet
+    ^-  skye
+    %-  malt
+    ^-  (list [form-id form])
+    =,  sprites
+    :~  (new-garb-pair /eyes/tall 'Tall Eyes')
+        (new-garb-pair /eyes/almond 'Almond Eyes')
+        (new-garb-pair /eyes/small 'Small Eyes')
+        (new-garb-pair /eyes/cute 'Cute Eyes')
+        (new-garb-pair /eyes/big/blue 'Big Blue Eyes')
+        (new-garb-pair /eyes/big/brown 'Big Brown Eyes')
+        (new-garb-pair /eyes/big/green 'Big Green Eyes')
+        (new-garb-pair /brows 'Plain Eyebrows')
+        (new-garb-pair /brows/uni 'Unibrow')
+        (new-garb-pair /brows/bushy 'Bushy Eyebrows')
+        (new-garb-pair /brows/arch 'Arched Eyebrows')
+        (new-garb-pair /brows/vulcan 'Vulcan Eyebrows')
+        (new-garb-pair /mouth 'Basic Mouth')
+        (new-garb-pair /mouth/small 'Small Mouth')
+        (new-garb-pair /mouth/small/red 'Small Red Mouth')
+        (new-garb-pair /mouth/small/open'Small Open Mouth')
+        (new-garb-pair /mouth/smirk 'Smirk')
+        (new-garb-pair /mouth/smile 'Smile')
+        (new-garb-pair /mouth/smile/big 'Big Smile')
+        ::
+    ==
+  ++  default-avatar
+    =<  .(offset.form.thing.body [--0 --12])
+    ^-  avatar
+    :-  :-  color=0xd8.a57c
+        (new-garb-thing /body 'Basic Body')
+    :~  (new-garb-thing /brows 'Plain Eyebrows')
+        (new-garb-thing /eyes/tall 'Tall Eyes')
+    ==
+  ++  new-garb-pair
+    |=  [=form-id name=@t]
+    :-  form-id
+    (new-garb name (path-to-cord form-id))
+  ++  new-garb-thing
+    |=  [=form-id name=@t]
+    ^-  thing
+    :-   [form-id 0 *husk-bits]
+    (new-garb name (path-to-cord form-id))
+  ++  new-garb
+    |=  [name=@t file=@t]
+    (new-form %garb name (garb.sprites file))
   ++  new-tile
     |=  [name=@t =png]
-    ^-  form
-    :*  name
-        type=%tile
-        variations=[`png ~]~
-        *form-bits
-    ==
+    (new-form %tile name png)
+  ++  new-thing
+    |=  [=form-id =form-type name=@t =png]
+    ^-  thing
+    :-   [form-id 0 *husk-bits]
+    (new-form form-type name png)
   ++  new-form
     |=  [=form-type name=@t =png]
     (new-form-offset form-type name png *svec2)
@@ -67,11 +113,7 @@
     ^-  player
     :*  pos
         %down
-        color='#d23'
-        :~  ^-  thing
-            :-   [/body/scarecrow 0 *husk-bits]
-            (new-form %garb 'Scarecrow Body' player.sprites)
-        ==
+        default-avatar
     ==
   --
 ::
@@ -148,6 +190,10 @@
 ++  lth-si
   |=  [a=@s b=@s]
   =(-1 (cmp:si a b))
+::
+++  path-to-cord
+  |=  =path
+  (crip (zing (join "-" (turn path trip))))
 ::
 ++  get-space
   |=  [=spaces pos=svec2]

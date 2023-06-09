@@ -14,9 +14,10 @@
       =avatar
   ==
 +$  avatar
-  $:  color=@t
+  $:  =body
       things=(list thing)
   ==
++$  body  [=color =thing]
 +$  chat
   $:  from=ship
       at=time
@@ -37,6 +38,7 @@
 +$  shade-id  @ud
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
++$  color  _0xff.ffff
 +$  flug  $~(%.n ?)  :: flag which is false by default
 +$  off-size  [offset=svec2 size=vec2]
 +$  tl-br  [tl=svec2 br=svec2]

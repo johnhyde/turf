@@ -11,8 +11,10 @@
   ==
 +$  state-0
   $:  %0
-      turfs=(map turf-id turf)
+      reset=_5
       =avatar
+      skye=$~(default-closet:gen skye)
+      dppath=$~(/pond path)
       sub-pond=_sub-pond-init
       pub-pond=_pub-pond-init
       :: =ephemera
@@ -43,7 +45,10 @@
 ::
 ++  on-init
   ^-  (quip card _this)
-  `this
+  =^  cards  state
+    ?:  default-turf-exists:hc  `state
+    init-turf:hc
+  cards^this
 ::
 ++  on-save  
   !>(state)
@@ -52,18 +57,24 @@
   |=  old-state=vase
   |^  ^-  (quip card _this)
   :: `this
+  :: =|  cards=(list card)
+  =/  old-reset  !<(@ud (slot 6 old-state))
   =+  :-  cards=`(list card)`~
+      ?.  =(old-reset reset)  old=state
       old=!<(versioned-state old-state)
-  =*  quop  -
-  :: =?  quop  ?=(%0 -.old)
+  =*  quolp  -
+  :: =?  quolp  ?=(%0 -.old)
   ::   (state-0-to-1 cards old)
-  ?>  =(-:*current-state -.old)
   :: =/  old  *current-state
+  ?>  =(-:*current-state -.old)
+  =.  state  old
+  =^  more-cards  state
+    ?:  default-turf-exists:hc  `state
+    init-turf:hc
   :: =.  cards  :*
   ::   cards
   :: ==
-  =.  state  old
-  cards^this
+  (weld cards more-cards)^this
   --
 ::
 ::  The SSS skye will give your agent pokes with the following marks:
@@ -82,7 +93,6 @@
   :: ?>  =(our src):bowl
   :: ~&  >>  "sub-pond was: {<read:da-pond>}"
   :: ~&  >>  "pub-pond was: {<read:du-pond>}"
-    =+  dppath=/pond
   ?+    mark  (on-poke:def mark vase)
       %test
     :: ~&  (default-turf:gen our.bowl)
@@ -94,9 +104,15 @@
     =^  cards  state  (give-pond-rock dppath %.n)
     cards^this
   ::
+      %init-avatar
+    =.  pub-pond  (secret:du-pond [dppath]~)
+    =^  cards  state  init-turf:hc
+    ~&  >  "pub-pond is: {<read:du-pond>}"
+    cards^this
+  ::
       %init-turf
     =.  pub-pond  (secret:du-pond [dppath]~)
-    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl [16 8] [--0 --0]))
+    =^  cards  state  init-turf:hc
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -259,6 +275,9 @@
             (du pub-pond bowl -:!>(*result:du))
 
 ++  scrio  ~(scry agentio bowl)
+++  default-turf-exists  ?=(^ (~(get by read:du-pond) dppath))
+++  init-turf
+  (give-pond dppath set-turf+(default-turf:gen our.bowl [15 12] [--0 --0]))
 ++  give-stir
   |=  [ppath=path id=stir-id:pond wave=(unit wave:pond)]
   ?>  ?=(%pond -.ppath)

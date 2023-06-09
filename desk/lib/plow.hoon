@@ -134,8 +134,15 @@
     |=  =^avatar
     ^-  json
     %-  pairs
-    :~  color+s+color.avatar
+    :~  body+(body body.avatar)
         things+a+(turn things.avatar thing)
+    ==
+  ++  body
+    |=  =^body
+    ^-  json
+    %-  pairs
+    :~  color+(numb color.body)
+        thing+(thing thing.body)
     ==
   ++  chat
     |=  =^chat
@@ -156,7 +163,8 @@
     |=  =^thing
     ^-  json
     %-  pairs
-    (weld (husk-pairs -.thing) (form-pairs +.thing))
+    :-  form+(pairs (form-pairs +.thing))
+    (husk-pairs -.thing)
   ++  husk
     |=  =^husk
     ^-  json

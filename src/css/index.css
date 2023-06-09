@@ -28,6 +28,10 @@ code {
   margin: 4px;
 }
 
+#sidebar input {
+  max-width: 100px;
+}
+
 #shell {
   /* width: 500px;
   height: 500px; */

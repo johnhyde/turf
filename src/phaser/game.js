@@ -26,7 +26,15 @@ async function loadImage(id, url) {
         reject();
       }
     });
-    game.textures.addBase64(id, url);
+    // if (url.startsWith('data:image')) {
+      game.textures.addBase64(id, url);
+    // } else {
+    //   const img = new Image();
+    //   img.onload = () => game.textures.addImage(id, img);
+    //   img.onerror = reject;
+    //   img.src = url;
+    //   // game.textures.addImage(id, img);
+    // }
   });
 }
 
@@ -35,6 +43,7 @@ function createShade(shade, id, turf) {
   let sprite = scene.add.image(huskPos.x, huskPos.y, spriteName(shade.formId, 0, 'back'));
   let form = turf.skye[shade.formId];
   sprite.setDisplayOrigin(form.offset.x, form.offset.y);
+  sprite.setDepth(shade.pos.y);
   sprite.setInteractive();
   sprite.on('pointerdown', () => {
     if (state.editor.editing && state.editor.eraser) {
@@ -140,6 +149,9 @@ export function startPhaser(_owner, container) {
         // console.log('f key', keys.f)
       }
       function updatePlayer(dt) {
+        if (player.depth !== player.tilePos.y) {
+          player.setDepth(player.tilePos.y + 0.5);
+        }
         const speed = 170;
         let targetPos = vec2(player.tilePos).scale(32);
         let pos = vec2(player.x, player.y);
@@ -219,8 +231,8 @@ export function startPhaser(_owner, container) {
       createEffect(on(() => [
         loader.state,
         state.c.id,
-        state.e?.size,
-        state.e?.offset,
+        JSON.stringify(state.e?.size),
+        JSON.stringify(state.e?.offset),
       ], (_, __, lastTurfId) => {
         if (loader.state === 'ready') {
           if (lastTurfId || state.e) destroyCurrentTurf();
@@ -249,7 +261,7 @@ export function startPhaser(_owner, container) {
         }
         return [];
       }, { defer: false }));
-      createEffect(on(() => JSON.stringify(state.e?.cave), () => {
+      createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
         if (state.e && loader.state == 'ready') {
           const ids = [...Object.keys(shades), ...Object.keys(state.e.cave)];
           ids.forEach((id) => {
@@ -335,17 +347,33 @@ export function startPhaser(_owner, container) {
       return map.addTilesetImage(tileset.image, undefined, undefined, undefined, undefined, undefined, i + 1);
     });
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
+    layer.setDepth(turf.offset.y - 10);
     window.tiles = tiles = layer;
 
-    Object.entries(turf.cave).forEach(([id, shade]) => {
-      shades[id] = createShade(shade, id, turf);
-    });
+    // Object.entries(turf.cave).forEach(([id, shade]) => {
+    //   shades[id] = createShade(shade, id, turf);
+    // });
 
-    const garb = _player.avatar.things[0];
+    const playerBody = _player.avatar.body;
     const playerPos = vec2(_player.pos).scale(32);
-    player = scene.physics.add.image(playerPos.x, playerPos.y, spriteName(garb.formId, 0, 'back', our));
-    // player.setDisplayOrigin((player.width - 32)/2, player.height - 32);
-    player.setOrigin(0, 0.6);
+    // const bodyImage = scene.make.image(0, 0, spriteName(playerBody.thing.formId, 0, 'back', our));
+    const bodyImage = scene.make.image({ key: spriteName(playerBody.thing.formId, 0, 'back', our) });
+    bodyImage.setTint(playerBody.color);
+    const playerOffset = vec2(playerBody.thing.offset).add(playerBody.thing.form.offset);
+    bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
+    const things = [
+      bodyImage,
+      ..._player.avatar.things.map((thing) => {
+        const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
+        const img = scene.make.image({ key: spriteName(thing.formId, 0, 'back', our) });
+        img.setDisplayOrigin(offset.x, offset.y);
+        return img;
+      }),
+    ];
+    player = scene.add.container(playerPos.x, playerPos.y, things);
+    // player = scene.physics.add.image(playerPos.x, playerPos.y, spriteName(garb.formId, 0, 'back', our));
+    // player.setTint(_player.avatar.body.color);
+    // player.setOrigin(0, 0.6);
     player.tilePos = vec2(_player.pos);
     player.oldTilePos = vec2(_player.pos);
     cam.startFollow(player);

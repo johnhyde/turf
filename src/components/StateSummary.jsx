@@ -30,7 +30,7 @@ function StateSummary() {
   function subToTurf() {
     state.subToTurf();
   }
-  function unsubToTurf() {
+  function unsubToTurfs() {
     api.unsubscribeToTurf();
   }
   function addHusk(formId) {
@@ -98,8 +98,8 @@ function StateSummary() {
           </li>
         )}</For>
       </ul>
-      <button onClick={subToTurf}>pond to turf</button>
-      <button onClick={unsubToTurf}>unsub to turfs</button>
+      <button onClick={subToTurf}>sub to turf</button>
+      <button onClick={unsubToTurfs}>unsub to turfs</button>
     </div>
   );
 }
