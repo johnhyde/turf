@@ -50,6 +50,10 @@
           (husk-spec +.wave)
             %del-shade
           (frond 'shadeId' (numb +.wave))
+            %cycle-shade
+          (pairs ~['shadeId'^(numb shade-id.wave) amount+(numb amt.wave)])
+            %set-shade-var
+          (pairs ~['shadeId'^(numb shade-id.wave) variation+(numb variation.wave)])
             %chat
           (chat chat.wave)
             %move
@@ -261,7 +265,7 @@
       |=  jon=json
       ^-  stir:pond
       %-  %-  ot
-          ~[path+pa id+so:soft wave+pond-wave]
+          ~[path+(cork pa |=(=path ;;(pond-path path))) id+so:soft wave+pond-wave]
       jon
     ++  pond-wave
       |=  jon=json
@@ -272,11 +276,14 @@
       %-  %-  of
           :~  move+(ot ~[ship+(se %p) pos+svec2])
               add-husk+(ot ~[pos+svec2 'formId'^pa variation+ni])
-              del-shade+(ot ~['shadeId'^ni])
+              del-shade+shade-id
+              cycle-shade+(ot ~['shadeId'^ni amount+ni])
+              set-shade-var+(ot ~['shadeId'^ni variation+ni])
               :: todo: set-turf, chat
           ==
       jon
     ::
+    ++  shade-id  (ot ~['shadeId'^ni])
     ++  svec2
       |=  jon=json
       ^-  ^svec2

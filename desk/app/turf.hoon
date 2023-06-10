@@ -1,22 +1,27 @@
-/-  *turf, pond
+/-  *turf, pond, mist
 /+  *turf, *sss, plow, default-agent, dbug, verb, agentio
 /%  stir-mark  %stir-pond
 /%  stirred-mark  %stirred-pond
-=/  res-pond  (response:poke pond *)
+:: =/  res-pond  (response:poke pond *)
 =/  sub-pond-init  (mk-subs pond pond-path)
-=/  pub-pond-init  (mk-pubs pond pond-path)  ::NOTE $? can be used!
+=/  pub-pond-init  (mk-pubs pond pond-path)
+=/  sub-mist-init  (mk-subs mist mist-path)
+=/  pub-mist-init  (mk-pubs mist mist-path)
+=/  dppath=pond-path  [%pond ~]
+=/  dmpath=mist-path  [%mist ~]
 |%
 +$  versioned-state
   $%  state-0
   ==
 +$  state-0
   $:  %0
-      reset=_5
+      reset=_2
       =avatar
       skye=$~(default-closet:gen skye)
-      dppath=$~(/pond path)
       sub-pond=_sub-pond-init
       pub-pond=_pub-pond-init
+      sub-mist=_sub-mist-init
+      pub-mist=_pub-mist-init
       :: =ephemera
   ==
 +$  current-state  state-0
@@ -26,9 +31,6 @@
 %-  agent:dbug
 =|  current-state
 =*  state  -
-:: =.  sub-pond  sub-pond-init
-:: =.  pub-pond  pub-pond-init
-::
 %+  verb  &
 ^-  agent:gall
 =<
@@ -41,6 +43,13 @@
 ::
     du-pond  =/  du  (du pond pond-path)
             (du pub-pond bowl -:!>(*result:du))
+::
+    da-mist  =/  da  (da mist mist-path)
+            (da sub-mist bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
+::
+    du-mist  =/  du  (du mist mist-path)
+            (du pub-mist bowl -:!>(*result:du))
+::
     hc    ~(. +> bowl)
 ::
 ++  on-init
@@ -60,7 +69,7 @@
   :: =|  cards=(list card)
   =/  old-reset  !<(@ud (slot 6 old-state))
   =+  :-  cards=`(list card)`~
-      ?.  =(old-reset reset)  old=state
+      ?.  =(old-reset reset)  ~&('reseting state' old=state)
       old=!<(versioned-state old-state)
   =*  quolp  -
   :: =?  quolp  ?=(%0 -.old)
@@ -95,6 +104,7 @@
   :: ~&  >>  "pub-pond was: {<read:du-pond>}"
   ?+    mark  (on-poke:def mark vase)
       %test
+    ~&  -:!>(*$%(from:da-mist from:da-pond))
     :: ~&  (default-turf:gen our.bowl)
     `this
   ::
@@ -165,13 +175,13 @@
   ::
       %surf-turf
     =^  cards  sub-pond  
-      (surf:da-pond !<(@p (slot 2 vase)) %turf !<(,[%pond path] (slot 3 vase)))
+      (surf:da-pond !<(@p (slot 2 vase)) %turf !<(pond-path (slot 3 vase)))
     ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       %quit-turf
     =.  sub-pond  
-      (quit:da-pond !<(@p (slot 2 vase)) %turf !<(,[%pond path] (slot 3 vase)))
+      (quit:da-pond !<(@p (slot 2 vase)) %turf !<(pond-path (slot 3 vase)))
     ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
@@ -183,32 +193,44 @@
     =/  fwave=(unit wave:pond)
       ?~  pub  ~
       (filter-wave:plow rock.u.pub wave)
-    =^  cards  state  (give-stir:hc ;;(path ppath) id fwave)
+    =^  cards  state  (give-stir:hc ppath id fwave)
     cards^this
   ::
   :: Boilerplate
   ::
       %sss-on-rock
-    =+  msg=!<(from:da-pond (fled vase))
-    :: ?-    msg=!<(from:da-pond (fled vase))
-    ::     [pond-path *]
-    ~?  stale.msg  "turf from {<from.msg>} on {<src.msg>} is stale"
-    ~?  ?=(^ rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.rock.msg>}"
-    `this
-    :: ==
+    :: =+  msg=!<(from:da-pond (fled vase))
+    ?-    msg=!<($%(from:da-pond from:da-mist) (fled vase))
+        [pond-path *]
+      ~?  stale.msg  "turf from {<from.msg>} on {<src.msg>} is stale"
+      ~?  ?=(^ rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.rock.msg>}"
+      `this
+        [mist-path *]
+      ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
+      `this
+    ==
   ::
       %sss-to-pub
-    =+  msg=!<(into:du-pond (fled vase))
-    :: ?-  msg=!<(into:du-pond (fled vase))
-    ::     [pond-path *]
-    =^  cards  pub-pond  (apply:du-pond msg)
-    [cards this]
-    :: ==
+    :: =+  msg=!<(into:du-pond (fled vase))
+    ?-  msg=!<($%(into:du-pond into:du-mist) (fled vase))
+        [pond-path *]
+      =^  cards  pub-pond  (apply:du-pond msg)
+      [cards this]
+        [mist-path *]
+      =^  cards  pub-mist  (apply:du-mist msg)
+      [cards this]
+    ==
   ::
       %sss-pond
     =/  res  !<(into:da-pond (fled vase))
     =^  cards  sub-pond  (apply:da-pond res)
     ~&  >  "sub-pond is: {<read:da-pond>}"
+    [cards this]
+  ::
+      %sss-mist
+    =/  res  !<(into:da-mist (fled vase))
+    =^  cards  sub-mist  (apply:da-mist res)
+    ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
   ::
   ::  You'll receive an `%sss-surf-fail` poke whenever you tried to subscribe to
@@ -217,7 +239,7 @@
   ::
   ::  The message will contain `[path ship dude]`.
       %sss-surf-fail
-    =/  msg  !<(fail:da-pond (fled vase))
+    =/  msg  !<($%(fail:da-pond fail:da-mist) (fled vase))
     ~&  >>>  "not allowed to surf on {<msg>}!"
     `this
   ==
@@ -251,17 +273,27 @@
     ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
+      [~ %sss %on-rock @ @ @ mist-path]
+    =.  sub-mist  (chit:da-mist |3:wire sign)
+    ~&  >  "sub-mist is: {<read:da-mist>}"
+    `this
+  ::
       [~ %sss %scry-request @ @ @ pond-path]
     =^  cards  sub-pond  (tell:da-pond |3:wire sign)
     ~&  >  "sub-pond is: {<read:da-pond>}"
+    [cards this]
+  ::
+      [~ %sss %scry-request @ @ @ mist-path]
+    =^  cards  sub-mist  (tell:da-mist |3:wire sign)
+    ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
   ==
 ++  on-arvo
   |=  [=wire =sign-arvo]
   ^-  (quip card _this)
   ?+  wire  (on-arvo:def [wire sign-arvo])
-    :: [~ %sss %behn @ @ @ %pond *]  [(behn:da-pond |3:wire) this]
-    [~ %sss %behn @ @ @ %pond *]  [(behn:da-pond |3:wire) this] 
+    [~ %sss %behn @ @ @ pond-path]  [(behn:da-pond |3:wire) this] 
+    [~ %sss %behn @ @ @ mist-path]  [(behn:da-mist |3:wire) this] 
   ==
 ++  on-fail  on-fail:def
 --
@@ -273,33 +305,39 @@
 ::
     du-pond  =/  du  (du pond pond-path)
             (du pub-pond bowl -:!>(*result:du))
+::
+    da-mist  =/  da  (da mist mist-path)
+            (da sub-mist bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
+::
+    du-mist  =/  du  (du mist mist-path)
+            (du pub-mist bowl -:!>(*result:du))
 
 ++  scrio  ~(scry agentio bowl)
-++  default-turf-exists  ?=(^ (~(get by read:du-pond) dppath))
+++  default-turf-exists
+  :: ?>  ?=(%pond -.dppath)
+  ?=(^ (~(get by read:du-pond) dppath))
 ++  init-turf
   (give-pond dppath set-turf+(default-turf:gen our.bowl [15 12] [--0 --0]))
 ++  give-stir
-  |=  [ppath=path id=stir-id:pond wave=(unit wave:pond)]
-  ?>  ?=(%pond -.ppath)
+  |=  [ppath=pond-path id=stir-id:pond wave=(unit wave:pond)]
   ^-  (quip card _state)
   =/  cards=(list card)
     =/  =stirred:pond  [%wave id wave]
-    [%give %fact [`path`ppath]~ %stirred-pond !>(stirred)]~
+    [%give %fact [;;(path ppath)]~ %stirred-pond !>(stirred)]~
   ?~  wave  cards^state
   =^  sss-cards  pub-pond  (give:du-pond ppath u.wave)
   [(weld sss-cards cards) state]
 ++  give-pond
-  |=  [ppath=path =wave:pond]
+  |=  [ppath=pond-path =wave:pond]
   (give-stir ppath ~ `wave)
 ++  give-pond-rock
-  |=  [ppath=path on-watch=?]
-  ?>  ?=(%pond -.ppath)
+  |=  [ppath=pond-path on-watch=?]
   ^-  (quip card _state)
   :_  state
   =/  =rock:pond  rock:(~(got by read:du-pond) ppath)
   =/  =stirred:pond  [%rock rock]
   =/  give-paths
     ?:  on-watch  ~
-    [`path`ppath]~
+    [;;(path ppath)]~
   [%give %fact give-paths %stirred-pond !>(stirred)]~
 --

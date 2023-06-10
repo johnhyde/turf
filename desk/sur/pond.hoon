@@ -24,6 +24,8 @@
     %set-turf  `turf.wave
     %add-husk  `(add-husk turf +.wave)
     %del-shade  `(del-shade turf +.wave)
+    %cycle-shade  `(cycle-shade turf +.wave)
+    %set-shade-var  `(set-shade-var turf +.wave)
       %chat
     rock(chats.ephemera.u [chat.wave chats.ephemera.turf])
       %move
@@ -40,16 +42,21 @@
 |%
 +$  rock  (unit turf)
 +$  wave
+  $+  pond-wave
   $@  ?(%del-turf %inc-counter)
   $%  set-turf-wave
       add-husk-wave
       del-shade-wave
+      cycle-shade-wave
+      set-shade-var-wave
       chat-wave
       move-wave
   ==
 +$  set-turf-wave  [%set-turf =turf]
 +$  add-husk-wave  [%add-husk husk-spec]
 +$  del-shade-wave  [%del-shade =shade-id]
++$  cycle-shade-wave  [%cycle-shade =shade-id amt=@ud]
++$  set-shade-var-wave  [%set-shade-var =shade-id variation=@ud]
 +$  chat-wave  [%chat =chat]
 +$  move-wave  [%move =ship pos=svec2]
 ::

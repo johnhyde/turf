@@ -5,16 +5,17 @@ import { useState } from 'stores/state.jsx';
 export default function EditPane() {
   const state = useState();
   const isSelected = createSelector(() => state.editor.selectedFormId);
-  function selectEraser() {
+  function selectTool(tool) {
     state.selectForm(null);
-    state.selectTool(state.editor.tools.ERASER);
+    state.selectTool(tool);
   }
   return (
     <div>
       <p>
         Edit Mode
       </p>
-      <button onClick={selectEraser}>Erase</button>
+      <button onClick={[selectTool, state.editor.tools.ERASER]}>Erase</button>
+      <button onClick={[selectTool, state.editor.tools.CYCLER]}>Cycler</button>
       <For each={Object.entries(state.e?.skye || {})} fallback={<div>Loading...</div>}>
         {([id, form], i) => (
           <img

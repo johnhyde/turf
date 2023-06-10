@@ -28,6 +28,9 @@
     :~  :-  /floor/wood
         (new-tile 'Wood Floor' floor)
       ::
+        :-  /floor/stone
+        (new-tile 'Stone Floor' floor-stone)
+      ::
         :-  /grass
         (new-tile 'Grass' grass)
       ::
@@ -41,6 +44,13 @@
         :-  /tree
         =/  tree  (new-form-offset %item 'Tree' tree [--16 --42])
         tree(collidable %.y)
+      ::
+        :-  /wall/stone
+        =/  wall-stone  (new-form-variations %wall 'wall-stone' wall-stones)
+        %=  wall-stone
+          collidable  %.y
+          offset      [--0 --32]
+        ==
     ==
   ++  default-closet
     ^-  skye
@@ -62,7 +72,7 @@
         (new-garb-pair /mouth 'Basic Mouth')
         (new-garb-pair /mouth/small 'Small Mouth')
         (new-garb-pair /mouth/small/red 'Small Red Mouth')
-        (new-garb-pair /mouth/small/open'Small Open Mouth')
+        (new-garb-pair /mouth/small/open 'Small Open Mouth')
         (new-garb-pair /mouth/smirk 'Smirk')
         (new-garb-pair /mouth/smile 'Smile')
         (new-garb-pair /mouth/smile/big 'Big Smile')
@@ -107,6 +117,14 @@
         variations=[`png ~]~
         offset
         +:*form-bits
+    ==
+  ++  new-form-variations
+    |=  [=form-type name=@t pngs=(list png)]
+    ^-  form
+    :*  name
+        type=form-type
+        variations=(turn pngs |=(=png [`png ~]))
+        *form-bits
     ==
   ++  new-player
     |=  pos=svec2
@@ -294,5 +312,28 @@
     %^  jab-by-spaces  spaces.plot.turf  pos.shade
     |=  =space
     space(shades (skip shades.space |=(sid=@ =(sid id))))
+  turf
+::
+++  cycle-shade
+  |=  [=turf id=shade-id amt=@ud]
+  ^-  ^turf
+  =/  shade  (~(gut by cave.plot.turf) id ~)
+  ?~  shade  turf
+  =/  form  (get-form turf form-id.shade)
+  ?~  form  turf
+  =.  cave.plot.turf
+    %+  ~(put by cave.plot.turf)  id
+    shade(variation (mod (add amt variation.shade) (lent variations.u.form)))
+  turf
+++  set-shade-var
+  |=  [=turf id=shade-id variation=@ud]
+  ^-  ^turf
+  =/  shade  (~(gut by cave.plot.turf) id ~)
+  ?~  shade  turf
+  =/  form  (get-form turf form-id.shade)
+  ?~  form  turf
+  =.  cave.plot.turf
+    %+  ~(put by cave.plot.turf)  id
+    shade(variation (mod variation (lent variations.u.form)))
   turf
 --

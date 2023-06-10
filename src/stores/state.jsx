@@ -1,8 +1,8 @@
-import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps } from "solid-js";
+import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from '~/api.js';
 import { vec2, flattenGrid } from 'lib/utils';
-import { getPond, Pond, rockToTurf, washTurf } from 'lib/pond';
+import { Pond, getWallsAtPos, getWallVariationAtPos } from 'lib/pond';
 
 export const StateContext = createContext();
 
@@ -27,9 +27,13 @@ export function getState() {
       tools: {
         BRUSH: 'brush',
         ERASER: 'eraser',
+        CYCLER: 'CYCLER',
       },
       get eraser() {
         return this.selectedTool === this.tools.ERASER;
+      },
+      get cycler() {
+        return this.selectedTool === this.tools.CYCLER;
       },
     },
     scale: 1,
@@ -111,7 +115,7 @@ export function getState() {
         pos,
       });
     },
-    addHusk(pos, formId) {
+    addHusk(pos, formId, variation = 0) {
       const normPos = vec2(pos).subtract(this.e.offset);
       const currentSpace = this.e.spaces[normPos.x]?.[normPos.y]
       const currentTile = currentSpace?.tile;
@@ -122,14 +126,52 @@ export function getState() {
         this.sendWave('add-husk', {
           pos,
           formId,
-          variation: 0,
+          variation: Number.parseInt(variation)
         });
+        return true;
       }
+      return false;
     },
     delShade(shadeId) {
       this.sendWave('del-shade', {
         shadeId: Number.parseInt(shadeId),
       });
+    },
+    cycleShade(shadeId, amount = 1) {
+      this.sendWave('cycle-shade', {
+        shadeId: Number.parseInt(shadeId),
+        amount: Number.parseInt(amount),
+      });
+    },
+    setShadeVariation(shadeId, variation = 1) {
+      this.sendWave('set-shade-var', {
+        shadeId: Number.parseInt(shadeId),
+        variation: Number.parseInt(variation),
+      });
+    },
+    updateWallAtPos(shadeId, pos) {
+      const variation = getWallVariationAtPos(this.e, pos);
+      this.setShadeVariation(shadeId, variation);
+    },
+    updateWallsAtPos(pos, orFlags, andFlags) {
+      batch(() => {
+        const walls = getWallsAtPos(this.e, pos);
+        if (walls.length > 0) {
+          const variation = getWallVariationAtPos(this.e, pos, orFlags, andFlags);
+          walls.forEach((wall) => this.setShadeVariation(wall.id, variation));
+        }
+      });
+    },
+    updateWallsAroundPos(pos, center) {
+      const y = center === true;
+      const n = center === false;
+      const poses = [
+        [vec2(pos).add(vec2(1, 0)), y ? 8 : 0, n ? 7 : 15],
+        [vec2(pos).add(vec2(-1, 0)), y ? 2 : 0, n ? 13 : 15],
+        [vec2(pos).add(vec2(0, 1)), y ? 4 : 0, n ? 11 : 15],
+        [vec2(pos).add(vec2(0, -1)), y ? 1 : 0, n ? 14 : 15],
+      ];
+      poses.forEach((p) => this.updateWallsAtPos(...p));
     },
     setEditing(editing) {
       $state('editor', 'editing', editing);

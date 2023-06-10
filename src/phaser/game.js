@@ -1,54 +1,71 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, minV, flattenGrid, near, pixelsToTiles } from 'lib/utils';
+import { vec2, minV, flattenGrid, near, pixelsToTiles, swapAxes } from 'lib/utils';
+import { getShadeWithForm, getWallVariationAtPos } from 'lib/pond';
 import { extractSkyeSprites, extractPlayerSprites, spriteName, extractShades } from 'lib/pond';
 
 import voidUrl from 'assets/sprites/void.png';
 import treeUrl from 'assets/sprites/tree.png';
-import { swapAxes } from "../lib/utils";
 
 let owner;
 var game, scene, cam, cursors, keys = {}, player, tiles;
 var formIndexMap, shades = {};
 
-async function loadImage(id, url) {
+async function loadImage(id, url, isWall = false, config = {}) {
   if (game.textures.exists(id)) return;
   return new Promise((resolve, reject) => {
+    const onError = (key) => {
+      console.error('could not load image', key);
+      if (key === 'id') {;
+        reject();
+      }
+    };
     // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, () => {
       console.log('loaded image', id);
       resolve();
     });
-    game.textures.addListener(Phaser.Textures.Events.ERROR, (key) => {
-      console.error('could not load image', key);
-      if (key === 'id') {
-        reject();
+    game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
+    if (isWall) {
+      const img = new Image();
+      img.onload = () => game.textures.addSpriteSheet(id, img, {
+        frameWidth: 32,
+        frameHeight: 64,
+        ...config,
+      });
+      img.onabort = () => {
+        console.log('aborted');
+        onError(id);
       }
-    });
-    // if (url.startsWith('data:image')) {
+      img.onerror = () => onError(id);
+      img.src = url;
+      // game.textures.addImage(id, img);
+    } else {
       game.textures.addBase64(id, url);
-    // } else {
-    //   const img = new Image();
-    //   img.onload = () => game.textures.addImage(id, img);
-    //   img.onerror = reject;
-    //   img.src = url;
-    //   // game.textures.addImage(id, img);
-    // }
+    }
   });
 }
 
 function createShade(shade, id, turf) {
   const huskPos = vec2(shade.pos).scale(turf.tileSize.x);
-  let sprite = scene.add.image(huskPos.x, huskPos.y, spriteName(shade.formId, 0, 'back'));
+  let sprite = scene.add.image(huskPos.x, huskPos.y, spriteName(shade.formId, shade.variation, 'back'));
   let form = turf.skye[shade.formId];
   sprite.setDisplayOrigin(form.offset.x, form.offset.y);
   sprite.setDepth(shade.pos.y);
   sprite.setInteractive();
   sprite.on('pointerdown', () => {
-    if (state.editor.editing && state.editor.eraser) {
-      state.delShade(id);
-      console.log('try to remove shade');
+    if (state.editor.editing) {
+      if (state.editor.eraser) {
+        const shade = getShadeWithForm(state.e, id);
+        state.delShade(id);
+        if (shade && shade.form.type === 'wall') {
+          state.updateWallsAroundPos(shade.pos, false);
+        }
+        console.log('try to remove shade');
+      } else if (state.editor.cycler) {
+        state.cycleShade(id);
+      }
     }
   });
   return sprite;
@@ -111,7 +128,13 @@ export function startPhaser(_owner, container) {
           if (state.c.selectedForm) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
-            state.addHusk(pos, state.editor.selectedFormId);
+            if (state.c.selectedForm.type === 'wall') {
+              const variation = getWallVariationAtPos(state.e, pos);
+              const added = state.addHusk(pos, state.editor.selectedFormId, variation);
+              if (added) state.updateWallsAroundPos(pos, true);
+            } else {
+              state.addHusk(pos, state.editor.selectedFormId);
+            }
           }
         }
         this.input.on('pointerdown', (pointer) => {
@@ -154,23 +177,23 @@ export function startPhaser(_owner, container) {
         }
         const speed = 170;
         let targetPos = vec2(player.tilePos).scale(32);
-        let pos = vec2(player.x, player.y);
-        if (!pos.equals(targetPos)) {
-          const dif = vec2(targetPos).subtract(pos);
+        player.dPos = player.dPos || vec2(player.x, player.y);
+        if (!player.dPos.equals(targetPos)) {
+          const dif = vec2(targetPos).subtract(player.dPos);
           const step = speed * dt / 1000;
           if (step > dif.length()) {
+            player.dPos = vec2(targetPos);
             player.setPosition(targetPos.x, targetPos.y);
           } else {
             const change = vec2(dif).normalize().scale(step);
-            player.x += change.x;
-            player.y += change.y;
+            // player.x += change.x;
+            // player.y += change.y;
+            player.dPos.add(change);
+            player.setPosition(Math.round(player.dPos.x), Math.round(player.dPos.y));
           }
         }
-        const oldTilePos = vec2(player.tilePos);
         const newTilePos = vec2(player.tilePos);
-        targetPos = vec2(player.tilePos).scale(32);
-        pos = vec2(player.x, player.y);
-        if (pos.equals(targetPos)) {
+        if (player.dPos.equals(targetPos)) {
           if (cursors.left.isDown || keys.a.isDown) {
             newTilePos.x--;
           }
@@ -183,7 +206,7 @@ export function startPhaser(_owner, container) {
           if (cursors.down.isDown || keys.s.isDown) {
             newTilePos.y++;
           }
-          const tilePosChanged = !newTilePos.equals(oldTilePos);
+          const tilePosChanged = !newTilePos.equals(player.tilePos);
           if (tilePosChanged) {
             console.log('changed!');
             state.setPos(newTilePos);
@@ -273,10 +296,11 @@ export function startPhaser(_owner, container) {
             } else if (!shadeData) {
               shades[id].destroy();
               delete shades[id];
-            } else if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, 0, 'back'))) {
-              debugger;
-              shadeObject.setTexture(sprite);
-              console.log('updated shade at', shadeData.pos)
+            } else {
+              if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation, 'back'))) {
+                shadeObject.setTexture(sprite);
+                console.log('updated shade at', shadeData.pos)
+              }
             }
           });
         }
@@ -295,6 +319,7 @@ export function startPhaser(_owner, container) {
       return loadImage(id, sprite);
     });
     promises.push(loadImage('void', voidUrl));
+    // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
     return Promise.all(promises);
   }
   
@@ -378,6 +403,9 @@ export function startPhaser(_owner, container) {
     player.oldTilePos = vec2(_player.pos);
     cam.startFollow(player);
     window.player = player;
+
+
+
   }
 }
 

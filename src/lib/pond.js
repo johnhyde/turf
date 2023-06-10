@@ -175,6 +175,28 @@ export function washTurf(wave) {
           delete turf.cave[shadeId];
         }
       },
+    'cycle-shade':
+      (turf) => {
+        const { shadeId, amount } = wave.arg;
+        const shade = turf.cave[shadeId];
+        if (shade) {
+          const form = turf.skye[shade.formId];
+          if (form) {
+            shade.variation = (shade.variation + amount) % form.variations.length;
+          }
+        }
+      },
+    'set-shade-var':
+      (turf) => {
+        const { shadeId, variation } = wave.arg;
+        const shade = turf.cave[shadeId];
+        if (shade) {
+          const form = turf.skye[shade.formId];
+          if (form) {
+            shade.variation = variation % form.variations.length;
+          }
+        }
+      },
     'chat':
       (turf) => {
         turf.chats.unshift(wave.arg);
@@ -246,6 +268,47 @@ export function getTurfBounds(turf) {
     topLeft: vec2(turf.offset),
     botRight: vec2(turf.offset).add(turf.size),
   };
+}
+
+export function getShadeWithForm(turf, shadeId) {
+  const shade = turf.cave[shadeId];
+  if (!shade) return null;
+  const form = turf.skye[shade.formId];
+  if (!form) return null;
+  return {
+    ...shade,
+    id: shadeId,
+    form,
+  };
+}
+
+export function getShadesAtPos(turf, pos) {
+  const normPos = vec2(pos).subtract(turf.offset);
+  const shades = turf.spaces[normPos.x]?.[normPos.y]?.shades;
+  if (!shades) return [];
+  return shades.map(sid => getShadeWithForm(turf, sid));
+}
+
+export function getShadesAtPosByType(turf, pos, type) {
+  return getShadesAtPos(turf, pos).filter(shade => shade.form.type === type);
+}
+
+export function getWallsAtPos(turf, pos) {
+  return getShadesAtPosByType(turf, pos, 'wall');
+}
+
+export function getWallVariationAtPos(turf, pos, orFlags = 0, andFlags = 15) {
+  const down = getWallsAtPos(turf, vec2(pos).add(vec2(0, 1)));
+  const right = getWallsAtPos(turf, vec2(pos).add(vec2(1, 0)));
+  const up = getWallsAtPos(turf, vec2(pos).add(vec2(0, -1)));
+  const left = getWallsAtPos(turf, vec2(pos).add(vec2(-1, 0)));
+  // set flag to one if length > 0
+  const d = +!!down.length;
+  const r = +!!right.length;
+  const u = +!!up.length;
+  const l = +!!left.length;
+  const flags = ((d + (r * 2) + (u * 4) + (l * 8)) | orFlags) & andFlags;
+  return [0, 1, 2, 7, 3, 5, 8, 11, 4, 10, 6, 14, 9, 13, 12, 15][flags];
 }
 
 export function extractSkyeSprites(skye) {

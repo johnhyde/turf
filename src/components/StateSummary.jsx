@@ -59,20 +59,20 @@ function StateSummary() {
       </div> : <EditPane/>}
       <p>
       </p>
-      <p>
+      {/* <p>
         turf count: {Object.keys(state.ponds).length}
-      </p>
+      </p> */}
       <p>
         Player Pos: {pos().x}x{pos().y}
       </p>
-      <div>
+      {/* <div>
         <input type="number" use:bind={[() => state.player?.pos.x, (x) => state.setPos(vec2(Number(x), state.player?.pos.y))]} />
         <input type="number" use:bind={[() => pos().y, (y) => $pos(vec2(pos().x, Number(y)))]} />
       </div>
       <div>
         <input type="number" use:bind={[() => pos().x, (x) => $pos(vec2(Number(x), pos().y))]} />
         <input type="number" use:bind={[() => pos().y, (y) => $pos(vec2(pos().x, Number(y)))]} />
-      </div>
+      </div> */}
       <p>
         view scale
       </p>
@@ -85,19 +85,19 @@ function StateSummary() {
       <h3>Current Turf:</h3>
       <p>{state.currentTurfId}</p>
       <Show when={state.e} fallback={<p>No current turf</p>}>
-        <p>
+        {/* <p>
           {state.e.chats.length}
-        </p>
+        </p> */}
         <Turf id={state.currentTurfId} turf={state.e} />
       </Show>
-      <h3>Turfs</h3>
+      {/* <h3>Turfs</h3>
       <ul>
         <For each={Object.entries(state.ponds)}>{([id, pond], i) => (
           <li>
             <Turf id={id} turf={pond.turf} />
           </li>
         )}</For>
-      </ul>
+      </ul> */}
       <button onClick={subToTurf}>sub to turf</button>
       <button onClick={unsubToTurfs}>unsub to turfs</button>
     </div>

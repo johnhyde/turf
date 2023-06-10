@@ -1,5 +1,6 @@
 |%
 +$  turf
+  $+  turf
   $:  =ephemera
       =plot
   ==
@@ -9,6 +10,7 @@
       chats=(list chat)
   ==
 +$  player
+  $+  player
   $:  pos=svec2
       dir=?(%right %up %left %down)
       =avatar
@@ -48,6 +50,7 @@
 +$  skye  (map form-id form)
 +$  cave  (map shade-id shade)
 +$  space
+  $+  space
   $:  tile=(unit husk)
       shades=(list shade-id)
   ==
@@ -56,6 +59,7 @@
       =form
   ==
 +$  husk
+  $+  husk
   $:  =form-id
       variation=@ud
       husk-bits
@@ -70,6 +74,7 @@
       husk
   ==
 +$  form
+  $+  form
   $:  name=@t
       type=form-type
       variations=(list look)
@@ -106,5 +111,6 @@
 ::
 +$  husk-spec  [pos=svec2 =form-id variation=@ud]
 ::
-+$  pond-path  ,[%pond *]
+++  pond-path  ,[%pond *]
+++  mist-path  ,[%mist *]
 --
