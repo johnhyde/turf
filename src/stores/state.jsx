@@ -7,7 +7,6 @@ import { Pond, getWallsAtPos, getWallVariationAtPos } from 'lib/pond';
 export const StateContext = createContext();
 
 export function getState() {
-  let playersList, gridList;
   const [state, $state] = createStore({
     ponds: {},
     currentTurfId: '/pond',
@@ -55,12 +54,6 @@ export function getState() {
         get ether() {
           return this.pond?.ether;
         },
-        get playersList() {
-          return playersList();
-        },
-        get gridList() {
-          return gridList();
-        },
         get selectedForm() {
           if (!parent.editor.editing) return null;
           if (!this.turf) return null;
@@ -81,16 +74,6 @@ export function getState() {
     get e() {
       return this.p?.ether;
     },
-  });
-  playersList = createMemo(() => {
-    if (!state.e) return null;
-    console.log('calcing playlist')
-    return Object.entries(state.e.players);
-  });
-  gridList = createMemo(() => {
-    if (!state.e) return null;
-    console.log('calcing grid list')
-    return flattenGrid(state.e.grid);
   });
 
   const _state = mergeProps(state, {

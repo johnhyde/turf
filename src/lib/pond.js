@@ -126,7 +126,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
 }
 
 export function getPond() {
-  let ether;
+  let ether, grid;
   const [pond, $pond] = createStore({
     turf: null,
     ether: null,
@@ -134,6 +134,12 @@ export function getPond() {
     // get ether() {
     //   return ether();
     // },
+  });
+
+  grid = createMemo(() => {
+    console.log('recomputing grid, for some reason');
+    if (!pond.ether) return null;
+    return getTurfGrid(pond.ether);
   });
 
   createEffect(on(() => JSON.stringify([pond.turf, pond.pulses]), () => {
@@ -147,9 +153,15 @@ export function getPond() {
       pond.pulses.forEach((pulse) => {
         $pond('ether', washTurf(pulse.wave));
       });
-      $pond('ether', 'grid', reconcile(getTurfGrid(pond.ether), { merge: true }));
-    })
+      $pond('ether', 'grid', reconcile(grid(), { merge: true }));
+    });
   }));
+
+  // createEffect(() => {
+  //   console.log('recomputing grid, for some reason');
+  //   if (!pond.ether) return null;
+  //   $pond('ether', 'grid', reconcile(getTurfGrid(pond.ether), { merge: true }));
+  // });
 
   return [pond, $pond];
 }
@@ -186,6 +198,15 @@ export function rockToTurf(rock, id) {
   return rock;
 }
 
+function jabBySpace(turf, pos, fn) {
+  const id = vecToStr(pos);
+  let space = turf.spaces[id] || {};
+  if (!space.shades) space.shades = [];
+  fn(space);
+  turf.spaces[id] = space;
+  return turf.spaces[id];
+}
+
 export function washTurf(wave) {
 const pondWaves = {
     'inc-counter': (turf) => {
@@ -197,9 +218,11 @@ const pondWaves = {
     },
     'add-husk': (turf) => {
       const { pos, formId, variation } = wave.arg;
-      const normPos = vec2(pos).subtract(turf.offset);
-      if (normPos.x < 0 || normPos.y < 0) return;
-      if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
+      // const normPos = vec2(pos).subtract(turf.offset);
+      // if (normPos.x < 0 || normPos.y < 0) return;
+      // if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
+      if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
+      if (pos.x >= turf.offset.x + turf.size.x || pos.y >= turf.offset.y + turf.size.y) return;
       const formType = turf.skye[formId]?.type;
       const newHusk = {
         formId,
@@ -209,9 +232,11 @@ const pondWaves = {
         effects: {},
       }
       if (formType === 'tile') {
-        turf.grid[normPos.x][normPos.y].tile = newHusk;
+        jabBySpace(turf, pos, space => space.tile = newHusk);
+        // turf.grid[normPos.x][normPos.y].tile = newHusk;
       } else if (formType == 'wall' || formType == 'item') {
-        turf.grid[normPos.x][normPos.y].shades.unshift(turf.stuffCounter);
+        jabBySpace(turf, pos, space => space.shades.unshift(turf.stuffCounter));
+        // turf.grid[normPos.x][normPos.y].shades.unshift(turf.stuffCounter);
         turf.cave[turf.stuffCounter] = {
           pos,
           ...newHusk,
@@ -223,11 +248,12 @@ const pondWaves = {
       const { shadeId } = wave.arg;
       const shade = turf.cave[shadeId];
       if (shade) {
-        const normPos = vec2(shade.pos).subtract(turf.offset);
-        const space = turf.grid[normPos.x]?.[normPos.y];
-        if (space) {
-          space.shades = [space.shades || []].filter((shadeId) => shadeId !== shadeId);
-        }
+        jabBySpace(turf, shade.pos, space => space.shades.filter((shadeId) => shadeId !== shadeId));
+        // const normPos = vec2(shade.pos).subtract(turf.offset);
+        // const space = turf.grid[normPos.x]?.[normPos.y];
+        // if (space) {
+        //   space.shades = [space.shades || []].filter((shadeId) => shadeId !== shadeId);
+        // }
         delete turf.cave[shadeId];
       }
     },
