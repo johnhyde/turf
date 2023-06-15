@@ -6,13 +6,14 @@
   ==
 ::
 +$  ephemera
-  $:  players=(map ship player)
+  $:  =players
       chats=(list chat)
   ==
++$  players  (map ship player)
 +$  player
   $+  player
   $:  pos=svec2
-      dir=?(%right %up %left %down)
+      =dir
       =avatar
   ==
 +$  avatar
@@ -40,6 +41,7 @@
 +$  shade-id  @ud
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
++$  dir  ?(%right %up %left %down)
 +$  color  _0xff.ffff
 +$  flug  $~(%.n ?)  :: flag which is false by default
 +$  off-size  [offset=svec2 size=vec2]
@@ -89,9 +91,11 @@
 +$  form-type  ?(%tile %wall %item %garb)
 +$  space-form-type  ?(%tile %wall %item)
 +$  look
-  $:  back=(unit sprite)
-      fore=(unit sprite)
+  %-  unit
+  $:  =deep
+      =sprite
   ==
++$  deep  ?(%back %fore)
 +$  sprite
   $@  png  animation
 +$  png  @t  :: base64 encoded from js frontend

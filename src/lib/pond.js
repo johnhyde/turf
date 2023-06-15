@@ -1,7 +1,7 @@
 import { batch, on, createEffect, createMemo, createSignal, mergeProps, getOwner } from "solid-js";
 import { createStore, unwrap, produce, reconcile } from "solid-js/store";
-import * as api from '~/api.js';
-import { vec2, minV, maxV, uuidv4 } from 'lib/utils';
+import * as api from 'lib/api.js';
+import { vec2, minV, maxV, uuidv4, dirs } from 'lib/utils';
 
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id) {
@@ -211,6 +211,20 @@ export function washTurf(wave) {
           player.pos.x = newPos.x;
           player.pos.y = newPos.y;
         }
+      },
+    'face':
+      (turf) => {
+        const player = turf.players[wave.arg.ship];
+        if (player) {
+          player.dir = wave.arg.dir;
+        }
+      },
+    'set-avatar':
+      (turf) => {
+        const player = turf.players[wave.arg.ship];
+        if (player) {
+          player.avatar = wave.arg.avatar;
+        }
       }
   };
 
@@ -315,11 +329,8 @@ export function extractSkyeSprites(skye) {
   const sprites = {};
   Object.entries(skye).forEach(([formId, form]) => {
     form.variations.forEach((variation, i) => {
-      if (variation.back) {
-        sprites[spriteName(formId, i, 'back')] = variation.back;
-      }
-      if (variation.fore) {
-        sprites[spriteName(formId, i, 'fore')] = variation.fore;
+      if (variation) {
+        sprites[spriteName(formId, i)] = variation.sprite;
       }
     });
   });
@@ -328,11 +339,8 @@ export function extractSkyeSprites(skye) {
 
 function addThingSprites(sprites, thing, patp) {
   thing.form.variations.forEach((variation, i) => {
-    if (variation.back) {
-      sprites[spriteName(thing.formId, i, 'back', patp)] = variation.back;
-    }
-    if (variation.fore) {
-      sprites[spriteName(thing.formId, i, 'fore', patp)] = variation.fore;
+    if (variation) {
+      sprites[spriteName(thing.formId, i, patp)] = variation.sprite;
     }
   });
 }
@@ -348,8 +356,20 @@ export function extractPlayerSprites(players) {
   return sprites;
 }
 
-export function spriteName(id, variation, layer, patp='') {
-  return patp + id.replace(/\//g, '-') + '_' + (variation || '0') + (layer ? '_' + layer : '');
+export function spriteName(id, variation, patp='') {
+  return patp + id.replace(/\//g, '-') + '_' + (variation || '0');
+}
+
+export function spriteNameWithDir(id, form, dir = dir.DOWN, patp='') {
+  let variation = dirs[dir];
+  const len = form.variations.length;
+  if (len === 3) {
+    if (variation === 3) variation = 1; // left is right flipped
+  } else if (len === 2) {
+    if (variation === 2) return null; // don't display
+  }
+  variation = variation % form.variations.length;
+  return spriteName(id, variation, patp);
 }
 
 export function extractShades(turf) {

@@ -1,8 +1,19 @@
+/-  *turf
 |%
-++  garb
-  |=  name=@t
+++  welk  (cury cat 3)
+++  pad-2
+  |=  a=@ud
   ^-  @t
-  :((cury cat 3) 'sprites/garb/' name '.png')
+  =/  b=@t  (scot %ud a)
+  ?.  (lth a 10)  b
+  (welk '0' b)
+++  garb
+  |=  [name=@t count=@ud]
+  ^-  (list look)
+  %+  turn  (gulf 0 (dec count))
+  |=  i=@ud
+  =/  =png  :(welk 'sprites/garb/' name '-' (scot %ud i) '.png')
+  `fore+png
 ++  floor  'sprites/floor.png'
 ++  floor-stone  'sprites/floor-stone.png'
 ++  grass  'sprites/grass.png'
@@ -10,11 +21,9 @@
 ++  wall-stones
   %+  turn  (gulf 0 15)
   |=  a=@
-  =/  b=@t  (scot %ud a)
-  ;:  (cury cat 3)
+  ;:  welk
       'sprites/walls/wall-stone-'
-      ?.  (lth a 10)  b
-      (cat 3 '0' b)
+      (pad-2 a)
       '.png'
   ==
 ++  table  'sprites/table.png'

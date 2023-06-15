@@ -1,7 +1,9 @@
 /-  *turf, pond, mist
 /+  *turf, *sss, plow, default-agent, dbug, verb, agentio
-/%  stir-mark  %stir-pond
-/%  stirred-mark  %stirred-pond
+/%  mist-stir-mark  %mist-stir
+/%  mist-stirred-mark  %mist-stirred
+/%  pond-stir-mark  %pond-stir
+/%  pond-stirred-mark  %pond-stirred
 :: =/  res-pond  (response:poke pond *)
 =/  sub-pond-init  (mk-subs pond pond-path)
 =/  pub-pond-init  (mk-pubs pond pond-path)
@@ -17,7 +19,7 @@
   $:  %0
       reset=_2
       =avatar
-      skye=$~(default-closet:gen skye)
+      closet=$~(default-closet:gen skye)
       sub-pond=_sub-pond-init
       pub-pond=_pub-pond-init
       sub-mist=_sub-mist-init
@@ -54,9 +56,7 @@
 ::
 ++  on-init
   ^-  (quip card _this)
-  =^  cards  state
-    ?:  default-turf-exists:hc  `state
-    init-turf:hc
+  =^  cards  state  init-defaults:hc
   cards^this
 ::
 ++  on-save  
@@ -77,9 +77,7 @@
   :: =/  old  *current-state
   ?>  =(-:*current-state -.old)
   =.  state  old
-  =^  more-cards  state
-    ?:  default-turf-exists:hc  `state
-    init-turf:hc
+  =^  more-cards  state  init-defaults:hc
   :: =.  cards  :*
   ::   cards
   :: ==
@@ -116,7 +114,7 @@
   ::
       %init-avatar
     =.  pub-pond  (secret:du-pond [dppath]~)
-    =^  cards  state  init-turf:hc
+    =^  cards  state  init-default-avatar:hc
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -127,7 +125,8 @@
     cards^this
   ::
       %set-turf
-    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl !<([[@ud @ud] [@sd @sd]] vase)))
+    =+  !<([size=vec2 offset=svec2] vase)
+    =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl size offset ~))
     ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -185,15 +184,27 @@
     ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
-      %stir-pond
+      %mist-stir
+    =+  !<(stir:mist (fled vase))
+    ?>  =(our src):bowl
+    :: ~&  >  "accepting mist wave from client: {<?^(wave -.wave wave)>}"
+    ~&  >  "accepting mist wave from client: {<-.wave wave>}"
+    =/  pub  (~(get by read:du-mist) ppath)
+    =/  fwave=(unit wave:mist)
+      ?~  pub  ~
+      (filter-mist-wave:plow rock.u.pub wave closet)
+    =^  cards  state  (stir-mist:hc ppath id fwave)
+    cards^this
+  ::
+      %pond-stir
     =+  !<(stir:pond (fled vase))
     ?>  =(our src):bowl
-    ~&  >  "accepting wave from client: {<?^(wave -.wave wave)>}"
+    ~&  >  "accepting pond wave from client: {<?^(wave -.wave wave)>}"
     =/  pub  (~(get by read:du-pond) ppath)
     =/  fwave=(unit wave:pond)
       ?~  pub  ~
-      (filter-wave:plow rock.u.pub wave)
-    =^  cards  state  (give-stir:hc ppath id fwave)
+      (filter-pond-wave:plow rock.u.pub wave)
+    =^  cards  state  (stir-pond:hc ppath id fwave)
     cards^this
   ::
   :: Boilerplate
@@ -260,7 +271,13 @@
 ++  on-peek
   |=  =path
   ^-  (unit (unit cage))
-  (on-peek:def path)
+  :: (on-peek:def path)
+  ?+     path  (on-peek:def path)
+  :: ?-     path
+      [%x %closet ~]
+    ``skye+!>(closet)
+      :: *  ``noun+!<(~)
+  ==
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
@@ -313,23 +330,51 @@
             (du pub-mist bowl -:!>(*result:du))
 
 ++  scrio  ~(scry agentio bowl)
+++  default-avatar  ((lift |=([* =rock:mist] rock)) (~(get by read:du-mist) dmpath))
+++  default-avatar-exists
+  ?=(^ default-avatar)
+++  init-default-avatar
+  (give-mist dmpath set-avatar+default-avatar:gen)
+++  default-turf  ((lift |=([* =rock:pond] rock)) (~(get by read:du-pond) dppath))
 ++  default-turf-exists
-  :: ?>  ?=(%pond -.dppath)
-  ?=(^ (~(get by read:du-pond) dppath))
+  ?=(^ default-turf)
 ++  init-turf
-  (give-pond dppath set-turf+(default-turf:gen our.bowl [15 12] [--0 --0]))
-++  give-stir
+  (give-pond dppath set-turf+(default-turf:gen our.bowl [15 12] [--0 --0] default-avatar))
+++  init-defaults
+  ^-  (quip card _state)
+  =^  cards  state
+    ?:  default-turf-exists  `state
+    init-turf
+  =^  more-cards  state
+    ?:  default-avatar-exists  `state
+    init-default-avatar
+  (weld cards more-cards)^state
+::
+++  stir-mist
+  |=  [ppath=mist-path id=stir-id:mist wave=(unit wave:mist)]
+  ^-  (quip card _state)
+  =/  cards=(list card)
+    =/  =stirred:mist  [%wave id wave]
+    [%give %fact [;;(path ppath)]~ %mist-stirred !>(stirred)]~
+  ?~  wave  cards^state
+  =^  sss-cards  pub-mist  (give:du-mist ppath u.wave)
+  =^  pond-cards  state  update-player
+  [:(weld sss-cards cards pond-cards) state]
+++  give-mist
+  |=  [ppath=mist-path =wave:mist]
+  (stir-mist ppath ~ `wave)
+++  stir-pond
   |=  [ppath=pond-path id=stir-id:pond wave=(unit wave:pond)]
   ^-  (quip card _state)
   =/  cards=(list card)
     =/  =stirred:pond  [%wave id wave]
-    [%give %fact [;;(path ppath)]~ %stirred-pond !>(stirred)]~
+    [%give %fact [;;(path ppath)]~ %pond-stirred !>(stirred)]~
   ?~  wave  cards^state
   =^  sss-cards  pub-pond  (give:du-pond ppath u.wave)
   [(weld sss-cards cards) state]
 ++  give-pond
   |=  [ppath=pond-path =wave:pond]
-  (give-stir ppath ~ `wave)
+  (stir-pond ppath ~ `wave)
 ++  give-pond-rock
   |=  [ppath=pond-path on-watch=?]
   ^-  (quip card _state)
@@ -339,5 +384,10 @@
   =/  give-paths
     ?:  on-watch  ~
     [;;(path ppath)]~
-  [%give %fact give-paths %stirred-pond !>(stirred)]~
+  [%give %fact give-paths %pond-stirred !>(stirred)]~
+++  update-player
+  ^-  (quip card _state)
+  =/  av  default-avatar
+  ?~  av  `state
+  (stir-pond dppath ~ `set-avatar+[our.bowl u.av])
 --

@@ -1,3 +1,5 @@
+import { createRenderEffect } from 'solid-js';
+
 const Vector2 = Phaser.Math.Vector2;
 
 /** 
@@ -43,10 +45,42 @@ export function pixelsToTiles(pixels, tileSize=32) {
   );
 }
 
+export const dirs = {
+  DOWN: 'down',
+  RIGHT: 'right',
+  UP: 'up',
+  LEFT: 'left',
+  0: 'down',
+  1: 'right',
+  2: 'up',
+  3: 'left',
+  'down': 0,
+  'right': 1,
+  'up': 2,
+  'left': 3,
+}
+
+export function getDirFromVec(v) {
+  let dir = dirs.DOWN;
+  if (v.y < 0) dir = dirs.UP;
+  if (v.y > 0) dir = dirs.DOWN;
+  if (v.x < 0) dir = dirs.LEFT;
+  if (v.x > 0) dir = dirs.RIGHT;
+  return dir;
+}
+
 export function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
+}
+
+export function hexToInt(color) {
+  return Number('0x' + color.replace(/(#|0x)/, ''));
+}
+
+export function intToHex(color) {
+  return '#' + color.toString(16).padStart(6, '0');
 }
 
 
@@ -117,4 +151,12 @@ export const Random = {
   randVector,
   // randColor,
   randSeeded,
+}
+
+export function bind(el, accessor) {
+  const [s, set] = accessor();
+  el.addEventListener("input", (e) => set(e.currentTarget.value));
+  createRenderEffect(() => {
+    el.value = s();
+  }); 
 }

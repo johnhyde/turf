@@ -6,7 +6,7 @@
 ++  gen
   |%
   ++  default-turf
-    |=  [our=ship size=vec2 offset=svec2]
+    |=  [our=ship size=vec2 offset=svec2 av=(unit avatar)]
     ^-  turf
     =|  =turf
     =.  turf
@@ -15,7 +15,7 @@
         skye.plot           default-skye
         spaces.plot         (fill-space size offset /grass)
         offset.plot         offset
-        players.ephemera    (~(put by players.ephemera.turf) our (new-player offset))
+        players.ephemera    (~(put by players.ephemera.turf) our (new-player offset av))
       ==
     =/  mid-size  ((merge-svec2 fra:si) (sign-vec2 size) [--2 --2])
     =/  tree-pos  (sum-svec2 offset mid-size)
@@ -57,47 +57,55 @@
     %-  malt
     ^-  (list [form-id form])
     =,  sprites
-    :~  (new-garb-pair /eyes/tall 'Tall Eyes')
-        (new-garb-pair /eyes/almond 'Almond Eyes')
-        (new-garb-pair /eyes/small 'Small Eyes')
-        (new-garb-pair /eyes/cute 'Cute Eyes')
-        (new-garb-pair /eyes/big/blue 'Big Blue Eyes')
-        (new-garb-pair /eyes/big/brown 'Big Brown Eyes')
-        (new-garb-pair /eyes/big/green 'Big Green Eyes')
-        (new-garb-pair /brows 'Plain Eyebrows')
-        (new-garb-pair /brows/uni 'Unibrow')
-        (new-garb-pair /brows/bushy 'Bushy Eyebrows')
-        (new-garb-pair /brows/arch 'Arched Eyebrows')
-        (new-garb-pair /brows/vulcan 'Vulcan Eyebrows')
-        (new-garb-pair /mouth 'Basic Mouth')
-        (new-garb-pair /mouth/small 'Small Mouth')
-        (new-garb-pair /mouth/small/red 'Small Red Mouth')
-        (new-garb-pair /mouth/small/open 'Small Open Mouth')
-        (new-garb-pair /mouth/smirk 'Smirk')
-        (new-garb-pair /mouth/smile 'Smile')
-        (new-garb-pair /mouth/smile/big 'Big Smile')
-        ::
+    :~  (new-garb-pair /eyes/tall 'Tall Eyes' 2)
+        (new-garb-pair /eyes/almond 'Almond Eyes' 2)
+        (new-garb-pair /eyes/small 'Small Eyes' 2)
+        (new-garb-pair /eyes/cute 'Cute Eyes' 2)
+        (new-garb-pair /eyes/big/blue 'Big Blue Eyes' 2)
+        (new-garb-pair /eyes/big/brown 'Big Brown Eyes' 2)
+        (new-garb-pair /eyes/big/green 'Big Green Eyes' 2)
+        (new-garb-pair /brows 'Plain Eyebrows' 2)
+        (new-garb-pair /brows/uni 'Unibrow' 2)
+        (new-garb-pair /brows/bushy 'Bushy Eyebrows' 2)
+        (new-garb-pair /brows/arch 'Arched Eyebrows' 2)
+        (new-garb-pair /brows/vulcan 'Vulcan Eyebrows' 2)
+        (new-garb-pair /mouth 'Basic Mouth' 2)
+        (new-garb-pair /mouth/small 'Small Mouth' 2)
+        (new-garb-pair /mouth/small/red 'Small Red Mouth' 2)
+        (new-garb-pair /mouth/small/open 'Small Open Mouth' 2)
+        (new-garb-pair /mouth/smirk 'Smirk' 2)
+        (new-garb-pair /mouth/smile 'Smile' 2)
+        (new-garb-pair /mouth/smile/big 'Big Smile' 2)
+        (new-garb-pair /hair/brown 'Brown Hair' 3)
+        (new-garb-pair /tshirt/white 'White T-Shirt' 3)
+        (new-garb-pair /skirt/red 'Red Skirt' 3)
+        (new-garb-pair /pants/blue 'Blue Pants' 3)
     ==
   ++  default-avatar
-    =<  .(offset.form.thing.body [--0 --12])
+    =<  .(offset.form.thing.body [--0 --13])
     ^-  avatar
     :-  :-  color=0xd8.a57c
-        (new-garb-thing /body 'Basic Body')
-    :~  (new-garb-thing /brows 'Plain Eyebrows')
-        (new-garb-thing /eyes/tall 'Tall Eyes')
+        (new-garb-thing /body 'Basic Body' 3)
+    :~  (new-garb-thing /brows 'Plain Eyebrows' 2)
+        (new-garb-thing /eyes/tall 'Tall Eyes' 2)
     ==
   ++  new-garb-pair
-    |=  [=form-id name=@t]
+    |=  [=form-id name=@t count=@ud]
     :-  form-id
-    (new-garb name (path-to-cord form-id))
+    (new-garb name (path-to-cord form-id) count)
   ++  new-garb-thing
-    |=  [=form-id name=@t]
+    |=  [=form-id name=@t count=@ud]
     ^-  thing
     :-   [form-id 0 *husk-bits]
-    (new-garb name (path-to-cord form-id))
+    (new-garb name (path-to-cord form-id) count)
   ++  new-garb
-    |=  [name=@t file=@t]
-    (new-form %garb name (garb.sprites file))
+    |=  [name=@t file=@t count=@ud]
+    ^-  form
+    :*  name
+        type=%garb
+        variations=(garb.sprites file count)
+        *form-bits
+    ==
   ++  new-tile
     |=  [name=@t =png]
     (new-form %tile name png)
@@ -114,7 +122,7 @@
     ^-  form
     :*  name
         type=form-type
-        variations=[`png ~]~
+        variations=~[`back+png]
         offset
         +:*form-bits
     ==
@@ -123,15 +131,15 @@
     ^-  form
     :*  name
         type=form-type
-        variations=(turn pngs |=(=png [`png ~]))
+        variations=(turn pngs |=(=png `back+png))
         *form-bits
     ==
   ++  new-player
-    |=  pos=svec2
+    |=  [pos=svec2 av=(unit avatar)]
     ^-  player
     :*  pos
         %down
-        default-avatar
+        ?~(av default-avatar u.av)
     ==
   --
 ::
@@ -233,6 +241,11 @@
   %+  ~(put by spaces)
     pos
   (fun (get-space spaces pos))
+++  jab-by-players
+  |=  [=players =ship fun=$-(player player)]
+  ^-  ^players
+  ?.  (~(has by players) ship)  players
+  (~(jab by players) ship fun)
 ::
 ++  is-husk-collidable
   |=  [=turf =husk]

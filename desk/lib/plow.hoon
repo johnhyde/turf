@@ -1,14 +1,27 @@
-/-  *turf, pond
+/-  *turf, pond, mist
 /+  *turf, sss
 |%
-++  filter-wave
+++  filter-mist-wave
+  |=  [=rock:mist wave=stir-wave:mist closet=skye]
+  ^-  (unit wave:mist)
+  ?+    -.wave  `wave
+      %add-thing-from-closet
+    =/  form  (~(get by closet) form-id.wave)
+    ?~  form  ~
+    :-  ~
+    :-  %add-thing
+    ^-  thing
+    :-  [form-id.wave 0 *husk-bits]
+    u.form
+  ==
+++  filter-pond-wave
   |=  [=rock:pond =wave:pond]
   ^-  (unit wave:pond)
   ?~  rock  `wave
   =*  turf  u.rock
   ?@  wave
     `wave
-  ?+  -.wave  `wave
+  ?+    -.wave  `wave
       %move
     =*  players  players.ephemera.turf
     =/  player  (~(get by players) ship.wave)
@@ -43,7 +56,8 @@
         s+?@(wave wave -.wave)
       ::
         :-  %arg
-        ?-  -.wave
+        ?@  wave  ~
+        ?-    -.wave
             %set-turf
           (turf turf.wave)
             %add-husk
@@ -58,6 +72,35 @@
           (chat chat.wave)
             %move
           (move +.wave)
+            %face
+          (face +.wave)
+            %set-avatar
+          (pond-set-avatar +.wave)
+    ==  ==
+  ++  mist-rock
+    |=  =rock:mist
+    ^-  json
+    %+  frond  %rock
+    (avatar rock)
+  ++  mist-wave
+    |=  [id=stir-id:mist uwave=(unit wave:mist)]
+    ^-  json
+    %-  pairs
+    :_  :-  id+(fall (bind id |=(i=@t s+i)) ~)  ~
+    :-  %wave
+    ?~  uwave  ~
+    =*  wave  u.uwave
+    %-  pairs
+    :~  :-  %type
+        :: s+?@(wave wave -.wave)
+        s+-.wave
+      ::
+        :-  %arg
+        ?+  -.wave  ~
+            %set-avatar
+          (avatar +.wave)
+            %set-color
+          (numb +.wave)
     ==  ==
   ++  turf
     |=  =^turf
@@ -71,7 +114,7 @@
         offset+(svec2 offset)
         'tileSize'^(vec2 tile-size)
         spaces+spaces
-        skye+skye
+        skye+(^skye skye)
         cave+cave
         'stuffCounter'^(numb stuff-counter)
     ==
@@ -83,13 +126,6 @@
       |=  =col
       ^-  json
       a+(turn col space)
-    ++  skye
-      ^-  json
-      %-  pairs
-      %+  turn  ~(tap by ^skye)
-      |=  [=form-id =form]
-      :-  (spat form-id)
-      (pairs (form-pairs form))
     ++  cave
       ^-  json
       %-  pairs
@@ -101,6 +137,14 @@
       :-  ^-  @ta  +:id
       (pairs (shade-pairs shade))
     --
+  ++  skye
+    |=  =^skye
+    ^-  json
+    %-  pairs
+    %+  turn  ~(tap by skye)
+    |=  [=form-id =form]
+    :-  (spat form-id)
+    (pairs (form-pairs form))
   ++  vec2
     |=  =^vec2
     ^-  json
@@ -212,9 +256,10 @@
   ++  look
     |=  =^look
     ^-  json
+    ?~  look  ~
     %-  pairs
-    :~  back+(fall (bind back.look sprite) ~)
-        fore+(fall (bind fore.look sprite) ~)
+    :~  deep+s+deep.u.look
+        sprite+(sprite sprite.u.look)
     ==
   ++  sprite
     |=  =^sprite
@@ -255,35 +300,80 @@
     :~  ship+s+(scot %p shp)
         pos+(svec2 pos)
     ==
+  ++  face
+    |=  [shp=^ship =dir]
+    ^-  json
+    %-  pairs
+    :~  ship+s+(scot %p shp)
+        dir+s+dir
+    ==
+  ++  pond-set-avatar
+    |=  [shp=^ship av=^avatar]
+    ^-  json
+    %-  pairs
+    :~  ship+s+(scot %p shp)
+        avatar+(avatar av)
+    ==
   --
 ++  dejs
   =,  dejs:format
   =*  soft  dejs-soft:format
   |%
+    ++  wave
+      |*  [wave=mold pairs=(pole [cord fist])]
+      |=  jon=json
+      ^-  wave
+      ?:  ?=([%s *] jon)
+        ;;(wave (so jon))
+      ?>  ?=([%o *] jon)
+      ((of pairs) jon)
     :: todo: support rocks as well as waves
-    ++  stir-pond
+    ++  pond-stir
       |=  jon=json
       ^-  stir:pond
-      %-  %-  ot
-          ~[path+(cork pa |=(=path ;;(pond-path path))) id+so:soft wave+pond-wave]
-      jon
+      %.  jon
+      %-  ot
+      :~  path+(cork pa |=(=path ;;(pond-path path)))
+          id+so:soft
+          wave+pond-wave
+      ==
     ++  pond-wave
       |=  jon=json
       ^-  wave:pond
-      ?:  ?=([%s *] jon)
-        ;;(wave:pond (so jon))
-      ?>  ?=([%o *] jon)
-      %-  %-  of
-          :~  move+(ot ~[ship+(se %p) pos+svec2])
-              add-husk+(ot ~[pos+svec2 'formId'^pa variation+ni])
-              del-shade+shade-id
-              cycle-shade+(ot ~['shadeId'^ni amount+ni])
-              set-shade-var+(ot ~['shadeId'^ni variation+ni])
-              :: todo: set-turf, chat
-          ==
-      jon
+      %.  jon
+      %+  wave  wave:pond
+      :~  move+(ot ~[ship+(se %p) pos+svec2])
+          face+(ot ~[ship+(se %p) dir+dir])
+          add-husk+(ot ~[pos+svec2 'formId'^pa variation+ni])
+          del-shade+(ot ~['shadeId'^ni])
+          cycle-shade+(ot ~['shadeId'^ni amount+ni])
+          set-shade-var+(ot ~['shadeId'^ni variation+ni])
+          :: todo: set-turf, chat
+      ==
     ::
-    ++  shade-id  (ot ~['shadeId'^ni])
+    ++  mist-stir
+      |=  jon=json
+      ^-  stir:mist
+      %.  jon
+      %-  ot
+      :~  path+|=(=json ;;(mist-path (pa json)))
+          id+so:soft
+          wave+mist-wave
+      ==
+    ++  mist-wave
+      |=  jon=json
+      ^-  stir-wave:mist
+      %.  jon
+      %+  wave  stir-wave:mist
+      :~  set-color+ni
+          add-thing-from-closet+pa
+          del-thing+ni
+      ==
+    ::
+    ++  dir
+      |=  jon=json
+      ^-  ^dir
+      ;;(^dir (so jon))
     ++  svec2
       |=  jon=json
       ^-  ^svec2

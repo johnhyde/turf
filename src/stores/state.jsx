@@ -1,7 +1,7 @@
 import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
-import * as api from '~/api.js';
-import { vec2, flattenGrid } from 'lib/utils';
+import * as api from 'lib/api.js';
+import { vec2, flattenGrid, hexToInt } from 'lib/utils';
 import { Pond, getWallsAtPos, getWallVariationAtPos } from 'lib/pond';
 
 export const StateContext = createContext();
@@ -36,7 +36,10 @@ export function getState() {
         return this.selectedTool === this.tools.CYCLER;
       },
     },
-    scale: 1,
+    lab: {
+      editing: false,
+    },
+    scale: 0.5,
     get current() {
       const parent = this;
       const current = {
@@ -102,7 +105,7 @@ export function getState() {
         state.ponds[id].subscribe();
       }
     },
-    sendWave(mark, data, id) {
+    sendPondWave(mark, data, id) {
       id = id || this.currentTurfId;
       const pond = this.ponds[id];
       if (pond) {
@@ -110,10 +113,30 @@ export function getState() {
       }
     },
     setPos(pos) {
-      this.sendWave('move', {
+      this.sendPondWave('move', {
         ship: our,
         pos,
       });
+    },
+    setDir(dir) {
+      this.sendPondWave('face', {
+        ship: our,
+        dir,
+      });
+    },
+    avatar: {
+      setColor(color) {
+        if (typeof color === 'string' && color[0] === '#') {
+          color = hexToInt(color);
+        }
+        api.sendMistWave('set-color', Number(color));
+      },
+      addThing(formId) {
+        api.sendMistWave('add-thing-from-closet', formId);
+      },
+      delThing(index) {
+        api.sendMistWave('del-thing', Number(index));
+      },
     },
     addHusk(pos, formId, variation = 0) {
       const normPos = vec2(pos).subtract(this.e.offset);
@@ -123,7 +146,7 @@ export function getState() {
       const tileAlreadyHere = currentTile?.formId === formId;
       const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
       if (!tileAlreadyHere && !shadeAlreadyHere) {
-        this.sendWave('add-husk', {
+        this.sendPondWave('add-husk', {
           pos,
           formId,
           variation: Number.parseInt(variation)
@@ -133,18 +156,18 @@ export function getState() {
       return false;
     },
     delShade(shadeId) {
-      this.sendWave('del-shade', {
+      this.sendPondWave('del-shade', {
         shadeId: Number.parseInt(shadeId),
       });
     },
     cycleShade(shadeId, amount = 1) {
-      this.sendWave('cycle-shade', {
+      this.sendPondWave('cycle-shade', {
         shadeId: Number.parseInt(shadeId),
         amount: Number.parseInt(amount),
       });
     },
     setShadeVariation(shadeId, variation = 1) {
-      this.sendWave('set-shade-var', {
+      this.sendPondWave('set-shade-var', {
         shadeId: Number.parseInt(shadeId),
         variation: Number.parseInt(variation),
       });
@@ -179,7 +202,10 @@ export function getState() {
     toggleEditing() {
       $state('editor', 'editing', (editing) => !editing);
     },
-    selectForm(id) {
+    toggleLab() {
+      $state('lab', 'editing', (editing) => !editing);
+    },
+    selectForm(id, _) {
       $state('editor', 'selectedFormId', id);
       this.selectTool(this.editor.tools.BRUSH);
     },

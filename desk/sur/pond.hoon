@@ -20,6 +20,7 @@
         %inc-counter
       rock(stuff-counter.plot.u +(stuff-counter.plot.turf))
     ==
+  =*  players  players.ephemera.turf
   ?-  -.wave
     %set-turf  `turf.wave
     %add-husk  `(add-husk turf +.wave)
@@ -29,13 +30,22 @@
       %chat
     rock(chats.ephemera.u [chat.wave chats.ephemera.turf])
       %move
-    =*  players  players.ephemera.turf
-    ?.  (~(has by players) ship.wave)  rock
     =.  players
-      %+  ~(jab by players)
-        ship.wave
+      %^  jab-by-players  players  ship.wave
       |=  =player
       player(pos pos.wave)
+    rock
+      %face
+    =.  players
+      %^  jab-by-players  players  ship.wave
+      |=  =player
+      player(dir dir.wave)
+    rock
+      %set-avatar
+    =.  players
+      %^  jab-by-players  players  ship.wave
+      |=  =player
+      player(avatar avatar.wave)
     rock
   ==
 --
@@ -51,6 +61,8 @@
       set-shade-var-wave
       chat-wave
       move-wave
+      face-wave
+      set-avatar-wave
   ==
 +$  set-turf-wave  [%set-turf =turf]
 +$  add-husk-wave  [%add-husk husk-spec]
@@ -59,6 +71,8 @@
 +$  set-shade-var-wave  [%set-shade-var =shade-id variation=@ud]
 +$  chat-wave  [%chat =chat]
 +$  move-wave  [%move =ship pos=svec2]
++$  face-wave  [%face =ship =dir]
++$  set-avatar-wave  [%set-avatar =ship =avatar]
 ::
 +$  stir-id  (unit @t)
 +$  stir  [ppath=pond-path id=stir-id =wave]

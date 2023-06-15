@@ -1,9 +1,9 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, minV, flattenGrid, near, pixelsToTiles, swapAxes } from 'lib/utils';
+import { vec2, minV, flattenGrid, near, pixelsToTiles, dirs, swapAxes, getDirFromVec } from 'lib/utils';
 import { getShadeWithForm, getWallVariationAtPos } from 'lib/pond';
-import { extractSkyeSprites, extractPlayerSprites, spriteName, extractShades } from 'lib/pond';
+import { extractSkyeSprites, extractPlayerSprites, spriteName, spriteNameWithDir, extractShades } from 'lib/pond';
 
 import voidUrl from 'assets/sprites/void.png';
 import treeUrl from 'assets/sprites/tree.png';
@@ -49,7 +49,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
 
 function createShade(shade, id, turf) {
   const huskPos = vec2(shade.pos).scale(turf.tileSize.x);
-  let sprite = scene.add.image(huskPos.x, huskPos.y, spriteName(shade.formId, shade.variation, 'back'));
+  let sprite = scene.add.image(huskPos.x, huskPos.y, spriteName(shade.formId, shade.variation));
   let form = turf.skye[shade.formId];
   sprite.setDisplayOrigin(form.offset.x, form.offset.y);
   sprite.setDepth(shade.pos.y);
@@ -69,6 +69,32 @@ function createShade(shade, id, turf) {
     }
   });
   return sprite;
+}
+
+function recreateAvatar(_player) {
+  const avatar = _player.avatar;
+  player.removeAll(true);
+  const bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, _player.dir, our) });
+  bodyImage.setTint(avatar.body.color);
+  if (avatar.body.thing.form.variations.length < 4 && _player.dir === dirs.LEFT) {
+    bodyImage.setFlipX(true);
+  }
+  const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
+  bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
+  const things = avatar.things.map((thing) => {
+    const texture = spriteNameWithDir(thing.formId, thing.form, _player.dir, our);
+    if (!texture) return null;
+    const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
+    const img = scene.make.image({ key: texture });
+    if (thing.form.variations.length < 4 && _player.dir === dirs.LEFT) {
+      img.setFlipX(true);
+    }
+    img.setDisplayOrigin(offset.x, offset.y);
+    return img;
+  }).filter(thing => !!thing);
+  player.add([bodyImage, ...things]);
+  player.bodyImage = bodyImage;
+  player.things = things;
 }
 
 export function startPhaser(_owner, container) {
@@ -176,6 +202,7 @@ export function startPhaser(_owner, container) {
           player.setDepth(player.tilePos.y + 0.5);
         }
         const speed = 170;
+        let justMoved = false;
         let targetPos = vec2(player.tilePos).scale(32);
         player.dPos = player.dPos || vec2(player.x, player.y);
         if (!player.dPos.equals(targetPos)) {
@@ -191,27 +218,44 @@ export function startPhaser(_owner, container) {
             player.dPos.add(change);
             player.setPosition(Math.round(player.dPos.x), Math.round(player.dPos.y));
           }
+          justMoved = true;
         }
         const newTilePos = vec2(player.tilePos);
+        let newDir;
         if (player.dPos.equals(targetPos)) {
           if (cursors.left.isDown || keys.a.isDown) {
+            newDir = dirs.LEFT;
             newTilePos.x--;
           }
           if (cursors.right.isDown || keys.d.isDown) {
+            newDir = dirs.RIGHT;
             newTilePos.x++;
           }
           if (cursors.up.isDown || keys.w.isDown) {
+            newDir = dirs.UP;
             newTilePos.y--;
           }
           if (cursors.down.isDown || keys.s.isDown) {
+            newDir = dirs.DOWN;
             newTilePos.y++;
           }
           const tilePosChanged = !newTilePos.equals(player.tilePos);
-          if (tilePosChanged) {
+
+          if (newDir && newDir !== state.player.dir && player.dir !== 'turning') {
+            player.dir = 'turning';
+            state.setDir(newDir);
+            setTimeout(() => {
+              player.dir = state.player.dir;
+            }, 50)
+            // state.setDir(newDir);
+          }
+          if (tilePosChanged && (player.dir !== 'turning' || justMoved)) {
             console.log('changed!');
+            // state.setDir(getDirFromVec(vec2(newTilePos).subtract(player.tilePos)));
             state.setPos(newTilePos);
           }
         }
+        justMoved = false;
       }
 
       console.log("loading the game engine");
@@ -251,6 +295,22 @@ export function startPhaser(_owner, container) {
           }
         }
       });
+      createEffect((lastColor) => {
+        const color = state.player?.avatar.body.color;
+        if (player && color && lastColor !== color) {
+          player.bodyImage.setTint(color);
+        }
+        return color;
+      });
+      createEffect(on(() => {
+        if (!state.player) return null;
+        return JSON.stringify([state.player.avatar.body.thing, state.player.avatar.things]);
+      }, async () => {
+        if (state.player?.avatar && player) {
+          await loadPlayerSprites(state.e);
+          recreateAvatar(state.player);
+        }
+      }, { defer: true }));
       createEffect(on(() => [
         loader.state,
         state.c.id,
@@ -276,7 +336,7 @@ export function startPhaser(_owner, container) {
               if (space.tile && space.tile.formId !== lastTileFormId) {
                 const pos = vec2(i, j);
                 // console.log('updating tile ', pos);
-                const gid = formIndexMap[spriteName(space.tile.formId, 0, 'back')];
+                const gid = formIndexMap[spriteName(space.tile.formId, 0)];
                 tiles.putTileAt(gid, pos.x, pos.y);
               }
             });
@@ -297,7 +357,7 @@ export function startPhaser(_owner, container) {
               shades[id].destroy();
               delete shades[id];
             } else {
-              if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation, 'back'))) {
+              if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
                 shadeObject.setTexture(sprite);
                 console.log('updated shade at', shadeData.pos)
               }
@@ -311,15 +371,25 @@ export function startPhaser(_owner, container) {
 
   async function loadSprites(turf) {
     console.log('loading sprites');
-    const sprites = {
-      ...extractSkyeSprites(turf.skye),
-      ...extractPlayerSprites(turf.players),
-    };
+    // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
+    return Promise.all([loadSkyeSprites(turf), loadPlayerSprites(turf)]);
+  }
+
+  async function loadSkyeSprites(turf) {
+    const sprites = extractSkyeSprites(turf.skye);
     const promises = Object.entries(sprites).map(([id, sprite]) => {
       return loadImage(id, sprite);
     });
     promises.push(loadImage('void', voidUrl));
     // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
+    return Promise.all(promises);
+  }
+
+  async function loadPlayerSprites(turf) {
+    const sprites = extractPlayerSprites(turf.players);
+    const promises = Object.entries(sprites).map(([id, sprite]) => {
+      return loadImage(id, sprite);
+    });
     return Promise.all(promises);
   }
   
@@ -375,35 +445,17 @@ export function startPhaser(_owner, container) {
     layer.setDepth(turf.offset.y - 10);
     window.tiles = tiles = layer;
 
-    // Object.entries(turf.cave).forEach(([id, shade]) => {
-    //   shades[id] = createShade(shade, id, turf);
-    // });
-
-    const playerBody = _player.avatar.body;
     const playerPos = vec2(_player.pos).scale(32);
-    // const bodyImage = scene.make.image(0, 0, spriteName(playerBody.thing.formId, 0, 'back', our));
-    const bodyImage = scene.make.image({ key: spriteName(playerBody.thing.formId, 0, 'back', our) });
-    bodyImage.setTint(playerBody.color);
-    const playerOffset = vec2(playerBody.thing.offset).add(playerBody.thing.form.offset);
-    bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
-    const things = [
-      bodyImage,
-      ..._player.avatar.things.map((thing) => {
-        const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
-        const img = scene.make.image({ key: spriteName(thing.formId, 0, 'back', our) });
-        img.setDisplayOrigin(offset.x, offset.y);
-        return img;
-      }),
-    ];
-    player = scene.add.container(playerPos.x, playerPos.y, things);
-    // player = scene.physics.add.image(playerPos.x, playerPos.y, spriteName(garb.formId, 0, 'back', our));
+    
+    player = scene.add.container(playerPos.x, playerPos.y);
+    recreateAvatar(_player);
+    // player = scene.physics.add.image(playerPos.x, playerPos.y, spriteName(garb.formId, 0, our));
     // player.setTint(_player.avatar.body.color);
     // player.setOrigin(0, 0.6);
     player.tilePos = vec2(_player.pos);
     player.oldTilePos = vec2(_player.pos);
     cam.startFollow(player);
     window.player = player;
-
 
 
   }
@@ -427,7 +479,7 @@ function generateMap(turf) {
   });
   const data = swapAxes(turf.spaces).map((row) => row.map((space) => {
     if (!space.tile) return 1;
-    const sprite = spriteName(space.tile.formId, space.tile.variation, 'back');
+    const sprite = spriteName(space.tile.formId, space.tile.variation);
     if (!formIndexMap[sprite]) return 1;
     return formIndexMap[sprite];
   }));

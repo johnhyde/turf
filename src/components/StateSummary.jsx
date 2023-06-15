@@ -1,9 +1,9 @@
 import { createSignal, createMemo } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { bind } from 'lib/bind';
-import * as api from '~/api.js';
-import { vec2 } from 'lib/utils';
+import * as api from 'lib/api.js';
+import { vec2, bind } from 'lib/utils';
 import EditPane from '@/EditPane';
+import Lab from '@/Lab';
 
 function Turf(props) {
   if (!props.turf) return null;
@@ -50,13 +50,16 @@ function StateSummary() {
   }
 
   return (
-    <div style={{ 'background-color': 'white' }} id="sidebar">
+    <div class="bg-white h-full overflow-y-auto p-2 w-[250px]" id="sidebar">
       {!state.editor.editing ? <div>
         <p>
           Play Mode
         </p>
         <button onClick={state.toggleEditing.bind(state)}>Edit</button>
       </div> : <EditPane/>}
+      {!state.lab.editing ? <div>
+        <button onClick={state.toggleLab.bind(state)}>Customize Avatar</button>
+      </div> : <Lab/>}
       <p>
       </p>
       {/* <p>

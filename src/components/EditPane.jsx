@@ -1,6 +1,6 @@
 import { createSignal, createSelector } from 'solid-js';
-import { spriteName } from 'lib/pond';
 import { useState } from 'stores/state.jsx';
+import FormSelect from '@/FormSelect';
 
 export default function EditPane() {
   const state = useState();
@@ -14,22 +14,18 @@ export default function EditPane() {
       <p>
         Edit Mode
       </p>
-      <button onClick={[selectTool, state.editor.tools.ERASER]}>Erase</button>
-      <button onClick={[selectTool, state.editor.tools.CYCLER]}>Cycler</button>
-      <For each={Object.entries(state.e?.skye || {})} fallback={<div>Loading...</div>}>
-        {([id, form], i) => (
-          <img
-            src={form.variations[0].back}
-            onClick={[state.selectForm.bind(state), id]}
-            style={{
-              border: isSelected(id) ? '4px dashed green' : 'none',
-            }}
-          />
-        )}
-      </For>
       {/* <button onClick={state.toggleEditing.bind(state)}>Cancel</button> */}
       {/* <button onClick={state.toggleEditing.bind(state)}>Save</button> */}
       <button onClick={state.toggleEditing.bind(state)}>Done</button>
+      <p>
+        <button onClick={[selectTool, state.editor.tools.ERASER]}>Erase</button>
+        <button onClick={[selectTool, state.editor.tools.CYCLER]}>Cycler</button>
+      </p>
+      <FormSelect
+        forms={Object.entries(state.e?.skye || {})}
+        select={state.selectForm.bind(state)}
+        selectedId={state.editor.selectedFormId}
+    />
     </div>
   );
 }
