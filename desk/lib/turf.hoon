@@ -166,7 +166,7 @@
     count  +(count)
     spaces  [[pos space] spaces]
   ==
-++  spaces-to-grid
+++  spaces-to-grid  :: not used anymore
   |=  [=spaces os=off-size]
   ^-  grid
   =+  (os-to-tl-br os)  :: add tl and br to subject
@@ -220,6 +220,7 @@
 ++  path-to-cord
   |=  =path
   (crip (zing (join "-" (turn path trip))))
+++  welk  (cury cat 3)
 ::
 ++  get-space
   |=  [=spaces pos=svec2]

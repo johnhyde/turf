@@ -40,19 +40,21 @@ export default function Lab() {
     <div>
       {/* <input type="color" default={intToHex(avatar.body.color)} use:bind={[() => intToHex(avatar.body.color), state.setColor.bind(state)]} /> */}
       <button onClick={state.toggleLab.bind(state)}>Done</button>
-      <input type="color" default={intToHex(avColor())} use:bind={[avColor, setColor]} />
-      <p>
-        Equipped Features
-      </p>
-      <Show when={avatar() !== undefined} fallback={'Loading Avatar'}>
-          <FormSelect forms={things()} select={delThing} fallback={'No Features Equipped'} background={'sprites/garb/body-gray.png'} />
-      </Show>
-      <p>
-        Closet
-      </p>
-      <Show when={closet() !== undefined} fallback={'Loading Closet'}>
-          <FormSelect forms={Object.entries(closet() || {})} select={addThing} background={'sprites/garb/body-gray.png'} />
-      </Show>
+      <div class="border">
+        <input type="color" default={intToHex(avColor())} use:bind={[avColor, setColor]} />
+        <p>
+          Equipped Features
+        </p>
+        <Show when={avatar() !== undefined} fallback={'Loading Avatar'}>
+            <FormSelect forms={things()} select={delThing} fallback={'No Features Equipped'} background={'sprites/garb/body-gray.png'} />
+        </Show>
+        <p>
+          Closet
+        </p>
+        <Show when={closet() !== undefined} fallback={'Loading Closet'}>
+            <FormSelect forms={Object.entries(closet() || {})} select={addThing} background={'sprites/garb/body-gray.png'} sort={true} />
+        </Show>
+      </div>
     </div>
   );
 }

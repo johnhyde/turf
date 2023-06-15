@@ -18,7 +18,7 @@
   ?-  -.wave
     %set-avatar  avatar.wave
     %set-color  rock(color.body color.wave)
-    %add-thing  rock(things [thing.wave things.rock])
+    %add-thing  rock(things (snoc things.rock thing.wave))
     %del-thing  rock(things (oust [index.wave 1] things.rock))
   ::   %del-shade  `(del-shade turf +.wave)
   ::     %chat

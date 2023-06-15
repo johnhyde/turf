@@ -7,7 +7,7 @@ import { Pond, getWallsAtPos, getWallVariationAtPos } from 'lib/pond';
 export const StateContext = createContext();
 
 export function getState() {
-  let playersList, spacesList;
+  let playersList, gridList;
   const [state, $state] = createStore({
     ponds: {},
     currentTurfId: '/pond',
@@ -58,8 +58,8 @@ export function getState() {
         get playersList() {
           return playersList();
         },
-        get spacesList() {
-          return spacesList();
+        get gridList() {
+          return gridList();
         },
         get selectedForm() {
           if (!parent.editor.editing) return null;
@@ -87,10 +87,10 @@ export function getState() {
     console.log('calcing playlist')
     return Object.entries(state.e.players);
   });
-  spacesList = createMemo(() => {
+  gridList = createMemo(() => {
     if (!state.e) return null;
-    console.log('calcing spaces list')
-    return flattenGrid(state.e.spaces);
+    console.log('calcing grid list')
+    return flattenGrid(state.e.grid);
   });
 
   const _state = mergeProps(state, {
@@ -138,9 +138,18 @@ export function getState() {
         api.sendMistWave('del-thing', Number(index));
       },
     },
+    resizeTurf(offset, size) {
+      if (size.x <= 0 && size.y <= 0) return false;
+      this.sendPondWave('size-turf', {
+        offset,
+        size,
+      });
+    },
     addHusk(pos, formId, variation = 0) {
       const normPos = vec2(pos).subtract(this.e.offset);
-      const currentSpace = this.e.spaces[normPos.x]?.[normPos.y]
+      if (normPos.x < 0 || normPos.y < 0) return false;
+      if (normPos.x >= this.e.size.x || normPos.y >= this.e.size.y) return false;
+      const currentSpace = this.e.grid[normPos.x]?.[normPos.y]
       const currentTile = currentSpace?.tile;
       const currentShades = (currentSpace?.shades || []).map(sid => this.e.cave[sid]);
       const tileAlreadyHere = currentTile?.formId === formId;

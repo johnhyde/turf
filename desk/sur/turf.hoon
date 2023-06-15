@@ -93,6 +93,7 @@
 +$  look
   %-  unit
   $:  =deep
+      :: todo: tint=(unit color)
       =sprite
   ==
 +$  deep  ?(%back %fore)

@@ -54,7 +54,7 @@ function createShade(shade, id, turf) {
   sprite.setDisplayOrigin(form.offset.x, form.offset.y);
   sprite.setDepth(shade.pos.y);
   sprite.setInteractive();
-  sprite.on('pointerdown', () => {
+  function onClick(pointer) {
     if (state.editor.editing) {
       if (state.editor.eraser) {
         const shade = getShadeWithForm(state.e, id);
@@ -67,6 +67,14 @@ function createShade(shade, id, turf) {
         state.cycleShade(id);
       }
     }
+  }
+  sprite.on('pointermove', (pointer) => {
+    if (pointer.isDown) {
+      onClick(pointer);
+    }
+  });
+  sprite.on('pointerdown', (pointer) => {
+    onClick(pointer);
   });
   return sprite;
 }
@@ -110,6 +118,7 @@ export function startPhaser(_owner, container) {
         height: ~~container.clientHeight || 500,
         pixelArt: true,
         roundPixels: true,
+        backgroundColor: '#a6e4e8',
         // zoom: 1,
         scene: {
           init,
@@ -207,7 +216,8 @@ export function startPhaser(_owner, container) {
         player.dPos = player.dPos || vec2(player.x, player.y);
         if (!player.dPos.equals(targetPos)) {
           const dif = vec2(targetPos).subtract(player.dPos);
-          const step = speed * dt / 1000;
+          let step = speed * dt / 1000;
+          // step =  Phaser.Math.Interpolation.SmoothStep(Math.min(dif.length, 100)/8, 0.2 * step, step);
           if (step > dif.length()) {
             player.dPos = vec2(targetPos);
             player.setPosition(targetPos.x, targetPos.y);
@@ -321,18 +331,19 @@ export function startPhaser(_owner, container) {
           if (lastTurfId || state.e) destroyCurrentTurf();
           if (state.e) {
             initTurf(state.e, state.player);
+            initShades(state.e, );
           }
           return state.c.id;
         };
       }));
-      createEffect(on(() => JSON.stringify(state.e?.spaces), (_, lastSpaces) => {
-        lastSpaces = JSON.parse(lastSpaces || '[]');
+      createEffect(on(() => JSON.stringify(state.e?.grid), (_, lastGrid) => {
+        lastGrid = JSON.parse(lastGrid || '[]');
         // console.log('running tile effect');
         const turf = state.e;
         if (turf && loader.state == 'ready') {
-          state.e.spaces.map((col, i) => {
+          state.e.grid.map((col, i) => {
             col.map((space, j) => {
-              const lastTileFormId = lastSpaces[i] ? lastSpaces[i][j]?.tile?.formId : undefined;
+              const lastTileFormId = lastGrid[i] ? lastGrid[i][j]?.tile?.formId : undefined;
               if (space.tile && space.tile.formId !== lastTileFormId) {
                 const pos = vec2(i, j);
                 // console.log('updating tile ', pos);
@@ -345,27 +356,10 @@ export function startPhaser(_owner, container) {
         return [];
       }, { defer: false }));
       createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
-        if (state.e && loader.state == 'ready') {
-          const ids = [...Object.keys(shades), ...Object.keys(state.e.cave)];
-          ids.forEach((id) => {
-            let sprite;
-            const shadeObject = shades[id];
-            const shadeData = state.e.cave[id];
-            if (!shadeObject) {
-              shades[id] = createShade(shadeData, id, state.e);
-            } else if (!shadeData) {
-              shades[id].destroy();
-              delete shades[id];
-            } else {
-              if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
-                shadeObject.setTexture(sprite);
-                console.log('updated shade at', shadeData.pos)
-              }
-            }
-          });
+        if (loader.state == 'ready') {
+          initShades(state.e);
         }
-        // return JSON.stringify(state.e.cave);
-      }, { defer: false }));
+      }, { defer: true }));
     });
   });
 
@@ -459,6 +453,28 @@ export function startPhaser(_owner, container) {
 
 
   }
+
+  function initShades(turf) {
+    if (turf) {
+      const ids = [...Object.keys(shades), ...Object.keys(turf.cave)];
+      ids.forEach((id) => {
+        let sprite;
+        const shadeObject = shades[id];
+        const shadeData = turf.cave[id];
+        if (!shadeObject) {
+          shades[id] = createShade(shadeData, id, turf);
+        } else if (!shadeData) {
+          shades[id].destroy();
+          delete shades[id];
+        } else {
+          if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
+            shadeObject.setTexture(sprite);
+            console.log('updated shade at', shadeData.pos)
+          }
+        }
+      });
+    }
+  }
 }
 
 const coreTiles = [
@@ -477,7 +493,7 @@ function generateMap(turf) {
       image: id,
     };
   });
-  const data = swapAxes(turf.spaces).map((row) => row.map((space) => {
+  const data = swapAxes(turf.grid).map((row) => row.map((space) => {
     if (!space.tile) return 1;
     const sprite = spriteName(space.tile.formId, space.tile.variation);
     if (!formIndexMap[sprite]) return 1;

@@ -60,6 +60,8 @@
         ?-    -.wave
             %set-turf
           (turf turf.wave)
+            %size-turf
+          (pairs ~[offset+(svec2 offset.wave) size+(vec2 size.wave)])
             %add-husk
           (husk-spec +.wave)
             %del-shade
@@ -120,6 +122,14 @@
     ==
     ++  spaces
       ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^spaces)
+      |=  [pos=^svec2 spot=^space]
+      ^-  [@t json]
+      :-  :(welk (snumbt x.pos) ',' (snumbt y.pos))
+      (space spot)
+    ++  grid  :: not used anymore
+      ^-  json
       :-  %a
       =+  grid=(spaces-to-grid ^spaces offset size)
       %+  turn  grid
@@ -132,9 +142,7 @@
       %+  turn  ~(tap by ^cave)
       |=  [=shade-id =shade]
       ^-  [@ta json]
-      =/  id  (numb shade-id)
-      ?>  ?=([%n @ta] id)
-      :-  ^-  @ta  +:id
+      :-  (numbt shade-id)
       (pairs (shade-pairs shade))
     --
   ++  skye
@@ -159,6 +167,18 @@
     :~  x+(snumb x.svec2)
         y+(snumb y.svec2)
     ==
+  ++  numbt
+    |=  a=@u
+    ^-  @t
+    =/  jon  (numb a)
+    ?>  ?=([%n @ta] jon)
+    +:jon
+  ++  snumbt
+    |=  a=@s
+    ^-  @t
+    =/  jon  (snumb a)
+    ?>  ?=([%n @ta] jon)
+    +:jon
   ++  snumb
     |=  a=@s
     ^-  json
@@ -344,6 +364,7 @@
       %+  wave  wave:pond
       :~  move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
+          size-turf+(ot ~[offset+svec2 size+vec2])
           add-husk+(ot ~[pos+svec2 'formId'^pa variation+ni])
           del-shade+(ot ~['shadeId'^ni])
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
@@ -378,6 +399,10 @@
       |=  jon=json
       ^-  ^svec2
       ((ot ~[x+ns y+ns]) jon)
+    ++  vec2
+      |=  jon=json
+      ^-  ^vec2
+      ((ot ~[x+ni y+ni]) jon)
     ++  ns  :: signed integer!
       |=  jon=json
       ^-  @sd

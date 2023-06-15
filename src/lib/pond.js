@@ -10,6 +10,25 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this._ = pond;
     this.$ = $pond;
     this.subscribe();
+    // this.etherGrid = createMemo(() => {
+    //   if (!pond.ether) return [];
+    //   const grid = [];
+    //   for (let i = pond.ether.offset.x; i < pond.ether.size.x; i++) {
+    //     grid[i] = [];
+    //     for (let j = pond.ether.offset.y; j < pond.ether.size.y; j++) {
+    //       const space = pond.ether.spaces[[i, j].join(',')];
+    //       if (space) {
+    //         grid[i][j] = space;
+    //       } else {
+    //         grid[i][j] = {
+    //           tile: undefined,
+    //           shades: [],
+    //         }
+    //       }
+    //     }
+    //   }
+    //   return grid;
+    // });
   }
 
   get turf() {
@@ -21,8 +40,17 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   get ether() {
+    const parent = this;
     return this._.ether;
+    // return mergeProps(this._.ether, {
+    //   get grid() {
+    //     return parent.etherGrid();
+    //   },
+    // });
   }
+  // get grid() {
+  //   return this.etherGrid();
+  // }
 
   async sendWave(mark, data) {
     console.log('sending wave', mark);
@@ -108,8 +136,8 @@ export function getPond() {
     // },
   });
 
-  // createEffect(on(() => JSON.stringify(pond.pulses), () => {
-  createEffect(() => {
+  createEffect(on(() => JSON.stringify([pond.turf, pond.pulses]), () => {
+  // createEffect(() => {
     if (!pond.turf) return null;
     batch(() => {
       console.log('constructing ether');
@@ -119,113 +147,135 @@ export function getPond() {
       pond.pulses.forEach((pulse) => {
         $pond('ether', washTurf(pulse.wave));
       });
+      $pond('ether', 'grid', reconcile(getTurfGrid(pond.ether), { merge: true }));
     })
-  });
-  // };
+  }));
+
   return [pond, $pond];
+}
+
+function vecToStr(vec) {
+  return vec.x + ',' + vec.y;
+}
+
+function getTurfGrid(turf) {
+  const grid = [];
+  for (let i = turf.offset.x; i < turf.offset.x + turf.size.x; i++) {
+    const col = [];
+    grid.push(col);
+    for (let j = turf.offset.y; j < turf.offset.y + turf.size.y; j++) {
+      const space = turf.spaces[[i, j].join(',')];
+      if (space) {
+        col.push(JSON.parse(JSON.stringify(space)));
+      } else {
+        col.push({
+          tile: undefined,
+          shades: [],
+        });
+      }
+    }
+  }
+  return grid;
 }
 
 export function rockToTurf(rock, id) {
   rock.id = id;
   js.turf(rock);
+  // rock.grid = getTurfGrid(rock);
+  // delete rock.spaces;
   return rock;
 }
 
 export function washTurf(wave) {
-  const pondWaves = {
-    'inc-counter':
-      (turf) => {
+const pondWaves = {
+    'inc-counter': (turf) => {
+      turf.stuffCounter++;
+    },
+    'size-turf': (turf) => {
+      turf.offset = wave.arg.offset;
+      turf.size = wave.arg.size;
+    },
+    'add-husk': (turf) => {
+      const { pos, formId, variation } = wave.arg;
+      const normPos = vec2(pos).subtract(turf.offset);
+      if (normPos.x < 0 || normPos.y < 0) return;
+      if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
+      const formType = turf.skye[formId]?.type;
+      const newHusk = {
+        formId,
+        variation,
+        offset: vec2(),
+        collidable: null,
+        effects: {},
+      }
+      if (formType === 'tile') {
+        turf.grid[normPos.x][normPos.y].tile = newHusk;
+      } else if (formType == 'wall' || formType == 'item') {
+        turf.grid[normPos.x][normPos.y].shades.unshift(turf.stuffCounter);
+        turf.cave[turf.stuffCounter] = {
+          pos,
+          ...newHusk,
+        }
         turf.stuffCounter++;
-      },
-    'add-husk':
-      (turf) => {
-        const { pos, formId, variation } = wave.arg;
-        const normPos = vec2(pos).subtract(turf.offset);
-        if (normPos.x < 0 || normPos.y < 0) return;
-        if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
-        const formType = turf.skye[formId]?.type;
-        const newHusk = {
-          formId,
-          variation,
-          offset: vec2(),
-          collidable: null,
-          effects: {},
+      }
+    },
+    'del-shade': (turf) => {
+      const { shadeId } = wave.arg;
+      const shade = turf.cave[shadeId];
+      if (shade) {
+        const normPos = vec2(shade.pos).subtract(turf.offset);
+        const space = turf.grid[normPos.x]?.[normPos.y];
+        if (space) {
+          space.shades = [space.shades || []].filter((shadeId) => shadeId !== shadeId);
         }
-        if (formType === 'tile') {
-          turf.spaces[normPos.x][normPos.y].tile = newHusk;
-        } else if (formType == 'wall' || formType == 'item') {
-          turf.spaces[normPos.x][normPos.y].shades.unshift(turf.stuffCounter);
-          turf.cave[turf.stuffCounter] = {
-            pos,
-            ...newHusk,
-          }
-          turf.stuffCounter++;
-        }
-      },
-    'del-shade':
-      (turf) => {
-        const { shadeId } = wave.arg;
-        const shade = turf.cave[shadeId];
-        if (shade) {
-          const normPos = vec2(shade.pos).subtract(turf.offset);
-          const space = turf.spaces[normPos.x]?.[normPos.y];
-          if (space) {
-            space.shades = [space.shades || []].filter((shadeId) => shadeId !== shadeId);
-          }
-          delete turf.cave[shadeId];
-        }
-      },
-    'cycle-shade':
-      (turf) => {
-        const { shadeId, amount } = wave.arg;
-        const shade = turf.cave[shadeId];
-        if (shade) {
-          const form = turf.skye[shade.formId];
-          if (form) {
-            shade.variation = (shade.variation + amount) % form.variations.length;
-          }
-        }
-      },
-    'set-shade-var':
-      (turf) => {
-        const { shadeId, variation } = wave.arg;
-        const shade = turf.cave[shadeId];
-        if (shade) {
-          const form = turf.skye[shade.formId];
-          if (form) {
-            shade.variation = variation % form.variations.length;
-          }
-        }
-      },
-    'chat':
-      (turf) => {
-        turf.chats.unshift(wave.arg);
-      },
-    'move':
-      (turf) => {
-        const player = turf.players[wave.arg.ship];
-        if (player) {
-          const bounds = getTurfBounds(turf);
-          const newPos = minV(maxV(vec2(wave.arg.pos), bounds.topLeft), bounds.botRight.subtract(vec2(1)));
-          // const newPos = vec2(wave.arg.pos);
-          player.pos.x = newPos.x;
-          player.pos.y = newPos.y;
-        }
-      },
-    'face':
-      (turf) => {
-        const player = turf.players[wave.arg.ship];
-        if (player) {
-          player.dir = wave.arg.dir;
-        }
-      },
-    'set-avatar':
-      (turf) => {
-        const player = turf.players[wave.arg.ship];
-        if (player) {
-          player.avatar = wave.arg.avatar;
+        delete turf.cave[shadeId];
+      }
+    },
+    'cycle-shade': (turf) => {
+      const { shadeId, amount } = wave.arg;
+      const shade = turf.cave[shadeId];
+      if (shade) {
+        const form = turf.skye[shade.formId];
+        if (form) {
+          shade.variation = (shade.variation + amount) % form.variations.length;
         }
       }
+    },
+    'set-shade-var': (turf) => {
+      const { shadeId, variation } = wave.arg;
+      const shade = turf.cave[shadeId];
+      if (shade) {
+        const form = turf.skye[shade.formId];
+        if (form) {
+          shade.variation = variation % form.variations.length;
+        }
+      }
+    },
+    'chat': (turf) => {
+        turf.chats.unshift(wave.arg);
+    },
+    'move': (turf) => {
+      const player = turf.players[wave.arg.ship];
+      if (player) {
+        const bounds = getTurfBounds(turf);
+        const newPos = minV(maxV(vec2(wave.arg.pos), bounds.topLeft), bounds.botRight.subtract(vec2(1)));
+        // const newPos = vec2(wave.arg.pos);
+        player.pos.x = newPos.x;
+        player.pos.y = newPos.y;
+      }
+    },
+    'face': (turf) => {
+      const player = turf.players[wave.arg.ship];
+      if (player) {
+        player.dir = wave.arg.dir;
+      }
+    },
+    'set-avatar': (turf) => {
+      const player = turf.players[wave.arg.ship];
+      if (player) {
+        player.avatar = wave.arg.avatar;
+      }
+    },
   };
 
   switch (wave.type) {
@@ -298,7 +348,7 @@ export function getShadeWithForm(turf, shadeId) {
 
 export function getShadesAtPos(turf, pos) {
   const normPos = vec2(pos).subtract(turf.offset);
-  const shades = turf.spaces[normPos.x]?.[normPos.y]?.shades;
+  const shades = turf.grid[normPos.x]?.[normPos.y]?.shades;
   if (!shades) return [];
   return shades.map(sid => getShadeWithForm(turf, sid));
 }
@@ -374,7 +424,7 @@ export function spriteNameWithDir(id, form, dir = dir.DOWN, patp='') {
 
 export function extractShades(turf) {
   const husks = [];
-  turf.spaces.forEach((col, i) => {
+  turf.grid.forEach((col, i) => {
     col.forEach((space, j) => {
       const pos = vec2(i, j).add(turf.offset);
       space.husks.forEach((form) => {

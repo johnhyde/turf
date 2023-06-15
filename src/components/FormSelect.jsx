@@ -5,9 +5,13 @@ export default function FormSelect(props) {
   const state = useState();
   const isSelected = createSelector(() => props.selectedId);
   const forms = () => {
-    return (props.forms || []).map((f, i) => [i, f]).sort((a, b) => {
-      return a[1][0].localeCompare(b[1][0]);
-    });
+    let forms = (props.forms || []).map((f, i) => [i, f])
+    if (props.sort) {
+      forms.sort((a, b) => {
+        return a[1][0].localeCompare(b[1][0]);
+      });
+    }
+    return forms;
   };
   return (
     <div class="flex flex-wrap">

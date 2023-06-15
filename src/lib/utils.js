@@ -14,7 +14,7 @@ const Vector2 = Phaser.Math.Vector2;
  * b = vec2();         // set b to (0, 0)
  * @memberof Utilities
  */
-export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(x, y == undefined? x : y) : new Vector2(x.x, x.y);
+export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(Number(x), y == undefined? Number(x) : Number(y)) : new Vector2(x.x, x.y);
 window.vec2 = vec2;
 
 export function minV(a, b) {
@@ -26,6 +26,7 @@ export function maxV(a, b) {
 }
 
 export function swapAxes(array2d) {
+  if (!array2d || array2d.length === 0) return [];
   return array2d[0].map((_, colIndex) => array2d.map(row => row[colIndex]));
 }
 
