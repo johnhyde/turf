@@ -1,5 +1,6 @@
 import { batch, on, createEffect, createMemo, createSignal, mergeProps, getOwner } from "solid-js";
 import { createStore, unwrap, produce, reconcile } from "solid-js/store";
+import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import { vec2, minV, maxV, uuidv4, dirs } from 'lib/utils';
 
@@ -131,9 +132,9 @@ export function getPond() {
     turf: null,
     ether: null,
     pulses: [],
-    // get ether() {
-    //   return ether();
-    // },
+    get grid() {
+      return grid();
+    },
   });
 
   grid = createMemo(() => {
@@ -142,12 +143,14 @@ export function getPond() {
     return getTurfGrid(pond.ether);
   });
 
-  createEffect(on(() => JSON.stringify([pond.turf, pond.pulses]), () => {
-  // createEffect(() => {
+  // createEffect(on(() => JSON.stringify([pond.turf, pond.pulses]), () => {
+  createEffect(() => {
     if (!pond.turf) return null;
     batch(() => {
       console.log('constructing ether');
-      const turfCopy = js.turf(JSON.parse(JSON.stringify(pond.turf)));
+      // const turfCopy = js.turf(JSON.parse(JSON.stringify(pond.turf)));
+      const turfCopy = js.turf(cloneDeep(pond.turf));
+      // const turfCopy = js.turf(cloneDeep(unwrap(pond.turf)));
       $pond('ether', reconcile(turfCopy, { merge: true }));
       // $pond('ether', reconcile(pond.turf));
       pond.pulses.forEach((pulse) => {
@@ -155,7 +158,7 @@ export function getPond() {
       });
       $pond('ether', 'grid', reconcile(grid(), { merge: true }));
     });
-  }));
+  });
 
   // createEffect(() => {
   //   console.log('recomputing grid, for some reason');
@@ -215,6 +218,14 @@ const pondWaves = {
     'size-turf': (turf) => {
       turf.offset = wave.arg.offset;
       turf.size = wave.arg.size;
+      const bounds = getTurfBounds(turf);
+      const maxPos = bounds.botRight.subtract(vec2(1));
+      Object.values(turf.players).forEach((player) => {
+        const newPos = minV(maxV(vec2(player.pos), bounds.topLeft), maxPos);
+        // const newPos = vec2(wave.arg.pos);
+        player.pos.x = newPos.x;
+        player.pos.y = newPos.y;
+      });
     },
     'add-husk': (turf) => {
       const { pos, formId, variation } = wave.arg;
@@ -248,7 +259,7 @@ const pondWaves = {
       const { shadeId } = wave.arg;
       const shade = turf.cave[shadeId];
       if (shade) {
-        jabBySpace(turf, shade.pos, space => space.shades.filter((shadeId) => shadeId !== shadeId));
+        jabBySpace(turf, shade.pos, space => space.shades = space.shades.filter((shadeId) => shadeId !== shadeId));
         // const normPos = vec2(shade.pos).subtract(turf.offset);
         // const space = turf.grid[normPos.x]?.[normPos.y];
         // if (space) {

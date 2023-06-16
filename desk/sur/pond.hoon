@@ -23,7 +23,17 @@
   =*  players  players.ephemera.turf
   ?-  -.wave
     %set-turf  `turf.wave
-    %size-turf  `turf(offset.plot offset.wave, size.plot size.wave)
+    %size-turf
+  :-  ~
+  %=  turf
+    offset.plot  offset.wave
+    size.plot  size.wave
+    ::
+      players.ephemera
+    %-  ~(run by players)
+    |=  =player
+    player(pos (clamp-pos pos.player offset.wave size.wave))
+  ==
     %add-husk  `(add-husk turf +.wave)
     %del-shade  `(del-shade turf +.wave)
     %cycle-shade  `(cycle-shade turf +.wave)
@@ -67,7 +77,7 @@
       set-avatar-wave
   ==
 +$  set-turf-wave  [%set-turf =turf]
-+$  size-turf-wave  [%size-turf offset=svec2 size=vec2]
++$  size-turf-wave  [%size-turf off-size]
 +$  add-husk-wave  [%add-husk husk-spec]
 +$  del-shade-wave  [%del-shade =shade-id]
 +$  cycle-shade-wave  [%cycle-shade =shade-id amt=@ud]

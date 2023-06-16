@@ -188,6 +188,9 @@ export function getState() {
       ];
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
+    setScale(scale) {
+      $state('scale', Math.max(0.125, Math.min(6, scale)));
+    },
     setEditing(editing) {
       $state('editor', 'editing', editing);
     },
