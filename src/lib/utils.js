@@ -84,6 +84,14 @@ export function intToHex(color) {
   return '#' + color.toString(16).padStart(6, '0');
 }
 
+export function vecToStr(vec) {
+  return vec.x + ',' + vec.y;
+}
+
+export function jClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 
 /** Random global functions
  *  @namespace Random */

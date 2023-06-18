@@ -75,15 +75,15 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
   })
 }
 
-export async function sendWave(stirMark, path, waveType, data, stirId) {
+export async function sendWave(mark, path, type, arg, stirId) {
   stirId = stirId || uuidv4();
   await api.poke({
     app: 'turf',
-    mark: stirMark,
+    mark,
     json: {
       path,
       id: stirId,
-      wave: (data === undefined) ? waveType : { [waveType]: data },
+      wave: (arg === undefined) ? type : { [type]: arg },
     },
     onError: (e) => {
       console.error('caught error in sending wave', e);
@@ -93,12 +93,12 @@ export async function sendWave(stirMark, path, waveType, data, stirId) {
   return stirId;
 }
 
-export async function sendPondWave(id, waveType, data, stirId) {
-  sendWave('pond-stir', id, waveType, data, stirId);
+export async function sendPondWave(id, type, arg, stirId) {
+  sendWave('pond-stir', id, type, arg, stirId);
 }
 
-export async function sendMistWave(waveType, data, stirId) {
-  sendWave('mist-stir', '/mist', waveType, data, stirId);
+export async function sendMistWave(type, arg, stirId) {
+  sendWave('mist-stir', '/mist', type, arg, stirId);
 }
 
 

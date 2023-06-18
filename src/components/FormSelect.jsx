@@ -36,16 +36,18 @@ export default function FormSelect(props) {
                 visibility: 'hidden',
               }}
             />
-            <img
-              src={form.variations[0].sprite}
+            <button
+              class="absolute top-0" 
               onClick={() => props.select(id, i)}
-              style={{
-                border: isSelected(id) ? '4px dashed green' : 'none',
-                'image-rendering': 'pixelated',
-                position: 'absolute',
-                top: 0,
-              }}
-            />
+            >
+              <img
+                src={form.variations[0].sprite}
+                style={{
+                  border: isSelected(id) ? '4px dashed green' : 'none',
+                  'image-rendering': 'pixelated',
+                }}
+              />
+            </button>
             {/* <p>
               {form.name}
             </p> */}

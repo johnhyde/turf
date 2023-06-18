@@ -2,8 +2,8 @@ import { createSignal, createEffect, createRoot, createResource, runWithOwner, m
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
 import { vec2, minV, flattenGrid, near, pixelsToTiles, dirs, swapAxes, getDirFromVec } from 'lib/utils';
-import { getShadeWithForm, getWallVariationAtPos } from 'lib/pond';
-import { extractSkyeSprites, extractPlayerSprites, spriteName, spriteNameWithDir, extractShades } from 'lib/pond';
+import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
+import { extractSkyeSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
 
 import voidUrl from 'assets/sprites/void.png';
@@ -24,7 +24,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
     };
     // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, () => {
-      console.log('loaded image', id);
+      // console.log('loaded image', id);
       resolve();
     });
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
@@ -205,7 +205,8 @@ export function startPhaser(_owner, container) {
         }
         if (setBounds) setBounds();
       }
-      window.addEventListener('resize', setGameSize, false);
+      // window.addEventListener('resize', setGameSize, false);
+      new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
       game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
       createEffect(() => {
@@ -224,19 +225,19 @@ export function startPhaser(_owner, container) {
         if (loader.state === 'ready') {
           if (lastTurfId || state.e) destroyCurrentTurf();
           if (state.e) {
-            initTurf(state.e, state.player);
-            initShades(state.e, );
+            initTurf(state.e, state.p.grid, state.player);
+            initShades(state.e);
           }
           return state.c.id;
         };
       }));
-      createEffect(on(() => JSON.stringify(state.e?.grid), (_, lastGrid) => {
+      createEffect(on(() => JSON.stringify(state.p.grid), (_, lastGrid) => {
         lastGrid = JSON.parse(lastGrid || '[]');
         // console.log('running tile effect');
         const turf = state.e;
         if (turf && loader.state == 'ready') {
           console.log('updating tiles');
-          state.e.grid.map((col, i) => {
+          state.p.grid.map((col, i) => {
             col.map((space, j) => {
               const lastTileFormId = lastGrid[i] ? lastGrid[i][j]?.tile?.formId : undefined;
               if (space.tile && space.tile.formId !== lastTileFormId) {
@@ -284,10 +285,12 @@ export function startPhaser(_owner, container) {
   
   function destroyCurrentTurf() {
     game.scene.start(scene);
+    if (player) player.destroy();
     player = null;
     shades = {};
   }
-  async function initTurf(turf, _player) {
+  window.destroyTurf = destroyCurrentTurf;
+  async function initTurf(turf, grid, _player) {
     const bounds = {
       x: turf.offset.x * turf.tileSize.x,
       y: turf.offset.y * turf.tileSize.y,
@@ -324,7 +327,7 @@ export function startPhaser(_owner, container) {
     // window.addEventListener('resize', setBounds);
     console.log("init turf tile layer", turf);
     
-    const [level, tilesetData] = generateMap(turf);
+    const [level, tilesetData] = generateMap(turf, grid);
     const map = scene.make.tilemap({ data: level, tileWidth: turf.tileSize.x, tileHeight: turf.tileSize.y });
     const tilesets = tilesetData.map((tileset, i) => {
       return map.addTilesetImage(tileset.image, undefined, undefined, undefined, undefined, undefined, i + 1);
@@ -333,7 +336,7 @@ export function startPhaser(_owner, container) {
     layer.setDepth(turf.offset.y - 10);
     window.tiles = tiles = layer;
     window.player = player = new Player(scene, turf.id, our, loadPlayerSprites);
-    cam.startFollow(player);
+    // cam.startFollow(player);
   }
 
   function initShades(turf) {
@@ -344,7 +347,9 @@ export function startPhaser(_owner, container) {
         const shadeObject = shades[id];
         const shadeData = turf.cave[id];
         if (!shadeObject) {
-          shades[id] = createShade(shadeData, id, turf);
+          if (isInTurf(turf, shadeData.pos)) {
+            shades[id] = createShade(shadeData, id, turf);
+          }
         } else if (!shadeData) {
           shades[id].destroy();
           delete shades[id];
@@ -366,7 +371,7 @@ const coreTiles = [
   }
 ];
 
-function generateMap(turf) {
+function generateMap(turf, grid) {
   formIndexMap = {};
   const tiles = Object.entries(extractSkyeSprites(turf.skye)).map(([id, _], i) => {
     formIndexMap[id] = i + coreTiles.length + 1;
@@ -375,7 +380,7 @@ function generateMap(turf) {
       image: id,
     };
   });
-  const data = swapAxes(turf.grid).map((row) => row.map((space) => {
+  const data = swapAxes(grid).map((row) => row.map((space) => {
     if (!space.tile) return 1;
     const sprite = spriteName(space.tile.formId, space.tile.variation);
     if (!formIndexMap[sprite]) return 1;

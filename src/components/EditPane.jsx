@@ -38,12 +38,12 @@ export default function EditPane() {
   }
   return (
     <div>
-      <p>
+      {/* <p>
         Edit Mode
-      </p>
+      </p> */}
       {/* <button onClick={state.toggleEditing.bind(state)}>Cancel</button> */}
       {/* <button onClick={state.toggleEditing.bind(state)}>Save</button> */}
-      <button onClick={state.toggleEditing.bind(state)}>Done</button>
+      {/* <button onClick={state.toggleEditing.bind(state)}>Done</button> */}
       <div class="border grid grid-cols-2">
         <label>Top</label>
         <input type="number" use:bind={[() => growth.top, (n) => $growth('top', Number(n))]} />

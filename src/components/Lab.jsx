@@ -39,7 +39,7 @@ export default function Lab() {
   return (
     <div>
       {/* <input type="color" default={intToHex(avatar.body.color)} use:bind={[() => intToHex(avatar.body.color), state.setColor.bind(state)]} /> */}
-      <button onClick={state.toggleLab.bind(state)}>Done</button>
+      {/* <button onClick={state.toggleLab.bind(state)}>Done</button> */}
       <div class="border">
         <input type="color" default={intToHex(avColor())} use:bind={[avColor, setColor]} />
         <p>

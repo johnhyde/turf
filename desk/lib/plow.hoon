@@ -31,6 +31,7 @@
     =/  will-be-colliding  (get-collidable turf pos)
     ?:  &(will-be-colliding !player-colliding)
       ~
+    ?:  =(pos pos.u.player)  ~
     `wave(pos pos)
   ==
 ::

@@ -1,8 +1,9 @@
 import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
-import { vec2, flattenGrid, hexToInt } from 'lib/utils';
-import { Pond, getWallsAtPos, getWallVariationAtPos } from 'lib/pond';
+import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
+import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf';
+import { Pond } from 'lib/pond';
 
 export const StateContext = createContext();
 
@@ -19,24 +20,35 @@ export function getState() {
       };
     },
     name: 'hi there',
-    editor: {
-      editing: false,
-      selectedFormId: null,
-      selectedTool: null,
-      tools: {
-        BRUSH: 'brush',
-        ERASER: 'eraser',
-        CYCLER: 'CYCLER',
-      },
-      get eraser() {
-        return this.selectedTool === this.tools.ERASER;
-      },
-      get cycler() {
-        return this.selectedTool === this.tools.CYCLER;
-      },
+    selectedTab: null,
+    get editor()  {
+      const parent = this;
+      return {
+        get editing() {
+          return parent.selectedTab === 'editor';
+        },
+        selectedFormId: null,
+        selectedTool: null,
+        tools: {
+          BRUSH: 'brush',
+          ERASER: 'eraser',
+          CYCLER: 'CYCLER',
+        },
+        get eraser() {
+          return this.selectedTool === this.tools.ERASER;
+        },
+        get cycler() {
+          return this.selectedTool === this.tools.CYCLER;
+        },
+      };
     },
-    lab: {
-      editing: false,
+    get lab()  {
+      const parent = this;
+      return {
+        get editing() {
+          return parent.selectedTab === 'lab';
+        },
+      };
     },
     scale: 0.5,
     get current() {
@@ -88,11 +100,11 @@ export function getState() {
         state.ponds[id].subscribe();
       }
     },
-    sendPondWave(mark, data, id) {
+    sendPondWave(type, arg, id) {
       id = id || this.currentTurfId;
       const pond = this.ponds[id];
       if (pond) {
-        pond.sendWave(mark, data, id);
+        return pond.sendWave(type, arg, id);
       }
     },
     setPos(pos) {
@@ -129,23 +141,23 @@ export function getState() {
       });
     },
     addHusk(pos, formId, variation = 0) {
-      const normPos = vec2(pos).subtract(this.e.offset);
-      if (normPos.x < 0 || normPos.y < 0) return false;
-      if (normPos.x >= this.e.size.x || normPos.y >= this.e.size.y) return false;
-      const currentSpace = this.e.grid[normPos.x]?.[normPos.y]
-      const currentTile = currentSpace?.tile;
-      const currentShades = (currentSpace?.shades || []).map(sid => this.e.cave[sid]);
-      const tileAlreadyHere = currentTile?.formId === formId;
-      const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
-      if (!tileAlreadyHere && !shadeAlreadyHere) {
-        this.sendPondWave('add-husk', {
-          pos,
-          formId,
-          variation: Number.parseInt(variation)
-        });
-        return true;
-      }
-      return false;
+      // const normPos = vec2(pos).subtract(this.e.offset);
+      // if (normPos.x < 0 || normPos.y < 0) return false;
+      // if (normPos.x >= this.e.size.x || normPos.y >= this.e.size.y) return false;
+      // const currentSpace = this.e.spaces[vecToStr(pos)];
+      // const currentTile = currentSpace?.tile;
+      // const currentShades = (currentSpace?.shades || []).map(sid => this.e.cave[sid]);
+      // const tileAlreadyHere = currentTile?.formId === formId;
+      // const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
+      // if (!tileAlreadyHere && !shadeAlreadyHere) {
+      //   return true;
+      // }
+      // return false;
+      return this.sendPondWave('add-husk', {
+        pos,
+        formId,
+        variation: Number.parseInt(variation)
+      });
     },
     delShade(shadeId) {
       this.sendPondWave('del-shade', {
@@ -190,12 +202,6 @@ export function getState() {
     },
     setScale(scale) {
       $state('scale', Math.max(0.125, Math.min(6, scale)));
-    },
-    setEditing(editing) {
-      $state('editor', 'editing', editing);
-    },
-    toggleEditing() {
-      $state('editor', 'editing', (editing) => !editing);
     },
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);

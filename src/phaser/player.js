@@ -1,7 +1,7 @@
 import { createEffect, on } from "solid-js";
 import { useState } from 'stores/state';
 import { vec2, dirs } from 'lib/utils';
-import { spriteNameWithDir } from 'lib/pond';
+import { spriteNameWithDir } from 'lib/turf';
 
 
 export class Player extends Phaser.GameObjects.Container {
@@ -16,16 +16,18 @@ export class Player extends Phaser.GameObjects.Container {
     this.player = player;
     this.tilePos = vec2(player().pos);
     this.oldTilePos = vec2(player().pos);
-    this.recreateAvatar();
-    this.loadPlayerSprites = load;
-    this.setupEffects();
     this.patp = patp;
     this.isUs = patp === our;
     if (this.isUs) {
       this.cursors = scene.input.keyboard.createCursorKeys();
       this.keys = scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
+      scene.cameras.main.startFollow(this);
     }
-    this.scene.events.on('update', (time, delta) => { this.update(time, delta)} );
+    this.recreateAvatar();
+    this.loadPlayerSprites = load;
+    this.setupEffects();
+    this.addToUpdateList();
+    // this.scene.events.on('update', (time, delta) => { this.update(time, delta)} );
     this.scene.add.existing(this);
   }
 
@@ -87,9 +89,14 @@ export class Player extends Phaser.GameObjects.Container {
       return img;
     }).filter(thing => !!thing);
     this.add([this.bodyImage, ...this.things]);
+    const dims = vec2(this.bodyImage.width, this.bodyImage.height);
+    const cameraOffset = vec2().subtract(dims).scale(0.5).add(playerOffset);
+    console.log('player dims', this.bodyImage.width, this.bodyImage.height)
+    scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
   }
 
-  update(time, dt) {
+  preUpdate(time, dt) {
+    // this.upreUpdate.super(time, dt);
     if (this.depth !== this.tilePos.y) {
       this.setDepth(this.tilePos.y + 0.5);
     }

@@ -1,8 +1,10 @@
 import { batch, on, createEffect, createMemo, createSignal, mergeProps, getOwner } from "solid-js";
 import { createStore, unwrap, produce, reconcile } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
+import isEqual from 'lodash/isEqual';
 import * as api from 'lib/api.js';
-import { vec2, minV, maxV, uuidv4, dirs } from 'lib/utils';
+import { clampToTurf, isInTurf, getCollision, jabBySpaces } from 'lib/turf';
+import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
 
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id) {
@@ -11,25 +13,6 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this._ = pond;
     this.$ = $pond;
     this.subscribe();
-    // this.etherGrid = createMemo(() => {
-    //   if (!pond.ether) return [];
-    //   const grid = [];
-    //   for (let i = pond.ether.offset.x; i < pond.ether.size.x; i++) {
-    //     grid[i] = [];
-    //     for (let j = pond.ether.offset.y; j < pond.ether.size.y; j++) {
-    //       const space = pond.ether.spaces[[i, j].join(',')];
-    //       if (space) {
-    //         grid[i][j] = space;
-    //       } else {
-    //         grid[i][j] = {
-    //           tile: undefined,
-    //           shades: [],
-    //         }
-    //       }
-    //     }
-    //   }
-    //   return grid;
-    // });
   }
 
   get turf() {
@@ -43,31 +26,29 @@ export class Pond { // we use a class so we can put it inside a store without ge
   get ether() {
     const parent = this;
     return this._.ether;
-    // return mergeProps(this._.ether, {
-    //   get grid() {
-    //     return parent.etherGrid();
-    //   },
-    // });
   }
-  // get grid() {
-  //   return this.etherGrid();
-  // }
+  get grid() {
+    return this._.grid;
+  }
 
-  async sendWave(mark, data) {
-    console.log('sending wave', mark);
+  // returns true/false whether we attempted to send the wave or not
+  // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
+  sendWave(type, arg) {
+    let stirWave = filterStir(this.ether, { type, arg });
+    if (!stirWave) return false;
+    console.log('sending wave', type);
+    const [stir, wave] = stirWave;
     const uuid = uuidv4();
     this.addPulse({
       id: uuid,
-      wave: {
-        type: mark,
-        arg: data,
-      },
+      wave,
     });
-    this.sendWavePoke(mark, data, uuid);
+    this.sendWavePoke(stir.type, stir.arg, uuid);
+    return true;
   }
-  async sendWavePoke(mark, data, uuid, retries = 0) {
+  async sendWavePoke(type, arg, uuid, retries = 0) {
     try {
-      await api.sendPondWave(this.id, mark, data, uuid);
+      await api.sendPondWave(this.id, type, arg, uuid);
     } catch (e) {
       if (e.message === 'Failed to fetch') {
         // internet connectivity issue
@@ -75,10 +56,11 @@ export class Pond { // we use a class so we can put it inside a store without ge
           const timeout = Math.pow(2, retries)*1000;
           retries++;
           console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
-          setTimeout(() => this.sendWavePoke(mark, data, uuid, retries), timeout);
+          setTimeout(() => this.sendWavePoke(type, arg, uuid, retries), timeout);
         } else {
           console.warn('Failed to send wave, no more retries');
           this.removePulse(uuid);
+          this.replayEther();
         }
       } else {
         throw e;
@@ -87,27 +69,41 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   onPondRes(res) {
-    if (res.hasOwnProperty('rock')) {
-      const newTurf = rockToTurf(res.rock, this.id);
-      console.log('new turf from rock', newTurf);
-      this.$('turf', reconcile(newTurf, { merge: true }));
-    } else if (res.hasOwnProperty('wave')) {
-      console.log('getting wave', res.wave?.type || 'no-op');
-      batch(() => {
-        if (res.id) {
-          const pulseI = this.pulses.findIndex(p => p.id === res.id);
-          if (pulseI >= 0) {
-            // const pulse = this.pulses[pulseI];
-            this.$('pulses', p => p.slice(pulseI + 1));
-          }
-        }
-        if (res.wave) {
+    batch(() => {
+      if (res.hasOwnProperty('rock')) {
+        const newTurf = rockToTurf(res.rock, this.id);
+        console.log('new turf from rock', newTurf);
+        this.$('turf', reconcile(newTurf, { merge: true }));
+        this.resetEther();
+        this.removePulses();
+      } else if (res.hasOwnProperty('wave')) {
+        console.log('getting wave', res.wave?.type || 'no-op');
+        const noop = !res.wave;
+        const noPulses = this.pulses.length === 0;
+        
+        if (!noop) {
           this.$('turf', washTurf(res.wave));
         }
-      });
-    } else {
-      console.error('Pond response not a rock or wave???', res);
-    }
+        if (!noop && noPulses) {
+          this.$('ether', washTurf(res.wave));
+        } else {
+          const pulseI = !res.id ? -1 : this.pulses.findIndex(p => p.id === res.id);
+          const matches = pulseI >= 0;
+          const matchesFirst = pulseI === 0;
+          const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].wave), res.wave);
+          const changesSomething = !noop || matches;
+          const etherInvalidated = changesSomething && (!matchesFirst || !confirms);
+          if (matches) {
+            this.$('pulses', p => p.slice(pulseI + 1));
+          }
+          if (etherInvalidated) {
+            this.replayEther();
+          }
+        }
+      } else {
+        console.error('Pond response not a rock or wave???', res);
+      }
+    });
   }
 
   subscribe() {
@@ -117,12 +113,39 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   addPulse(pulse) {
-    this.$('pulses', (pulses) => [...pulses, pulse]);
+    batch(() => {
+      this.$('pulses', (pulses) => [...pulses, pulse]);
+      this.applyPulse(pulse);
+    });
+  }
+
+  applyPulse(pulse) {
+    this.$('ether', washTurf(pulse.wave));
+  }
+
+  applyPulses() {
+    this.pulses.forEach((pulse) => {
+      this.applyPulse(pulse);
+    });
   }
 
   removePulse(uuid) {
     const pulseI = this.pulses.findIndex(p => p.id === uuid);
     this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
+  }
+
+  removePulses() {
+    this.$('pulses', []);
+  }
+
+  resetEther() {
+    const turfCopy = js.turf(cloneDeep(this.turf));
+    this.$('ether', reconcile(turfCopy, { merge: true }));
+  }
+
+  replayEther() {
+    this.resetEther();
+    this.applyPulses();
   }
 }
 
@@ -143,34 +166,7 @@ export function getPond() {
     return getTurfGrid(pond.ether);
   });
 
-  // createEffect(on(() => JSON.stringify([pond.turf, pond.pulses]), () => {
-  createEffect(() => {
-    if (!pond.turf) return null;
-    batch(() => {
-      console.log('constructing ether');
-      // const turfCopy = js.turf(JSON.parse(JSON.stringify(pond.turf)));
-      const turfCopy = js.turf(cloneDeep(pond.turf));
-      // const turfCopy = js.turf(cloneDeep(unwrap(pond.turf)));
-      $pond('ether', reconcile(turfCopy, { merge: true }));
-      // $pond('ether', reconcile(pond.turf));
-      pond.pulses.forEach((pulse) => {
-        $pond('ether', washTurf(pulse.wave));
-      });
-      $pond('ether', 'grid', reconcile(grid(), { merge: true }));
-    });
-  });
-
-  // createEffect(() => {
-  //   console.log('recomputing grid, for some reason');
-  //   if (!pond.ether) return null;
-  //   $pond('ether', 'grid', reconcile(getTurfGrid(pond.ether), { merge: true }));
-  // });
-
   return [pond, $pond];
-}
-
-function vecToStr(vec) {
-  return vec.x + ',' + vec.y;
 }
 
 function getTurfGrid(turf) {
@@ -181,7 +177,7 @@ function getTurfGrid(turf) {
     for (let j = turf.offset.y; j < turf.offset.y + turf.size.y; j++) {
       const space = turf.spaces[[i, j].join(',')];
       if (space) {
-        col.push(JSON.parse(JSON.stringify(space)));
+        col.push(jClone(space));
       } else {
         col.push({
           tile: undefined,
@@ -196,125 +192,101 @@ function getTurfGrid(turf) {
 export function rockToTurf(rock, id) {
   rock.id = id;
   js.turf(rock);
-  // rock.grid = getTurfGrid(rock);
-  // delete rock.spaces;
   return rock;
 }
 
-function jabBySpace(turf, pos, fn) {
-  const id = vecToStr(pos);
-  let space = turf.spaces[id] || {};
-  if (!space.shades) space.shades = [];
-  fn(space);
-  turf.spaces[id] = space;
-  return turf.spaces[id];
-}
+const pondWaves = {
+  'inc-counter': (turf, arg) => {
+    turf.stuffCounter++;
+  },
+  'size-turf': (turf, arg) => {
+    turf.offset = arg.offset;
+    turf.size = arg.size;
+    Object.values(turf.players).forEach((player) => {
+      const newPos = clampToTurf(turf, player.pos);
+      player.pos.x = newPos.x;
+      player.pos.y = newPos.y;
+    });
+  },
+  'add-husk': (turf, arg) => {
+    const { pos, formId, variation } = arg;
+    if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
+    if (pos.x >= turf.offset.x + turf.size.x || pos.y >= turf.offset.y + turf.size.y) return;
+    const formType = turf.skye[formId]?.type;
+    const newHusk = {
+      formId,
+      variation,
+      offset: vec2(),
+      collidable: null,
+      effects: {},
+    }
+    if (formType === 'tile') {
+      jabBySpaces(turf, pos, space => space.tile = newHusk);
+    } else if (formType == 'wall' || formType == 'item') {
+      jabBySpaces(turf, pos, space => space.shades.unshift(turf.stuffCounter));
+      turf.cave[turf.stuffCounter] = {
+        pos,
+        ...newHusk,
+      }
+      turf.stuffCounter++;
+    }
+  },
+  'del-shade': (turf, arg) => {
+    const { shadeId } = arg;
+    const shade = turf.cave[shadeId];
+    if (shade) {
+      jabBySpaces(turf, shade.pos, (space) => {
+        space.shades = space.shades.filter((shadeId) => shadeId !== shadeId);
+      });
+      delete turf.cave[shadeId];
+    }
+  },
+  'cycle-shade': (turf, arg) => {
+    const { shadeId, amount } = arg;
+    const shade = turf.cave[shadeId];
+    if (shade) {
+      const form = turf.skye[shade.formId];
+      if (form) {
+        shade.variation = (shade.variation + amount) % form.variations.length;
+      }
+    }
+  },
+  'set-shade-var': (turf, arg) => {
+    const { shadeId, variation } = arg;
+    const shade = turf.cave[shadeId];
+    if (shade) {
+      const form = turf.skye[shade.formId];
+      if (form) {
+        shade.variation = variation % form.variations.length;
+      }
+    }
+  },
+  'chat': (turf, arg) => {
+      turf.chats.unshift(arg);
+  },
+  'move': (turf, arg) => {
+    const player = turf.players[arg.ship];
+    if (player) {
+      const newPos = clampToTurf(turf, arg.pos);
+      player.pos.x = newPos.x;
+      player.pos.y = newPos.y;
+    }
+  },
+  'face': (turf, arg) => {
+    const player = turf.players[arg.ship];
+    if (player) {
+      player.dir = arg.dir;
+    }
+  },
+  'set-avatar': (turf, arg) => {
+    const player = turf.players[arg.ship];
+    if (player) {
+      player.avatar = arg.avatar;
+    }
+  },
+};
 
 export function washTurf(wave) {
-const pondWaves = {
-    'inc-counter': (turf) => {
-      turf.stuffCounter++;
-    },
-    'size-turf': (turf) => {
-      turf.offset = wave.arg.offset;
-      turf.size = wave.arg.size;
-      const bounds = getTurfBounds(turf);
-      const maxPos = bounds.botRight.subtract(vec2(1));
-      Object.values(turf.players).forEach((player) => {
-        const newPos = minV(maxV(vec2(player.pos), bounds.topLeft), maxPos);
-        // const newPos = vec2(wave.arg.pos);
-        player.pos.x = newPos.x;
-        player.pos.y = newPos.y;
-      });
-    },
-    'add-husk': (turf) => {
-      const { pos, formId, variation } = wave.arg;
-      // const normPos = vec2(pos).subtract(turf.offset);
-      // if (normPos.x < 0 || normPos.y < 0) return;
-      // if (normPos.x >= turf.size.x || normPos.y >= turf.size.y) return;
-      if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
-      if (pos.x >= turf.offset.x + turf.size.x || pos.y >= turf.offset.y + turf.size.y) return;
-      const formType = turf.skye[formId]?.type;
-      const newHusk = {
-        formId,
-        variation,
-        offset: vec2(),
-        collidable: null,
-        effects: {},
-      }
-      if (formType === 'tile') {
-        jabBySpace(turf, pos, space => space.tile = newHusk);
-        // turf.grid[normPos.x][normPos.y].tile = newHusk;
-      } else if (formType == 'wall' || formType == 'item') {
-        jabBySpace(turf, pos, space => space.shades.unshift(turf.stuffCounter));
-        // turf.grid[normPos.x][normPos.y].shades.unshift(turf.stuffCounter);
-        turf.cave[turf.stuffCounter] = {
-          pos,
-          ...newHusk,
-        }
-        turf.stuffCounter++;
-      }
-    },
-    'del-shade': (turf) => {
-      const { shadeId } = wave.arg;
-      const shade = turf.cave[shadeId];
-      if (shade) {
-        jabBySpace(turf, shade.pos, space => space.shades = space.shades.filter((shadeId) => shadeId !== shadeId));
-        // const normPos = vec2(shade.pos).subtract(turf.offset);
-        // const space = turf.grid[normPos.x]?.[normPos.y];
-        // if (space) {
-        //   space.shades = [space.shades || []].filter((shadeId) => shadeId !== shadeId);
-        // }
-        delete turf.cave[shadeId];
-      }
-    },
-    'cycle-shade': (turf) => {
-      const { shadeId, amount } = wave.arg;
-      const shade = turf.cave[shadeId];
-      if (shade) {
-        const form = turf.skye[shade.formId];
-        if (form) {
-          shade.variation = (shade.variation + amount) % form.variations.length;
-        }
-      }
-    },
-    'set-shade-var': (turf) => {
-      const { shadeId, variation } = wave.arg;
-      const shade = turf.cave[shadeId];
-      if (shade) {
-        const form = turf.skye[shade.formId];
-        if (form) {
-          shade.variation = variation % form.variations.length;
-        }
-      }
-    },
-    'chat': (turf) => {
-        turf.chats.unshift(wave.arg);
-    },
-    'move': (turf) => {
-      const player = turf.players[wave.arg.ship];
-      if (player) {
-        const bounds = getTurfBounds(turf);
-        const newPos = minV(maxV(vec2(wave.arg.pos), bounds.topLeft), bounds.botRight.subtract(vec2(1)));
-        // const newPos = vec2(wave.arg.pos);
-        player.pos.x = newPos.x;
-        player.pos.y = newPos.y;
-      }
-    },
-    'face': (turf) => {
-      const player = turf.players[wave.arg.ship];
-      if (player) {
-        player.dir = wave.arg.dir;
-      }
-    },
-    'set-avatar': (turf) => {
-      const player = turf.players[wave.arg.ship];
-      if (player) {
-        player.avatar = wave.arg.avatar;
-      }
-    },
-  };
-
   switch (wave.type) {
     case 'del-turf':
       return null;
@@ -328,10 +300,53 @@ const pondWaves = {
       };
     default:
       return produce((turf) => {
-        pondWaves[wave.type](turf);
+        pondWaves[wave.type](turf, wave.arg);
         js.turf(turf);
       });
   }
+}
+
+// returns false if wave is rejected
+// otherwise, returns a pair of [stir, wave]
+// or, more commonly, a single stir/wave
+const filters = {
+  'add-husk': (turf, wave) => {
+    const { pos, formId } = wave.arg;
+    if (!isInTurf(turf, pos)) return false;
+    const currentSpace = turf.spaces[vecToStr(pos)];
+    const currentTile = currentSpace?.tile;
+    const currentShades = (currentSpace?.shades || []).map(sid => turf.cave[sid]);
+    const tileAlreadyHere = currentTile?.formId === formId;
+    const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
+    if (!tileAlreadyHere && !shadeAlreadyHere) {
+      return wave;
+    }
+    return false;
+  },
+  'move': (turf, wave) => {
+    const { ship, pos } = wave.arg;
+    const player = turf.players[ship];
+    if (!player) return false;
+    const newPos = clampToTurf(turf, pos);
+    const playerColliding = getCollision(turf, player.pos);
+    const willBeColliding = getCollision(turf, newPos);
+    if (willBeColliding && !playerColliding) return false;
+    if (newPos.equals(player.pos)) return false;
+    wave.arg.pos = newPos;
+    return wave;
+  }
+};
+
+// returns false if wave is rejected
+// otherwise, returns a pair of [stir, wave]
+function filterStir(turf, wave) {
+  if (filters[wave.type]) {
+    const stirWave = filters[wave.type](turf, wave);
+    if (!stirWave) return false;
+    if (stirWave instanceof Array) return stirWave;
+    return [stirWave, stirWave];
+  }
+  return [wave, wave];
 }
 
 // We mutate everything I guess!
@@ -363,111 +378,3 @@ const js = {
     return vec2(vec.x, vec.y);
   },
 };
-
-export function getTurfBounds(turf) {
-  return {
-    topLeft: vec2(turf.offset),
-    botRight: vec2(turf.offset).add(turf.size),
-  };
-}
-
-export function getShadeWithForm(turf, shadeId) {
-  const shade = turf.cave[shadeId];
-  if (!shade) return null;
-  const form = turf.skye[shade.formId];
-  if (!form) return null;
-  return {
-    ...shade,
-    id: shadeId,
-    form,
-  };
-}
-
-export function getShadesAtPos(turf, pos) {
-  const normPos = vec2(pos).subtract(turf.offset);
-  const shades = turf.grid[normPos.x]?.[normPos.y]?.shades;
-  if (!shades) return [];
-  return shades.map(sid => getShadeWithForm(turf, sid));
-}
-
-export function getShadesAtPosByType(turf, pos, type) {
-  return getShadesAtPos(turf, pos).filter(shade => shade.form.type === type);
-}
-
-export function getWallsAtPos(turf, pos) {
-  return getShadesAtPosByType(turf, pos, 'wall');
-}
-
-export function getWallVariationAtPos(turf, pos, orFlags = 0, andFlags = 15) {
-  const down = getWallsAtPos(turf, vec2(pos).add(vec2(0, 1)));
-  const right = getWallsAtPos(turf, vec2(pos).add(vec2(1, 0)));
-  const up = getWallsAtPos(turf, vec2(pos).add(vec2(0, -1)));
-  const left = getWallsAtPos(turf, vec2(pos).add(vec2(-1, 0)));
-  // set flag to one if length > 0
-  const d = +!!down.length;
-  const r = +!!right.length;
-  const u = +!!up.length;
-  const l = +!!left.length;
-  const flags = ((d + (r * 2) + (u * 4) + (l * 8)) | orFlags) & andFlags;
-  return [0, 1, 2, 7, 3, 5, 8, 11, 4, 10, 6, 14, 9, 13, 12, 15][flags];
-}
-
-export function extractSkyeSprites(skye) {
-  const sprites = {};
-  Object.entries(skye).forEach(([formId, form]) => {
-    form.variations.forEach((variation, i) => {
-      if (variation) {
-        sprites[spriteName(formId, i)] = variation.sprite;
-      }
-    });
-  });
-  return sprites;
-}
-
-function addThingSprites(sprites, thing, patp) {
-  thing.form.variations.forEach((variation, i) => {
-    if (variation) {
-      sprites[spriteName(thing.formId, i, patp)] = variation.sprite;
-    }
-  });
-}
-
-export function extractPlayerSprites(players) {
-  const sprites = {};
-  Object.entries(players).forEach(([patp, player]) => {
-    addThingSprites(sprites, player.avatar.body.thing, patp);
-    player.avatar.things.forEach((thing) => {
-      addThingSprites(sprites, thing, patp);
-    });
-  });
-  return sprites;
-}
-
-export function spriteName(id, variation, patp='') {
-  return patp + id.replace(/\//g, '-') + '_' + (variation || '0');
-}
-
-export function spriteNameWithDir(id, form, dir = dir.DOWN, patp='') {
-  let variation = dirs[dir];
-  const len = form.variations.length;
-  if (len === 3) {
-    if (variation === 3) variation = 1; // left is right flipped
-  } else if (len === 2) {
-    if (variation === 2) return null; // don't display
-  }
-  variation = variation % form.variations.length;
-  return spriteName(id, variation, patp);
-}
-
-export function extractShades(turf) {
-  const husks = [];
-  turf.grid.forEach((col, i) => {
-    col.forEach((space, j) => {
-      const pos = vec2(i, j).add(turf.offset);
-      space.husks.forEach((form) => {
-        husks.push([pos, form]);
-      });
-    });
-  });
-  return husks;
-}

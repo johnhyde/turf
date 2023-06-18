@@ -50,21 +50,7 @@ function StateSummary() {
   }
 
   return (
-    <div class="bg-white h-full overflow-y-auto p-2 w-[250px]" id="sidebar">
-      {!state.editor.editing ? <div>
-        <p>
-          Play Mode
-        </p>
-        <button onClick={state.toggleEditing.bind(state)}>Edit</button>
-      </div> : <EditPane/>}
-      {!state.lab.editing ? <div>
-        <button onClick={state.toggleLab.bind(state)}>Customize Avatar</button>
-      </div> : <Lab/>}
-      <p>
-      </p>
-      {/* <p>
-        turf count: {Object.keys(state.ponds).length}
-      </p> */}
+    <div class="bg-white overflow-y-auto p-2 w-[250px]" id="sidebar">
       <p>
         Player Pos: {pos().x}x{pos().y}
       </p>

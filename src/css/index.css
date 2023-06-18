@@ -10,10 +10,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-button {
-  @apply border border-black px-1;
-}
-
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
@@ -32,9 +28,9 @@ code {
   padding: 4px;
 } */
 
-#sidebar div, #sidebar p, #sidebar input, #sidebar button {
+/* #sidebar div, #sidebar p, #sidebar input, #sidebar button {
   margin: 4px;
-}
+} */
 
 #sidebar input {
   max-width: 100px;
