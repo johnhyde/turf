@@ -21,6 +21,7 @@ export default function FormSelect(props) {
             <Show when={props.background}>
               <img
                 src={props.background}
+                draggable={false}
                 class="absolute top-0"
                 style={{
                   'image-rendering': 'pixelated',
@@ -32,6 +33,7 @@ export default function FormSelect(props) {
             </Show>
             <img
               src={form.variations[0].sprite}
+              draggable={false}
               style={{
                 visibility: 'hidden',
               }}
@@ -42,6 +44,7 @@ export default function FormSelect(props) {
             >
               <img
                 src={form.variations[0].sprite}
+                draggable={false}
                 style={{
                   border: isSelected(id) ? '4px dashed green' : 'none',
                   'image-rendering': 'pixelated',

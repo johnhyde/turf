@@ -21,26 +21,24 @@ export function getState() {
     },
     name: 'hi there',
     selectedTab: null,
-    get editor()  {
-      const parent = this;
-      return {
-        get editing() {
-          return parent.selectedTab === 'editor';
-        },
-        selectedFormId: null,
-        selectedTool: null,
-        tools: {
-          BRUSH: 'brush',
-          ERASER: 'eraser',
-          CYCLER: 'CYCLER',
-        },
-        get eraser() {
-          return this.selectedTool === this.tools.ERASER;
-        },
-        get cycler() {
-          return this.selectedTool === this.tools.CYCLER;
-        },
-      };
+    editor: {
+      get editing() {
+        return selectedTab() === 'editor';
+      },
+      selectedFormId: null,
+      selectedTool: null,
+      tools: {
+        BRUSH: 'brush',
+        ERASER: 'eraser',
+        CYCLER: 'cycler',
+        RESIZER: 'resizer',
+      },
+      get eraser() {
+        return this.selectedTool === this.tools.ERASER;
+      },
+      get cycler() {
+        return this.selectedTool === this.tools.CYCLER;
+      },
     },
     get lab()  {
       const parent = this;
@@ -87,6 +85,8 @@ export function getState() {
       return this.p?.ether;
     },
   });
+
+  const selectedTab = () => state.selectedTab;
 
   const _state = mergeProps(state, {
     $: $state,

@@ -2,10 +2,16 @@ import { createSignal, createSelector } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind } from 'lib/utils';
+import Button from '@/Button';
 import FormSelect from '@/FormSelect';
+import point from 'assets/icons/point.png';
+import erase from 'assets/icons/delete.png';
+import cycle from 'assets/icons/cycle.png';
+import resize from 'assets/icons/resize.png';
 
 export default function EditPane() {
   const state = useState();
+  const tools = state.editor.tools;
   function defaultGrowth() {
     return {
       top: 0,
@@ -31,10 +37,15 @@ export default function EditPane() {
       $growth(defaultGrowth());
     }
   }
+  const isToolSelected = createSelector(() => state.editor.selectedTool);
   const isSelected = createSelector(() => state.editor.selectedFormId);
   function selectTool(tool) {
     state.selectForm(null);
     state.selectTool(tool);
+  }
+  function selectForm(formId) {
+    state.selectForm(formId);
+    state.selectForm(tools.BRUSH);
   }
   return (
     <div>
@@ -44,6 +55,10 @@ export default function EditPane() {
       {/* <button onClick={state.toggleEditing.bind(state)}>Cancel</button> */}
       {/* <button onClick={state.toggleEditing.bind(state)}>Save</button> */}
       {/* <button onClick={state.toggleEditing.bind(state)}>Done</button> */}
+      <Button onClick={[selectTool, null]} src={point} selected={isToolSelected(null)} />
+      <Button onClick={[selectTool, tools.ERASER]} src={erase} selected={isToolSelected(tools.ERASER)} />
+      <Button onClick={[selectTool, tools.CYCLER]} src={cycle} selected={isToolSelected(tools.CYCLER)} />
+      <Button onClick={[selectTool, tools.RESIZER]} src={resize} selected={isToolSelected(tools.RESIZER)} />
       <div class="border grid grid-cols-2">
         <label>Top</label>
         <input type="number" use:bind={[() => growth.top, (n) => $growth('top', Number(n))]} />

@@ -7,7 +7,7 @@ export default function Button(props) {
       onClick={props.onClick}
       style={{ 'image-rendering': 'pixelated' }}
     >
-      <img src={props.src} />
+      <img src={props.src} draggable={false} />
     </button>
   );
 }
