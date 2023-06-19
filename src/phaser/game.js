@@ -5,11 +5,12 @@ import { vec2, minV, flattenGrid, near, pixelsToTiles, dirs, swapAxes, getDirFro
 import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
 import { extractSkyeSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
+import { Resizer } from "./resizer";
 
 import voidUrl from 'assets/sprites/void.png';
 import treeUrl from 'assets/sprites/tree.png';
 
-let owner, setBounds;
+let owner, setBounds, container;
 var game, scene, cam, cursors, keys = {}, player, tiles;
 var formIndexMap, shades = {};
 
@@ -80,8 +81,22 @@ function createShade(shade, id, turf) {
   return sprite;
 }
 
-export function startPhaser(_owner, container) {
+function setGameSize() {
+  console.log('resized')
+  const el = game.scale.isFullscreen ? game.canvas.parentElement : container;
+  const width = ~~(state.scale * el.clientWidth);
+  const height = ~~(state.scale * el.clientHeight);
+  if (!near(width, game.scale.width, 1) || !near(height, game.scale.height, 1)) {
+    game.scale.resize(width, height);
+    game.canvas.style.setProperty('width', '100%');
+    game.canvas.style.setProperty('height', '100%');
+  }
+  if (setBounds) setBounds();
+}
+
+export function startPhaser(_owner, _container) {
   owner = _owner;
+  container = _container;
   createRoot(() => {
     runWithOwner(owner, () => {
       const [loaded, $loaded] = createSignal(false);
@@ -193,25 +208,10 @@ export function startPhaser(_owner, container) {
       const state = useState();
       window.state = state;
 
-      function setGameSize() {
-        console.log('resized')
-        const el = game.scale.isFullscreen ? game.canvas.parentElement : container;
-        const width = ~~(state.scale * el.clientWidth);
-        const height = ~~(state.scale * el.clientHeight);
-        if (!near(width, game.scale.width, 1) || !near(height, game.scale.height, 1)) {
-          game.scale.resize(width, height);
-          game.canvas.style.setProperty('width', '100%');
-          game.canvas.style.setProperty('height', '100%');
-        }
-        if (setBounds) setBounds();
-      }
       // window.addEventListener('resize', setGameSize, false);
       new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
       game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
-      createEffect(() => {
-        setGameSize();
-      })
       setGameSize();
       const [loader, { mutate, refetch }] = createResource(
         () => state.e,
@@ -284,8 +284,10 @@ export function startPhaser(_owner, container) {
   }
   
   function destroyCurrentTurf() {
+    (scene.add.displayList.list || []).map(e => e).forEach(e => e.destroy());
+    (scene.add.updateList.list || []).map(e => e).forEach(e => e.destroy());
     game.scene.start(scene);
-    if (player) player.destroy();
+    // if (player) player.destroy();
     player = null;
     shades = {};
   }
@@ -318,6 +320,9 @@ export function startPhaser(_owner, container) {
       console.log('bbounds', bbounds);
       scene.cameras.main.setBounds(bbounds.x, bbounds.y, bbounds.w, bbounds.h)
     }
+    createEffect(() => {
+      setGameSize();
+    });
     // window.removeEventListener('resize', setBounds);
     // createEffect(on(() => state.scale, () => {
     //   setBounds();
@@ -336,6 +341,7 @@ export function startPhaser(_owner, container) {
     layer.setDepth(turf.offset.y - 10);
     window.tiles = tiles = layer;
     window.player = player = new Player(scene, turf.id, our, loadPlayerSprites);
+    window.resizer = new Resizer(scene, turf.id);
     // cam.startFollow(player);
   }
 

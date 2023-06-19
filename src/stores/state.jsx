@@ -33,11 +33,17 @@ export function getState() {
         CYCLER: 'cycler',
         RESIZER: 'resizer',
       },
+      get brush() {
+        return this.selectedTool === this.tools.BRUSH;
+      },
       get eraser() {
         return this.selectedTool === this.tools.ERASER;
       },
       get cycler() {
         return this.selectedTool === this.tools.CYCLER;
+      },
+      get resizer() {
+        return this.selectedTool === this.tools.RESIZER;
       },
     },
     get lab()  {
@@ -141,18 +147,6 @@ export function getState() {
       });
     },
     addHusk(pos, formId, variation = 0) {
-      // const normPos = vec2(pos).subtract(this.e.offset);
-      // if (normPos.x < 0 || normPos.y < 0) return false;
-      // if (normPos.x >= this.e.size.x || normPos.y >= this.e.size.y) return false;
-      // const currentSpace = this.e.spaces[vecToStr(pos)];
-      // const currentTile = currentSpace?.tile;
-      // const currentShades = (currentSpace?.shades || []).map(sid => this.e.cave[sid]);
-      // const tileAlreadyHere = currentTile?.formId === formId;
-      // const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
-      // if (!tileAlreadyHere && !shadeAlreadyHere) {
-      //   return true;
-      // }
-      // return false;
       return this.sendPondWave('add-husk', {
         pos,
         formId,
@@ -201,7 +195,7 @@ export function getState() {
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
     setScale(scale) {
-      $state('scale', Math.max(0.125, Math.min(6, scale)));
+      $state('scale', Math.max(0.125, Math.min(6, Number(scale))));
     },
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);

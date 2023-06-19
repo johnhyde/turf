@@ -50,7 +50,7 @@ function StateSummary() {
   }
 
   return (
-    <div class="bg-white overflow-y-auto p-2 w-[250px]" id="sidebar">
+    <div class="overflow-y-auto">
       <p>
         Player Pos: {pos().x}x{pos().y}
       </p>
@@ -66,7 +66,7 @@ function StateSummary() {
         view scale
       </p>
       <div>
-        <input type="range" min="0.25" max="1.5" step="0.25" use:bind={[() => state.scale, (s) => state.$('scale', s)]} />
+        <input type="range" min="0.25" max="2" step="0.25" use:bind={[() => state.scale, (s) => state.setScale(s)]} />
       </div>
       {/* <pre>
         {JSON.stringify(state.e, null, 2)}

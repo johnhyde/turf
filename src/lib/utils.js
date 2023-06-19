@@ -25,6 +25,16 @@ export function maxV(a, b) {
   return vec2(Math.max(a.x, b.x), Math.max(a.y, b.y));
 }
 
+export function floorV(v) {
+  v = vec2(v);
+  return vec2(Math.floor(v.x), Math.floor(v.y));
+}
+
+export function roundV(v) {
+  v = vec2(v);
+  return vec2(Math.round(v.x), Math.round(v.y));
+}
+
 export function swapAxes(array2d) {
   if (!array2d || array2d.length === 0) return [];
   return array2d[0].map((_, colIndex) => array2d.map(row => row[colIndex]));
