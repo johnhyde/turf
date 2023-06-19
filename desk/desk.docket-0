@@ -2,7 +2,7 @@
     info+'Build a world with your friends, explore, and hang out.'
     color+0x1f.843c
 ::    image+'https://raw.githubusercontent.com/johnhyde/turf/main/public/android-chrome-192x192.png'
-    image+'https://raw.githubusercontent.com/johnhyde/turf/main/public/assets/icons/logo.png'
+    image+'https://raw.githubusercontent.com/johnhyde/turf/main/src/assets/icons/logo-big.png'
     glob-http+['https://s3.us-east-2.amazonaws.com/warkgnall.com/urbit/monkey/globs/glob-0vtcnvo.o6fdj.i5hlt.qq796.ufog9.glob' 0vtcnvo.o6fdj.i5hlt.qq796.ufog9]
     base+'turf'
     version+[0 0 0]
