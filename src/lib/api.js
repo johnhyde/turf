@@ -25,7 +25,6 @@ function addImage(url, id) {
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
-// const api = new UrbitApi('http://127.0.0.1:8080', 'nilfel-nimfeb-navnux-tabned', window.desk);
 api.ship = window.ship;
 window.api = api;
 // api.connect();
@@ -55,6 +54,7 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
     },
     quit: (data) => {
       console.error(`Subscription to turf/pond just got "quit"`, data);
+      subscribeToTurf(id, onRes, onErr, onQuit);
       onQuit(data);
     }
   })

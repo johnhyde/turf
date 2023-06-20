@@ -8,7 +8,6 @@ import { Player } from "./player";
 import { Resizer } from "./resizer";
 
 import voidUrl from 'assets/sprites/void.png';
-import treeUrl from 'assets/sprites/tree.png';
 
 let owner, setBounds, container;
 var game, scene, cam, cursors, keys = {}, player, tiles;

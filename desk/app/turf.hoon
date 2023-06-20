@@ -33,7 +33,7 @@
 %-  agent:dbug
 =|  current-state
 =*  state  -
-%+  verb  &
+:: %+  verb  &
 ^-  agent:gall
 =<
 |_  =bowl:gall
@@ -69,7 +69,7 @@
   :: =|  cards=(list card)
   =/  old-reset  !<(@ud (slot 6 old-state))
   =+  :-  cards=`(list card)`~
-      ?.  =(old-reset reset)  ~&('reseting state' old=state)
+      ?.  =(old-reset reset)  ~&('reseting %turf state' old=state)
       old=!<(versioned-state old-state)
   =*  quolp  -
   :: =?  quolp  ?=(%0 -.old)
@@ -101,10 +101,10 @@
   :: ~&  >>  "sub-pond was: {<read:da-pond>}"
   :: ~&  >>  "pub-pond was: {<read:du-pond>}"
   ?+    mark  (on-poke:def mark vase)
-      %test
-    ~&  -:!>(*$%(from:da-mist from:da-pond))
-    :: ~&  (default-turf:gen our.bowl)
-    `this
+    ::   %test
+    :: ~&  -:!>(*$%(from:da-mist from:da-pond))
+    :: :: ~&  (default-turf:gen our.bowl)
+    :: `this
   ::
   :: Pub Pokes
   ::
@@ -115,59 +115,59 @@
       %init-avatar
     =.  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-default-avatar:hc
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %init-turf
     =.  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-turf:hc
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %set-turf
     =+  !<([size=vec2 offset=svec2] vase)
     =^  cards  state  (give-pond:hc dppath set-turf+(default-turf:gen our.bowl size offset ~))
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %inc
     =^  cards  state  (give-pond:hc dppath %inc-counter)
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %add-husk
     =^  cards  state  (give-pond:hc dppath add-husk+!<(husk-spec vase))
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %chat
     =^  cards  state  (give-pond:hc dppath chat+[our.bowl now.bowl !<(@t vase)])
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %del-turf
     =^  cards  state  (give-pond:hc dppath %del-turf)
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %wipe-turf
     =.  pub-pond  (wipe:du-pond dppath)
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     `this
   ::
       %open-turf
     =.  pub-pond  (allow:du-pond [!<(@p vase)]~ [dppath]~)
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     `this
   ::
       %kill-turf
     =.  pub-pond  (kill:du-pond [dppath]~)
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     `this
   ::
       %live-turf
     =.  pub-pond  (live:du-pond [dppath]~)
-    ~&  >  "pub-pond is: {<read:du-pond>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     `this
   ::
   :: Sub Pokes
@@ -175,20 +175,20 @@
       %surf-turf
     =^  cards  sub-pond  
       (surf:da-pond !<(@p (slot 2 vase)) %turf !<(pond-path (slot 3 vase)))
-    ~&  >  "sub-pond is: {<read:da-pond>}"
+    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       %quit-turf
     =.  sub-pond  
       (quit:da-pond !<(@p (slot 2 vase)) %turf !<(pond-path (slot 3 vase)))
-    ~&  >  "sub-pond is: {<read:da-pond>}"
+    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
       %mist-stir
     =+  !<(stir:mist (fled vase))
     ?>  =(our src):bowl
     :: ~&  >  "accepting mist wave from client: {<?^(wave -.wave wave)>}"
-    ~&  >  "accepting mist wave from client: {<-.wave wave>}"
+    :: ~&  >  "accepting mist wave from client: {<-.wave wave>}"
     =/  pub  (~(get by read:du-mist) ppath)
     =/  fwave=(unit wave:mist)
       ?~  pub  ~
@@ -199,7 +199,7 @@
       %pond-stir
     =+  !<(stir:pond (fled vase))
     ?>  =(our src):bowl
-    ~&  >  "accepting pond wave from client: {<?^(wave -.wave wave)>}"
+    :: ~&  >  "accepting pond wave from client: {<?^(wave -.wave wave)>}"
     =/  pub  (~(get by read:du-pond) ppath)
     =/  fwave=(unit wave:pond)
       ?~  pub  ~
@@ -217,7 +217,7 @@
       ~?  ?=(^ rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.rock.msg>}"
       `this
         [mist-path *]
-      ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
+      :: ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
       `this
     ==
   ::
@@ -235,13 +235,13 @@
       %sss-pond
     =/  res  !<(into:da-pond (fled vase))
     =^  cards  sub-pond  (apply:da-pond res)
-    ~&  >  "sub-pond is: {<read:da-pond>}"
+    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       %sss-mist
     =/  res  !<(into:da-mist (fled vase))
     =^  cards  sub-mist  (apply:da-mist res)
-    ~&  >  "sub-mist is: {<read:da-mist>}"
+    :: ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
   ::
   ::  You'll receive an `%sss-surf-fail` poke whenever you tried to subscribe to
@@ -251,7 +251,7 @@
   ::  The message will contain `[path ship dude]`.
       %sss-surf-fail
     =/  msg  !<($%(fail:da-pond fail:da-mist) (fled vase))
-    ~&  >>>  "not allowed to surf on {<msg>}!"
+    :: ~&  >>>  "not allowed to surf on {<msg>}!"
     `this
   ==
 ++  on-watch
@@ -287,22 +287,22 @@
   ?+    wire  (on-agent:def wire sign)
       [~ %sss %on-rock @ @ @ pond-path]
     =.  sub-pond  (chit:da-pond |3:wire sign)
-    ~&  >  "sub-pond is: {<read:da-pond>}"
+    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
       [~ %sss %on-rock @ @ @ mist-path]
     =.  sub-mist  (chit:da-mist |3:wire sign)
-    ~&  >  "sub-mist is: {<read:da-mist>}"
+    :: ~&  >  "sub-mist is: {<read:da-mist>}"
     `this
   ::
       [~ %sss %scry-request @ @ @ pond-path]
     =^  cards  sub-pond  (tell:da-pond |3:wire sign)
-    ~&  >  "sub-pond is: {<read:da-pond>}"
+    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       [~ %sss %scry-request @ @ @ mist-path]
     =^  cards  sub-mist  (tell:da-mist |3:wire sign)
-    ~&  >  "sub-mist is: {<read:da-mist>}"
+    :: ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
   ==
 ++  on-arvo

@@ -1,4 +1,6 @@
+.env.local
+.DS_Store
+**/.DS_Store
 node_modules
 dist
-.env.local
-**/.DS_Store
+globs

@@ -7,7 +7,7 @@ export default function Help() {
         Use arrow keys or WASD to move
       </p>
       <p>
-        Scroll up/down to scroll in/out
+        Scroll up/down to zoom in/out
       </p>
       <p>
         Turf is in super-pre-alpha. Anything you create will be erased in future updates.
@@ -22,7 +22,7 @@ export default function Help() {
       {/* <p>
         Select the Shovel to enter Edit Mode
       </p> */}
-      <StateSummary />
+      {import.meta.env.DEV && <StateSummary />}
     </div>
   );
 }

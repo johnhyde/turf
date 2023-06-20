@@ -77,8 +77,13 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 input[type="color"]::-moz-color-swatch {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
+  top: 0;
+  left: 0;
+  position: absolute;
   border-radius: 50%;
-  border: 1px solid #000000;
+  margin: 0;
+  @apply border-2 border-yellow-950;
+  box-sizing: border-box;
 }
