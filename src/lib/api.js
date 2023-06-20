@@ -1,26 +1,11 @@
 import UrbitApi from '@urbit/http-api';
-// import floorUrl from 'assets/sprites/floor.png';
-// import holeFloorUrl from 'assets/sprites/hole-floor.png';
-// import playerUrl from 'assets/sprites/player.png';
-// import grassUrl from 'assets/sprites/grass.png';
-// import longGrassUrl from 'assets/sprites/long-grass.png';
-import tableUrl from 'assets/sprites/table.png';
-import stoolUrl from 'assets/sprites/stool.png';
-import treeUrl from 'assets/sprites/tree.png';
 import { vec2, randInt, uuidv4 } from 'lib/utils';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-// addImage(floorUrl, 'floor');
-// addImage(holeFloorUrl, 'hole_floor');
-// addImage(playerUrl, 'player');
-// addImage(grassUrl, 'grass');
-// addImage(longGrassUrl, 'longGrass');
-// addImage(tableUrl, 'tableUrl');
-// addImage(stoolUrl, 'stoolUrl');
-addImage(treeUrl, 'treeUrl');
+// addImage(treeUrl, 'treeUrl');
 
 function addImage(url, id) {
   const image = new Image();

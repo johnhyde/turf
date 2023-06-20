@@ -35,6 +35,9 @@ export default ({ mode }) => {
         vendor: path.resolve('./src/vendor'),
       },
     },
+    define: {
+      'process.env.prod': !process.env.NODE_ENV === 'development',
+    },
     server: {
       port: 3000,
       fs: {

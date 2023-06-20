@@ -18,6 +18,9 @@ export default function EditPane() {
     state.selectForm(null);
     state.selectTool(tool);
   }
+  const entries = () => Object.entries(state.e?.skye || {});
+  const formsByType = (type) => entries().filter(([id, form]) => form.type === type);
+  const types = ['tile', 'item', 'wall'];
   return (
     <div>
       <Button onClick={[selectTool, null]} src={point} selected={isToolSelected(null)} />
@@ -25,11 +28,21 @@ export default function EditPane() {
       <Button onClick={[selectTool, tools.CYCLER]} src={cycle} selected={isToolSelected(tools.CYCLER)} />
       <Button onClick={[selectTool, tools.RESIZER]} src={resize} selected={isToolSelected(tools.RESIZER)} />
       <div>
-        <FormSelect
+        <For each={types}>
+          {(type) => (
+
+            <FormSelect
+              forms={formsByType(type)}
+              select={state.selectForm.bind(state)}
+              selectedId={state.editor.selectedFormId}
+            />
+          )}
+        </For>
+        {/* <FormSelect
           forms={Object.entries(state.e?.skye || {})}
           select={state.selectForm.bind(state)}
           selectedId={state.editor.selectedFormId}
-        />
+        /> */}
       </div>
     </div>
   );

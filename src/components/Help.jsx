@@ -7,6 +7,9 @@ export default function Help() {
         Use arrow keys or WASD to move
       </p>
       <p>
+        Scroll up/down to scroll in/out
+      </p>
+      <p>
         Turf is in super-pre-alpha. Anything you create will be erased in future updates.
       </p>
       <p>

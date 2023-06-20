@@ -36,7 +36,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 z-[100] h-full overflow-y-auto p-1 w-[250px]')}
+      class={'p-1 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 z-[100] h-full overflow-y-auto p-1 w-[233px]')}
       >
     {/* <div class="bg-yellow-800 z-[100] h-full overflow-y-auto p-1 w-[250px]"> */}
       <Show when={open()} fallback={(
@@ -47,9 +47,13 @@ function Sidebar() {
         <Button onClick={[toggleTab, 'help']} src={help} selected={isSelected('help')} />
         <Button onClick={[toggleTab, 'lab']} src={lab} selected={isSelected('lab')} />
         <Button onClick={[toggleTab, 'editor']} src={shovel} selected={isSelected('editor')} />
-        {state.editor.editing && <EditPane/>}
-        {state.lab.editing && <Lab/>}
-        {state.selectedTab === 'help' && <Help/>}
+        <Show when={state.selectedTab}>
+          <div class="mt-1 pt-1 border-t border-yellow-950">
+            {state.editor.editing && <EditPane/>}
+            {state.lab.editing && <Lab/>}
+            {state.selectedTab === 'help' && <Help/>}
+          </div>
+        </Show>
       </Show>
     </div>
   );

@@ -205,7 +205,12 @@ export function getState() {
       this.selectTool(this.editor.tools.BRUSH);
     },
     selectTool(tool) {
-      $state('editor', 'selectedTool', tool);
+      batch(() => {
+        $state('editor', 'selectedTool', tool);
+        if (tool === this.editor.tools.RESIZER) {
+          this.setScale(Math.max(this.scale, 1.5));
+        }
+      });
     },
   });
 

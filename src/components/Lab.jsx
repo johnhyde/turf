@@ -36,19 +36,33 @@ export default function Lab() {
     state.avatar.delThing(i);
     console.log('delete thing #' + (i + 1) + ' to player');
   }
+
+  const pClass = 'bg-yellow-950 text-yellow-50 rounded-md px-2 py-0.5 my-1 mx-auto w-fit';
   return (
-    <div>
-      {/* <input type="color" default={intToHex(avatar.body.color)} use:bind={[() => intToHex(avatar.body.color), state.setColor.bind(state)]} /> */}
-      {/* <button onClick={state.toggleLab.bind(state)}>Done</button> */}
-      <div class="border">
-        <input type="color" default={intToHex(avColor())} use:bind={[avColor, setColor]} />
-        <p>
+    <div class="text-black text-center space-y-2">
+      <div class="flex items-center justify-center">
+      {/* <div class=""> */}
+        <p class={pClass + ' ml-0 mr-1'}>
+          Skin Color
+        </p>
+        <input
+          type="color"
+          default={intToHex(avColor())}
+          use:bind={[avColor, setColor]}
+        />
+      </div>
+      {/* <div class="border-t"> */}
+      <div class="">
+        <p class={pClass}>
           Equipped Features
         </p>
         <Show when={avatar() !== undefined} fallback={'Loading Avatar'}>
             <FormSelect forms={things()} select={delThing} fallback={'No Features Equipped'} background={'sprites/garb/body-gray.png'} />
         </Show>
-        <p>
+      </div>
+      {/* <div class="border-t"> */}
+      <div class="">
+        <p class={pClass}>
           Closet
         </p>
         <Show when={closet() !== undefined} fallback={'Loading Closet'}>

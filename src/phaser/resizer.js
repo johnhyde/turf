@@ -1,4 +1,4 @@
-import { createEffect, batch } from "solid-js";
+import { createEffect, batch, untrack } from "solid-js";
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state';
 import { roundV } from 'lib/utils';
@@ -173,5 +173,4 @@ export class Resizer extends Phaser.GameObjects.Container {
       }
     })
   }
-
 }
