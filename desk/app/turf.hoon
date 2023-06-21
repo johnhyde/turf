@@ -189,11 +189,11 @@
     ?>  =(our src):bowl
     :: ~&  >  "accepting mist wave from client: {<?^(wave -.wave wave)>}"
     :: ~&  >  "accepting mist wave from client: {<-.wave wave>}"
-    =/  pub  (~(get by read:du-mist) ppath)
+    =/  pub  (~(get by read:du-mist) mpath)
     =/  fwave=(unit wave:mist)
       ?~  pub  ~
       (filter-mist-wave:plow rock.u.pub wave closet)
-    =^  cards  state  (stir-mist:hc ppath id fwave)
+    =^  cards  state  (stir-mist:hc mpath id fwave)
     cards^this
   ::
       %pond-stir
@@ -203,7 +203,7 @@
     =/  pub  (~(get by read:du-pond) ppath)
     =/  fwave=(unit wave:pond)
       ?~  pub  ~
-      (filter-pond-wave:plow rock.u.pub wave)
+      (filter-pond-wave:plow rock.u.pub wave bowl)
     =^  cards  state  (stir-pond:hc ppath id fwave)
     cards^this
   ::
@@ -351,18 +351,18 @@
   (weld cards more-cards)^state
 ::
 ++  stir-mist
-  |=  [ppath=mist-path id=stir-id:mist wave=(unit wave:mist)]
+  |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
   ^-  (quip card _state)
   =/  cards=(list card)
     =/  =stirred:mist  [%wave id wave]
-    [%give %fact [;;(path ppath)]~ %mist-stirred !>(stirred)]~
+    [%give %fact [;;(path mpath)]~ %mist-stirred !>(stirred)]~
   ?~  wave  cards^state
-  =^  sss-cards  pub-mist  (give:du-mist ppath u.wave)
+  =^  sss-cards  pub-mist  (give:du-mist mpath u.wave)
   =^  pond-cards  state  update-player
   [:(weld sss-cards cards pond-cards) state]
 ++  give-mist
-  |=  [ppath=mist-path =wave:mist]
-  (stir-mist ppath ~ `wave)
+  |=  [mpath=mist-path =wave:mist]
+  (stir-mist mpath ~ `wave)
 ++  stir-pond
   |=  [ppath=pond-path id=stir-id:pond wave=(unit wave:pond)]
   ^-  (quip card _state)

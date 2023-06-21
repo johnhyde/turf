@@ -57,12 +57,12 @@
 :: ::
 +$  stir-id  (unit @t)
 +$  stir
-  $:  ppath=mist-path
+  $:  mpath=mist-path
       id=stir-id
       wave=stir-wave
   ==
 +$  stir-wave
-  $%  =wave
+  $%  wave
       [%add-thing-from-closet =form-id]
   ==
 +$  stirred

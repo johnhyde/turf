@@ -39,7 +39,7 @@
     %cycle-shade  `(cycle-shade turf +.wave)
     %set-shade-var  `(set-shade-var turf +.wave)
       %chat
-    rock(chats.ephemera.u [chat.wave chats.ephemera.turf])
+    rock(chats.ephemera.u [chat.wave (scag 19 chats.ephemera.turf)])
       %move
     =.  players
       %^  jab-by-players  players  ship.wave
@@ -88,7 +88,15 @@
 +$  set-avatar-wave  [%set-avatar =ship =avatar]
 ::
 +$  stir-id  (unit @t)
-+$  stir  [ppath=pond-path id=stir-id =wave]
++$  stir
+  $:  ppath=pond-path
+      id=stir-id
+      wave=stir-wave
+  ==
++$  stir-wave
+  $%  wave
+      [%send-chat from=ship text=cord]
+  ==
 +$  stirred
     $%  [what=%rock =rock]
         [what=%wave id=stir-id wave=(unit wave)]

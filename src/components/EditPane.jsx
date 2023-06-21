@@ -1,4 +1,4 @@
-import { createSignal, createSelector } from 'solid-js';
+import { createSignal, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind } from 'lib/utils';
@@ -21,12 +21,59 @@ export default function EditPane() {
   const entries = () => Object.entries(state.e?.skye || {});
   const formsByType = (type) => entries().filter(([id, form]) => form.type === type);
   const types = ['tile', 'item', 'wall'];
+
+  const onKeyDown = (e) => {
+    if (!e.defaultPrevented && document.activeElement.tagName !== 'TEXTAREA') {
+      switch (e.code) {
+        case 'Enter':
+          selectTool(null);
+          break;
+        case 'Delete':
+        case 'Backspace':
+          selectTool(tools.ERASER);
+          break;
+        case 'KeyC':
+          selectTool(tools.CYCLER);
+        break;
+        case 'KeyR':
+          selectTool(tools.RESIZER);
+        break;
+        default:
+      }
+    }
+  };
+
+  document.addEventListener('keydown', onKeyDown);
+  onCleanup(() => {
+    document.removeEventListener('keydown', onKeyDown);
+  });
+
   return (
     <div>
-      <Button onClick={[selectTool, null]} src={point} selected={isToolSelected(null)} />
-      <Button onClick={[selectTool, tools.ERASER]} src={erase} selected={isToolSelected(tools.ERASER)} />
-      <Button onClick={[selectTool, tools.CYCLER]} src={cycle} selected={isToolSelected(tools.CYCLER)} />
-      <Button onClick={[selectTool, tools.RESIZER]} src={resize} selected={isToolSelected(tools.RESIZER)} />
+      <Button
+        onClick={[selectTool, null]}
+        src={point}
+        selected={isToolSelected(null)}
+        tooltip='Enter'
+      />
+      <Button
+        onClick={[selectTool, tools.ERASER]}
+        src={erase}
+        selected={isToolSelected(tools.ERASER)}
+        tooltip='Delete'
+      />
+      <Button
+        onClick={[selectTool, tools.CYCLER]}
+        src={cycle}
+        selected={isToolSelected(tools.CYCLER)}
+        tooltip='C'
+      />
+      <Button
+        onClick={[selectTool, tools.RESIZER]}
+        src={resize}
+        selected={isToolSelected(tools.RESIZER)}
+        tooltip='R'
+      />
       <div>
         <For each={types}>
           {(type) => (
@@ -38,11 +85,6 @@ export default function EditPane() {
             />
           )}
         </For>
-        {/* <FormSelect
-          forms={Object.entries(state.e?.skye || {})}
-          select={state.selectForm.bind(state)}
-          selectedId={state.editor.selectedFormId}
-        /> */}
       </div>
     </div>
   );

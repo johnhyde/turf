@@ -263,6 +263,7 @@ const pondWaves = {
   },
   'chat': (turf, arg) => {
       turf.chats.unshift(arg);
+      turf.chats = turf.chats.slice(0, 20);
   },
   'move': (turf, arg) => {
     const player = turf.players[arg.ship];
@@ -334,7 +335,20 @@ const filters = {
     if (newPos.equals(player.pos)) return false;
     wave.arg.pos = newPos;
     return wave;
-  }
+  },
+  'send-chat': (turf, stir) => {
+    return [
+      stir,
+      {
+        type: 'chat',
+        arg: {
+          from: stir.arg.from,
+          at: Date.now(),
+          text: stir.arg.text,
+        }
+      },
+    ]
+  },
 };
 
 // returns false if wave is rejected

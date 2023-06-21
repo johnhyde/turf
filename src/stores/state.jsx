@@ -21,6 +21,11 @@ export function getState() {
     },
     name: 'hi there',
     selectedTab: null,
+    tabs: {
+      HELP: 'help',
+      LAB: 'lab',
+      EDITOR: 'editor',
+    },
     editor: {
       get editing() {
         return selectedTab() === 'editor';
@@ -46,13 +51,10 @@ export function getState() {
         return this.selectedTool === this.tools.RESIZER;
       },
     },
-    get lab()  {
-      const parent = this;
-      return {
-        get editing() {
-          return parent.selectedTab === 'lab';
-        },
-      };
+    lab:  {
+      get editing() {
+        return selectedTab() === 'lab';
+      },
     },
     scale: 0.5,
     get current() {
@@ -123,6 +125,12 @@ export function getState() {
       this.sendPondWave('face', {
         ship: our,
         dir,
+      });
+    },
+    sendChat(message) {
+      this.sendPondWave('send-chat', {
+        from: our,
+        text: message,
       });
     },
     avatar: {
@@ -202,13 +210,24 @@ export function getState() {
     },
     selectForm(id, _) {
       $state('editor', 'selectedFormId', id);
-      this.selectTool(this.editor.tools.BRUSH);
+      if (id) this.selectTool(this.editor.tools.BRUSH);
     },
     selectTool(tool) {
       batch(() => {
         $state('editor', 'selectedTool', tool);
         if (tool === this.editor.tools.RESIZER) {
           this.setScale(Math.max(this.scale, 1.5));
+        }
+      });
+    },
+    selectTab(tab) {
+      batch(() => {
+        $state('selectedTab', tab);
+        if (tab === state.tabs.LAB) {
+          this.setScale(Math.min(this.scale, 0.25));
+        }
+        if (tab === state.tabs.EDITOR) {
+          this.selectTool(this.editor.selectedTool);
         }
       });
     },

@@ -56,6 +56,7 @@ function createShade(shade, id, turf) {
   sprite.setDepth(shade.pos.y);
   sprite.setInteractive();
   function onClick(pointer) {
+    console.log('got click on shade', id, shade.formId);
     if (state.editor.editing) {
       if (state.editor.eraser) {
         const shade = getShadeWithForm(state.e, id);
@@ -194,11 +195,11 @@ export function startPhaser(_owner, _container) {
         const dt = now - updateTime;
         updateTime = now;
         if (!cam.roundPixels) cam.setRoundPixels(true);
-        // if (player) updatePlayer(dt);
-        if (keys.f.isDown) {
-          keys.f.reset();
-          game.scale.startFullscreen();
-        }
+        // if (keys.f.isDown) {
+        //   keys.f.reset();
+        //   game.scale.startFullscreen();
+        // }
+        return true;
         // console.log('f key', keys.f)
       }
 
@@ -342,6 +343,7 @@ export function startPhaser(_owner, _container) {
     window.player = player = new Player(scene, turf.id, our, loadPlayerSprites);
     window.resizer = new Resizer(scene, turf.id);
     // cam.startFollow(player);
+    game.input.keyboard.preventDefault = false;
   }
 
   function initShades(turf) {

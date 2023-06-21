@@ -15,9 +15,12 @@
     u.form
   ==
 ++  filter-pond-wave
-  |=  [=rock:pond =wave:pond]
+  |=  [=rock:pond wave=stir-wave:pond =bowl:gall]
   ^-  (unit wave:pond)
-  ?~  rock  `wave
+  ?~  rock
+    ?+  wave  ~
+      [%set-turf *]  `wave
+    ==
   =*  turf  u.rock
   ?@  wave
     `wave
@@ -33,6 +36,10 @@
       ~
     ?:  =(pos pos.u.player)  ~
     `wave(pos pos)
+      %send-chat
+    ?.  =(src.bowl from.wave)  ~
+    :-  ~
+    [%chat from.wave now.bowl text.wave]
   ==
 ::
 ++  enjs
@@ -171,25 +178,19 @@
   ++  numbt
     |=  a=@u
     ^-  @t
-    =/  jon  (numb a)
-    ?>  ?=([%n @ta] jon)
-    +:jon
+    (crip (a-co:co a))
   ++  snumbt
     |=  a=@s
     ^-  @t
-    =/  jon  (snumb a)
-    ?>  ?=([%n @ta] jon)
-    +:jon
+    =/  [sign=? abs=@u]
+      (old:si a)
+    =/  num  (numbt abs)
+    ?:  sign  num
+    `@t`(cat 3 '-' num)
   ++  snumb
     |=  a=@s
     ^-  json
-    =/  [sign=? abs=@u]
-      (old:si a)
-    =/  num  (numb abs)
-    ?>  ?=(%n -.num)
-    ?:  sign  num
-    :-  %n
-    `@t`(cat 3 '-' +.num)
+    n+(snumbt a)
   ++  player
     |=  [who=^ship =^player]
     :-  (scot %p who)
@@ -360,11 +361,12 @@
       ==
     ++  pond-wave
       |=  jon=json
-      ^-  wave:pond
+      ^-  stir-wave:pond
       %.  jon
-      %+  wave  wave:pond
+      %+  wave  stir-wave:pond
       :~  move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
+          send-chat+(ot ~[from+(se %p) text+so])
           size-turf+(ot ~[offset+svec2 size+vec2])
           add-husk+(ot ~[pos+svec2 'formId'^pa variation+ni])
           del-shade+(ot ~['shadeId'^ni])

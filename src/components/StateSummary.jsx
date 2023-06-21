@@ -2,8 +2,6 @@ import { createSignal, createMemo } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { vec2, bind } from 'lib/utils';
-import EditPane from '@/EditPane';
-import Lab from '@/Lab';
 
 function Turf(props) {
   if (!props.turf) return null;
@@ -12,11 +10,6 @@ function Turf(props) {
     <p>
       {props.turf.size.x}x{props.turf.size.y}; offset: {props.turf.offset.x}x{props.turf.offset.y}
     </p>
-    <For each={props.turf.chats}>{(chat, i) => (
-      <p>
-        {chat.from}: {chat.text}
-      </p>
-    )}</For>
   </>;
 }
 
@@ -54,23 +47,12 @@ function StateSummary() {
       <p>
         Player Pos: {pos().x}x{pos().y}
       </p>
-      {/* <div>
-        <input type="number" use:bind={[() => state.player?.pos.x, (x) => state.setPos(vec2(Number(x), state.player?.pos.y))]} />
-        <input type="number" use:bind={[() => pos().y, (y) => $pos(vec2(pos().x, Number(y)))]} />
-      </div>
-      <div>
-        <input type="number" use:bind={[() => pos().x, (x) => $pos(vec2(Number(x), pos().y))]} />
-        <input type="number" use:bind={[() => pos().y, (y) => $pos(vec2(pos().x, Number(y)))]} />
-      </div> */}
       <p>
         view scale
       </p>
       <div>
         <input type="range" min="0.25" max="2" step="0.25" use:bind={[() => state.scale, (s) => state.setScale(s)]} />
       </div>
-      {/* <pre>
-        {JSON.stringify(state.e, null, 2)}
-      </pre> */}
       <h3>Current Turf:</h3>
       <p>{state.currentTurfId}</p>
       <Show when={state.e} fallback={<p>No current turf</p>}>
