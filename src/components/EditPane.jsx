@@ -23,8 +23,8 @@ export default function EditPane() {
   const types = ['tile', 'item', 'wall'];
 
   const onKeyDown = (e) => {
-    if (!e.defaultPrevented && document.activeElement.tagName !== 'TEXTAREA') {
-      switch (e.code) {
+    if (!e.defaultPrevented && document.activeElement.tagName !== 'TEXTAREA' && !e.metaKey) {
+      switch (e.key) {
         case 'Enter':
           selectTool(null);
           break;
@@ -32,10 +32,10 @@ export default function EditPane() {
         case 'Backspace':
           selectTool(tools.ERASER);
           break;
-        case 'KeyC':
+        case 'c':
           selectTool(tools.CYCLER);
         break;
-        case 'KeyR':
+        case 'r':
           selectTool(tools.RESIZER);
         break;
         default:
