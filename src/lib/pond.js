@@ -285,6 +285,9 @@ const pondWaves = {
       player.avatar = arg.avatar;
     }
   },
+  'add-player': (turf, arg) => {
+    turf.players[arg.ship] = arg.player;
+  },
 };
 
 export function washTurf(wave) {

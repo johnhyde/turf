@@ -20,8 +20,10 @@ function StateSummary() {
   function addTurf() {
     state.fetchTurf(('' + Math.random()).substring(2, 8));
   }
-  function subToTurf() {
-    state.subToTurf();
+  function subToTurf(patp) {
+    const turfId = '/pond/' + patp;
+    state.subToTurf(turfId);
+    state.$('currentTurfId', turfId);
   }
   function unsubToTurfs() {
     api.unsubscribeToTurf();
@@ -69,7 +71,8 @@ function StateSummary() {
           </li>
         )}</For>
       </ul> */}
-      <button onClick={subToTurf}>sub to turf</button>
+      <button onClick={[subToTurf, our]}>sub to turf</button>
+      <button onClick={[subToTurf, '~bindev-midlev-mindyr']}>sub to bindev</button>
       <button onClick={unsubToTurfs}>unsub to turfs</button>
     </div>
   );

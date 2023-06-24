@@ -10,7 +10,7 @@ export const StateContext = createContext();
 export function getState() {
   const [state, $state] = createStore({
     ponds: {},
-    currentTurfId: '/pond',
+    currentTurfId: '/pond/' + our,
     get player() {
       const player = this.e?.players[our];
       if (!player) return null;
@@ -101,7 +101,7 @@ export function getState() {
     setName(name) {
       $state('name', name);
     },
-    subToTurf(id='/pond') {
+    subToTurf(id) {
       if (!state.ponds[id]) {
         $state('ponds', id, new Pond(id));
       } else {

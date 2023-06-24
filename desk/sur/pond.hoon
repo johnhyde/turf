@@ -58,6 +58,10 @@
       |=  =player
       player(avatar avatar.wave)
     rock
+      %add-player
+    =.  players
+    (~(put by players) ship.wave player.wave)
+    rock
   ==
 --
 |%
@@ -75,6 +79,7 @@
       move-wave
       face-wave
       set-avatar-wave
+      add-player-wave
   ==
 +$  set-turf-wave  [%set-turf =turf]
 +$  size-turf-wave  [%size-turf off-size]
@@ -86,16 +91,18 @@
 +$  move-wave  [%move =ship pos=svec2]
 +$  face-wave  [%face =ship =dir]
 +$  set-avatar-wave  [%set-avatar =ship =avatar]
++$  add-player-wave  [%add-player =ship =player]
 ::
 +$  stir-id  (unit @t)
 +$  stir
-  $:  ppath=pond-path
+  $:  =turf-id
       id=stir-id
       wave=stir-wave
   ==
 +$  stir-wave
   $%  wave
       [%send-chat from=ship text=cord]
+      [%join-player =ship =avatar]
   ==
 +$  stirred
     $%  [what=%rock =rock]

@@ -28,9 +28,9 @@
   ==
 ::
 +$  plot
-  $:  size=_(vec2 16 8)
+  $:  size=$~((vec2 16 8) vec2)
       offset=svec2  :: Where is the top left corner? May change due to resizing
-      tile-size=_(vec2 [32 32])
+      tile-size=$~((vec2 [32 32]) vec2)
       =spaces
       =skye
       =cave
@@ -42,7 +42,7 @@
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
 +$  dir  ?(%right %up %left %down)
-+$  color  _0xff.ffff
++$  color  $~(0xff.ffff @ux)
 +$  flug  $~(%.n ?)  :: flag which is false by default
 +$  off-size  [offset=svec2 size=vec2]
 +$  tl-br  [tl=svec2 br=svec2]

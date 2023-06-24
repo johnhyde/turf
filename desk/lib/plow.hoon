@@ -18,8 +18,11 @@
   |=  [=rock:pond wave=stir-wave:pond =bowl:gall]
   ^-  (unit wave:pond)
   ?~  rock
-    ?+  wave  ~
-      [%set-turf *]  `wave
+    ?+    wave  ~
+        [%set-turf *]
+      ?.  =(our.bowl src.bowl)
+        ~
+      `wave
     ==
   =*  turf  u.rock
   ?@  wave
@@ -40,7 +43,30 @@
     ?.  =(src.bowl from.wave)  ~
     :-  ~
     [%chat from.wave now.bowl text.wave]
+      %join-player
+    =|  =player
+    :-  ~
+    [%add-player ship.wave player(avatar avatar.wave)]
   ==
+++  path-to-turf-id
+  |=  =path
+  ^-  (unit turf-id)
+  ?.  ?=([%pond @ *] path)  ~
+  :-  ~
+  :-  `@p`(slav %p &2.path)
+  |2.path
+++  turf-id-to-sub-key
+  |=  id=turf-id
+  ^-  [=ship =dude:gall ppath=pond-path]
+  [ship.id %turf [%pond path.id]]
+++  turf-id-to-ppath
+  |=  id=turf-id
+  ^-  pond-path
+  ppath:(turf-id-to-sub-key id)
+++  turf-id-to-path
+  |=  id=turf-id
+  ^-  path
+  [%pond (scot %p ship.id) path.id]
 ::
 ++  enjs
   =,  enjs:format
@@ -86,6 +112,8 @@
           (face +.wave)
             %set-avatar
           (pond-set-avatar +.wave)
+            %add-player
+          (pond-add-player +.wave)
     ==  ==
   ++  mist-rock
     |=  =rock:mist
@@ -118,7 +146,7 @@
     =,  plot.turf
     |^  ^-  json
     %-  pairs
-    :~  players+(pairs (turn ~(tap by players) player))
+    :~  players+(pairs (turn ~(tap by players) player-pair))
         chats+a+(turn chats chat)
         size+(vec2 size)
         offset+(svec2 offset)
@@ -191,9 +219,12 @@
     |=  a=@s
     ^-  json
     n+(snumbt a)
-  ++  player
-    |=  [who=^ship =^player]
+  ++  player-pair
+    |=  [who=^ship plr=^player]
     :-  (scot %p who)
+    (player plr)
+  ++  player
+    |=  =^player
     ^-  json
     %-  pairs
     :~  pos+(svec2 pos.player)
@@ -336,6 +367,13 @@
     :~  ship+s+(scot %p shp)
         avatar+(avatar av)
     ==
+  ++  pond-add-player
+    |=  [shp=^ship plr=^player]
+    ^-  json
+    %-  pairs
+    :~  ship+s+(scot %p shp)
+        player+(player plr)
+    ==
   --
 ++  dejs
   =,  dejs:format
@@ -355,7 +393,8 @@
       ^-  stir:pond
       %.  jon
       %-  ot
-      :~  path+(cork pa |=(=path ;;(pond-path path)))
+      :~  path+(cork pa |=(=path (need (path-to-turf-id path))))
+      :: :~  path+pa
           id+so:soft
           wave+pond-wave
       ==

@@ -81,6 +81,9 @@
         (new-garb-pair /skirt/red 'Red Skirt' 3)
         (new-garb-pair /pants/blue 'Blue Pants' 3)
     ==
+  ++  default-player
+    =|  =player
+    player(avatar default-avatar)
   ++  default-avatar
     =<  .(offset.form.thing.body [--0 --13])
     ^-  avatar
