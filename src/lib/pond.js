@@ -36,9 +36,9 @@ export class Pond { // we use a class so we can put it inside a store without ge
   sendWave(type, arg) {
     let stirWave = filterStir(this.ether, { type, arg });
     if (!stirWave) return false;
-    console.log('sending wave', type);
     const [stir, wave] = stirWave;
     const uuid = uuidv4();
+    console.log('sending wave', type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
     this.addPulse({
       id: uuid,
       wave,
@@ -77,24 +77,27 @@ export class Pond { // we use a class so we can put it inside a store without ge
         this.resetEther();
         this.removePulses();
       } else if (res.hasOwnProperty('wave')) {
-        console.log('getting wave', res.wave?.type || 'no-op');
-        const noop = !res.wave;
+        const { grit, id } = res.wave;
+        console.log('getting wave', grit?.type || 'no-op', 'with id', id ? id.substring(0, 4) : id);
+        const noop = !grit;
         const noPulses = this.pulses.length === 0;
         
         if (!noop) {
-          this.$('turf', washTurf(res.wave));
+          this.$('turf', washTurf(grit));
         }
         if (!noop && noPulses) {
-          this.$('ether', washTurf(res.wave));
+          this.$('ether', washTurf(grit));
         } else {
-          const pulseI = !res.id ? -1 : this.pulses.findIndex(p => p.id === res.id);
+          const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
           const matches = pulseI >= 0;
           const matchesFirst = pulseI === 0;
-          const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].wave), res.wave);
+          const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].wave), grit);
           const changesSomething = !noop || matches;
           const etherInvalidated = changesSomething && (!matchesFirst || !confirms);
           if (matches) {
-            this.$('pulses', p => p.slice(pulseI + 1));
+            // once we can guarantee that pokes are send to ship in order,
+            // we can throw out any pulses before the matched one
+            this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
           }
           if (etherInvalidated) {
             this.replayEther();

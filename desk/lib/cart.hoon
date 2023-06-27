@@ -1,7 +1,7 @@
 /-  *turf, mist
 /+  *turf, sss
 |%
-++  filter-mist-wave
+++  filter-mist-goal
   |=  [=rock:mist =wave:mist]
   ^-  (unit wave:mist)
   `wave

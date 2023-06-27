@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_3
+      reset=_4
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -87,7 +87,9 @@
   =.  state  old
   =^  cards-1  state  init-defaults:hc
   :: ~&  ~(wyt by +.pub-pond)
-  =^  cards-2  state  (add-player:hc ~hiddev-midlev-mindyr)
+  :: =^  cards-2  state  (add-player:hc ~hiddev-midlev-mindyr)
+  :: =^  cards-2  state  (del-player:hc ~hiddev-midlev-mindyr)
+  =^  cards-2  state  (add-player:hc ~mordev-naltuc-ravteb)
   :: ~&  ~(wyt by +.pub-pond)
   :: todo: use ;<???
   =.  cards-0  :*
@@ -186,13 +188,13 @@
   ::
       %surf-turf
     =^  cards  sub-pond  
-      (surf:da-pond !<(@p (slot 2 vase)) %turf !<(pond-path (slot 3 vase)))
+      (surf:da-pond !<(@p (slot 2 vase)) %turf pond+!<(pond-path (slot 3 vase)))
     :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       %quit-turf
     =.  sub-pond  
-      (quit:da-pond !<(@p (slot 2 vase)) %turf !<(pond-path (slot 3 vase)))
+      (quit:da-pond !<(@p (slot 2 vase)) %turf pond+!<(path (slot 3 vase)))
     :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
@@ -204,18 +206,19 @@
     =/  pub  (~(get by read:du-mist) mpath)
     =/  fwave=(unit wave:mist)
       ?~  pub  ~
-      (filter-mist-wave rock.u.pub wave closet)
+      (filter-mist-goal rock.u.pub wave closet)
     =^  cards  state  (stir-mist:hc mpath id fwave)
     cards^this
   ::
       %pond-stir
-    =+  !<(stir:pond vase)
-    ?:  =(our.bowl ship.turf-id)
-      =^  cards  state  (stir-pond:hc turf-id id wave)
+    =/  stir  !<(stir:pond vase)
+    =/  target  ship.turf-id.stir
+    ?:  =(our.bowl target)
+      =^  cards  state  (stir-pond:hc stir)
       cards^this
     ?>  =(our src):bowl
     :_  this
-    [%pass [%pond-stir (drop id)] %agent [ship.turf-id %turf] %poke [%pond-stir vase]]~
+    [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
   :: Boilerplate
   ::
@@ -232,7 +235,7 @@
       =/  =stirred:pond
         ?~  wave.msg
           [%rock rock.msg]
-        [%wave ~ wave.msg]
+        [%wave id.u.wave.msg `grit.u.wave.msg]
       =/  give-paths=(list path)  [this-turf-path]~
       =?  give-paths  =(ctid `this-turf-id)
         [/pond give-paths]
@@ -399,30 +402,30 @@
     [%give %fact [;;(path mpath)]~ %mist-stirred !>(stirred)]~
   ?~  wave  cards^state
   =^  sss-cards  pub-mist  (give:du-mist mpath u.wave)
-  =^  pond-cards  state  update-player
+  =^  pond-cards  state  grit-player
   [:(weld sss-cards cards pond-cards) state]
 ++  give-mist
   |=  [mpath=mist-path =wave:mist]
   (stir-mist mpath ~ `wave)
 ++  stir-pond
-  |=  [=turf-id =stir-id:pond wave=stir-wave:pond]
+  |=  [=turf-id =stir-id:pond =goal:pond]
   ^-  (quip card _state)
-  :: ~&  "start to stir pond. stir: {<wave>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
+  :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id)
   =/  pub  (~(get by read:du-pond) ppath)
-  =/  fwave=(unit wave:pond)
-    (filter-pond-wave ?~(pub ~ rock.u.pub) wave bowl)
+  =/  grit=(unit grit:pond)
+    (filter-pond-goal ?~(pub ~ rock.u.pub) goal bowl)
   =/  cards=(list card)
-    =/  =stirred:pond  [%wave stir-id fwave]
+    =/  =stirred:pond  [%wave stir-id grit]
     [%give %fact [(turf-id-to-path turf-id)]~ %pond-stirred !>(stirred)]~
-  ?~  fwave  cards^state
-  =^  sss-cards  pub-pond  (give:du-pond ppath u.fwave)
-  :: ~&  "end of stir pond. stir: {<wave>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
+  ?~  grit  cards^state
+  =^  sss-cards  pub-pond  (give:du-pond ppath [stir-id u.grit])
+  :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   [(weld sss-cards cards) state]
 ++  give-pond
-  |=  [=turf-id wave=stir-wave:pond]
+  |=  [=turf-id =goal:pond]
   ~&  "trying to give pond. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  (stir-pond turf-id ~ wave)
+  (stir-pond turf-id ~ goal)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
   ^-  (quip card _state)
@@ -440,7 +443,7 @@
     ?:  on-watch  ~
     [path.id]~
   [%give %fact give-paths %pond-stirred !>(stirred)]~
-++  update-player
+++  grit-player
   ^-  (quip card _state)
   =/  av  default-avatar
   ?~  av  `state
@@ -451,5 +454,9 @@
   ^-  (quip card _state)
   ~&  "trying to add player. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   (give-pond dtid join-player+[ship default-avatar:gen])
+++  del-player
+  |=  =ship
+  ^-  (quip card _state)
+  (give-pond dtid del-player+ship)
 --
 :: . :: [hc everything-else]

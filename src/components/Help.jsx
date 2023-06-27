@@ -3,6 +3,7 @@ import StateSummary from "@/StateSummary";
 export default function Help() {
   return (
     <div class="m-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50">
+      {import.meta.env.DEV && <StateSummary />}
       <p>
         Use arrow keys or WASD to move
       </p>
@@ -77,7 +78,6 @@ export default function Help() {
           <code>~poster-hoster-midlev-mindyr/turf</code>
         {/* </a> */}
       </p>
-      {import.meta.env.DEV && <StateSummary />}
     </div>
   );
 }

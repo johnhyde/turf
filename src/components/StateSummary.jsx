@@ -73,6 +73,7 @@ function StateSummary() {
       </ul> */}
       <button onClick={[subToTurf, our]}>sub to turf</button>
       <button onClick={[subToTurf, '~bindev-midlev-mindyr']}>sub to bindev</button>
+      <button onClick={[subToTurf, '~fasdev-naltuc-ravteb']}>sub to fasdev</button>
       <button onClick={unsubToTurfs}>unsub to turfs</button>
     </div>
   );

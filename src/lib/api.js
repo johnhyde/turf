@@ -68,7 +68,7 @@ export async function sendWave(mark, path, type, arg, stirId) {
     json: {
       path,
       id: stirId,
-      wave: (arg === undefined) ? type : { [type]: arg },
+      goal: (arg === undefined) ? type : { [type]: arg },
     },
     onError: (e) => {
       console.error('caught error in sending wave', e);

@@ -1,7 +1,7 @@
 /-  *turf, pond, mist
 /+  *turf, sss
 |%
-++  filter-mist-wave
+++  filter-mist-goal
   |=  [=rock:mist wave=stir-wave:mist closet=skye]
   ^-  (unit wave:mist)
   ?+    -.wave  `wave
@@ -14,39 +14,39 @@
     :-  [form-id.wave 0 *husk-bits]
     u.form
   ==
-++  filter-pond-wave
-  |=  [=rock:pond wave=stir-wave:pond =bowl:gall]
-  ^-  (unit wave:pond)
+++  filter-pond-goal
+  |=  [=rock:pond =goal:pond =bowl:gall]
+  ^-  (unit grit:pond)
   ?~  rock
-    ?+    wave  ~
+    ?+    goal  ~
         [%set-turf *]
       ?.  =(our.bowl src.bowl)
         ~
-      `wave
+      `goal
     ==
   =*  turf  u.rock
-  ?@  wave
-    `wave
-  ?+    -.wave  `wave
+  ?@  goal
+    `goal
+  ?+    -.goal  `goal
       %move
     =*  players  players.ephemera.turf
-    =/  player  (~(get by players) ship.wave)
+    =/  player  (~(get by players) ship.goal)
     ?~  player  ~
-    =/  pos  (clamp-pos pos.wave offset.plot.turf size.plot.turf)
+    =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
     =/  player-colliding  (get-collidable turf pos.u.player)
     =/  will-be-colliding  (get-collidable turf pos)
     ?:  &(will-be-colliding !player-colliding)
       ~
     ?:  =(pos pos.u.player)  ~
-    `wave(pos pos)
+    `goal(pos pos)
       %send-chat
-    ?.  =(src.bowl from.wave)  ~
+    ?.  =(src.bowl from.goal)  ~
     :-  ~
-    [%chat from.wave now.bowl text.wave]
+    [%chat from.goal now.bowl text.goal]
       %join-player
     =|  =player
     :-  ~
-    [%add-player ship.wave player(avatar avatar.wave)]
+    [%add-player ship.goal player(avatar avatar.goal)]
   ==
 ++  path-to-turf-id
   |=  =path
@@ -78,42 +78,45 @@
     ?~  rock  ~
     (turf u.rock)
   ++  pond-wave
-    |=  [id=stir-id:pond uwave=(unit wave:pond)]
+    |=  [id=stir-id:pond ugrit=(unit grit:pond)]
     ^-  json
+    %+  frond  %wave
     %-  pairs
-    :_  :-  id+(fall (bind id |=(i=@t s+i)) ~)  ~
-    :-  %wave
-    ?~  uwave  ~
-    =*  wave  u.uwave
+    :_  [id+(fall (bind id |=(i=@t s+i)) ~)]~
+    :-  %grit
+    ?~  ugrit  ~
+    =*  grit  u.ugrit
     %-  pairs
     :~  :-  %type
-        s+?@(wave wave -.wave)
+        s+?@(grit grit -.grit)
       ::
         :-  %arg
-        ?@  wave  ~
-        ?-    -.wave
+        ?@  grit  ~
+        ?-    -.grit
             %set-turf
-          (turf turf.wave)
+          (turf turf.grit)
             %size-turf
-          (pairs ~[offset+(svec2 offset.wave) size+(vec2 size.wave)])
+          (pairs ~[offset+(svec2 offset.grit) size+(vec2 size.grit)])
             %add-husk
-          (husk-spec +.wave)
+          (husk-spec +.grit)
             %del-shade
-          (frond 'shadeId' (numb +.wave))
+          (frond 'shadeId' (numb +.grit))
             %cycle-shade
-          (pairs ~['shadeId'^(numb shade-id.wave) amount+(numb amt.wave)])
+          (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
             %set-shade-var
-          (pairs ~['shadeId'^(numb shade-id.wave) variation+(numb variation.wave)])
+          (pairs ~['shadeId'^(numb shade-id.grit) variation+(numb variation.grit)])
             %chat
-          (chat chat.wave)
+          (chat chat.grit)
             %move
-          (move +.wave)
+          (move +.grit)
             %face
-          (face +.wave)
+          (face +.grit)
             %set-avatar
-          (pond-set-avatar +.wave)
+          (pond-set-avatar +.grit)
             %add-player
-          (pond-add-player +.wave)
+          (add-player +.grit)
+            %del-player
+          (del-player +.grit)
     ==  ==
   ++  mist-rock
     |=  =rock:mist
@@ -249,7 +252,7 @@
     |=  =^chat
     ^-  json
     %-  pairs
-    :~  from+s+(scot %p from.chat)
+    :~  from+(ship-json from.chat)
         at+(time at.chat)
         text+s+text.chat
     ==
@@ -343,37 +346,45 @@
     |=  id=^turf-id
     ^-  json
     %-  pairs
-    :~  ship+s+(scot %p ship.id)
+    :~  ship+(ship-json ship.id)
         path+(path path.id)
     ==
   ++  move
     |=  [shp=^ship pos=^svec2]
     ^-  json
     %-  pairs
-    :~  ship+s+(scot %p shp)
+    :~  ship+(ship-json shp)
         pos+(svec2 pos)
     ==
   ++  face
     |=  [shp=^ship =dir]
     ^-  json
     %-  pairs
-    :~  ship+s+(scot %p shp)
+    :~  ship+(ship-json shp)
         dir+s+dir
     ==
   ++  pond-set-avatar
     |=  [shp=^ship av=^avatar]
     ^-  json
     %-  pairs
-    :~  ship+s+(scot %p shp)
+    :~  ship+(ship-json shp)
         avatar+(avatar av)
     ==
-  ++  pond-add-player
+  ++  add-player
     |=  [shp=^ship plr=^player]
     ^-  json
     %-  pairs
-    :~  ship+s+(scot %p shp)
+    :~  ship+(ship-json shp)
         player+(player plr)
     ==
+  ++  del-player
+    |=  shp=^ship
+    ^-  json
+    (pairs [ship+(ship-json shp)]~)
+  ++  ship-json
+    |=  shp=^ship
+    ^-  json
+    s+(scot %p shp)
   --
 ++  dejs
   =,  dejs:format
@@ -396,13 +407,13 @@
       :~  path+(cork pa |=(=path (need (path-to-turf-id path))))
       :: :~  path+pa
           id+so:soft
-          wave+pond-wave
+          goal+pond-goal
       ==
-    ++  pond-wave
+    ++  pond-goal
       |=  jon=json
-      ^-  stir-wave:pond
+      ^-  goal:pond
       %.  jon
-      %+  wave  stir-wave:pond
+      %+  wave  goal:pond
       :~  move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
           send-chat+(ot ~[from+(se %p) text+so])
@@ -421,7 +432,7 @@
       %-  ot
       :~  path+|=(=json ;;(mist-path (pa json)))
           id+so:soft
-          wave+mist-wave
+          goal+mist-wave
       ==
     ++  mist-wave
       |=  jon=json
