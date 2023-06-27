@@ -9,6 +9,14 @@
   |=  [=rock =wave]
   ^-  ^rock
   =/  grit  grit.wave
+  ?:  ?=([%batch *] grit)
+    =/  poly  +.grit
+    |-  ^-  ^rock
+    ?~  poly  rock
+    %=  $
+      rock  ^$(wave wave(grit i.poly))
+      poly  t.poly
+    ==
   ?~  rock
     ?@  grit  ~  :: %del-turf or %inc-counter
     ?+  -.grit  ~
@@ -78,6 +86,13 @@
   ==
 +$  grit
   $+  pond-grit
+  $@  mono-grit
+  $%  poly-grit
+      mono-grit
+  ==
++$  poly-grit  [%batch (list mono-grit)]
++$  mono-grit
+  $+  pond-mono-grit
   $@  ?(%del-turf %inc-counter)
   $%  set-turf-wave
       size-turf-wave
@@ -114,7 +129,14 @@
   ==
 +$  goal
   $+  pond-goal
-  $%  grit
+  $@  mono-goal
+  $%  poly-goal
+      mono-goal
+  ==
++$  poly-goal  [%batch (list mono-goal)]
++$  mono-goal
+  $+  pond-mono-goal
+  $%  mono-grit
       [%send-chat from=ship text=cord]
       [%join-player =ship =avatar]
   ==

@@ -6,6 +6,13 @@ import * as api from 'lib/api.js';
 import { clampToTurf, isInTurf, getCollision, jabBySpaces } from 'lib/turf';
 import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
 
+function waveTypeStr(wave) {
+  if (wave?.type === 'batch') {
+    return `batch: [${wave.arg.map(w => w?.type).join(', ')}]`;
+  }
+  return wave?.type || 'no-op';
+}
+
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id) {
     this.id = id;
@@ -34,21 +41,26 @@ export class Pond { // we use a class so we can put it inside a store without ge
   // returns true/false whether we attempted to send the wave or not
   // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
   sendWave(type, arg) {
+    arg = [{
+      type,
+      arg,
+    }];
+    type = 'batch';
     let stirWave = filterStir(this.ether, { type, arg });
     if (!stirWave) return false;
     const [stir, wave] = stirWave;
     const uuid = uuidv4();
-    console.log('sending wave', type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
+    console.log('sending wave', waveTypeStr(wave), 'with id', uuid ? uuid.substring(0, 4) : uuid);
     this.addPulse({
       id: uuid,
       wave,
     });
-    this.sendWavePoke(stir.type, stir.arg, uuid);
+    this.sendWavePoke(stir, uuid);
     return true;
   }
-  async sendWavePoke(type, arg, uuid, retries = 0) {
+  async sendWavePoke(goal, uuid, retries = 0) {
     try {
-      await api.sendPondWave(this.id, type, arg, uuid);
+      await api.sendPondWave(this.id, goal, uuid);
     } catch (e) {
       if (e.message === 'Failed to fetch') {
         // internet connectivity issue
@@ -56,7 +68,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
           const timeout = Math.pow(2, retries)*1000;
           retries++;
           console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
-          setTimeout(() => this.sendWavePoke(type, arg, uuid, retries), timeout);
+          setTimeout(() => this.sendWavePoke(goal, uuid, retries), timeout);
         } else {
           console.warn('Failed to send wave, no more retries');
           this.removePulse(uuid);
@@ -78,15 +90,15 @@ export class Pond { // we use a class so we can put it inside a store without ge
         this.removePulses();
       } else if (res.hasOwnProperty('wave')) {
         const { grit, id } = res.wave;
-        console.log('getting wave', grit?.type || 'no-op', 'with id', id ? id.substring(0, 4) : id);
+        console.log('getting wave', waveTypeStr(grit), 'with id', id ? id.substring(0, 4) : id);
         const noop = !grit;
         const noPulses = this.pulses.length === 0;
         
         if (!noop) {
-          this.$('turf', washTurf(grit));
+          washTurf(this.updateTurf.bind(this), grit);
         }
         if (!noop && noPulses) {
-          this.$('ether', washTurf(grit));
+          washTurf(this.updateEther.bind(this), grit);
         } else {
           const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
           const matches = pulseI >= 0;
@@ -123,7 +135,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   applyPulse(pulse) {
-    this.$('ether', washTurf(pulse.wave));
+    washTurf(this.updateEther.bind(this), pulse.wave);
   }
 
   applyPulses() {
@@ -149,6 +161,14 @@ export class Pond { // we use a class so we can put it inside a store without ge
   replayEther() {
     this.resetEther();
     this.applyPulses();
+  }
+
+  updateTurf(fun) {
+    this.$('turf', fun);
+  }
+
+  updateEther(fun) {
+    this.$('ether', fun);
   }
 }
 
@@ -293,8 +313,43 @@ const pondWaves = {
   },
 };
 
-export function washTurf(wave) {
+export function washTurf(update, wave) {
+  if (wave.type === 'batch') {
+    batch(() => {
+      wave.arg.forEach((subWave) => {
+        update(_washTurf(subWave));
+      });
+    });
+  } else {
+    update(_washTurf(wave));
+  }
   switch (wave.type) {
+    case 'batch':
+      return (turf) => {
+        
+      }
+    case 'del-turf':
+      return null;
+    case 'set-turf':
+      return (turf) => {
+        const newTurf = {
+          id: turf.id,
+          ...wave.arg,
+        };
+        return js.turf(newTurf);
+      };
+    default:
+      return produce((turf) => {
+        pondWaves[wave.type](turf, wave.arg);
+        js.turf(turf);
+      });
+  }
+}
+
+export function _washTurf(wave) {
+  switch (wave.type) {
+    case 'batch':
+      throw new Error('no nested batches please');
     case 'del-turf':
       return null;
     case 'set-turf':
@@ -360,6 +415,31 @@ const filters = {
 // returns false if wave is rejected
 // otherwise, returns a pair of [stir, wave]
 function filterStir(turf, wave) {
+  if (wave.type === 'batch') {
+    const [temp, $temp] = createStore(js.turf(cloneDeep(turf)));
+    const stirs = [], waves = [];
+    wave.arg.forEach((subWave) => {
+      const filtered = filterStir(temp, subWave);
+      if (filtered) {
+        stirs.push(filtered[0]);
+        waves.push(filtered[1]);
+        washTurf($temp, filtered[1]);
+      }
+    });
+
+    if (!waves.length) return false;
+    return [
+      {
+        type: 'batch',
+        arg: stirs,
+      },
+      {
+        type: 'batch',
+        arg: waves,
+      },
+    ];
+  }
+
   if (filters[wave.type]) {
     const stirWave = filters[wave.type](turf, wave);
     if (!stirWave) return false;

@@ -17,6 +17,21 @@
 ++  filter-pond-goal
   |=  [=rock:pond =goal:pond =bowl:gall]
   ^-  (unit grit:pond)
+  ?:  ?=([%batch *] goal)
+    =/  [upoly=(list (unit mono-grit:pond)) *]
+      %^  spin  +.goal  rock
+      |=  [sub-goal=mono-goal:pond rock=rock:pond]
+      ^-  [(unit mono-grit:pond) rock:pond]
+      =/  grit  (filter-pond-mono-goal rock sub-goal bowl)
+      ?~  grit  `rock
+      :-  grit
+      (wash:pond rock [~ u.grit])
+    ?~  poly=(murn upoly same)  ~
+    `[%batch `(list mono-grit:pond)`poly]
+  (filter-pond-mono-goal rock goal bowl)
+++  filter-pond-mono-goal
+  |=  [=rock:pond goal=mono-goal:pond =bowl:gall]
+  ^-  (unit mono-grit:pond)
   ?~  rock
     ?+    goal  ~
         [%set-turf *]
@@ -85,7 +100,10 @@
     :_  [id+(fall (bind id |=(i=@t s+i)) ~)]~
     :-  %grit
     ?~  ugrit  ~
-    =*  grit  u.ugrit
+    (pond-grit u.ugrit)
+  ++  pond-grit
+    |=  =grit:pond
+    ^-  json
     %-  pairs
     :~  :-  %type
         s+?@(grit grit -.grit)
@@ -93,6 +111,8 @@
         :-  %arg
         ?@  grit  ~
         ?-    -.grit
+            %batch
+          a+(turn +.grit pond-grit)
             %set-turf
           (turf turf.grit)
             %size-turf
@@ -412,8 +432,15 @@
     ++  pond-goal
       |=  jon=json
       ^-  goal:pond
+      ?:  ?=([%o [%batch *] *] jon)
+        :-  %batch
+        ((ar pond-mono-goal) q.n.p.jon)
+      (pond-mono-goal jon)
+    ++  pond-mono-goal
+      |=  jon=json
+      ^-  mono-goal:pond
       %.  jon
-      %+  wave  goal:pond
+      %+  wave  mono-goal:pond
       :~  move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
           send-chat+(ot ~[from+(se %p) text+so])
