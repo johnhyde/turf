@@ -340,7 +340,13 @@ export function startPhaser(_owner, _container) {
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
     layer.setDepth(turf.offset.y - 10);
     window.tiles = tiles = layer;
-    window.player = player = new Player(scene, turf.id, our, loadPlayerSprites);
+    window.players = Object.entries(turf.players).map(([patp, p]) => {
+      const thisPlayer = new Player(scene, turf.id, patp, loadPlayerSprites);
+      if (patp === our) {
+        window.player = player = thisPlayer;
+      }
+      return thisPlayer;
+    });
     window.resizer = new Resizer(scene, turf.id);
     // cam.startFollow(player);
     game.input.keyboard.preventDefault = false;

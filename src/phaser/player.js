@@ -70,7 +70,7 @@ export class Player extends Phaser.GameObjects.Container {
     if (!this.p) return;
     const avatar = this.p.avatar;
     this.removeAll(true);
-    this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, our) });
+    this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });
     this.bodyImage.setTint(avatar.body.color);
     if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
@@ -78,7 +78,7 @@ export class Player extends Phaser.GameObjects.Container {
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
     this.things = avatar.things.map((thing) => {
-      const texture = spriteNameWithDir(thing.formId, thing.form, this.p.dir, our);
+      const texture = spriteNameWithDir(thing.formId, thing.form, this.p.dir, this.patp);
       if (!texture) return null;
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
       const img = scene.make.image({ key: texture });

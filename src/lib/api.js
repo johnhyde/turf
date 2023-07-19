@@ -60,7 +60,7 @@ export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
   })
 }
 
-export async function sendWave(mark, path, type, arg, stirId) {
+export async function sendWave(mark, path, goal, stirId) {
   stirId = stirId || uuidv4();
   await api.poke({
     app: 'turf',
@@ -68,7 +68,10 @@ export async function sendWave(mark, path, type, arg, stirId) {
     json: {
       path,
       id: stirId,
-      wave: (arg === undefined) ? type : { [type]: arg },
+      goal: goalToApiGoal(goal),
+      // goal: {
+      //   batch: [(arg === undefined) ? type : { [type]: arg }],
+      // }
     },
     onError: (e) => {
       console.error('caught error in sending wave', e);
@@ -78,14 +81,21 @@ export async function sendWave(mark, path, type, arg, stirId) {
   return stirId;
 }
 
-export async function sendPondWave(id, type, arg, stirId) {
-  sendWave('pond-stir', id, type, arg, stirId);
+function goalToApiGoal(goal) {
+  if (goal.arg === undefined) return goal.type;
+  if (goal.type === 'batch') {
+    return { batch: goal.arg.map(goalToApiGoal) };
+  }
+  return { [goal.type]: goal.arg };
+}
+
+export async function sendPondWave(id, goal, stirId) {
+  sendWave('pond-stir', id, goal, stirId);
 }
 
 export async function sendMistWave(type, arg, stirId) {
-  sendWave('mist-stir', '/mist', type, arg, stirId);
+  sendWave('mist-stir', '/mist', {type, arg}, stirId);
 }
-
 
 export function scry(path) {
   return api.scry({ app: 'turf', path });
