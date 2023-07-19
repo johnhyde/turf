@@ -115,10 +115,18 @@
   :: ~&  >>  "sub-pond was: {<read:da-pond>}"
   :: ~&  >>  "pub-pond was: {<read:du-pond>}"
   ?+    mark  (on-poke:def mark vase)
-    ::   %test
+      %test-da
+    :: ~&  >>  "sub-pond was: {<read:da-pond>}"
+    ~&  >>  "sub-pond was: {<sub-pond>}"
     :: ~&  -:!>(*$%(from:da-mist from:da-pond))
-    :: :: ~&  (default-turf:gen our.bowl)
-    :: `this
+    :: ~&  (default-turf:gen our.bowl)
+    `this
+      %test-du
+    :: ~&  >>  "pub-pond was: {<read:du-pond>}"
+    ~&  >>  "pub-pond was: {<pub-pond>}"
+    :: ~&  -:!>(*$%(from:da-mist from:da-pond))
+    :: ~&  (default-turf:gen our.bowl)
+    `this
   ::
   :: Pub Pokes
   ::
@@ -292,7 +300,11 @@
     ?>  =(our src):bowl
     :: =/  [cards-1=(list card) new-sub-pond=_sub-pond]
     =/  sub-key  (turf-id-to-sub-key id)
-    =/  turf-surfed  !=(~ (~(get by read:da-pond) sub-key))
+    ~&  ['sub key' sub-key]
+    :: =/  turf-surfed  !=(~ (~(get by read:da-pond) sub-key))
+    =/  surfed-turf  (~(get by read:da-pond) sub-key)
+    ~&  ['surfed turf' surfed-turf]
+    =/  turf-surfed  !=(~ surfed-turf)
     ~&  ['turf surfed' turf-surfed]
     ?:  |(=(our.bowl ship.id) turf-surfed)
       =^  cards  state  (give-pond-rock:hc id %.y)
