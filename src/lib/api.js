@@ -97,6 +97,14 @@ export async function sendMistWave(type, arg, stirId) {
   sendWave('mist-stir', '/mist', {type, arg}, stirId);
 }
 
+export async function switchToTurf(id) {
+  await api.poke({
+    app: 'turf',
+    mark: 'join-turf',
+    json: id,
+  });
+}
+
 export function scry(path) {
   return api.scry({ app: 'turf', path });
 }

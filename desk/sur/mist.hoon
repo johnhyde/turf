@@ -15,11 +15,13 @@
   ::       %inc-counter
   ::     rock(stuff-counter.plot.u +(stuff-counter.plot.turf))
   ::   ==
+  =*  avatar  avatar.rock
   ?-  -.wave
-    %set-avatar  avatar.wave
-    %set-color  rock(color.body color.wave)
-    %add-thing  rock(things (snoc things.rock thing.wave))
-    %del-thing  rock(things (oust [index.wave 1] things.rock))
+    %set-ctid  rock(ctid turf-id.wave)
+    %set-avatar  rock(avatar avatar.wave)
+    %set-color  rock(color.body.avatar color.wave)
+    %add-thing  rock(things.avatar (snoc things.avatar thing.wave))
+    %del-thing  rock(things.avatar (oust [index.wave 1] things.avatar))
   ::   %del-shade  `(del-shade turf +.wave)
   ::     %chat
   ::   rock(chats.ephemera.u [chat.wave chats.ephemera.turf])
@@ -36,11 +38,15 @@
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
-+$  rock  avatar
++$  rock
+  $:  ctid=(unit turf-id)
+      =avatar
+  ==
 +$  wave
   :: ?(%del-av %inc-counter)
   :: $@  ?(%del-av %inc-counter)
-  $%  set-avatar-wave
+  $%  set-ctid-wave
+      set-avatar-wave
       set-color-wave
       add-thing-wave
       del-thing-wave
@@ -48,6 +54,7 @@
       :: chat-wave
       :: move-wave
   ==
++$  set-ctid-wave  [%set-ctid turf-id=(unit turf-id)]
 +$  set-avatar-wave  [%set-avatar =avatar]
 +$  set-color-wave  [%set-color color=@ux]
 +$  add-thing-wave  [%add-thing =thing]

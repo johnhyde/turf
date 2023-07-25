@@ -115,6 +115,7 @@ export function getState() {
       } else {
         state.ponds[id].subscribe();
       }
+      api.switchToTurf(id);
       $state('currentTurfId', id);
     },
     sendPondWave(type, arg, id) {
@@ -242,7 +243,7 @@ export function getState() {
     },
   });
 
-  _state.subToTurf(state.c.id);
+  _state.switchToTurf(our);
   return _state;
 }
 

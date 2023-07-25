@@ -19,15 +19,15 @@
   ==
 +$  state-0
   $:  %0
-      reset=_6
+      reset=_7
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
-      ctid=(unit turf-id)
-      sub-pond=_sub-pond-init
-      pub-pond=_pub-pond-init
-      sub-mist=_sub-mist-init
-      pub-mist=_pub-mist-init
+      :: ctid=(unit turf-id)
+      sub-pond=$~(sub-pond-init _sub-pond-init)
+      pub-pond=$~(pub-pond-init _pub-pond-init)
+      sub-mist=$~(sub-mist-init _sub-mist-init)
+      pub-mist=$~(pub-mist-init _pub-mist-init)
 
       dppath=$~([%pond ~] pond-path)
       dmpath=$~([%mist ~] mist-path)
@@ -64,7 +64,7 @@
 ::
 ++  on-init
   ^-  (quip card _this)
-  =^  cards  state  init-defaults:hc
+  =^  cards  state  (init-defaults:hc)
   cards^this
 ::
 ++  on-save  
@@ -85,7 +85,7 @@
   :: =/  old  *current-state
   ?>  =(-:*current-state -.old)
   =.  state  old
-  =^  cards-1  state  init-defaults:hc
+  =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   :: =^  cards-2  state  (del-player:hc ~hiddev-midlev-mindyr)
   :: =^  cards-2  state  (add-player:hc ~hiddev-midlev-mindyr)
@@ -140,7 +140,7 @@
   ::
       %init-avatar
     =.  pub-pond  (secret:du-pond [dppath]~)
-    =^  cards  state  init-default-avatar:hc
+    =^  cards  state  init-default-mist:hc
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -232,8 +232,33 @@
     :_  this
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
-    ::   %join-turf
-    :: [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
+      %join-turf
+    ?>  =(our src):bowl
+    =/  tid  !<((unit turf-id) vase)
+    =/  ctid  (ctid:hc)
+    ?:  =(tid ctid)  `this
+    =/  cards-1=(list card)
+      ?~  ctid  ~
+      =/  exit-stir
+        :*  u.ctid
+            ~
+            %del-player
+            our.bowl
+        ==
+      [%pass /exit-turf %agent [ship.u.ctid %turf] %poke [%pond-stir !>(exit-stir)]]~
+    =^  cards-2  state
+      (give-mist:hc dmpath set-ctid+tid)
+    =/  cards-3=(list card)
+      ?~  tid  ~
+      =/  join-stir
+        :*  u.tid
+            ~
+            %join-player
+            our.bowl
+            avatar:(need (default-mist:hc))
+        ==
+      [%pass /join-turf %agent [ship.u.tid %turf] %poke [%pond-stir !>(join-stir)]]~
+    :(weld cards-1 cards-2 cards-3)^this
   ::
   :: Boilerplate
   ::
@@ -252,19 +277,33 @@
           [%rock rock.msg]
         [%wave id.u.wave.msg `grit.u.wave.msg]
       =/  give-paths=(list path)  [this-turf-path]~
-      =?  give-paths  =(ctid `this-turf-id)
+      =?  give-paths  =((ctid:hc) `this-turf-id)
+        :: ???
         [/pond give-paths]
       :_  this
       [%give %fact give-paths %pond-stirred !>(stirred)]~
         ::
         [mist-path *]
-      ::  TODO look through turfs and update the one with the player (if any)
-      ?:  =(our src):bowl  `this
-      =^  cards  state  (give-pond [our.bowl /] set-avatar+[src.msg rock.msg])
-      :: ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
+      :: ?:  =(our src):bowl  `this
       ~&  "got an avatar from {<src.msg>}"
-      cards^this
-      :: `this
+      =/  tid  ctid.rock.msg
+      ~&  'tid'^tid
+      =/  tid-relevant
+        ?~  tid  %.n
+        =/  we-are-host  =(our.bowl ship.u.tid)
+        ~&  'we are host'^we-are-host
+        =/  turf-exists  ?=(^ (~(get by read:du-pond) (turf-id-to-ppath u.tid)))
+        ~&  'turf exists'^turf-exists
+        &(we-are-host turf-exists)
+      ?:  tid-relevant
+        ~&  "updating avatar of {<src.msg>} in {<(need tid)>}"
+        =^  cards  state  (give-pond (need tid) set-avatar+[src.msg avatar.rock.msg])
+        :: ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
+        cards^this
+      :: TODO: find a way to kick players who leave without kicking them as soon as they join
+      :: ~&  "quitting avatar of {<src.msg>} in {<(need tid)>}"
+      :: =.  sub-mist  (quit:da-mist src.msg from.msg path.msg)
+      `this
     ==
   ::
       %sss-to-pub
@@ -308,14 +347,14 @@
     =/  id=turf-id
       %+  fall
         (path-to-turf-id path)
-      (fall ctid dtid)
+      (fall (ctid:hc) dtid)
     ?>  =(our src):bowl
     :: =/  [cards-1=(list card) new-sub-pond=_sub-pond]
     =/  sub-key  (turf-id-to-sub-key id)
     ~&  ['sub key' sub-key]
     :: =/  turf-surfed  !=(~ (~(get by read:da-pond) sub-key))
     =/  surfed-turf  (~(get by read:da-pond) sub-key)
-    ~&  ['surfed turf' surfed-turf]
+    ~&  ['surfed turf is null' ?=(~ surfed-turf)]
     =/  turf-surfed  !=(~ surfed-turf)
     ~&  ['turf surfed' turf-surfed]
     ?:  |(=(our.bowl ship.id) turf-surfed)
@@ -393,29 +432,44 @@
             (du pub-mist bowl -:!>(*result:du))
 
 ++  scrio  ~(scry agentio bowl)
-++  default-avatar  ((lift |=([* =rock:mist] rock)) (~(get by read:du-mist) dmpath))
-++  default-avatar-exists
-  ?=(^ default-avatar)
-++  init-default-avatar
-  (give-mist dmpath set-avatar+default-avatar:gen)
-++  default-turf  ((lift |=([* =rock:pond] rock)) (~(get by read:du-pond) dppath))
+++  default-mist
+  |.
+  ((lift |=([* =rock:mist] rock)) (~(get by read:du-mist) dmpath))
+++  ctid
+  |.
+  ^-  (unit turf-id)
+  ?~  dfm=(default-mist)  ~
+  ctid.u.dfm
+++  default-mist-exists
+  |.
+  ?=(^ (default-mist))
+++  init-default-mist
+  =^  cards-1  state
+    (give-mist dmpath set-avatar+default-avatar:gen)
+  =^  cards-2  state
+    (give-mist dmpath set-ctid+`dtid)
+  (weld cards-1 cards-2)^state
+++  default-turf
+  |.
+  ((lift |=([* =rock:pond] rock)) (~(get by read:du-pond) dppath))
 ++  default-turf-exists
-  ?=(^ default-turf)
+  |.
+  ?=(^ (default-turf))
 ++  init-turf
-  (give-pond dtid set-turf+(default-turf:gen our.bowl [15 12] [--0 --0] default-avatar))
+  (give-pond dtid set-turf+(default-turf:gen our.bowl [15 12] [--0 --0] ~))
 ++  init-defaults
+  |.
   ^-  (quip card _state)
   ~&  "trying to init defaults. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =.  dtid  [our.bowl ~]
-  =?  ctid  =(~ ctid)  `dtid
   =^  cards  state
     ~&  dppath
-    ~&  default-turf-exists
-    ?:  default-turf-exists  `state
+    ~&  (default-turf-exists)
+    ?:  (default-turf-exists)  `state
     init-turf
   =^  more-cards  state
-    ?:  default-avatar-exists  `state
-    init-default-avatar
+    ?:  (default-mist-exists)  `state
+    init-default-mist
   (weld cards more-cards)^state
 ::
 ++  stir-mist
@@ -426,8 +480,9 @@
     [%give %fact [;;(path mpath)]~ %mist-stirred !>(stirred)]~
   ?~  wave  cards^state
   =^  sss-cards  pub-mist  (give:du-mist mpath u.wave)
-  =^  pond-cards  state  grit-player
-  [:(weld sss-cards cards pond-cards) state]
+  :: =^  pond-cards  state  grit-player
+  :: [:(weld sss-cards cards pond-cards) state]
+  [(weld sss-cards cards) state]
 ++  give-mist
   |=  [mpath=mist-path =wave:mist]
   (stir-mist mpath ~ `wave)
@@ -479,10 +534,10 @@
   [%give %fact give-paths %pond-stirred !>(stirred)]~
 ++  grit-player
   ^-  (quip card _state)
-  =/  av  default-avatar
+  =/  av  (default-mist)
   ?~  av  `state
-  ?~  ctid  `state
-  (give-pond u.ctid set-avatar+[our.bowl u.av])
+  ?~  ctid.u.av  `state
+  (give-pond u.ctid.u.av set-avatar+[our.bowl avatar.u.av])
 ++  add-player
   |=  =ship
   ^-  (quip card _state)

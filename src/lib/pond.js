@@ -104,11 +104,12 @@ export class Pond { // we use a class so we can put it inside a store without ge
         console.log(`getting wave for ${this.id}`, waveTypeStr(grit), 'with id', id ? id.substring(0, 4) : id);
         const noop = !grit;
         const noPulses = this.pulses.length === 0;
+        const noCharges = this.charges.length === 0;
         
         if (!noop) {
           washTurf(this.updateTurf.bind(this), grit);
         }
-        if (!noop && noPulses) {
+        if (!noop && noPulses && noCharges) {
           washTurf(this.updateEther.bind(this), grit);
         } else {
           this.updatePulses(noop, id, grit);
@@ -214,34 +215,34 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   fireCharges() {
-    if (this.firstChargeTimer)
-      clearTimeout(this.firstChargeTimer);
-    if (this.lastChargeTimer)
-      clearTimeout(this.lastChargeTimer);
-    const type = 'batch';
-    const stirs = [], waves = [];
-    this.charges.forEach(c => {
-      stirs.push(c.stir);
-      waves.push(c.wave);
-    });
-    const stir = {
-      type,
-      arg: stirs,
-    };
-    const wave = {
-      type,
-      arg: waves,
-    };
-    const uuid = uuidv4();
-    console.log('sending wave', type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
     batch(() => {
+      if (this.firstChargeTimer)
+        clearTimeout(this.firstChargeTimer);
+      if (this.lastChargeTimer)
+        clearTimeout(this.lastChargeTimer);
+      const type = 'batch';
+      const stirs = [], waves = [];
+      this.charges.forEach(c => {
+        stirs.push(c.stir);
+        waves.push(c.wave);
+      });
+      const stir = {
+        type,
+        arg: stirs,
+      };
+      const wave = {
+        type,
+        arg: waves,
+      };
+      const uuid = uuidv4();
+      console.log('sending wave', type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
       this.$('charges', []);
       this.addPulse({
         id: uuid,
         wave,
       }, false); // don't apply because charges were already applied
+      this.sendWavePoke(stir, uuid);
     });
-    this.sendWavePoke(stir, uuid);
   }
 
   resetEther() {
@@ -250,9 +251,11 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   replayEther() {
-    this.resetEther();
-    this.applyPulses();
-    this.applyCharges();
+    batch(() => {
+      this.resetEther();
+      this.applyPulses();
+      this.applyCharges();
+    });
   }
 
   updateTurf(fun) {
@@ -403,6 +406,12 @@ const pondWaves = {
   },
   'add-player': (turf, arg) => {
     turf.players[arg.ship] = arg.player;
+  },
+  'add-player': (turf, arg) => {
+    turf.players[arg.ship] = arg.player;
+  },
+  'del-player': (turf, arg) => {
+    delete turf.players[arg.ship];
   },
 };
 

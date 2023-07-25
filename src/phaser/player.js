@@ -91,7 +91,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.add([this.bodyImage, ...this.things]);
     const dims = vec2(this.bodyImage.width, this.bodyImage.height);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(playerOffset);
-    console.log('player dims', this.bodyImage.width, this.bodyImage.height)
+    // console.log('player dims', this.bodyImage.width, this.bodyImage.height)
     scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
   }
 
@@ -152,7 +152,7 @@ export class Player extends Phaser.GameObjects.Container {
           // this.s.setDir(newDir);
         }
         if (tilePosChanged && (this.dir !== 'turning' || justMoved)) {
-          console.log('changed!');
+          // console.log('changed!');
           // this.s.setDir(getDirFromVec(vec2(newTilePos).subtract(this.tilePos)));
           this.s.setPos(newTilePos);
         }

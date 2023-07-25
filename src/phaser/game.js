@@ -11,7 +11,7 @@ import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
 var game, scene, cam, cursors, keys = {}, player, tiles;
-var formIndexMap, shades = {};
+var formIndexMap, players = {}, shades = {};
 
 async function loadImage(id, url, isWall = false, config = {}) {
   if (game.textures.exists(id)) return;
@@ -226,6 +226,7 @@ export function startPhaser(_owner, _container) {
           if (lastTurfId || state.e) destroyCurrentTurf();
           if (state.e) {
             initTurf(state.e, state.p.grid, state.player);
+            initPlayers(state.e);
             initShades(state.e);
           }
           return state.c.id;
@@ -251,6 +252,11 @@ export function startPhaser(_owner, _container) {
         }
         return [];
       }, { defer: false }));
+      createEffect(on(() => [loader.state, JSON.stringify(Object.keys(state.e?.players || {}))], () => {
+        if (loader.state == 'ready') {
+          initPlayers(state.e);
+        }
+      }, { defer: true }));
       createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
         if (loader.state == 'ready') {
           initShades(state.e);
@@ -289,6 +295,7 @@ export function startPhaser(_owner, _container) {
     game.scene.start(scene);
     // if (player) player.destroy();
     player = null;
+    players = {};
     shades = {};
   }
   window.destroyTurf = destroyCurrentTurf;
@@ -340,19 +347,44 @@ export function startPhaser(_owner, _container) {
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
     layer.setDepth(turf.offset.y - 10);
     window.tiles = tiles = layer;
-    window.players = Object.entries(turf.players).map(([patp, p]) => {
-      const thisPlayer = new Player(scene, turf.id, patp, loadPlayerSprites);
-      if (patp === our) {
-        window.player = player = thisPlayer;
-      }
-      return thisPlayer;
-    });
+    // window.players = Object.entries(turf.players).map(([patp, p]) => {
+    //   const thisPlayer = new Player(scene, turf.id, patp, loadPlayerSprites);
+    //   if (patp === our) {
+    //     window.player = player = thisPlayer;
+    //   }
+    //   return thisPlayer;
+    // });
     window.resizer = new Resizer(scene, turf.id);
     // cam.startFollow(player);
     game.input.keyboard.preventDefault = false;
   }
 
+  function initPlayers(turf) {
+    console.log('init players');
+    if (turf) {
+      const ids = [...Object.keys(players), ...Object.keys(turf.players)];
+      ids.forEach((id) => {
+        const playerObject = players[id];
+        const playerData = turf.players[id];
+        if (!playerObject) {
+          const thisPlayer = new Player(scene, turf.id, id, loadPlayerSprites);
+          if (id === our) {
+            window.player = player = thisPlayer;
+          }
+          players[id] = thisPlayer;
+        } else if (!playerData) {
+          players[id].destroy();
+          delete players[id];
+        } else {
+          //  neat
+        }
+      });
+      window.players = players;
+    }
+  }
+
   function initShades(turf) {
+    console.log('init shades');
     if (turf) {
       const ids = [...Object.keys(shades), ...Object.keys(turf.cave)];
       ids.forEach((id) => {

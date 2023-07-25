@@ -149,7 +149,13 @@
     |=  =rock:mist
     ^-  json
     %+  frond  %rock
-    (avatar rock)
+    %-  pairs
+    :~  :-  'turfId'
+        ?~  ctid.rock  ~
+        (path (turf-id-to-path u.ctid.rock))
+      ::
+        avatar+(avatar avatar.rock)
+    ==
   ++  mist-wave
     |=  [id=stir-id:mist uwave=(unit wave:mist)]
     ^-  json
@@ -499,5 +505,11 @@
       ^-  @sd
       ?>  ?=([%n *] jon)
       (need (toi:rd (ne jon)))
+    ++  turf-id
+      |=  jon=json
+      ^-  (unit ^turf-id)
+      =/  path  (pa jon)
+      ?~  path  ~
+      `(need (path-to-turf-id path))
   --
 --
