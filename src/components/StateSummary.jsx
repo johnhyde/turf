@@ -71,10 +71,25 @@ function StateSummary() {
           </li>
         )}</For>
       </ul> */}
-      <button onClick={[subToTurf, our]}>sub to turf</button>
-      <button onClick={[subToTurf, '~bindev-midlev-mindyr']}>sub to bindev</button>
-      <button onClick={[subToTurf, '~fasdev-naltuc-ravteb']}>sub to fasdev</button>
-      <button onClick={unsubToTurfs}>unsub to turfs</button>
+      <ul>
+        <li>
+          <button onClick={[subToTurf, our]}>sub to our</button>
+        </li>
+        <li>
+          <button onClick={[subToTurf, '~nec']}>sub to nec</button>
+        </li>
+        <li>
+          <button onClick={[subToTurf, '~bindev-midlev-mindyr']}>sub to bindev</button>
+        </li>
+        <li>
+          <button onClick={[subToTurf, '~fasdev-naltuc-ravteb']}>sub to fasdev</button>
+        </li>
+        <li>
+          <button onClick={unsubToTurfs}>unsub to turfs</button>
+        </li>
+      </ul>
+      <input class="text-black" placeholder='@p' name="join" onKeyDown={(e) => { if (e.code == 'Enter') { subToTurf(e.target.value)}}}></input>
+      {/* <button onClick={} */}
     </div>
   );
 }

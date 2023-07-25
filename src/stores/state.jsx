@@ -108,6 +108,15 @@ export function getState() {
         state.ponds[id].subscribe();
       }
     },
+    switchToTurf(id) {
+      id = '/pond/' + id;
+      if (!state.ponds[id]) {
+        $state('ponds', id, new Pond(id));
+      } else {
+        state.ponds[id].subscribe();
+      }
+      $state('currentTurfId', id);
+    },
     sendPondWave(type, arg, id) {
       id = id || this.currentTurfId;
       const pond = this.ponds[id];

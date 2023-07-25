@@ -1,7 +1,7 @@
 import { createSignal, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
-import { bind } from 'lib/utils';
+import { bind, isTextInputFocused } from 'lib/utils';
 import Button from '@/Button';
 import FormSelect from '@/FormSelect';
 import point from 'assets/icons/point.png';
@@ -23,7 +23,7 @@ export default function EditPane() {
   const types = ['tile', 'item', 'wall'];
 
   const onKeyDown = (e) => {
-    if (!e.defaultPrevented && document.activeElement.tagName !== 'TEXTAREA' && !e.metaKey) {
+    if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
       switch (e.key) {
         case 'Enter':
           selectTool(null);

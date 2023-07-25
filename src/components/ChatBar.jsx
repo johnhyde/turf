@@ -4,6 +4,15 @@ import { useState } from 'stores/state.jsx';
 export default function ChatBar() {
   const state = useState();
 
+  function sendChat(text) {
+    const joinMatch = text.match(/^\/join (.*)/)
+    if (joinMatch) {
+      state.switchToTurf(joinMatch[1]);
+    } else {
+      state.sendChat(chatbox.value);
+    }
+  }
+
   function onChatBoxLoad(el) {
     window.chatbox = chatbox = el;
     chatbox.value = '';
@@ -12,7 +21,7 @@ export default function ChatBar() {
   function onKeyDown(e) {
     if (e.code === 'Enter' && chatbox.value && !e.metaKey && !e.shiftKey) {
       console.log('chat ' + chatbox.value);
-      state.sendChat(chatbox.value);
+      sendChat(chatbox.value);
       chatbox.value = '';
       blur();
       e.preventDefault();
@@ -48,9 +57,14 @@ export default function ChatBar() {
     game.canvas.removeEventListener('click', blur);
   }
   const globalKeyHandler = (e) => {
-    if (e.code === 'Space' && document.activeElement !== chatbox) {
-      focus();
-      e.preventDefault();
+    if (document.activeElement !== chatbox) {
+      if (e.code === 'Space' || e.key === '/') {
+        focus();
+        e.preventDefault();
+        if (e.key === '/' && chatbox.value === '') {
+          chatbox.value = '/';
+        }
+      }
     }
   };
   document.addEventListener('keydown', globalKeyHandler);

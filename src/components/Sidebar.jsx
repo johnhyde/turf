@@ -1,7 +1,7 @@
 import { createSignal, createSelector } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
-import { vec2, bind } from 'lib/utils';
+import { vec2, isTextInputFocused } from 'lib/utils';
 import Button from '@/Button';
 import EditPane from '@/EditPane';
 import Lab from '@/Lab';
@@ -37,7 +37,7 @@ function Sidebar() {
   }
 
   document.addEventListener('keydown', (e) => {
-    if (!e.defaultPrevented && document.activeElement.tagName !== 'TEXTAREA') {
+    if (!e.defaultPrevented && !isTextInputFocused()) {
       if (e.code === 'Escape') {
         if (state.selectedTab) {
           selectTab(null);

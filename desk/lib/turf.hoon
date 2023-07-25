@@ -91,6 +91,8 @@
         (new-garb-thing /body 'Basic Body' 3)
     :~  (new-garb-thing /brows 'Plain Eyebrows' 2)
         (new-garb-thing /eyes/tall 'Tall Eyes' 2)
+        (new-garb-thing /tshirt/white 'White T-Shirt' 3)
+        (new-garb-thing /pants/blue 'Blue Pants' 3)
     ==
   ++  new-garb-pair
     |=  [=form-id name=@t count=@ud]

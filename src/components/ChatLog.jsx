@@ -27,7 +27,7 @@ export default function ChatLog(props) {
           {(group) => (
             <>
               <p class="text-yellow-300">
-                {our === group.from ? 'me' : group.from}:
+                &nbsp; {our === group.from ? 'me' : group.from}:
               </p>
               <For each={group.chats}>
                 {(chat, i) => (

@@ -17,19 +17,24 @@
       rock  ^$(wave wave(grit i.poly))
       poly  t.poly
     ==
-  ?~  rock
+  =?  stir-ids.rock  &(?=(^ src.wave) ?=(^ id.wave))
+    (~(put by stir-ids.rock) (need src.wave) (need id.wave))
+  :-  stir-ids.rock
+  =/  uturf  turf.rock
+  ?~  uturf
     ?@  grit  ~  :: %del-turf or %inc-counter
     ?+  -.grit  ~
       %set-turf  `turf.grit
     ==
-  =*  turf  u.rock
+  =*  turf  u.uturf
+  =*  players  players.ephemera.turf
   ?@  grit
     ?-  grit
+      %noop  uturf
       %del-turf  ~
         %inc-counter
-      rock(stuff-counter.plot.u +(stuff-counter.plot.turf))
+      uturf(stuff-counter.plot.u +(stuff-counter.plot.turf))
     ==
-  =*  players  players.ephemera.turf
   ?-  -.grit
     %set-turf  `turf.grit
     %size-turf
@@ -48,40 +53,44 @@
     %cycle-shade  `(cycle-shade turf +.grit)
     %set-shade-var  `(set-shade-var turf +.grit)
       %chat
-    rock(chats.ephemera.u [chat.grit (scag 19 chats.ephemera.turf)])
+    uturf(chats.ephemera.u [chat.grit (scag 19 chats.ephemera.turf)])
       %move
     =.  players
       %^  jab-by-players  players  ship.grit
       |=  =player
       player(pos pos.grit)
-    rock
+    uturf
       %face
     =.  players
       %^  jab-by-players  players  ship.grit
       |=  =player
       player(dir dir.grit)
-    rock
+    uturf
       %set-avatar
     =.  players
       %^  jab-by-players  players  ship.grit
       |=  =player
       player(avatar avatar.grit)
-    rock
+    uturf
       %add-player
     =.  players
       (~(put by players) ship.grit player.grit)
-    rock
+    uturf
       %del-player
     =.  players
       (~(del by players) ship.grit)
-    rock
+    uturf
   ==
 --
 |%
-+$  rock  (unit turf)
++$  rock
+  $:  stir-ids=(map ship @t)
+      turf=(unit turf)
+  ==
 +$  wave
   $+  pond-wave
   $:  id=stir-id
+      src=(unit ship)
       =grit
   ==
 +$  grit
@@ -93,7 +102,7 @@
 +$  poly-grit  [%batch (list mono-grit)]
 +$  mono-grit
   $+  pond-mono-grit
-  $@  ?(%del-turf %inc-counter)
+  $@  ?(%del-turf %inc-counter %noop)
   $%  set-turf-wave
       size-turf-wave
       add-husk-wave

@@ -179,3 +179,7 @@ export function bind(el, accessor) {
     el.value = s();
   }); 
 }
+
+export function isTextInputFocused() {
+  return document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT';
+}

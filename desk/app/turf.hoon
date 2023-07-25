@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_5
+      reset=_6
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -87,9 +87,13 @@
   =.  state  old
   =^  cards-1  state  init-defaults:hc
   :: ~&  ~(wyt by +.pub-pond)
-  :: =^  cards-2  state  (add-player:hc ~hiddev-midlev-mindyr)
   :: =^  cards-2  state  (del-player:hc ~hiddev-midlev-mindyr)
-  =^  cards-2  state  (add-player:hc ~mordev-naltuc-ravteb)
+  :: =^  cards-2  state  (add-player:hc ~hiddev-midlev-mindyr)
+  :: =^  cards-2  state  (del-player:hc ~mordev-naltuc-ravteb)
+  :: =^  cards-2  state  (add-player:hc ~mordev-naltuc-ravteb)
+  :: =^  cards-2  state  (del-player:hc ~zod)
+  :: =^  cards-2  state  (add-player:hc ~zod)
+  =/  cards-2  `(list card)`~
   :: ~&  ~(wyt by +.pub-pond)
   :: todo: use ;<???
   =.  cards-0  :*
@@ -222,11 +226,14 @@
     =/  stir  !<(stir:pond vase)
     =/  target  ship.turf-id.stir
     ?:  =(our.bowl target)
-      =^  cards  state  (stir-pond:hc stir)
+      =^  cards  state  (stir-pond:hc `src.bowl stir)
       cards^this
     ?>  =(our src):bowl
     :_  this
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
+  ::
+    ::   %join-turf
+    :: [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
   :: Boilerplate
   ::
@@ -235,7 +242,7 @@
     ?-    msg=!<($%(from:da-pond from:da-mist) (fled vase))
         [pond-path *]
       ~?  stale.msg  "turf from {<from.msg>} on {<src.msg>} is stale"
-      ~?  ?=(^ rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.rock.msg>}"
+      ~?  ?=(^ turf.rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.turf.rock.msg>}"
       :: rock:(~(got by read:da-pond) [ship.id %turf ppath])
       :: =^  cards  state  (give-pond-rock:hc [src.msg +.path.msg] %.n)
       =/  this-turf-id=turf-id  [src.msg ;;(path +.path.msg)]
@@ -251,8 +258,13 @@
       [%give %fact give-paths %pond-stirred !>(stirred)]~
         ::
         [mist-path *]
+      ::  TODO look through turfs and update the one with the player (if any)
+      ?:  =(our src):bowl  `this
+      =^  cards  state  (give-pond [our.bowl /] set-avatar+[src.msg rock.msg])
       :: ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
-      `this
+      ~&  "got an avatar from {<src.msg>}"
+      cards^this
+      :: `this
     ==
   ::
       %sss-to-pub
@@ -420,24 +432,34 @@
   |=  [mpath=mist-path =wave:mist]
   (stir-mist mpath ~ `wave)
 ++  stir-pond
-  |=  [=turf-id =stir-id:pond =goal:pond]
+  |=  [src=(unit ship) =turf-id =stir-id:pond =goal:pond]
   ^-  (quip card _state)
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id)
   =/  pub  (~(get by read:du-pond) ppath)
   =/  grit=(unit grit:pond)
-    (filter-pond-goal ?~(pub ~ rock.u.pub) goal bowl)
+    (filter-pond-goal ?~(pub *rock:pond rock.u.pub) goal bowl)
   =/  cards=(list card)
     =/  =stirred:pond  [%wave stir-id grit]
     [%give %fact [(turf-id-to-path turf-id)]~ %pond-stirred !>(stirred)]~
-  ?~  grit  cards^state
-  =^  sss-cards  pub-pond  (give:du-pond ppath [stir-id u.grit])
+  =^  sss-cards-1  pub-pond
+    (give:du-pond ppath [stir-id src (fall grit %noop)])
+  =^  sss-cards-2  sub-mist
+    ^-  (quip card _sub-mist)
+    ?~  grit  `sub-mist
+    ?+    u.grit  `sub-mist
+        [%add-player *]
+      (surf:da-mist ship.u.grit %turf dmpath)
+        [%del-player *]
+      `(quit:da-mist ship.u.grit %turf dmpath)
+    ==
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  [(weld sss-cards cards) state]
+  [:(weld sss-cards-1 sss-cards-2 cards) state]
 ++  give-pond
   |=  [=turf-id =goal:pond]
+  ^-  (quip card _state)
   ~&  "trying to give pond. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  (stir-pond turf-id ~ goal)
+  (stir-pond ~ turf-id ~ goal)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
   ^-  (quip card _state)

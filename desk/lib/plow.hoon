@@ -25,21 +25,22 @@
       =/  grit  (filter-pond-mono-goal rock sub-goal bowl)
       ?~  grit  `rock
       :-  grit
-      (wash:pond rock [~ u.grit])
+      (wash:pond rock [~ ~ u.grit])
     ?~  poly=(murn upoly same)  ~
     `[%batch `(list mono-grit:pond)`poly]
   (filter-pond-mono-goal rock goal bowl)
 ++  filter-pond-mono-goal
   |=  [=rock:pond goal=mono-goal:pond =bowl:gall]
   ^-  (unit mono-grit:pond)
-  ?~  rock
+  =/  uturf  turf.rock
+  ?~  uturf
     ?+    goal  ~
         [%set-turf *]
       ?.  =(our.bowl src.bowl)
         ~
       `goal
     ==
-  =*  turf  u.rock
+  =*  turf  u.uturf
   ?@  goal
     `goal
   ?+    -.goal  `goal
@@ -90,8 +91,14 @@
     |=  =rock:pond
     ^-  json
     %+  frond  %rock
-    ?~  rock  ~
-    (turf u.rock)
+    %-  pairs
+    :~  :-  'stirIds'
+        (pairs (turn ~(tap by stir-ids.rock) stir-id-pair))
+      ::
+        :-  %turf
+        ?~  turf.rock  ~
+        (turf u.turf.rock)
+    ==
   ++  pond-wave
     |=  [id=stir-id:pond ugrit=(unit grit:pond)]
     ^-  json
@@ -163,6 +170,10 @@
             %set-color
           (numb +.wave)
     ==  ==
+  ++  stir-id-pair
+    |=  [src=^ship id=@t]
+    :-  (scot %p src)
+    s+id
   ++  turf
     |=  =^turf
     =,  ephemera.turf
