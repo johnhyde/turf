@@ -292,12 +292,14 @@
         ?~  tid  %.n
         =/  we-are-host  =(our.bowl ship.u.tid)
         ~&  'we are host'^we-are-host
-        =/  turf-exists  ?=(^ (~(get by read:du-pond) (turf-id-to-ppath u.tid)))
+        :: =/  turf-exists  ?=(^ (~(get by read:du-pond) (turf-id-to-ppath u.tid)))
+        =/  turf-exists  (turf-exists:hc u.tid)
         ~&  'turf exists'^turf-exists
         &(we-are-host turf-exists)
       ?:  tid-relevant
         ~&  "updating avatar of {<src.msg>} in {<(need tid)>}"
         =^  cards  state  (give-pond (need tid) set-avatar+[src.msg avatar.rock.msg])
+        :: =^  cards  state  (give-pond (need tid) %noop)
         :: ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
         cards^this
       :: TODO: find a way to kick players who leave without kicking them as soon as they join
@@ -472,6 +474,12 @@
     init-default-mist
   (weld cards more-cards)^state
 ::
+++  turf-exists
+  |=  id=turf-id
+  ^-  ?
+  ?=  ^
+  (~(get by read:du-pond) (turf-id-to-ppath id))
+::
 ++  stir-mist
   |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
   ^-  (quip card _state)
@@ -480,9 +488,9 @@
     [%give %fact [;;(path mpath)]~ %mist-stirred !>(stirred)]~
   ?~  wave  cards^state
   =^  sss-cards  pub-mist  (give:du-mist mpath u.wave)
-  :: =^  pond-cards  state  grit-player
-  :: [:(weld sss-cards cards pond-cards) state]
-  [(weld sss-cards cards) state]
+  =^  pond-cards=(list card)  state  (sync-avatar)
+  [:(weld sss-cards cards pond-cards) state]
+  :: [(weld sss-cards cards) state]
 ++  give-mist
   |=  [mpath=mist-path =wave:mist]
   (stir-mist mpath ~ `wave)
@@ -532,12 +540,15 @@
     ?:  on-watch  ~
     [path.id]~
   [%give %fact give-paths %pond-stirred !>(stirred)]~
-++  grit-player
+++  sync-avatar
+  |.
   ^-  (quip card _state)
-  =/  av  (default-mist)
-  ?~  av  `state
-  ?~  ctid.u.av  `state
-  (give-pond u.ctid.u.av set-avatar+[our.bowl avatar.u.av])
+  =/  mi  (default-mist)
+  ?~  mi  `state 
+  ?~  ctid.u.mi  `state
+  ?.  &(=(our.bowl ship.u.ctid.u.mi) (turf-exists u.ctid.u.mi))
+    `state
+  (give-pond u.ctid.u.mi set-avatar+[our.bowl avatar.u.mi])
 ++  add-player
   |=  =ship
   ^-  (quip card _state)
