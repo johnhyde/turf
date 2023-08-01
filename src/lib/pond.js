@@ -158,11 +158,13 @@ export class Pond { // we use a class so we can put it inside a store without ge
     const matchesFirst = pulseI === 0;
     const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].wave), grit);
     const changesSomething = !noop || matches;
-    const etherInvalidated = changesSomething && (!matchesFirst || !confirms);
+    const etherInvalidated = changesSomething && !(matchesFirst && confirms);
     if (matches) {
       // once we can guarantee that pokes are send to ship in order,
       // we can throw out any pulses before the matched one
       // this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
+      if (!confirms) console.log('DID NOT CONFIRM\nDID NOT CONFIRM');
+      if (pulseI > 0) console.log(`THROWING AWAY ${pulseI} UNMATCHED PULSE(S)`);
       this.$('pulses', p => p.slice(pulseI + 1));
     }
     if (etherInvalidated) {
@@ -171,6 +173,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   addCharge(charge, apply = true) {
+    // console.log('adding charge')
     if (this.charges.length == 0) {
       this.setFirstChargeTimer();
     }
@@ -178,9 +181,6 @@ export class Pond { // we use a class so we can put it inside a store without ge
     batch(() => {
       this.$('charges', (charges) => [...charges, charge]);
       if (apply) this.applyWave(charge.wave);
-      // if (this.charges.length >= 5) {
-      //   this.fireCharges();
-      // }
     });
   }
 
@@ -189,7 +189,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
       clearTimeout(this.firstChargeTimer);
     }
     this.firstChargeTimer = setTimeout(() => {
-      console.log(`at least ${this.maxBatchLatency}ms since first charge; firing`);
+      // console.log(`at least ${this.maxBatchLatency}ms since first charge; firing`);
       if (this.charges.length >= 1) {
         this.fireCharges();
       }
@@ -201,7 +201,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
       clearTimeout(this.lastChargeTimer);
     }
     this.lastChargeTimer = setTimeout(() => {
-      console.log(`at least ${this.minBatchLatency}ms since last charge; firing`);
+      // console.log(`at least ${this.minBatchLatency}ms since last charge; firing`);
       if (this.charges.length >= 1) {
         this.fireCharges();
       }
@@ -246,11 +246,13 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   resetEther() {
+    // console.log('resetting ether');
     const turfCopy = js.turf(cloneDeep(this.turf));
     this.$('ether', reconcile(turfCopy, { merge: true }));
   }
 
   replayEther() {
+    console.log('replaying ether');
     batch(() => {
       this.resetEther();
       this.applyPulses();
@@ -259,10 +261,12 @@ export class Pond { // we use a class so we can put it inside a store without ge
   }
 
   updateTurf(fun) {
+    // console.log('updating base turf')
     this.$('turf', fun);
   }
 
   updateEther(fun) {
+    // console.log('updating ether')
     this.$('ether', fun);
   }
 }
@@ -428,6 +432,8 @@ export function washTurf(update, wave) {
 }
 
 export function _washTurf(wave) {
+  wave = cloneDeep(wave);
+  // console.log('washing a turf with wave', JSON.stringify(wave, null, 2))
   switch (wave.type) {
     case 'batch':
       throw new Error('no nested batches please');

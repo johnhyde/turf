@@ -1,4 +1,4 @@
-import { createEffect, on } from "solid-js";
+import { createRoot, createEffect, on } from "solid-js";
 import { useState } from 'stores/state';
 import { vec2, dirs } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
@@ -23,8 +23,8 @@ export class Player extends Phaser.GameObjects.Container {
       this.keys = scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
       scene.cameras.main.startFollow(this);
     }
-    this.recreateAvatar();
     this.loadPlayerSprites = load;
+    this.recreateAvatar();
     this.setupEffects();
     this.addToUpdateList();
     // this.scene.events.on('update', (time, delta) => { this.update(time, delta)} );
@@ -40,36 +40,47 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   setupEffects() {
-    createEffect(() => {
-      let pos = this.p?.pos;
-      if (pos) {
-        // make sure to use x and y so solid knows to track them
-        // we aren't tracking player, so that's no help
-        this.tilePos = vec2(pos.x, pos.y)
-      }
-    });
-    createEffect((lastColor) => {
-      const color = this.p?.avatar.body.color;
-      if (this && color && lastColor !== color) {
-        this.bodyImage.setTint(color);
-      }
-      return color;
-    });
-    createEffect(on(() => {
-      if (!this.p) return null;
-      return JSON.stringify([this.p.dir, this.p.avatar.body.thing, this.p.avatar.things]);
-    }, async () => {
-      if (this.p?.avatar) {
-        await this.loadPlayerSprites(this.t);
-        this.recreateAvatar();
-      }
-    }, { defer: true }));
+    createRoot((dispose) => {
+      this.dispose = dispose;
+      createEffect(() => {
+        let pos = this.p?.pos;
+        if (pos) {
+          // make sure to use x and y so solid knows to track them
+          // we aren't tracking player, so that's no help
+          console.log('new player pos', pos.x, pos.y)
+          this.tilePos = vec2(pos.x, pos.y)
+        }
+      });
+      createEffect((lastColor) => {
+        const color = this.p?.avatar.body.color;
+        if (this.bodyImage && color && lastColor !== color) {
+          this.bodyImage.setTint(color);
+        }
+        return color;
+      });
+      createEffect(on(() => {
+        if (!this.p) return null;
+        return JSON.stringify([this.p.dir, this.p.avatar.body.thing, this.p.avatar.things]);
+      }, async () => {
+        if (this.p?.avatar) {
+          this.recreateAvatar();
+        }
+      }, { defer: true }));
+    })
   }
 
-  recreateAvatar() {
-    if (!this.p) return;
+  async recreateAvatar() {
+    if (!(this.p && this.t)) return;
     const avatar = this.p.avatar;
     this.removeAll(true);
+    if (this.name) this.name.remove();
+    this.name = document.createElement('span');
+    this.name.textContent = this.patp;
+    this.name.className = 'absolute font-mono font-bold text-md text-white leading-none translate-x-[-50%] translate-y-[-100%]'
+    this.positionName();
+    document.body.appendChild(this.name);
+    
+    await this.loadPlayerSprites(this.t);
     this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });
     this.bodyImage.setTint(avatar.body.color);
     if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
@@ -89,6 +100,11 @@ export class Player extends Phaser.GameObjects.Container {
       return img;
     }).filter(thing => !!thing);
     this.add([this.bodyImage, ...this.things]);
+    this.positionName();
+    // this.name = scene.make.text({ text: this.patp, style: { fontSize: '8px', fontFamily: 'monospace', fontSmooth: 'never',
+    // '--webkit-font-smoothing': 'none' }});
+    // this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width/2, playerOffset.y + this.name.height);
+    // this.add(this.name);
     const dims = vec2(this.bodyImage.width, this.bodyImage.height);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(playerOffset);
     // console.log('player dims', this.bodyImage.width, this.bodyImage.height)
@@ -159,5 +175,22 @@ export class Player extends Phaser.GameObjects.Container {
       }
     }
     justMoved = false;
+    setTimeout(() => this.positionName(), 0);
+  }
+
+  positionName() {
+    const wv = scene.cameras.main.worldView;
+    const bodyOffset = this.bodyImage ? vec2(this.bodyImage.displayOriginX, this.bodyImage.displayOriginY) : vec2(0);
+    const centerOffset = this.bodyImage ? vec2(this.bodyImage.width/2, 0) : vec2(16, 0);
+    const canvasOffset = vec2(shell.offsetLeft, shell.offsetTop);
+    const globalPos = vec2(this.x, this.y).subtract(bodyOffset).add(centerOffset).subtract(vec2(wv.x, wv.y)).scale(1/this.s.scale).add(canvasOffset);
+    this.name.style.left = globalPos.x + 'px';
+    this.name.style.top = globalPos.y + 'px';
+  }
+
+  destroy(fromScene) {
+    if (this.dispose) this.dispose();
+    if (this.name) this.name.remove();
+    super.destroy(fromScene);
   }
 }

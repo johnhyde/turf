@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_7
+      reset=_13
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -115,7 +115,8 @@
 ++  on-poke
   |=  [=mark =vase]
   ^-  (quip card _this)
-  :: ?>  =(our src):bowl
+  :: =-  ~&  "poke {<mark>:+} made cards: {<-<>}"
+  ::     -
   :: ~&  >>  "sub-pond was: {<read:da-pond>}"
   :: ~&  >>  "pub-pond was: {<read:du-pond>}"
   ?+    mark  (on-poke:def mark vase)
@@ -139,16 +140,16 @@
     cards^this
   ::
       %init-avatar
-    =.  pub-pond  (secret:du-pond [dppath]~)
+    =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-default-mist:hc
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    cards^this
+    (weld sss-cards cards)^this
   ::
       %init-turf
-    =.  pub-pond  (secret:du-pond [dppath]~)
+    =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-turf:hc
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    cards^this
+    (weld sss-cards cards)^this
   ::
       %set-turf
     =+  !<([size=vec2 offset=svec2] vase)
@@ -182,25 +183,20 @@
     `this
   ::
       %open-turf
-    =.  pub-pond  (allow:du-pond [!<(@p vase)]~ [dppath]~)
+    =^  cards  pub-pond  (allow:du-pond [!<(@p vase)]~ [dppath]~)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    `this
+    cards^this
   ::
       %kill-turf
-    =.  pub-pond  (kill:du-pond [dppath]~)
+    =^  cards  pub-pond  (kill:du-pond [dppath]~)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    `this
-  ::
-      %live-turf
-    =.  pub-pond  (live:du-pond [dppath]~)
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    `this
+    cards^this
   ::
   :: Sub Pokes
   ::
       %surf-turf
     =^  cards  sub-pond  
-      (surf:da-pond !<(@p (slot 2 vase)) %turf pond+!<(pond-path (slot 3 vase)))
+      (surf:da-pond !<(@p (slot 2 vase)) %turf pond+!<(path (slot 3 vase)))
     :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
@@ -263,13 +259,13 @@
   :: Boilerplate
   ::
       %sss-on-rock
-    :: =+  msg=!<(from:da-pond (fled vase))
-    ?-    msg=!<($%(from:da-pond from:da-mist) (fled vase))
+    =+  msg=!<($%(from:da-pond from:da-mist) (fled vase))
+    :: ~&  "got sss-on-rock: {<msg>}"
+    :: ?-    msg=!<($%(from:da-pond from:da-mist) (fled vase))
+    ?-    msg
         [pond-path *]
       ~?  stale.msg  "turf from {<from.msg>} on {<src.msg>} is stale"
       ~?  ?=(^ turf.rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.turf.rock.msg>}"
-      :: rock:(~(got by read:da-pond) [ship.id %turf ppath])
-      :: =^  cards  state  (give-pond-rock:hc [src.msg +.path.msg] %.n)
       =/  this-turf-id=turf-id  [src.msg ;;(path +.path.msg)]
       =/  this-turf-path=path  (turf-id-to-path this-turf-id)
       =/  =stirred:pond
@@ -285,22 +281,19 @@
         ::
         [mist-path *]
       :: ?:  =(our src):bowl  `this
-      ~&  "got an avatar from {<src.msg>}"
       =/  tid  ctid.rock.msg
-      ~&  'tid'^tid
+      ~&  "got an avatar from {<src.msg>} on {<tid>}"
+      :: ~&  'tid'^tid
       =/  tid-relevant
         ?~  tid  %.n
         =/  we-are-host  =(our.bowl ship.u.tid)
-        ~&  'we are host'^we-are-host
-        :: =/  turf-exists  ?=(^ (~(get by read:du-pond) (turf-id-to-ppath u.tid)))
+        :: ~&  'we are host'^we-are-host
         =/  turf-exists  (turf-exists:hc u.tid)
-        ~&  'turf exists'^turf-exists
+        :: ~&  'turf exists'^turf-exists
         &(we-are-host turf-exists)
       ?:  tid-relevant
         ~&  "updating avatar of {<src.msg>} in {<(need tid)>}"
-        =^  cards  state  (give-pond (need tid) set-avatar+[src.msg avatar.rock.msg])
-        :: =^  cards  state  (give-pond (need tid) %noop)
-        :: ~&  "got an avatar from {<src.msg>}: {<rock.msg>}"
+        =^  cards  state  (give-pond:hc (need tid) set-avatar+[src.msg avatar.rock.msg])
         cards^this
       :: TODO: find a way to kick players who leave without kicking them as soon as they join
       :: ~&  "quitting avatar of {<src.msg>} in {<(need tid)>}"
@@ -308,9 +301,18 @@
       `this
     ==
   ::
+      %sss-fake-on-rock
+    :_  this
+    :: ~&  "got a sss-fake-on-rock from {<src.bowl>}: {<+:vase>}"
+    ?-  msg=!<($%(from:da-pond from:da-mist) (fled vase))
+      [pond-path *]  (handle-fake-on-rock:da-pond msg)
+      [mist-path *]  (handle-fake-on-rock:da-mist msg)
+    ==
+  ::
       %sss-to-pub
-    :: =+  msg=!<(into:du-pond (fled vase))
-    ?-  msg=!<($%(into:du-pond into:du-mist) (fled vase))
+    =+  msg=!<($%(into:du-pond into:du-mist) (fled vase))
+    ~&  "got a sss-to-pub from {<src.bowl>}: {<msg>}"
+    ?-  msg
         [pond-path *]
       =^  cards  pub-pond  (apply:du-pond msg)
       [cards this]
@@ -320,9 +322,11 @@
     ==
   ::
       %sss-pond
+    :: ~&  >  "sub-pond is: {<sub-pond>}"
+    ~&  >  "got sss-pond from {<src.bowl>}"
     =/  res  !<(into:da-pond (fled vase))
     =^  cards  sub-pond  (apply:da-pond res)
-    :: ~&  >  "sub-pond is: {<read:da-pond>}"
+    :: ~&  >  "got sss-pond from {<src.bowl>}: {<res>}"
     [cards this]
   ::
       %sss-mist
@@ -344,26 +348,26 @@
 ++  on-watch
   |=  =path
   ^-  (quip card _this)
+  ~&  >  "got on-watch on {<path>}"
   ?+  path  (on-watch:def path)
+  :: ?+  path  `this
       [%pond *]
     =/  id=turf-id
       %+  fall
         (path-to-turf-id path)
       (fall (ctid:hc) dtid)
     ?>  =(our src):bowl
-    :: =/  [cards-1=(list card) new-sub-pond=_sub-pond]
     =/  sub-key  (turf-id-to-sub-key id)
     ~&  ['sub key' sub-key]
-    :: =/  turf-surfed  !=(~ (~(get by read:da-pond) sub-key))
-    =/  surfed-turf  (~(get by read:da-pond) sub-key)
-    ~&  ['surfed turf is null' ?=(~ surfed-turf)]
-    =/  turf-surfed  !=(~ surfed-turf)
-    ~&  ['turf surfed' turf-surfed]
-    ?:  |(=(our.bowl ship.id) turf-surfed)
-      =^  cards  state  (give-pond-rock:hc id %.y)
-      cards^this
-    =^  cards  sub-pond  (surf:da-pond sub-key)
-    cards^this
+    =^  cards-1  sub-pond
+      ?:  =(our.bowl ship.id)  `sub-pond
+      (surf:da-pond sub-key)
+    =^  cards-2  state
+      ?^  cards-1  `state
+      ::  no sub cards, we are already subbed and not stale
+      ::  tell frontend what we have
+      (give-pond-rock:hc id %.y)
+    (weld cards-1 cards-2)^this
   ==
 ++  on-leave
   |=  =path
@@ -384,36 +388,50 @@
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
   ?>  ?=(%poke-ack -.sign)
-  ?~  p.sign  `this
-  %-  (slog u.p.sign)
+  :: ?~  p.sign  `this
+  :: %-  %-  slog
+  ::     ^-  tang
+  ::     :-  leaf+"poke from {<dap.bowl>} on wire {<wire>}"
+  ::     ?~  p.sign  ~
+  ::     u.p.sign
   ?+    wire  (on-agent:def wire sign)
       [~ %sss %on-rock @ @ @ pond-path]
     =.  sub-pond  (chit:da-pond |3:wire sign)
+    :: ~&  >  "got pond on-rock on {<|3:wire>}"
     :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
       [~ %sss %on-rock @ @ @ mist-path]
     =.  sub-mist  (chit:da-mist |3:wire sign)
+    :: ~&  >  "got mist on-rock on {<|3:wire>}"
     :: ~&  >  "sub-mist is: {<read:da-mist>}"
     `this
   ::
       [~ %sss %scry-request @ @ @ pond-path]
     =^  cards  sub-pond  (tell:da-pond |3:wire sign)
+    :: ~&  >  "got pond scry-request on {<|3:wire>}"
     :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       [~ %sss %scry-request @ @ @ mist-path]
     =^  cards  sub-mist  (tell:da-mist |3:wire sign)
+    :: ~&  >  "got mist scry-request on {<|3:wire>}"
     :: ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
+  ::
+      [~ %sss %scry-response @ @ @ pond-path]
+    =^  cards  pub-pond  (tell:du-pond |3:wire sign)
+    :: ~&  >  "got pond scry-response on {<|3:wire>}"
+    :: ~&  >  "pub-pond is: {<read:du-pond>}"
+    [cards this]
+  ::
+      [~ %sss %scry-response @ @ @ mist-path]
+    =^  cards  pub-mist  (tell:du-mist |3:wire sign)
+    :: ~&  >  "got mist scry-response on {<|3:wire>}"
+    :: ~&  >  "pub-mist is: {<read:du-mist>}"
+    [cards this]
   ==
-++  on-arvo
-  |=  [=wire =sign-arvo]
-  ^-  (quip card _this)
-  ?+  wire  (on-arvo:def [wire sign-arvo])
-    [~ %sss %behn @ @ @ pond-path]  [(behn:da-pond |3:wire) this] 
-    [~ %sss %behn @ @ @ mist-path]  [(behn:da-mist |3:wire) this] 
-  ==
+++  on-arvo  on-arvo:def
 ++  on-fail  on-fail:def
 --
 ::

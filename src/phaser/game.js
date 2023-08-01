@@ -290,13 +290,13 @@ export function startPhaser(_owner, _container) {
   }
   
   function destroyCurrentTurf() {
+    window.player = player = null;
+    window.players = players = {};
+    shades = {};
     (scene.add.displayList.list || []).map(e => e).forEach(e => e.destroy());
     (scene.add.updateList.list || []).map(e => e).forEach(e => e.destroy());
     game.scene.start(scene);
     // if (player) player.destroy();
-    player = null;
-    players = {};
-    shades = {};
   }
   window.destroyTurf = destroyCurrentTurf;
   async function initTurf(turf, grid, _player) {
