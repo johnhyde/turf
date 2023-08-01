@@ -189,6 +189,22 @@ export function getState() {
         variation: Number.parseInt(variation),
       });
     },
+    setShadeEffect(shadeId, trigger, effect) {
+      this.sendPondWave('set-shade-effect', {
+        shadeId: Number.parseInt(shadeId),
+        trigger,
+        effect,
+        /*
+        effect should look like this
+        {
+          type: [string],
+          arg: [depends on type]
+        } or
+        [string] which is the type, or
+        null
+        */
+      });
+    },
     updateWallAtPos(shadeId, pos) {
       const variation = getWallVariationAtPos(this.e, pos);
       this.setShadeVariation(shadeId, variation);

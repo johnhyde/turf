@@ -180,6 +180,27 @@ export function bind(el, accessor) {
   }); 
 }
 
+export function input(el, callbacks) {
+  function focus() {
+    el.focus();
+  }
+  function blur() {
+    el.blur();
+  }
+  el.addEventListener('focus', (e) => {
+    game.input.keyboard.enabled = false;
+    game.canvas.addEventListener('click', blur);
+    const { onFocus } = callbacks();
+    if (onFocus) onFocus(e);
+  });
+  el.addEventListener('blur', (e) => {
+    game.input.keyboard.enabled = true;
+    game.canvas.removeEventListener('click', blur);
+    const { onBlur } = callbacks();
+    if (onBlur) onBlur(e);
+  });
+}
+
 export function isTextInputFocused() {
   return document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT';
 }

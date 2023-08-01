@@ -367,4 +367,18 @@
     %+  ~(put by cave.plot.turf)  id
     shade(variation (mod variation (lent variations.u.form)))
   turf
+++  set-shade-effect
+  |=  [=turf id=shade-id =trigger effect=(unit possible-effect)]
+  ^-  ^turf
+  =/  shade  (~(gut by cave.plot.turf) id ~)
+  ?~  shade  turf
+  :: =/  form  (get-form turf form-id.shade)
+  :: ?~  form  turf
+  =.  cave.plot.turf
+    %+  ~(put by cave.plot.turf)  id
+    %=    shade
+        effects
+      (~(put by effects.shade) trigger effect)
+    ==
+  turf
 --

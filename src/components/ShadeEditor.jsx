@@ -1,6 +1,6 @@
 import { createSignal, createSelector, mergeProps } from 'solid-js';
 import { produce } from "solid-js/store";
-import { vec2, bind } from 'lib/utils';
+import { vec2, bind, input } from 'lib/utils';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 
@@ -32,6 +32,16 @@ export default function ShadeEditor(props) {
     }
   }
 
+  function save() {
+    Object.entries(effects()).forEach(([trigger, effect]) => {
+      state.setShadeEffect(
+        props.shade.id,
+        trigger,
+        effect.arg === null ? effect.type : effect,
+      )
+    });
+  }
+
   return (
     <Show when={props.shade}>
       {(shade) =>
@@ -48,6 +58,9 @@ export default function ShadeEditor(props) {
               </div>;
             }}
           </For>
+          <button onClick={save}>
+            Save
+          </button>
           <pre>
             {JSON.stringify(shade(), null, 2)}
           </pre>
@@ -68,7 +81,7 @@ function ArgInput(props) {
             ship: '~',
             path: '/',
           },
-          at: props.shade.id,
+          at: Number(props.shade.id),
         };
       case 'jump':
         return vec2(state.e.offset);
@@ -91,6 +104,7 @@ function ArgInput(props) {
       <Switch>
         <Match when={props.type === 'port'}>
           <input
+            use:input
             use:bind={[
               () => props.arg.for.ship,
               updateShip,
@@ -101,6 +115,7 @@ function ArgInput(props) {
           <input type="number"
             min={state.e.offset.x}
             max={state.e.offset.x + state.e.size.x - 1} 
+            use:input
             use:bind={[
               () => props.arg.x,
               (s) => props.setArg(vec2(s, props.arg.y))
@@ -108,6 +123,7 @@ function ArgInput(props) {
           <input type="number"
             min={state.e.offset.y}
             max={state.e.offset.y + state.e.size.y - 1} 
+            use:input
             use:bind={[
               () => props.arg.y,
               (s) => props.setArg(vec2(props.arg.x, s))

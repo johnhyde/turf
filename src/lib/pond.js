@@ -384,6 +384,13 @@ const pondWaves = {
       }
     }
   },
+  'set-shade-effect': (turf, arg) => {
+    const { shadeId, trigger, effect } = arg;
+    const shade = turf.cave[shadeId];
+    if (shade) {
+      shade.effects[trigger] = effect;
+    }
+  },
   'chat': (turf, arg) => {
       turf.chats.unshift(arg);
       turf.chats = turf.chats.slice(0, 20);

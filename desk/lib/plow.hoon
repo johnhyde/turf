@@ -132,6 +132,12 @@
           (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
             %set-shade-var
           (pairs ~['shadeId'^(numb shade-id.grit) variation+(numb variation.grit)])
+            %set-shade-effect
+          %-  pairs
+          :~  'shadeId'^(numb shade-id.grit)
+              'trigger'^s+trigger.grit
+              'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
+          ==
             %chat
           (chat chat.grit)
             %move
@@ -318,7 +324,7 @@
         variation+(numb variation)
         offset+(svec2 offset)
         collidable+(fall (bind collidable |=(c=? b+c)) ~)
-        effects+(pairs (turn ~(tap by effects) effect))
+        effects+(pairs (turn ~(tap by effects) maybe-possible-effect))
     ==
   ++  shade-pairs
     |=  =^shade
@@ -362,19 +368,30 @@
     :~  type+s+type.sprite
         frames+a+(turn frames.sprite (lead %s))
     ==
+  ++  maybe-possible-effect
+    |=  [=trigger eff=(unit ^possible-effect)]
+    ^-  (pair @t json)
+    ?~  eff  trigger^~
+    (possible-effect trigger u.eff)
+  ++  possible-effect
+    |=  [=trigger eff=^possible-effect]
+    ^-  (pair @t json)
+    ?@  eff
+      (effect-type trigger eff)
+    (effect trigger eff)
   ++  effect
-    |=  [=trigger =^effect]
+    |=  [=trigger eff=^effect]
     :-  trigger
     ^-  json
     %-  pairs
-    :~  type+s+-.effect
+    :~  type+s+-.eff
         :-  %arg
         ^-  json
-        ?-  -.effect
-          %port  (port +.effect)
-          %jump  (svec2 +.effect)
-          %read  s+note.effect
-          %swap  (path +.effect)
+        ?-  -.eff
+          %port  (port +.eff)
+          %jump  (svec2 +.eff)
+          %read  s+note.eff
+          %swap  (path +.eff)
     ==  ==
   ++  effect-type
     |=  [=trigger =^effect-type]
@@ -448,7 +465,8 @@
       ^-  stir:pond
       %.  jon
       %-  ot
-      :~  path+(cork pa |=(=path (need (path-to-turf-id path))))
+      :: :~  path+(cork pa |=(=path (need (path-to-turf-id path))))
+      :~  path+pa-turf-id
       :: :~  path+pa
           id+so:soft
           goal+pond-goal
@@ -473,7 +491,8 @@
           del-shade+(ot ~['shadeId'^ni])
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
-          :: todo: set-turf, chat
+          set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
+          :: todo: set-turf
       ==
     ::
     ++  mist-stir
@@ -495,6 +514,28 @@
           del-thing+ni
       ==
     ::
+    ++  maybe-possible-effect
+      |=  jon=json
+      ^-  (unit possible-effect)
+      ?~  jon  ~
+      :-  ~
+      ?:  ?=([%s *] jon)
+        (effect-type jon)
+      (effect jon)
+    ++  effect-type  (cork so ^effect-type)
+    ++  effect
+      |=  jon=json
+      ^-  ^effect
+      ?>  ?=([%o *] jon)
+      =/  type  (effect-type (~(got by p.jon) 'type'))
+      =/  arg  (~(got by p.jon) 'arg')
+      ?-  type
+        :: %port  ((ot ~[for+(cork turf-id need) at+ni]) arg)
+        %port  port+((ot ~[for+ot-turf-id at+ni]) arg)
+        %jump  jump+(svec2 arg)
+        %read  read+(so arg)
+        %swap  swap+(pa arg)
+      ==
     ++  dir
       |=  jon=json
       ^-  ^dir
@@ -512,6 +553,14 @@
       ^-  @sd
       ?>  ?=([%n *] jon)
       (need (toi:rd (ne jon)))
+    ++  pa-turf-id  :(cork pa path-to-turf-id need)
+    ++  ot-turf-id
+      |=  jon=json
+      ^-  ^turf-id
+      ((ot ~[ship+(se %p) path+pa]) jon)
+    :: ++turf-id used by %join-turf mark
+    :: we're trying to support an intentionally blank turf-id
+    :: but I think this is the wrong aporach
     ++  turf-id
       |=  jon=json
       ^-  (unit ^turf-id)

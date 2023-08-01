@@ -37,21 +37,22 @@
     ==
   ?-  -.grit
     %set-turf  `turf.grit
-    %size-turf
-  :-  ~
-  %=  turf
-    offset.plot  offset.grit
-    size.plot  size.grit
-    ::
-      players.ephemera
-    %-  ~(run by players)
-    |=  =player
-    player(pos (clamp-pos pos.player offset.grit size.grit))
-  ==
+      %size-turf
+    :-  ~
+    %=  turf
+      offset.plot  offset.grit
+      size.plot  size.grit
+      ::
+        players.ephemera
+      %-  ~(run by players)
+      |=  =player
+      player(pos (clamp-pos pos.player offset.grit size.grit))
+    ==
     %add-husk  `(add-husk turf +.grit)
     %del-shade  `(del-shade turf +.grit)
     %cycle-shade  `(cycle-shade turf +.grit)
     %set-shade-var  `(set-shade-var turf +.grit)
+    %set-shade-effect  `(set-shade-effect turf +.grit)
       %chat
     uturf(chats.ephemera.u [chat.grit (scag 19 chats.ephemera.turf)])
       %move
@@ -109,6 +110,7 @@
       del-shade-wave
       cycle-shade-wave
       set-shade-var-wave
+      set-shade-effect-wave
       chat-wave
       move-wave
       face-wave
@@ -122,6 +124,12 @@
 +$  del-shade-wave  [%del-shade =shade-id]
 +$  cycle-shade-wave  [%cycle-shade =shade-id amt=@ud]
 +$  set-shade-var-wave  [%set-shade-var =shade-id variation=@ud]
++$  set-shade-effect-wave
+  $:  %set-shade-effect
+      =shade-id
+      =trigger
+      effect=(unit possible-effect)
+  ==
 +$  chat-wave  [%chat =chat]
 +$  move-wave  [%move =ship pos=svec2]
 +$  face-wave  [%face =ship =dir]

@@ -69,7 +69,7 @@
 +$  husk-bits
   $:  offset=svec2  :: added to form offset
       collidable=(unit flug)  :: use form collidable if null
-      effects=(map trigger effect)  :: override form effects and implement form seeds
+      effects=(map trigger (unit possible-effect))  :: override form effects and implement form seeds
   ==
 +$  shade
   $:  pos=svec2

@@ -1,8 +1,10 @@
 import { onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
+import { input } from 'lib/utils';
 
 export default function ChatBar() {
   const state = useState();
+  let chatbox;
 
   function sendChat(text) {
     const joinMatch = text.match(/^\/join (.*)/)
@@ -23,16 +25,15 @@ export default function ChatBar() {
       console.log('chat ' + chatbox.value);
       sendChat(chatbox.value);
       chatbox.value = '';
-      blur();
+      chatbox.blur();
       e.preventDefault();
     }
     if (e.code === 'Escape') {
-      blur();
+      chatbox.blur();
       e.preventDefault();
       return false;
     }
   }
-  let chatbox;
   function onInput(e) {
     chatbox.style.height = 0;
     const newHeight = Math.max(28, Number(chatbox.scrollHeight));
@@ -40,26 +41,10 @@ export default function ChatBar() {
     chatbox.parentElement.style.minHeight = Math.min(48, newHeight) + 'px';
     chatbox.scroll(0, newHeight);
   }
-  function blur() {
-    chatbox.blur();
-    onInput();
-  };
-  function focus() {
-    chatbox.focus();
-    onInput();
-  }
-  function onFocus() {
-    game.input.keyboard.enabled = false;
-    game.canvas.addEventListener('click', blur);
-  }
-  function onBlur() {
-    game.input.keyboard.enabled = true;
-    game.canvas.removeEventListener('click', blur);
-  }
   const globalKeyHandler = (e) => {
     if (document.activeElement !== chatbox) {
       if (e.code === 'Space' || e.key === '/') {
-        focus();
+        chatbox.focus();
         e.preventDefault();
         if (e.key === '/' && chatbox.value === '') {
           chatbox.value = '/';
@@ -72,7 +57,11 @@ export default function ChatBar() {
 
   return (
     <div class="mt-1 text-sm overflow-y-hidden">
-      <textarea class="w-full max-h-full px-2 py-1 resize-none rounded-md border border-yellow-950" ref={onChatBoxLoad} onKeyDown={onKeyDown} onInput={onInput} onFocus={onFocus} onBlur={onBlur}></textarea>
+      <textarea class="w-full max-h-full px-2 py-1 resize-none rounded-md border border-yellow-950"
+        ref={onChatBoxLoad} onKeyDown={onKeyDown}
+        onInput={onInput}
+        use:input={{ onFocus: onInput, onBlur: onInput}}
+      ></textarea>
     </div>
   );
 }
