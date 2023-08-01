@@ -55,8 +55,11 @@ function createShade(shade, id, turf) {
   sprite.setDisplayOrigin(form.offset.x, form.offset.y);
   sprite.setDepth(shade.pos.y);
   sprite.setInteractive();
-  function onClick(pointer) {
-    console.log('got click on shade', id, shade.formId);
+
+  // here "touch" means that the shade was touched by the cursor
+  // as it passed through or clicked
+  function onTouch(pointer) {
+    console.log('got pointer down on shade', id, shade.formId);
     if (state.editor.editing) {
       if (state.editor.eraser) {
         const shade = getShadeWithForm(state.e, id);
@@ -70,12 +73,21 @@ function createShade(shade, id, turf) {
       }
     }
   }
+  function onClick(pointer) {
+    console.log('got click on shade', id, shade.formId);
+    if (state.editor.editing) {
+      if (!state.editor.selectedTool) {
+        state.selectShade(id);
+      }
+    }
+  }
   sprite.on('pointermove', (pointer) => {
     if (pointer.isDown) {
-      onClick(pointer);
+      onTouch(pointer);
     }
   });
   sprite.on('pointerdown', (pointer) => {
+    onTouch(pointer);
     onClick(pointer);
   });
   return sprite;

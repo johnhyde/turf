@@ -108,7 +108,7 @@
 +$  possible-effect  $@(effect-type effect)
 +$  effect-type  ?(%port %jump %read %swap)
 +$  effect
-  $%  [%port for=turf-id]
+  $%  [%port for=turf-id at=shade-id]
       [%jump to=svec2]
       [%read note=@t]
       [%swap with=form-id]  :: for opening/closing doors

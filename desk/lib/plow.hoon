@@ -371,7 +371,7 @@
         :-  %arg
         ^-  json
         ?-  -.effect
-          %port  (turf-id +.effect)
+          %port  (port +.effect)
           %jump  (svec2 +.effect)
           %read  s+note.effect
           %swap  (path +.effect)
@@ -379,6 +379,13 @@
   ++  effect-type
     |=  [=trigger =^effect-type]
     [trigger s+effect-type]
+  ++  port
+    |=  [tid=^turf-id sid=shade-id]
+    ^-  json
+    %-  pairs
+    :~  for+(turf-id tid)
+        at+(numb sid)
+    ==
   ++  turf-id
     |=  id=^turf-id
     ^-  json

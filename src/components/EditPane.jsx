@@ -2,7 +2,9 @@ import { createSignal, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused } from 'lib/utils';
+import { getShadeWithForm } from 'lib/turf';
 import Button from '@/Button';
+import ShadeEditor from '@/ShadeEditor';
 import FormSelect from '@/FormSelect';
 import point from 'assets/icons/point.png';
 import erase from 'assets/icons/delete.png';
@@ -21,6 +23,10 @@ export default function EditPane() {
   const entries = () => Object.entries(state.e?.skye || {});
   const formsByType = (type) => entries().filter(([id, form]) => form.type === type);
   const types = ['tile', 'item', 'wall'];
+
+  const selectedShade = () => {
+    return getShadeWithForm(state.e, state.editor.selectedShadeId);
+  }
 
   const onKeyDown = (e) => {
     if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
@@ -74,6 +80,7 @@ export default function EditPane() {
         selected={isToolSelected(tools.RESIZER)}
         tooltip='R'
       />
+      <ShadeEditor shade={selectedShade()} />
       <div>
         <For each={types}>
           {(type) => (

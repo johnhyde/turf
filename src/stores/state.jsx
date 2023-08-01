@@ -31,6 +31,7 @@ export function getState() {
         return selectedTab() === 'editor';
       },
       selectedFormId: null,
+      selectedShadeId: null,
       selectedTool: null,
       tools: {
         BRUSH: 'brush',
@@ -221,6 +222,10 @@ export function getState() {
     selectForm(id, _) {
       $state('editor', 'selectedFormId', id);
       if (id) this.selectTool(this.editor.tools.BRUSH);
+    },
+    selectShade(id, _) {
+      $state('editor', 'selectedShadeId', id);
+      if (id) this.selectTool(null);
     },
     selectTool(tool) {
       batch(() => {

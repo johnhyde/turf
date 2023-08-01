@@ -29,4 +29,6 @@
 ++  table  'sprites/table.png'
 ++  stool  'sprites/stool.png'
 ++  tree  'sprites/tree.png'
+++  portal  'sprites/portal.png'
+++  tunnel  'sprites/tunnel.png'
 --

@@ -51,6 +51,18 @@
           collidable  %.y
           offset      [--0 --32]
         ==
+      ::
+        :-  /portal
+        =/  portal  (new-form %item 'Portal' portal)
+        %=  portal
+          seeds  (malt [%step %port]~)
+        ==
+      ::
+        :-  /tunnel
+        =/  tunnel  (new-form %item 'Tunnel' tunnel)
+        %=  tunnel
+          seeds  (malt [%step %jump]~)
+        ==
     ==
   ++  default-closet
     ^-  skye
