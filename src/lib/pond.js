@@ -16,7 +16,7 @@ function waveTypeStr(wave) {
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id, options = {}) {
     this.id = id;
-    const [pond, $pond] = getPond(id);
+    const [pond, $pond] = getPond();
     this._ = pond;
     this.$ = $pond;
 
@@ -226,16 +226,20 @@ export class Pond { // we use a class so we can put it inside a store without ge
         stirs.push(c.stir);
         waves.push(c.wave);
       });
-      const stir = {
+      let stir = {
         type,
         arg: stirs,
       };
-      const wave = {
+      let wave = {
         type,
         arg: waves,
       };
+      if (this.charges.length === 1) {
+        stir = stirs[0];
+        wave = waves[0];
+      }
       const uuid = uuidv4();
-      console.log('sending wave', type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
+      console.log('sending wave', wave.type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
       this.$('charges', []);
       this.addPulse({
         id: uuid,
@@ -262,12 +266,18 @@ export class Pond { // we use a class so we can put it inside a store without ge
 
   updateTurf(fun) {
     // console.log('updating base turf')
-    this.$('turf', fun);
+    batch(() => {
+      if (this.turf?.id) this.$('turf', 'id', this.id);
+      this.$('turf', fun);
+    });
   }
-
+  
   updateEther(fun) {
     // console.log('updating ether')
-    this.$('ether', fun);
+    batch(() => {
+      if (this.ether?.id) this.$('ether', 'id', this.id);
+      this.$('ether', fun);
+    });
   }
 }
 
@@ -451,7 +461,7 @@ export function _washTurf(wave) {
     case 'set-turf':
       return (turf) => {
         const newTurf = {
-          id: turf.id,
+          id: turf?.id,
           ...wave.arg,
         };
         return js.turf(newTurf);

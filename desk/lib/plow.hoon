@@ -1,6 +1,17 @@
 /-  *turf, pond, mist
 /+  *turf, sss
 |%
++$  roar
+  $%  [%portal-request for=turf-id from=shade-id]
+      [%portal-confirm for=turf-id from=shade-id at=shade-id]
+      [%portal-delete for=turf-id at=shade-id]
+      [%port for=turf-id at=shade-id =ship]
+      [%player-add =ship]
+      [%player-del =ship]
+  ==
++$  roars  (list roar)
++$  poly  (list mono-grit:pond)
++$  upoly  (list (unit mono-grit:pond))
 ++  filter-mist-goal
   |=  [=rock:mist wave=stir-wave:mist closet=skye]
   ^-  (unit wave:mist)
@@ -16,53 +27,115 @@
   ==
 ++  filter-pond-goal
   |=  [=rock:pond =goal:pond =bowl:gall]
-  ^-  (unit grit:pond)
-  ?:  ?=([%batch *] goal)
-    =/  [upoly=(list (unit mono-grit:pond)) *]
-      %^  spin  +.goal  rock
-      |=  [sub-goal=mono-goal:pond rock=rock:pond]
-      ^-  [(unit mono-grit:pond) rock:pond]
-      =/  grit  (filter-pond-mono-goal rock sub-goal bowl)
-      ?~  grit  `rock
-      :-  grit
-      (wash:pond rock [~ ~ u.grit])
-    ?~  poly=(murn upoly same)  ~
-    `[%batch `(list mono-grit:pond)`poly]
-  (filter-pond-mono-goal rock goal bowl)
+  ^-  (quip roar (unit grit:pond))
+  =/  goals
+    ?:  ?=([%batch *] goal)
+      +.goal
+    [goal ~]
+  :: ?:  ?=([%batch *] goal)
+  =/  [=roars =poly new-rock=rock:pond]
+    %+  roll  goals
+    |=  [sub-goal=mono-goal:pond [=roars =poly _rock]]
+    ^-  [^roars ^poly rock:pond]
+    =/  [sub-roars=^roars sub-poly=^poly]
+      (filter-pond-mono-goal rock sub-goal bowl)
+    :: ~&  ["roars and upoly" sub-roars upoly]
+    :-  (weld roars sub-roars)
+    :-  (weld poly sub-poly)
+    |-  ^-  rock:pond
+    ?~  sub-poly  rock
+    %=  $
+      rock  (wash:pond rock [~ ~ i.sub-poly])
+      sub-poly  t.sub-poly
+    ==
+  :-  roars
+  ?~  poly  ~
+  :-  ~
+  ?:  &(=(1 (lent poly)) !?=([%batch *] goal))
+    i.poly
+  [%batch `(list mono-grit:pond)`poly]
+  :: (filter-pond-mono-goal rock goal bowl)
 ++  filter-pond-mono-goal
   |=  [=rock:pond goal=mono-goal:pond =bowl:gall]
-  ^-  (unit mono-grit:pond)
+  ^-  [roars poly]
+  :: :-  ~
+  :: ~&  "we are filtering goal {<-.goal>}"
   =/  uturf  turf.rock
   ?~  uturf
-    ?+    goal  ~
+    ?+    goal  `~
         [%set-turf *]
       ?.  =(our.bowl src.bowl)
-        ~
-      `goal
+        `~
+      `[goal]~
     ==
+  :: ~&  "turf is not null"
   =*  turf  u.uturf
   ?@  goal
-    `goal
-  ?+    -.goal  `goal
+    `[goal]~
+  :: ~&  "goal is not atom"
+  ?+    -.goal  `[goal]~
       %move
     =*  players  players.ephemera.turf
     =/  player  (~(get by players) ship.goal)
-    ?~  player  ~
+    ?~  player  `~
     =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
     =/  player-colliding  (get-collidable turf pos.u.player)
     =/  will-be-colliding  (get-collidable turf pos)
     ?:  &(will-be-colliding !player-colliding)
-      ~
-    ?:  =(pos pos.u.player)  ~
-    `goal(pos pos)
+      :: todo: get bump effects
+      `~
+    ?:  =(pos pos.u.player)  `~
+    :: =.  goal  goal(pos pos)
+    =/  leave=[roars poly]  (pull-trigger turf ship.goal %leave pos.u.player)
+    =/  step=[roars poly]  (pull-trigger turf ship.goal %step pos)
+    :-  (weld -.leave -.step)
+    :-  goal(pos pos)
+    (weld +.leave +.step)
       %send-chat
-    ?.  =(src.bowl from.goal)  ~
-    :-  ~
-    [%chat from.goal now.bowl text.goal]
+    ?.  =(src.bowl from.goal)  `~
+    `[%chat from.goal now.bowl text.goal]~
       %join-player
     =|  =player
-    :-  ~
-    [%add-player ship.goal player(avatar avatar.goal)]
+    :-  [%player-add ship.goal]~
+    [%add-player ship.goal player(avatar avatar.goal)]~
+      %add-player
+    =|  =player
+    :-  [%player-add ship.goal]~
+    [goal]~
+      %del-player
+    =|  =player
+    :-  [%player-del ship.goal]~
+    [goal]~
+  ==
+++  pull-trigger
+  |=  [=turf =ship =trigger pos=svec2]
+  ^-  [=roars =poly]
+  =/  things  (get-things turf pos)
+  =/  effects=(list effect)
+    %+  murn  things
+    |=  =thing
+    ^-  (unit effect)
+    =/  form-eff  (~(get by effects.form.thing) trigger)
+    =/  mpeff  (~(get by effects.thing) trigger)
+    ?~  mpeff  form-eff
+    ?~  u.mpeff  form-eff
+    ?@  u.u.mpeff  form-eff
+    `u.u.mpeff
+  %+  roll  effects
+  |=  [=effect =roars =poly]
+  =/  res  (apply-effect turf ship effect)
+  :-  (weld roars roars.res)
+  (weld poly poly.res)
+++  apply-effect
+  |=  [=turf =ship =effect]
+  ^-  [=roars =poly]
+  ?+    -.effect  `~
+      %port
+    :-  [%port for.effect at.effect ship]~
+    :: [%del-player ship]~
+    ~
+      %jump
+    `[%move ship to.effect]~
   ==
 ++  path-to-turf-id
   |=  =path

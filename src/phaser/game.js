@@ -198,7 +198,7 @@ export function startPhaser(_owner, _container) {
         });
 
         this.input.on('wheel', (pointer) => {
-          state.setScale(state.scale + pointer.deltaY/50);
+          state.setScale(state.scale + pointer.deltaY/200);
         });
       }
 

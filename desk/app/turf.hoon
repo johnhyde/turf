@@ -518,24 +518,32 @@
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id)
   =/  pub  (~(get by read:du-pond) ppath)
-  =/  grit=(unit grit:pond)
+  =/  [=roars grit=(unit grit:pond)]
     (filter-pond-goal ?~(pub *rock:pond rock.u.pub) goal bowl)
+  :: ~&  ["roars and grit" roars grit]
   =/  cards=(list card)
     =/  =stirred:pond  [%wave stir-id grit]
     [%give %fact [(turf-id-to-path turf-id)]~ %pond-stirred !>(stirred)]~
-  =^  sss-cards-1  pub-pond
+  =^  sss-cards  pub-pond
     (give:du-pond ppath [stir-id src (fall grit %noop)])
-  =^  sss-cards-2  sub-mist
-    ^-  (quip card _sub-mist)
-    ?~  grit  `sub-mist
-    ?+    u.grit  `sub-mist
-        [%add-player *]
-      (surf:da-mist ship.u.grit %turf dmpath)
-        [%del-player *]
-      `(quit:da-mist ship.u.grit %turf dmpath)
+  =^  roar-cards=(list card)  state
+    %+  roll  roars
+    |=  [=roar [cards=(list card) sub-state=_state]]
+    =.  state  sub-state
+    ?+    -.roar  `state
+        %player-add
+      :: ~&  "we are surfing"
+      =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
+      cards^state
+        %player-del
+      =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
+      `state
+        %port
+      :: todo send suggestion
+      `state
     ==
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  [:(weld sss-cards-1 sss-cards-2 cards) state]
+  [:(weld sss-cards roar-cards cards) state]
 ++  give-pond
   |=  [=turf-id =goal:pond]
   ^-  (quip card _state)
