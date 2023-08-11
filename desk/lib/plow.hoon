@@ -1,11 +1,13 @@
 /-  *turf, pond, mist
 /+  *turf, sss
 |%
+:: roars are turf-scoped effects emitted by filters
+:: which update state and produce cards
 +$  roar
-  $%  [%portal-request for=turf-id from=shade-id]
-      [%portal-confirm for=turf-id from=shade-id at=shade-id]
-      [%portal-delete for=turf-id at=shade-id]
-      [%port for=turf-id at=shade-id =ship]
+  $%  [%portal-request from=shade-id for=turf-id]
+      [%portal-confirm from=shade-id dest]
+      [%portal-delete dest]
+      [%port =ship dest]
       [%player-add =ship]
       [%player-del =ship]
   ==
@@ -99,28 +101,28 @@
     :-  [%player-add ship.goal]~
     [%add-player ship.goal player(avatar avatar.goal)]~
       %add-player
-    =|  =player
     :-  [%player-add ship.goal]~
     [goal]~
       %del-player
-    =|  =player
     :-  [%player-del ship.goal]~
     [goal]~
+      %set-shade-effect
+    =/  thing  (get-thing-by-shade-id turf shade-id.goal)
+    ?~  thing  `~
+    =/  original-effect  (get-effect u.thing trigger.goal)
+    =/  =roars
+      ?~  original-effect  ~
+      
+    :_  [goal]~
+    ~
+      %del-shade  `[goal]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
   ^-  [=roars =poly]
   =/  things  (get-things turf pos)
   =/  effects=(list effect)
-    %+  murn  things
-    |=  =thing
-    ^-  (unit effect)
-    =/  form-eff  (~(get by effects.form.thing) trigger)
-    =/  mpeff  (~(get by effects.thing) trigger)
-    ?~  mpeff  form-eff
-    ?~  u.mpeff  form-eff
-    ?@  u.u.mpeff  form-eff
-    `u.u.mpeff
+    (murn things get-effect)
   %+  roll  effects
   |=  [=effect =roars =poly]
   =/  res  (apply-effect turf ship effect)
@@ -131,7 +133,7 @@
   ^-  [=roars =poly]
   ?+    -.effect  `~
       %port
-    :-  [%port for.effect at.effect ship]~
+    :-  [%port ship for.effect at.effect]~
     :: [%del-player ship]~
     ~
       %jump

@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_16
+      reset=_17
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
