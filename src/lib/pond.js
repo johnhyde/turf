@@ -425,6 +425,11 @@ const pondWaves = {
       burnBridge(turf, portal[0]);
     }
   },
+  'portal-confirmed': (turf, arg) => {
+    if (turf.portals[arg.from]) {
+      turf.portals[arg.from].at = arg.at;
+    }
+  },
   'portal-discarded': (turf, arg) => {
     burnBridge(turf, arg.from);
   },

@@ -35,10 +35,11 @@
         %inc-counter
       uturf(stuff-counter.plot.u +(stuff-counter.plot.turf))
     ==
+  :-  ~
   ?-  -.grit
-    %set-turf  `turf.grit
+    %set-turf  turf.grit
+    ::
       %size-turf
-    :-  ~
     %=  turf
       offset.plot  offset.grit
       size.plot  size.grit
@@ -48,24 +49,27 @@
       |=  =player
       player(pos (clamp-pos pos.player offset.grit size.grit))
     ==
-    %add-husk  `(add-husk turf +.grit)
-    %del-shade  `(del-shade turf +.grit)
-    %cycle-shade  `(cycle-shade turf +.grit)
-    %set-shade-var  `(set-shade-var turf +.grit)
-    %set-shade-effect  `(set-shade-effect turf +.grit)
+    ::
+    %add-husk  (add-husk turf +.grit)
+    %del-shade  (del-shade turf +.grit)
+    %cycle-shade  (cycle-shade turf +.grit)
+    %set-shade-var  (set-shade-var turf +.grit)
+    %set-shade-effect  (set-shade-effect turf +.grit)
+    ::
       %create-portal
     =/  portals  portals.deed.turf
-    %=  uturf
-      portals.deed.u  (~(put by portals) stuff-counter.plot.turf [~ for.grit ~])
-      stuff-counter.plot.u  +(stuff-counter.plot.turf)
+    %=  turf
+      portals.deed  (~(put by portals) stuff-counter.plot.turf [~ for.grit ~])
+      stuff-counter.plot  +(stuff-counter.plot.turf)
     ==
     ::
-    %discard-portal  `(burn-bridge turf from.grit)
+    %discard-portal  (burn-bridge turf from.grit)
+    ::
       %portal-requested
     =/  portals  portals.deed.turf
-    %=  uturf
-      portals.deed.u  (~(put by portals) stuff-counter.plot.turf [~ for.grit `at.grit])
-      stuff-counter.plot.u  +(stuff-counter.plot.turf)
+    %=  turf
+      portals.deed  (~(put by portals) stuff-counter.plot.turf [~ for.grit `at.grit])
+      stuff-counter.plot  +(stuff-counter.plot.turf)
     ==
       %portal-retracted
     =/  portals  ~(tap by portals.deed.turf)
@@ -76,38 +80,47 @@
       ?:  &(=(for.grit for.portal-id) =(at.grit at.portal-id))
         `p.i.portals
       $(portals t.portals)
-    ?~  portal-id  uturf
-    `(burn-bridge turf u.portal-id)
+    ?~  portal-id  turf
+    (burn-bridge turf u.portal-id)
+      %portal-confirmed
+    =*  portals  portals.deed.turf
+    =?  portals  (~(has by portals) from.grit)
+      %+  ~(jab by portals)
+        from.grit
+      |=  =portal
+      portal(at `at.grit)
+    turf
     ::
-    %portal-discarded  `(burn-bridge turf from.grit)
+    %portal-discarded  (burn-bridge turf from.grit)
+    ::
       %chat
-    uturf(chats.ephemera.u [chat.grit (scag 19 chats.ephemera.turf)])
+    turf(chats.ephemera [chat.grit (scag 19 chats.ephemera.turf)])
       %move
     =.  players
       %^  jab-by-players  players  ship.grit
       |=  =player
       player(pos pos.grit)
-    uturf
+    turf
       %face
     =.  players
       %^  jab-by-players  players  ship.grit
       |=  =player
       player(dir dir.grit)
-    uturf
+    turf
       %set-avatar
     =.  players
       %^  jab-by-players  players  ship.grit
       |=  =player
       player(avatar avatar.grit)
-    uturf
+    turf
       %add-player
     =.  players
       (~(put by players) ship.grit player.grit)
-    uturf
+    turf
       %del-player
     =.  players
       (~(del by players) ship.grit)
-    uturf
+    turf
   ==
 --
 |%
@@ -142,6 +155,7 @@
       discard-portal-wave
       portal-requested-wave
       portal-retracted-wave
+      portal-confirmed-wave
       portal-discarded-wave
       chat-wave
       move-wave

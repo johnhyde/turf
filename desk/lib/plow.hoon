@@ -140,6 +140,14 @@
       %portal-requested
     ?.  =(src.bowl ship.for.goal)  `~
     `[goal]~
+      %portal-retracted
+    ?.  =(src.bowl ship.for.goal)  `~
+    `[goal]~
+      %portal-confirmed
+    =/  portal  (~(get by portals.deed.turf) from.goal)
+    ?~  portal  `~
+    ?.  =(src.bowl ship.for.u.portal)  `~
+    `[goal]~
       %portal-discarded
     =/  portal  (~(get by portals.deed.turf) from.goal)
     ?~  portal  `~
@@ -260,6 +268,11 @@
             %portal-retracted
           %-  pairs
           :~  for+(turf-id for.grit)
+              at+(numb at.grit)
+          ==
+            %portal-confirmed
+          %-  pairs
+          :~  from+(numb from.grit)
               at+(numb at.grit)
           ==
             %portal-discarded

@@ -237,7 +237,6 @@ export function getState() {
         path,
       });
     },
-
     discardPortal(portalId) {
       this.sendPondWave('discard-portal', {
         from: Number(portalId),
