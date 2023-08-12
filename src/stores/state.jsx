@@ -25,6 +25,7 @@ export function getState() {
       HELP: 'help',
       LAB: 'lab',
       EDITOR: 'editor',
+      PORTALS: 'portals',
     },
     editor: {
       get editing() {
@@ -229,6 +230,21 @@ export function getState() {
       ];
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
+
+    createPortal(ship, path) {
+      this.sendPondWave('create-portal', {
+        ship,
+        path,
+      });
+    },
+
+    discardPortal(portalId) {
+      this.sendPondWave('discard-portal', {
+        from: Number(portalId),
+      });
+    },
+
+
     setScale(scale) {
       $state('scale', Math.max(0.125, Math.min(6, Number(scale))));
     },

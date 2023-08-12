@@ -3,6 +3,7 @@ import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { vec2, isTextInputFocused } from 'lib/utils';
 import Button from '@/Button';
+import PortalsPane from '@/PortalsPane';
 import EditPane from '@/EditPane';
 import Lab from '@/Lab';
 import Help from '@/Help';
@@ -13,6 +14,7 @@ import rightCaret from 'assets/icons/right-caret.png';
 import lab from 'assets/icons/lab.png';
 import shovel from 'assets/icons/shovel.png';
 import help from 'assets/icons/help.png';
+import cycle from 'assets/icons/cycle.png';
 
 function Sidebar() {
   const state = useState();
@@ -64,6 +66,10 @@ function Sidebar() {
           toggleTab(state.tabs.EDITOR);
           openSidebar();
           break;
+        case 'g':
+          toggleTab(state.tabs.PORTALS);
+          openSidebar();
+          break;
         default:
       }
     }
@@ -102,13 +108,20 @@ function Sidebar() {
               selected={isSelected(state.tabs.EDITOR)}
               tooltip='E'
             />
+            <Button
+              onClick={[toggleTab, state.tabs.PORTALS]}
+              src={cycle}
+              selected={isSelected(state.tabs.PORTALS)}
+              tooltip='G'
+            />
         </div>
         <Show when={state.selectedTab}>
           <div class="overflow-y-auto">
             <div class="my-1">
+              {state.selectedTab === state.tabs.PORTALS && <PortalsPane/>}
               {state.editor.editing && <EditPane/>}
               {state.lab.editing && <Lab/>}
-              {state.selectedTab === 'help' && <Help/>}
+              {state.selectedTab === state.tabs.HELP && <Help/>}
             </div>
           </div>
         </Show>

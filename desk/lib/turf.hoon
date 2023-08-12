@@ -256,7 +256,7 @@
 ++  get-thing-by-shade-id
   |=  [=turf =shade-id]
   ^-  (unit thing)
-  =/  shade  (~(get by cave.plot.turf) id)
+  =/  shade  (~(get by cave.plot.turf) shade-id)
   ?~  shade  ~
   =/  form  (get-form turf form-id.u.shade)
   ?~  form  ~
@@ -414,4 +414,19 @@
       (~(put by effects.shade) trigger effect)
     ==
   turf
+++  discard-portal
+  |=  [=turf from=portal-id]
+  ^-  ^turf
+  %=  turf
+    portals.deed  (~(del by portals.deed.turf) from)
+  ==
+++  burn-bridge
+  |=  [=turf from=portal-id]
+  ^-  ^turf
+  =/  portals  portals.deed.turf
+  =/  portal  (~(get by portals) from)
+  ?~  portal  turf
+  =?  turf  ?=(^ shade-id.u.portal)
+    (del-shade turf u.shade-id.u.portal)
+  (discard-portal turf from)
 --

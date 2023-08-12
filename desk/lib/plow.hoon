@@ -4,10 +4,11 @@
 :: roars are turf-scoped effects emitted by filters
 :: which update state and produce cards
 +$  roar
-  $%  [%portal-request from=shade-id for=turf-id]
-      [%portal-confirm from=shade-id dest]
-      [%portal-delete dest]
-      [%port =ship dest]
+  $%  [%portal-request from=portal-id for=turf-id]
+      [%portal-retract from=portal-id for=turf-id]
+      [%portal-confirm from=portal-id for=turf-id at=portal-id]
+      [%portal-discard for=turf-id at=portal-id]
+      [%port =ship for=turf-id at=portal-id]
       [%player-add =ship]
       [%player-del =ship]
   ==
@@ -37,11 +38,12 @@
   :: ?:  ?=([%batch *] goal)
   =/  [=roars =poly new-rock=rock:pond]
     %+  roll  goals
-    |=  [sub-goal=mono-goal:pond [=roars =poly _rock]]
+    |=  [sub-goal=mono-goal:pond [=roars =poly rock=$~(rock rock:pond)]]
     ^-  [^roars ^poly rock:pond]
     =/  [sub-roars=^roars sub-poly=^poly]
       (filter-pond-mono-goal rock sub-goal bowl)
-    :: ~&  ["roars and upoly" sub-roars upoly]
+    :: ~&  ["sub-roars and sub-poly" sub-roars sub-poly]
+    :: ~&  ["roars and poly" roars poly]
     :-  (weld roars sub-roars)
     :-  (weld poly sub-poly)
     |-  ^-  rock:pond
@@ -112,17 +114,46 @@
     =/  original-effect  (get-effect u.thing trigger.goal)
     =/  =roars
       ?~  original-effect  ~
+      ?:  =(original-effect effect.goal)
+        ~
+      ~
+      :: ?.  ?=(%port -.original-effect)
+      ::   ~
       
     :_  [goal]~
     ~
-      %del-shade  `[goal]~
+      %del-shade
+    `[goal]~
+      %create-portal
+    ?.  =(our src):bowl  `~
+    ::  todo: don't send a portal request here because there's no shade yet
+    :-  [%portal-request stuff-counter.plot.turf for.goal]~
+    [goal]~
+      %discard-portal
+    ?.  =(our src):bowl  `~
+    =/  portal  (~(get by portals.deed.turf) from.goal)
+    ?~  portal  `~
+    :-  ?~  at.u.portal
+          [%portal-retract from.goal for.u.portal]~
+        [%portal-discard for.u.portal u.at.u.portal]~
+    [goal]~
+      %portal-requested
+    ?.  =(src.bowl ship.for.goal)  `~
+    `[goal]~
+      %portal-discarded
+    =/  portal  (~(get by portals.deed.turf) from.goal)
+    ?~  portal  `~
+    ?.  =(src.bowl ship.for.u.portal)  `~
+    `[goal]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
   ^-  [=roars =poly]
   =/  things  (get-things turf pos)
   =/  effects=(list effect)
-    (murn things get-effect)
+    %+  murn  things
+    |=  =thing
+    (get-effect thing trigger)
   %+  roll  effects
   |=  [=effect =roars =poly]
   =/  res  (apply-effect turf ship effect)
@@ -133,7 +164,11 @@
   ^-  [=roars =poly]
   ?+    -.effect  `~
       %port
-    :-  [%port ship for.effect at.effect]~
+    =/  portal  (~(get by portals.deed.turf) portal-id.effect)
+    :-
+      ?~  portal  ~
+      ?~  at.u.portal  ~
+      [%port ship for.u.portal u.at.u.portal]~
     :: [%del-player ship]~
     ~
       %jump
@@ -213,6 +248,22 @@
               'trigger'^s+trigger.grit
               'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
           ==
+            %create-portal
+          (turf-id for.grit)
+            %discard-portal
+          (frond 'from' (numb from.grit))
+            %portal-requested
+          %-  pairs
+          :~  for+(turf-id for.grit)
+              at+(numb at.grit)
+          ==
+            %portal-retracted
+          %-  pairs
+          :~  for+(turf-id for.grit)
+              at+(numb at.grit)
+          ==
+            %portal-discarded
+          (frond 'from' (numb from.grit))
             %chat
           (chat chat.grit)
             %move
@@ -264,11 +315,14 @@
   ++  turf
     |=  =^turf
     =,  ephemera.turf
+    =,  deed.turf
     =,  plot.turf
     |^  ^-  json
     %-  pairs
     :~  players+(pairs (turn ~(tap by players) player-pair))
         chats+a+(turn chats chat)
+        :: todo: add perms (?)
+        portals+portals
         size+(vec2 size)
         offset+(svec2 offset)
         'tileSize'^(vec2 tile-size)
@@ -277,6 +331,14 @@
         cave+cave
         'stuffCounter'^(numb stuff-counter)
     ==
+    ++  portals
+      ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^portals)
+      |=  [key=portal-id pol=^portal]
+      ^-  [@t json]
+      :-  (numbt key)
+      (portal pol)
     ++  spaces
       ^-  json
       %-  pairs
@@ -374,6 +436,14 @@
         at+(time at.chat)
         text+s+text.chat
     ==
+  ++  portal
+    |=  pol=^portal
+    ^-  json
+    %-  pairs
+    :~  'shadeId'^?~(shade-id.pol ~ (numb u.shade-id.pol))
+        for+(turf-id for.pol)
+        at+?~(at.pol ~ (numb u.at.pol))
+    ==
   ++  space
     |=  =^space
     ^-  json
@@ -463,7 +533,7 @@
         :-  %arg
         ^-  json
         ?-  -.eff
-          %port  (port +.eff)
+          %port  (numb +.eff)
           %jump  (svec2 +.eff)
           %read  s+note.eff
           %swap  (path +.eff)
@@ -471,13 +541,6 @@
   ++  effect-type
     |=  [=trigger =^effect-type]
     [trigger s+effect-type]
-  ++  port
-    |=  [tid=^turf-id sid=shade-id]
-    ^-  json
-    %-  pairs
-    :~  for+(turf-id tid)
-        at+(numb sid)
-    ==
   ++  turf-id
     |=  id=^turf-id
     ^-  json
@@ -568,6 +631,8 @@
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
           set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
           :: todo: set-turf
+          create-portal+ot-turf-id
+          discard-portal+(ot ~[from+ni])
       ==
     ::
     ++  mist-stir
@@ -605,8 +670,7 @@
       =/  type  (effect-type (~(got by p.jon) 'type'))
       =/  arg  (~(got by p.jon) 'arg')
       ?-  type
-        :: %port  ((ot ~[for+(cork turf-id need) at+ni]) arg)
-        %port  port+((ot ~[for+ot-turf-id at+ni]) arg)
+        %port  port+(ni arg)
         %jump  jump+(svec2 arg)
         %read  read+(so arg)
         %swap  swap+(pa arg)

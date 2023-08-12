@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_17
+      reset=_18
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -498,6 +498,21 @@
   ?=  ^
   (~(get by read:du-pond) (turf-id-to-ppath id))
 ::
+++  pond-stir-card
+  |=  [=wire =turf-id =goal:pond]
+  ^-  card
+  =/  stir=stir:pond
+    :*  turf-id
+        ~
+        goal
+    ==
+  :*  %pass
+      wire
+      %agent
+      [ship.turf-id %turf]
+      [%poke %pond-stir !>([stir])]
+  ==
+::
 ++  stir-mist
   |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
   ^-  (quip card _state)
@@ -530,18 +545,41 @@
     %+  roll  roars
     |=  [=roar [cards=(list card) sub-state=_state]]
     =.  state  sub-state
-    ?+    -.roar  `state
-        %player-add
-      :: ~&  "we are surfing"
-      =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
-      cards^state
-        %player-del
-      =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
-      `state
-        %port
-      :: todo send suggestion
-      `state
-    ==
+    =^  new-cards  state
+      ?+    -.roar  `state
+          %player-add
+        :: ~&  "we are surfing"
+        =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
+        cards^state
+          %player-del
+        =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
+        `state
+          %port
+        :: todo send suggestion
+        `state
+          %portal-request
+        :_  state
+        :_  ~
+        %^    pond-stir-card
+            [%portal-request (scot %ud from.roar) path.turf-id]
+          for.roar
+        [%portal-requested for=turf-id at=from.roar]
+          %portal-retract
+        :_  state
+        :_  ~
+        %^    pond-stir-card
+            /portal-discard
+          for.roar
+        [%portal-retracted for=turf-id at=from.roar]
+          %portal-discard
+        :_  state
+        :_  ~
+        %^    pond-stir-card
+            /portal-discard
+          for.roar
+        [%portal-discarded from=at.roar]
+      ==
+    (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   [:(weld sss-cards roar-cards cards) state]
 ++  give-pond

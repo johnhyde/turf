@@ -53,6 +53,33 @@
     %cycle-shade  `(cycle-shade turf +.grit)
     %set-shade-var  `(set-shade-var turf +.grit)
     %set-shade-effect  `(set-shade-effect turf +.grit)
+      %create-portal
+    =/  portals  portals.deed.turf
+    %=  uturf
+      portals.deed.u  (~(put by portals) stuff-counter.plot.turf [~ for.grit ~])
+      stuff-counter.plot.u  +(stuff-counter.plot.turf)
+    ==
+    ::
+    %discard-portal  `(burn-bridge turf from.grit)
+      %portal-requested
+    =/  portals  portals.deed.turf
+    %=  uturf
+      portals.deed.u  (~(put by portals) stuff-counter.plot.turf [~ for.grit `at.grit])
+      stuff-counter.plot.u  +(stuff-counter.plot.turf)
+    ==
+      %portal-retracted
+    =/  portals  ~(tap by portals.deed.turf)
+    =/  portal-id
+      |-  ^-  (unit portal-id)
+      ?~  portals  ~
+      =/  portal-id  q.i.portals
+      ?:  &(=(for.grit for.portal-id) =(at.grit at.portal-id))
+        `p.i.portals
+      $(portals t.portals)
+    ?~  portal-id  uturf
+    `(burn-bridge turf u.portal-id)
+    ::
+    %portal-discarded  `(burn-bridge turf from.grit)
       %chat
     uturf(chats.ephemera.u [chat.grit (scag 19 chats.ephemera.turf)])
       %move
@@ -111,6 +138,11 @@
       cycle-shade-wave
       set-shade-var-wave
       set-shade-effect-wave
+      create-portal-wave
+      discard-portal-wave
+      portal-requested-wave
+      portal-retracted-wave
+      portal-discarded-wave
       chat-wave
       move-wave
       face-wave
@@ -118,6 +150,7 @@
       add-player-wave
       del-player-wave
   ==
+::
 +$  set-turf-wave  [%set-turf =turf]
 +$  size-turf-wave  [%size-turf off-size]
 +$  add-husk-wave  [%add-husk husk-spec]
@@ -130,6 +163,24 @@
       =trigger
       effect=(unit possible-effect)
   ==
+::  let's us create a shade and/or portal
+::  and link them in one transaction
++$  create-bridge-wave
+  $:  %create-bridge
+      shade=(each shade-id husk-spec) 
+      =trigger
+      portal=(each portal-id turf-id)
+  ==
+::  we are managing our portals
++$  create-portal-wave  [%create-portal for=turf-id]
++$  discard-portal-wave  [%discard-portal from=portal-id]
+::  we are receiving updates about a peer's portal
+::  these are produced by set-shade-effect and create-bridge as roars
++$  portal-requested-wave  [%portal-requested for=turf-id at=portal-id]
++$  portal-retracted-wave  [%portal-retracted for=turf-id at=portal-id]
++$  portal-confirmed-wave  [%portal-confirmed from=portal-id at=portal-id]
++$  portal-discarded-wave  [%portal-discarded from=portal-id]
+::
 +$  chat-wave  [%chat =chat]
 +$  move-wave  [%move =ship pos=svec2]
 +$  face-wave  [%face =ship =dir]

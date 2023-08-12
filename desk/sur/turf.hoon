@@ -2,7 +2,7 @@
 +$  turf-id  [=ship =path]
 +$  form-id  path
 +$  shade-id  @ud
-+$  dest  [for=turf-id at=shade-id]
++$  dest  [for=turf-id at=portal-id]
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
 +$  dir  ?(%right %up %left %down)
@@ -46,16 +46,15 @@
       =join-reqs
       =join-recs
   ==
++$  portals  (map portal-id portal)
 +$  portal-id  shade-id
 +$  portal
-  $:  =turf-id
-      shade-id=(unit shade-id)
-      portal-id=(unit portal-id)
+  $:  shade-id=(unit shade-id)  :: the shade that triggers the portal
+      for=turf-id
+      at=(unit portal-id)  :: the portal on the other side
   ==
-++  pon  ((on portal-id portal) gth)
-+$  portals  ((mop portal-id portal) gth)
-+$  join-reqs  (map ship [=turf-id =avatar])
-+$  join-recs  (map ship dest)
++$  join-reqs  (map ship [=portal-id =avatar])
++$  join-recs  (map ship (set portal-id))
 +$  perms
   $:  default=$~(%in perm)
       except=(map ship perm)
@@ -133,7 +132,7 @@
 +$  possible-effect  $@(effect-type effect)
 +$  effect-type  ?(%port %jump %read %swap)
 +$  effect
-  $%  [%port dest]
+  $%  [%port =portal-id]
       [%jump to=svec2]
       [%read note=@t]
       [%swap with=form-id]  :: for opening/closing doors

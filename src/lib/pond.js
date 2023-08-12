@@ -3,8 +3,9 @@ import { createStore, unwrap, produce, reconcile } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
 import * as api from 'lib/api.js';
-import { clampToTurf, isInTurf, getCollision, jabBySpaces } from 'lib/turf';
+import { clampToTurf, isInTurf, getCollision, jabBySpaces, delShade } from 'lib/turf';
 import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
+import { burnBridge } from "./turf";
 
 function waveTypeStr(wave) {
   if (wave?.type === 'batch') {
@@ -365,14 +366,7 @@ const pondWaves = {
     }
   },
   'del-shade': (turf, arg) => {
-    const { shadeId } = arg;
-    const shade = turf.cave[shadeId];
-    if (shade) {
-      jabBySpaces(turf, shade.pos, (space) => {
-        space.shades = space.shades.filter((shadeId) => shadeId !== shadeId);
-      });
-      delete turf.cave[shadeId];
-    }
+    delShade(turf, arg.from);
   },
   'cycle-shade': (turf, arg) => {
     const { shadeId, amount } = arg;
@@ -400,6 +394,39 @@ const pondWaves = {
     if (shade) {
       shade.effects[trigger] = effect;
     }
+  },
+  'create-portal': (turf, arg) => {
+    turf.portals[turf.stuffCounter] = {
+      shadeId: null,
+      for: arg,
+      at: null,
+    }
+    turf.stuffCounter++;
+  },
+  'discard-portal': (turf, arg) => {
+    burnBridge(turf, arg.from);
+  },
+  'portal-requested': (turf, arg) => {
+    turf.portals[turf.stuffCounter] = {
+      shadeId: null,
+      for: arg.for,
+      at: arg.at
+    }
+    turf.stuffCounter++;
+  },
+  'portal-retracted': (turf, arg) => {
+    const portals = Object.entries(turf.portals);
+    const portal = portals.find(([id, portal]) => {
+      return (portal.for.ship == arg.for.ship)
+          && (portal.for.path == arg.for.path)
+          && (portal.at       == arg.at);
+    });
+    if (portal) {
+      burnBridge(turf, portal[0]);
+    }
+  },
+  'portal-discarded': (turf, arg) => {
+    burnBridge(turf, arg.from);
   },
   'chat': (turf, arg) => {
       turf.chats.unshift(arg);

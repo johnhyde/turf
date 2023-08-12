@@ -104,6 +104,28 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
+export function delShade(turf, shadeId) {
+  const shade = turf.cave[shadeId];
+  if (shade) {
+    jabBySpaces(turf, shade.pos, (space) => {
+      space.shades = space.shades.filter((shadeId) => shadeId !== shadeId);
+    });
+    delete turf.cave[shadeId];
+  }
+}
+
+export function discardPortal(turf, portalId) {
+  delete turf.portals[portalId];
+}
+
+export function burnBridge(turf, portalId) {
+  const portal = turf.portals[portalId];
+  if (portal?.shadeId) {
+    delShade(turf, portal.shadeId);
+  }
+  discardPortal(turf, portalId);
+}
+
 export function extractSkyeSprites(skye) {
   const sprites = {};
   Object.entries(skye).forEach(([formId, form]) => {
