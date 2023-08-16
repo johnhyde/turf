@@ -67,7 +67,7 @@
   =^  cards  state  (init-defaults:hc)
   cards^this
 ::
-++  on-save  
+++  on-save
   !>(state)
 ::
 ++  on-load
