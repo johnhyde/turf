@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_18
+      reset=_22
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -533,8 +533,9 @@
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id)
   =/  pub  (~(get by read:du-pond) ppath)
+  =/  ctx  [bowl ?~(pub *rock:pond rock.u.pub) top=%.y]
   =/  [=roars grit=(unit grit:pond)]
-    (filter-pond-goal ?~(pub *rock:pond rock.u.pub) goal bowl)
+    (filter-pond-goal ctx goal)
   :: ~&  ["roars and grit" roars grit]
   =/  cards=(list card)
     =/  =stirred:pond  [%wave stir-id grit]
@@ -546,7 +547,7 @@
     |=  [=roar [cards=(list card) sub-state=_state]]
     =.  state  sub-state
     =^  new-cards  state
-      ?+    -.roar  `state
+      ?-    -.roar
           %player-add
         :: ~&  "we are surfing"
         =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
@@ -555,7 +556,7 @@
         =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
         `state
           %port
-        :: todo send suggestion
+        :: todo send suggestion and vouch
         `state
           %portal-request
         :_  state
@@ -568,9 +569,16 @@
         :_  state
         :_  ~
         %^    pond-stir-card
-            /portal-discard
+            /portal-retract
           for.roar
         [%portal-retracted for=turf-id at=from.roar]
+          %portal-confirm
+        :_  state
+        :_  ~
+        %^    pond-stir-card
+            [%portal-confirm (scot %ud from.roar) path.turf-id]
+          for.roar
+        [%portal-confirmed from=at.roar at=from.roar]
           %portal-discard
         :_  state
         :_  ~

@@ -75,7 +75,7 @@ export async function sendWave(mark, path, goal, stirId) {
     },
     onError: (e) => {
       console.error('caught error in sending wave', e);
-      debugger;
+      // debugger;
     }
   });
   return stirId;
@@ -90,11 +90,11 @@ function goalToApiGoal(goal) {
 }
 
 export async function sendPondWave(id, goal, stirId) {
-  sendWave('pond-stir', id, goal, stirId);
+  return sendWave('pond-stir', id, goal, stirId);
 }
 
 export async function sendMistWave(type, arg, stirId) {
-  sendWave('mist-stir', '/mist', {type, arg}, stirId);
+  return sendWave('mist-stir', '/mist', {type, arg}, stirId);
 }
 
 export async function switchToTurf(id) {

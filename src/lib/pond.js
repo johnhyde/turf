@@ -3,9 +3,11 @@ import { createStore, unwrap, produce, reconcile } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
 import * as api from 'lib/api.js';
-import { clampToTurf, isInTurf, getCollision, jabBySpaces, delShade } from 'lib/turf';
+import {
+  clampToTurf, isInTurf, getCollision, getEffectsByShade,
+  jabBySpaces, delShade, delPortal
+} from 'lib/turf';
 import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
-import { burnBridge } from "./turf";
 
 function waveTypeStr(wave) {
   if (wave?.type === 'batch') {
@@ -72,7 +74,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     try {
       await api.sendPondWave(this.id, goal, uuid);
     } catch (e) {
-      if (e.message === 'Failed to fetch') {
+      if (e?.message === 'Failed to fetch') {
         // internet connectivity issue
         if (retries < 4) { // 15 seconds before pulse is discarded (1+2+4+8)
           const timeout = Math.pow(2, retries)*1000;
@@ -80,12 +82,14 @@ export class Pond { // we use a class so we can put it inside a store without ge
           console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
           setTimeout(() => this.sendWavePoke(goal, uuid, retries), timeout);
         } else {
-          console.warn('Failed to send wave, no more retries');
+          console.warn('Failed to send wave, no more retries, rolling back');
           this.removePulse(uuid);
           this.replayEther();
         }
       } else {
-        throw e;
+        console.warn('Failed to send wave, can\'t retry, rolling back');
+        this.removePulse(uuid);
+        this.replayEther();
       }
     }
   }
@@ -366,7 +370,7 @@ const pondWaves = {
     }
   },
   'del-shade': (turf, arg) => {
-    delShade(turf, arg.from);
+    delShade(turf, arg.shadeId);
   },
   'cycle-shade': (turf, arg) => {
     const { shadeId, amount } = arg;
@@ -395,43 +399,45 @@ const pondWaves = {
       shade.effects[trigger] = effect;
     }
   },
-  'create-portal': (turf, arg) => {
-    turf.portals[turf.stuffCounter] = {
-      shadeId: null,
-      for: arg,
-      at: null,
-    }
-    turf.stuffCounter++;
-  },
-  'discard-portal': (turf, arg) => {
-    burnBridge(turf, arg.from);
-  },
-  'portal-requested': (turf, arg) => {
+  'add-portal': (turf, arg) => {
     turf.portals[turf.stuffCounter] = {
       shadeId: null,
       for: arg.for,
-      at: arg.at
+      at: arg.at,
     }
     turf.stuffCounter++;
   },
-  'portal-retracted': (turf, arg) => {
-    const portals = Object.entries(turf.portals);
-    const portal = portals.find(([id, portal]) => {
-      return (portal.for.ship == arg.for.ship)
-          && (portal.for.path == arg.for.path)
-          && (portal.at       == arg.at);
-    });
+  'del-portal': (turf, arg) => {
+    delPortal(turf, arg.from);
+  },
+  'add-shade-to-portal': (turf, arg) => {
+    const portal = turf.portals[arg.from];
     if (portal) {
-      burnBridge(turf, portal[0]);
+      portal.shadeId = arg.shadeId;
+    }
+  },
+  'del-shade-from-portal': (turf, arg) => {
+    const portal = turf.portals[arg.from];
+    if (portal?.shadeId === arg.shadeId) {
+      portal.shadeId = null;
+    }
+  },
+  'del-portal-from-shade': (turf, arg) => {
+    const { shadeId, portalId } = arg;
+    const shade = turf.cave[shadeId];
+    if (shade) {
+      const { fullFx, huskFx, formFx } = getEffectsByShade(turf, shade);
+      Object.entries(fullFx).forEach(([trigger, effect]) => {
+        if (effect?.type === 'port' && effect?.arg === portalId) {
+          shade[trigger] = 'port';
+        }
+      });
     }
   },
   'portal-confirmed': (turf, arg) => {
     if (turf.portals[arg.from]) {
       turf.portals[arg.from].at = arg.at;
     }
-  },
-  'portal-discarded': (turf, arg) => {
-    burnBridge(turf, arg.from);
   },
   'chat': (turf, arg) => {
       turf.chats.unshift(arg);
@@ -548,6 +554,9 @@ const filters = {
       },
     ]
   },
+  'create-bridge': (turf, stir) => {
+    debugger;
+  }
 };
 
 // returns false if wave is rejected

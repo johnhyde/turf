@@ -104,6 +104,22 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
+export function getEffectsByShade(turf, shade) {
+  const form = turf.skye[shade.formId];
+  if (!form) return {
+    fullFx: shade.effects,
+    huskFx: shade.effects,
+    formFx: {},
+  };
+  const formFx = Object.assign({}, form.seeds, form.effects);
+  const fullFx = Object.assign({}, formFx, shade.effects);
+  return {
+    fullFx,
+    huskFx: shade.effects,
+    formFx,
+  };
+}
+
 export function delShade(turf, shadeId) {
   const shade = turf.cave[shadeId];
   if (shade) {
@@ -114,7 +130,7 @@ export function delShade(turf, shadeId) {
   }
 }
 
-export function discardPortal(turf, portalId) {
+export function delPortal(turf, portalId) {
   delete turf.portals[portalId];
 }
 
@@ -123,7 +139,7 @@ export function burnBridge(turf, portalId) {
   if (portal?.shadeId) {
     delShade(turf, portal.shadeId);
   }
-  discardPortal(turf, portalId);
+  delPortal(turf, portalId);
 }
 
 export function extractSkyeSprites(skye) {

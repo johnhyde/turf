@@ -56,6 +56,7 @@
 +$  join-reqs  (map ship [=portal-id =avatar])
 +$  join-recs  (map ship (set portal-id))
 +$  perms
+  $+  perms
   $:  default=$~(%in perm)
       except=(map ship perm)
   ==
@@ -84,6 +85,10 @@
   $:  husk
       =form
   ==
++$  shade
+  $:  pos=svec2
+      husk
+  ==
 +$  husk
   $+  husk
   $:  =form-id
@@ -93,11 +98,7 @@
 +$  husk-bits
   $:  offset=svec2  :: added to form offset
       collidable=(unit flug)  :: use form collidable if null
-      effects=(map trigger (unit possible-effect))  :: override form effects and implement form seeds
-  ==
-+$  shade
-  $:  pos=svec2
-      husk
+      effects=ufx  :: override form effects and implement form seeds
   ==
 +$  form
   $+  form
@@ -109,8 +110,8 @@
 +$  form-bits
   $:  offset=svec2
       collidable=flug
-      effects=(map trigger effect)
-      seeds=(map trigger effect-type)
+      effects=fx
+      seeds=sfx
   ==
 +$  form-type  ?(%tile %wall %item %garb)
 +$  space-form-type  ?(%tile %wall %item)
@@ -128,6 +129,10 @@
   $:  type=?(%loop %once %pong %rand)
       frames=(list png)
   ==
++$  fx   (map trigger effect)
++$  sfx  (map trigger effect-type)
++$  pfx  (map trigger possible-effect)
++$  ufx  (map trigger (unit possible-effect))
 +$  trigger  ?(%step %leave %bump %interact)
 +$  possible-effect  $@(effect-type effect)
 +$  effect-type  ?(%port %jump %read %swap)

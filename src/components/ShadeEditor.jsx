@@ -1,17 +1,20 @@
-import { createSignal, createSelector, mergeProps } from 'solid-js';
-import { produce } from "solid-js/store";
+import { batch, createSignal, createSelector, mergeProps } from 'solid-js';
+import { createStore, produce, reconcile } from "solid-js/store";
 import { vec2, bind, input } from 'lib/utils';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 
 export default function ShadeEditor(props) {
   const state = useState();
-  // const combinedEffects = () => {
+  const [newEffects, $newEffects] = createStore({});
 
-  // }
+  function clearNewEffects() {
+    $newEffects(reconcile({}));
+  }
+
   const effects = () => {
     if (!props.shade) return {};
-    const merged = mergeProps(props.shade.form.seeds, props.shade.form.effects, props.shade.effects);
+    const merged = mergeProps(props.shade.form.seeds, props.shade.form.effects, props.shade.effects, newEffects);
     return mapValues(merged, (effect) => {
       if (typeof effect === 'string') {
         return { type: effect, arg: null };
@@ -21,25 +24,24 @@ export default function ShadeEditor(props) {
   };
 
   function setArg(trigger, type, arg) {
-    if (arg !== null) {
-      state.p.$('ether', 'cave', props.shade.id, 'effects', trigger, { type, arg });
-    } else {
-      state.p.$('ether', 'cave', props.shade.id, 'effects',
-        produce((e) => {
-          delete e[trigger];
-        })
-      );
-    }
+    $newEffects(trigger, { type, arg });
   }
 
   function save() {
-    Object.entries(effects()).forEach(([trigger, effect]) => {
-      state.setShadeEffect(
-        props.shade.id,
-        trigger,
-        effect.arg === null ? effect.type : effect,
-      )
+    batch(() => {
+      Object.entries(effects()).forEach(([trigger, effect]) => {
+        state.setShadeEffect(
+          props.shade.id,
+          trigger,
+          effect.arg === null ? effect.type : effect,
+        );
+      });
+      clearNewEffects();
     });
+  }
+
+  function cancel() {
+    clearNewEffects();
   }
 
   return (
@@ -61,6 +63,13 @@ export default function ShadeEditor(props) {
           <button onClick={save}>
             Save
           </button>
+          <button onClick={cancel}>
+            Cancel
+          </button>
+          <pre>
+            {JSON.stringify(effects(), null, 2)}
+            {JSON.stringify(newEffects, null, 2)}
+          </pre>
           <pre>
             {JSON.stringify(shade(), null, 2)}
           </pre>
@@ -76,13 +85,7 @@ function ArgInput(props) {
   function defaultArg() {
     switch (props.type) {
       case 'port':
-        return {
-          for: {
-            ship: '~',
-            path: '/',
-          },
-          at: Number(props.shade.id),
-        };
+        return '';
       case 'jump':
         return vec2(state.e.offset);
       default:
@@ -90,24 +93,24 @@ function ArgInput(props) {
     }
   }
 
-  function updateShip(ship) {
-    props.setArg({
-      ...props.arg,
-      for: {
-        ...props.arg.for,
-        ship,
-      }
-    });
+  function updatePortal(portalId) {
+    portalId = Number.parseInt(portalId);
+    if (Number.isNaN(portalId)) {
+      props.setArg('');
+    } else {
+      props.setArg(portalId);
+    }
   }
   return (<>
-    { props.arg ? <div>
+    { props.arg !== null ? <div>
       <Switch>
         <Match when={props.type === 'port'}>
           <input
+            type='number'
             use:input
             use:bind={[
-              () => props.arg.for.ship,
-              updateShip,
+              () => props.arg,
+              updatePortal,
             ]} />
           <button onClick={[props.setArg, null]} >x</button>
         </Match>

@@ -232,14 +232,18 @@ export function getState() {
     },
 
     createPortal(ship, path) {
-      this.sendPondWave('create-portal', {
-        ship,
-        path,
+      this.sendPondWave('add-portal', {
+        for: {
+          ship,
+          path,
+        },
+        at: null,
       });
     },
     discardPortal(portalId) {
-      this.sendPondWave('discard-portal', {
+      this.sendPondWave('del-portal', {
         from: Number(portalId),
+        loud: true,
       });
     },
 
