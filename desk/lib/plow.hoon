@@ -92,35 +92,15 @@
   ?@  goal
     `[goal]~
   ?+    -.goal  `[goal]~
-      %move
-    =*  players  players.ephemera.turf
-    =/  player  (~(get by players) ship.goal)
-    ?~  player  `~
-    =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
-    =/  player-colliding  (get-collidable turf pos.u.player)
-    =/  will-be-colliding  (get-collidable turf pos)
-    ?:  &(will-be-colliding !player-colliding)
-      :: todo: get bump effects
-      `~
-    ?:  =(pos pos.u.player)  `
-    =/  leave=[roars grits]  (pull-trigger turf ship.goal %leave pos.u.player)
-    =/  step=[roars grits]  (pull-trigger turf ship.goal %step pos)
-    :-  (weld -.leave -.step)
-    :-  goal(pos pos)
-    (weld +.leave +.step)
-      %send-chat
-    ?.  =(src.bowl from.goal)  `~
-    `[%chat from.goal now.bowl text.goal]~
-      %join-player
-    =|  =player
-    :-  [%player-add ship.goal]~
-    [%add-player ship.goal player(avatar avatar.goal)]~
-      %add-player
-    :-  [%player-add ship.goal]~
-    [goal]~
-      %del-player
-    :-  [%player-del ship.goal]~
-    [goal]~
+      %del-shade
+    =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
+    ?~  shade-fx  `~
+    =/  portal-counts  (count-portal-effects full-fx.u.shade-fx)
+    =/  =goals
+      %+  turn  ~(tap in ~(key by portal-counts))
+      |=  =portal-id
+      [%del-shade-from-portal portal-id shade-id.goal]
+    (mix-pond-grals ctx(top |) ~ [goal]~ goals)
       %set-shade-effect
     =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
     ?~  shade-fx  `~
@@ -147,15 +127,6 @@
       [%del-shade-from-portal u.del-portal-id shade-id.goal]~
     (mix-pond-grals ctx(top |) ~ [goal]~ goals)
     ::
-      %del-shade
-    =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
-    ?~  shade-fx  `~
-    =/  portal-counts  (count-portal-effects full-fx.u.shade-fx)
-    =/  =goals
-      %+  turn  ~(tap in ~(key by portal-counts))
-      |=  =portal-id
-      [%del-shade-from-portal portal-id shade-id.goal]
-    (mix-pond-grals ctx(top |) ~ [goal]~ goals)
       %create-bridge
     :: $:  %create-bridge
     ::     shade=?(shade-id husk-spec) 
@@ -262,6 +233,35 @@
     ?~  portal  `~
     ?.  =(src.bowl ship.for.u.portal)  `~
     (filter-pond-mono-goal ctx(top |) [%del-portal from.goal loud=%.n])
+      %send-chat
+    ?.  =(src.bowl from.goal)  `~
+    `[%chat from.goal now.bowl text.goal]~
+      %move
+    =*  players  players.ephemera.turf
+    =/  player  (~(get by players) ship.goal)
+    ?~  player  `~
+    =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
+    =/  player-colliding  (get-collidable turf pos.u.player)
+    =/  will-be-colliding  (get-collidable turf pos)
+    ?:  &(will-be-colliding !player-colliding)
+      :: todo: get bump effects
+      `~
+    ?:  =(pos pos.u.player)  `
+    =/  leave=[roars grits]  (pull-trigger turf ship.goal %leave pos.u.player)
+    =/  step=[roars grits]  (pull-trigger turf ship.goal %step pos)
+    :-  (weld -.leave -.step)
+    :-  goal(pos pos)
+    (weld +.leave +.step)
+      %join-player
+    =|  =player
+    :-  [%player-add ship.goal]~
+    [%add-player ship.goal player(avatar avatar.goal)]~
+      %add-player
+    :-  [%player-add ship.goal]~
+    [goal]~
+      %del-player
+    :-  [%player-del ship.goal]~
+    [goal]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
@@ -743,16 +743,13 @@
       ^-  mono-goal:pond
       %.  jon
       %+  wave  mono-goal:pond
-      :~  move+(ot ~[ship+(se %p) pos+svec2])
-          face+(ot ~[ship+(se %p) dir+dir])
-          send-chat+(ot ~[from+(se %p) text+so])
-          size-turf+(ot ~[offset+svec2 size+vec2])
+      :: todo: set-turf?
+      :~  size-turf+(ot ~[offset+svec2 size+vec2])
           add-husk+husk-spec
           del-shade+(ot ~['shadeId'^ni])
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
           set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
-          :: todo: set-turf?
           :-  %create-bridge
           %-  ot
           :~  shade+(maybe-ni husk-spec)
@@ -762,6 +759,9 @@
           ::
           add-portal+(ot ~[for+ot-turf-id at+ni:soft])
           del-portal+(ot ~[from+ni loud+bo])
+          send-chat+(ot ~[from+(se %p) text+so])
+          move+(ot ~[ship+(se %p) pos+svec2])
+          face+(ot ~[ship+(se %p) dir+dir])
       ==
     ++  maybe-ni
       |*  wit=fist

@@ -191,6 +191,8 @@
 +$  move-wave  [%move =ship pos=svec2]
 +$  face-wave  [%face =ship =dir]
 +$  set-avatar-wave  [%set-avatar =ship =avatar]
++$  add-port-req-wave  [%add-port-req =ship from=portal-id =avatar]
++$  add-port-rec-wave  [%add-port-rec from=portal-id =ship]
 +$  add-player-wave  [%add-player =ship =player]
 +$  del-player-wave  [%del-player =ship]
 ::

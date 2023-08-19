@@ -54,7 +54,7 @@
       at=(unit portal-id)  :: the portal on the other side
   ==
 +$  join-reqs  (map ship [=portal-id =avatar])
-+$  join-recs  (map ship (set portal-id))
++$  join-recs  (jug portal-id ship)
 +$  perms
   $+  perms
   $:  default=$~(%in perm)
