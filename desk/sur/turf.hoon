@@ -145,6 +145,6 @@
 ::
 +$  husk-spec  [pos=svec2 =form-id variation=@ud]
 ::
-++  pond-path  ,[%pond *]
-++  mist-path  ,[%mist *]
++$  pond-path  [%pond *]
++$  mist-path  [%mist *]
 --

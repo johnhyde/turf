@@ -4,27 +4,26 @@
 |%
 ++  name  %pond
 +$  rock  ^rock
-+$  goal  ^goal
-+$  foam  ^foam
-+$  grit  ^grit
-++  wash  wash-grit
-:: ++  wash
-::   |=  [=rock =wave]
-::   ^-  ^rock
-::   ?~  grits.wave  rock
-::   %=  $
-::     rock  (wash-grit rock id.wave src.wave i.grits.wave)
-::     grits.wave  t.grits.wave
-::   ==
++$  wave  ^wave
+++  wash
+  |=  [=rock =wave]
+  ^-  ^rock
+  ?~  grits.wave  rock
+  %=  $
+    rock  (wash-grit rock id.wave src.wave i.grits.wave)
+    grits.wave  t.grits.wave
+  ==
 --
 |%
 +$  rock
   $:  stir-ids=(map ship @t)
       turf=(unit turf)
   ==
-+$  foam
++$  wave
+  $+  pond-wave
   $:  id=stir-id
       src=(unit ship)
+      =grits
   ==
 +$  grits  (list grit)
 +$  grit
@@ -120,7 +119,7 @@
 ::
 ::
 ++  wash-grit
-  |=  [=rock [id=stir-id src=(unit ship)] =grit]
+  |=  [=rock id=stir-id src=(unit ship) =grit]
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))
   :-  stir-ids.rock

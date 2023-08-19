@@ -9,11 +9,8 @@ import {
 } from 'lib/turf';
 import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
 
-function waveTypeStr(wave) {
-  if (wave?.type === 'batch') {
-    return `batch: [${wave.arg.map(w => w?.type).join(', ')}]`;
-  }
-  return wave?.type || 'no-op';
+function gritsTypeStr(grits) {
+  return `batch: [${grits.map(w => w?.type || 'no-op').join(', ')}]`;
 }
 
 export class Pond { // we use a class so we can put it inside a store without getting proxied
@@ -54,25 +51,25 @@ export class Pond { // we use a class so we can put it inside a store without ge
   // returns true/false whether we attempted to send the wave or not
   // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
   sendWave(type, arg, batch = true) {
-    let charge = filterStir(this.ether, { type, arg });
+    let charge = filterGoals(this.ether, [{ type, arg }]);
     if (!charge) return false;
-    if (batch && type !== 'batch') {
+    if (batch) {
       this.addCharge(charge);
     } else {
-      const {stir, wave} = charge;
+      const {goals, grits} = charge;
       const uuid = uuidv4();
-      console.log('sending wave', waveTypeStr(wave), 'with id', uuid ? uuid.substring(0, 4) : uuid);
+      console.log('sending grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
       this.addPulse({
         id: uuid,
-        wave,
+        grits,
       });
-      this.sendWavePoke(stir, uuid);
+      this.sendWavePoke(goals, uuid);
     }
     return true;
   }
-  async sendWavePoke(goal, uuid, retries = 0) {
+  async sendWavePoke(goals, uuid, retries = 0) {
     try {
-      await api.sendPondWave(this.id, goal, uuid);
+      await api.sendPondWave(this.id, goals, uuid);
     } catch (e) {
       if (e?.message === 'Failed to fetch') {
         // internet connectivity issue
@@ -105,19 +102,19 @@ export class Pond { // we use a class so we can put it inside a store without ge
         // this.removePulses();
         console.log('leftover pulses: ', this.pulses.length);
       } else if (res.hasOwnProperty('wave')) {
-        const { grit, id } = res.wave;
-        console.log(`getting wave for ${this.id}`, waveTypeStr(grit), 'with id', id ? id.substring(0, 4) : id);
-        const noop = !grit;
+        const { grits, id } = res.wave;
+        console.log(`getting wave for ${this.id}`, gritsTypeStr(grits), 'with id', id ? id.substring(0, 4) : id);
+        const noop = !grits || grits.length === 0;
         const noPulses = this.pulses.length === 0;
         const noCharges = this.charges.length === 0;
         
         if (!noop) {
-          washTurf(this.updateTurf.bind(this), grit);
+          washTurf(this.updateTurf.bind(this), grits);
         }
         if (!noop && noPulses && noCharges) {
-          washTurf(this.updateEther.bind(this), grit);
+          washTurf(this.updateEther.bind(this), grits);
         } else {
-          this.updatePulses(noop, id, grit);
+          this.updatePulses(noop, id, grits);
         }
       } else {
         console.error('Pond response not a rock or wave???', res);
@@ -131,20 +128,20 @@ export class Pond { // we use a class so we can put it inside a store without ge
     api.subscribeToTurf(this.id, this.onPondRes.bind(this), onPondErr, onPondQuit);
   }
 
-  applyWave(wave) {
+  applyGrits(wave) {
     washTurf(this.updateEther.bind(this), wave);
   }
 
   addPulse(pulse, apply = true) {
     batch(() => {
       this.$('pulses', (pulses) => [...pulses, pulse]);
-      if (apply) this.applyWave(pulse.wave);
+      if (apply) this.applyGrits(pulse.grits);
     });
   }
 
   applyPulses() {
     this.pulses.forEach((pulse) => {
-      this.applyWave(pulse.wave);
+      this.applyGrits(pulse.grits);
     });
   }
 
@@ -157,11 +154,11 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this.$('pulses', []);
   }
 
-  updatePulses(noop, id, grit) {
+  updatePulses(noop, id, grits) {
     const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
     const matches = pulseI >= 0;
     const matchesFirst = pulseI === 0;
-    const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].wave), grit);
+    const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].grits), grits);
     const changesSomething = !noop || matches;
     const etherInvalidated = changesSomething && !(matchesFirst && confirms);
     if (matches) {
@@ -185,7 +182,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this.setLastChargeTimer();
     batch(() => {
       this.$('charges', (charges) => [...charges, charge]);
-      if (apply) this.applyWave(charge.wave);
+      if (apply) this.applyGrits(charge.grits);
     });
   }
 
@@ -215,7 +212,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
 
   applyCharges() {
     this.charges.forEach((charge) => {
-      this.applyWave(charge.wave);
+      this.applyGrits(charge.grits);
     });
   }
 
@@ -225,32 +222,19 @@ export class Pond { // we use a class so we can put it inside a store without ge
         clearTimeout(this.firstChargeTimer);
       if (this.lastChargeTimer)
         clearTimeout(this.lastChargeTimer);
-      const type = 'batch';
-      const stirs = [], waves = [];
+      let goals = [], grits = [];
       this.charges.forEach(c => {
-        stirs.push(c.stir);
-        waves.push(c.wave);
+        goals = [...goals, ...c.goals]
+        grits = [...grits, ...c.grits]
       });
-      let stir = {
-        type,
-        arg: stirs,
-      };
-      let wave = {
-        type,
-        arg: waves,
-      };
-      if (this.charges.length === 1) {
-        stir = stirs[0];
-        wave = waves[0];
-      }
       const uuid = uuidv4();
-      console.log('sending wave', wave.type, 'with id', uuid ? uuid.substring(0, 4) : uuid);
+      console.log('sending grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
       this.$('charges', []);
       this.addPulse({
         id: uuid,
-        wave,
+        grits,
       }, false); // don't apply because charges were already applied
-      this.sendWavePoke(stir, uuid);
+      this.sendWavePoke(goals, uuid);
     });
   }
 
@@ -292,7 +276,7 @@ export function getPond() {
     turf: null,
     ether: null,
     pulses: [], // waves that have been sent but not confirmed
-    charges: [], // waves to be sent in the next batch
+    charges: [], // grits to be sent in the next batch
     get grid() {
       return grid();
     },
@@ -333,7 +317,7 @@ export function rockToTurf(rock, id) {
   return rock;
 }
 
-const pondWaves = {
+const pondGrits = {
   'inc-counter': (turf, arg) => {
     turf.stuffCounter++;
   },
@@ -474,24 +458,16 @@ const pondWaves = {
   },
 };
 
-export function washTurf(update, wave) {
-  if (wave.type === 'batch') {
-    batch(() => {
-      wave.arg.forEach((subWave) => {
-        update(_washTurf(subWave));
-      });
-    });
-  } else {
-    update(_washTurf(wave));
-  }
+export function washTurf(update, grits) {
+  grits.forEach((grit) => {
+    update(_washTurf(grit));
+  });
 }
 
-export function _washTurf(wave) {
-  wave = cloneDeep(wave);
-  // console.log('washing a turf with wave', JSON.stringify(wave, null, 2))
-  switch (wave.type) {
-    case 'batch':
-      throw new Error('no nested batches please');
+export function _washTurf(grit) {
+  grit = cloneDeep(grit);
+  // console.log('washing a turf with grit', JSON.stringify(grit, null, 2))
+  switch (grit.type) {
     case 'noop':
       return (turf) => turf
     case 'del-turf':
@@ -500,24 +476,24 @@ export function _washTurf(wave) {
       return (turf) => {
         const newTurf = {
           id: turf?.id,
-          ...wave.arg,
+          ...grit.arg,
         };
         return js.turf(newTurf);
       };
     default:
       return produce((turf) => {
-        pondWaves[wave.type](turf, wave.arg);
+        pondGrits[grit.type](turf, grit.arg);
         js.turf(turf);
       });
   }
 }
 
-// returns false if wave is rejected
-// otherwise, returns a pair of [stir, wave]
-// or, more commonly, a single stir/wave
+// returns false if goal is rejected
+// otherwise, returns a pair of [goal, grit]
+// or, more commonly, a single goal/grit
 const filters = {
-  'add-husk': (turf, wave) => {
-    const { pos, formId } = wave.arg;
+  'add-husk': (turf, goal) => {
+    const { pos, formId } = goal.arg;
     if (!isInTurf(turf, pos)) return false;
     const currentSpace = turf.spaces[vecToStr(pos)];
     const currentTile = currentSpace?.tile;
@@ -525,12 +501,12 @@ const filters = {
     const tileAlreadyHere = currentTile?.formId === formId;
     const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
     if (!tileAlreadyHere && !shadeAlreadyHere) {
-      return wave;
+      return goal;
     }
     return false;
   },
-  'move': (turf, wave) => {
-    const { ship, pos } = wave.arg;
+  'move': (turf, goal) => {
+    const { ship, pos } = goal.arg;
     const player = turf.players[ship];
     if (!player) return false;
     const newPos = clampToTurf(turf, pos);
@@ -538,64 +514,58 @@ const filters = {
     const willBeColliding = getCollision(turf, newPos);
     if (willBeColliding && !playerColliding) return false;
     if (newPos.equals(player.pos)) return false;
-    wave.arg.pos = newPos;
-    return wave;
+    goal.arg.pos = newPos;
+    return goal;
   },
-  'send-chat': (turf, stir) => {
+  'send-chat': (turf, goal) => {
     return [
-      stir,
+      goal,
       {
         type: 'chat',
         arg: {
-          from: stir.arg.from,
+          from: goal.arg.from,
           at: Date.now(),
-          text: stir.arg.text,
+          text: goal.arg.text,
         }
       },
     ]
   },
-  'create-bridge': (turf, stir) => {
+  'create-bridge': (turf, goal) => {
     debugger;
   }
 };
 
 // returns false if wave is rejected
-// otherwise, returns {stir, wave}
-function filterStir(turf, wave) {
-  if (wave.type === 'batch') {
-    const [temp, $temp] = createStore(js.turf(cloneDeep(turf)));
-    const stirs = [], waves = [];
-    wave.arg.forEach((subWave) => {
-      const filtered = filterStir(temp, subWave);
-      if (filtered) {
-        stirs.push(filtered.stir);
-        waves.push(filtered.wave);
-        washTurf($temp, filtered[1]);
-      }
-    });
-
-    if (!waves.length) return false;
-    return {
-      stir: {
-        type: 'batch',
-        arg: stirs,
-      },
-      wave: {
-        type: 'batch',
-        arg: waves,
-      },
-    };
-  }
-
-  if (filters[wave.type]) {
-    const stirWave = filters[wave.type](turf, wave);
-    if (!stirWave) return false;
-    if (stirWave instanceof Array) {
-      return { stir: stirWave[0], wave: stirWave[1] };
+// otherwise, returns {goals, grits}
+function filterGoals(turf, goals) {
+  const [temp, $temp] = createStore(js.turf(cloneDeep(turf)));
+  const newGoals = [], grits = [];
+  goals.forEach((goal) => {
+    const filtered = filterGoal(temp, goal);
+    if (filtered) {
+      newGoals.push(filtered.goal);
+      grits.push(filtered.grit);
+      washTurf($temp, [filtered.grit]);
     }
-    return { stir: stirWave, wave: stirWave };
+  });
+
+  if (!grits.length) return false;
+  return {
+    goals: newGoals,
+    grits,
+  };
+}
+
+function filterGoal(turf, goal) {
+  if (filters[goal.type]) {
+    const goalGrit = filters[goal.type](turf, goal);
+    if (!goalGrit) return false;
+    if (goalGrit instanceof Array) {
+      return { goal: goalGrit[0], grit: goalGrit[1] };
+    }
+    return { goal: goalGrit, grit: goalGrit };
   }
-  return { stir: wave, wave };
+  return { goal: goal, grit: goal };
 }
 
 // We mutate everything I guess!
