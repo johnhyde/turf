@@ -60,7 +60,7 @@ export default function PortalsPane() {
             ]} />
         <button onClick={createPortal}>Create</button>
       </div>
-      <For each={Object.entries(state.e.portals)} >
+      <For each={Object.entries(state.e?.portals || {})} >
         {([portalId, portal]) => {
           return (<div>
             <pre>

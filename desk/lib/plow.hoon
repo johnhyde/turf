@@ -246,7 +246,7 @@
     ?:  &(will-be-colliding !player-colliding)
       :: todo: get bump effects
       `~
-    ?:  =(pos pos.u.player)  `
+    ?:  =(pos pos.u.player)  `~
     =/  leave=[roars grits]  (pull-trigger turf ship.goal %leave pos.u.player)
     =/  step=[roars grits]  (pull-trigger turf ship.goal %step pos)
     :-  (weld -.leave -.step)

@@ -272,7 +272,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
   updateTurf(fun) {
     // console.log('updating base turf')
     batch(() => {
-      if (this.turf?.id) this.$('turf', 'id', this.id);
+      if (this.turf && !this.turf.id) this.$('turf', 'id', this.id);
       this.$('turf', fun);
     });
   }
@@ -280,7 +280,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
   updateEther(fun) {
     // console.log('updating ether')
     batch(() => {
-      if (this.ether?.id) this.$('ether', 'id', this.id);
+      if (this.ether && !this.ether.id) this.$('ether', 'id', this.id);
       this.$('ether', fun);
     });
   }
@@ -328,7 +328,7 @@ function getTurfGrid(turf) {
 }
 
 export function rockToTurf(rock, id) {
-  rock.id = id;
+  if (rock) rock.id = id;
   js.turf(rock);
   return rock;
 }
@@ -602,7 +602,9 @@ function filterStir(turf, wave) {
 const js = {
   turf(turf) {
     // this.deepVec2(turf)
-    turf.chats.forEach(this.chat.bind(this));
+    if (turf) {
+      turf.chats.forEach(this.chat.bind(this));
+    }
     return turf;
   },
   chat(chat) {

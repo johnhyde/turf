@@ -19,7 +19,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_22
+      reset=_24
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -46,6 +46,7 @@
 |_  =bowl:gall
 +*  this  .
     def   ~(. (default-agent this %.n) bowl)
+    hc    ~(. ^hc bowl)
 ::
     da-pond  =/  da  (da pond pond-path)
             (da sub-pond bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
@@ -58,9 +59,6 @@
 ::
     du-mist  =/  du  (du mist mist-path)
             (du pub-mist bowl -:!>(*result:du))
-::
-    :: hc    ~(. hc.+> bowl)
-    hc    ~(. +> bowl)
 ::
 ++  on-init
   ^-  (quip card _this)
@@ -438,6 +436,8 @@
 :: Helper Core
 :: =/  hc
 :: ^=  hc
+|%
+++  hc
 |_  =bowl:gall
 +*  da-pond  =/  da  (da pond pond-path)
             (da sub-pond bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
@@ -630,5 +630,4 @@
   |=  =ship
   ^-  (quip card _state)
   (give-pond dtid del-player+ship)
---
-:: . :: [hc everything-else]
+--  --
