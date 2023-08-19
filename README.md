@@ -44,3 +44,12 @@ Your app is ready to be deployed!
 ## Deployment
 
 You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+
+## Addendum
+
+> The turf readme is garbage, but the steps to install things and get set up are basically the same as my last project: https://github.com/johnhyde/monkey
+> The main difference is that npm run install:desk is now npm run desk and there's also npm run desks to install on multiple ships at once.
+> Also you can use |new-desk %turf to create the desk instead of |merge %turf our %base.
+> Also, I forgot that you need to run |install our %turf after you sync files for the first time.
+
+Further documentation on this project can be found in [./desk/doc/](./desk/doc/)

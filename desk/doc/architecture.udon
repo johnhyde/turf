@@ -1,0 +1,25 @@
+;>
+# The Architecture Of The Code Of The Application Turf
+
+In this document, I have jotted down various things that were true of the project on 2023-08-19, in order to keep track of them.
+
+## The locations of things
+
+Most of the interesting back-end code of turf is in desk/, which should be no surprise. In there you have app/, which contains a single file, turf.hoon, which is the actual program that does the stuff. It is a Gall agent, and uses Solid-State Subscriptions (sss) to manage its client/server model. You can read about sss [here](https://github.com/wicrum-wicrun/sss/blob/master/urbit/app/simple.hoon) or view its implementation [here](https://github.com/urbit/urbit/blob/develop/pkg/base-dev/lib/sss.hoon), although neither of those prospects seem very likely to help you or be necessary.
+
+Also in desk/, you have doc/, which stores documentation (you are here); lib/, which stores libraries written and used for turf; sur/ and mar/ which basically hold type information (see [here](https://developers.urbit.org/guides/core/app-school/7-sur-and-marks) for more explanation about that); and some other files that are basically metadata about the application.
+
+Anyway, there is also art/, which contains Photoshop psd files for the art assets; base-desk/, which is sort of a standard desk we use for basic desk functionality; bin/, which is actually some administrative shell scripts; config/, don't worry about this one; and public/ and src/, which relate to the web-app front-end, which is in javascript using phaser.js.
+
+## The names of things
+
+Like many urbit projects, this one uses creative names and extensive metaphors in its source code concepts. Hopefully it does not break kayfabe for me to explain these to you. There are two different layers of this that are important.
+
+Firstly, as the project deals with various types of abstract and instantiated (virtual physical) objects, reference is made to Plato's theory of Forms. The abstract objects are forms, and the instantiated objects are shades (shadows of the forms). Specialized but unplaced objects are husks. A "thing" is a convenience type that, if I recall correctly, is for when you need to pass a husk to another server/client, but the other server/client doesn't have the form already, so you need to pass them the entire form as well, and not just a form-id like husk usually uses.
+
+Secondly, the sss uses a metaphor of stirring (requesting) up waves (updates) that crash over a rock (state) in a lake. Turf's lake of this sort is thus known as pond, and as the avatars dance over the lake (both graphically, and also because they are owned by other users) they are called mist.
+
+Well, hopefully that's helpful!
+
+## Remark
+There is probably "objectively" too much duplication of code in this project. However, much of this may be unavoidable, because of the many conversions that take place in a simple roundtrip from the front-end to the back-end (javascript values and validation to json to hoon values and validation, and then back through in reverse), not to mention hoon's native obsession with persnickety types. However, some of this may be alleviatable with metaprogramming (delete this suggestion if it turns out to be embarrassingly bad).

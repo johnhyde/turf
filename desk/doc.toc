@@ -1,1 +1,2 @@
 /overview/udon            Overview
+/architecture/udon        Architecture
