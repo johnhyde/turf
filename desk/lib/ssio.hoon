@@ -40,7 +40,7 @@
   +$  grits  (list grit:pool)
   ++  filter
     |*  acc=mold 
-    |*  [path=paths:du =foam:pool =goals fil=$-([ctx acc goal:pool] [acc grits goals]) com=$-([acc acc] acc)]
+    |*  [path=paths:du =foam:pool =goals fil=$-([ctx acc goal:pool] [acc grits goals])]
     ^-  [[(list card) acc grits] pubs:du]
     =/  read  (~(gut by read:du) path ~)
     =/  rock  ?~(read *rock:pool rock.read)

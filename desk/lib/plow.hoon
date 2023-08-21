@@ -34,8 +34,6 @@
 ++  filter-pond-goal
   |=  [[=bowl:gall =rock:pond top=?] pre-roars=roars =goal:pond]
   ^-  [roars grits:pond goals:pond]
-  =*  bowl  bowl
-  =*  rock  rock
   :: :-  ~
   ~&  "filtering goal {<-.goal>}, top: {<top>}"
   =-  [(weld pre-roars roars) grits goals]

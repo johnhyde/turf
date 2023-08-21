@@ -24,7 +24,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_27
+      reset=_28
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -460,12 +460,12 @@
             (du pub-pond bowl -:!>(*result:du))
     de-pond  ((de pond) du-pond)
 ::
-    da-mist  =/  da  (da mist mist-path)
+    da-mist  =/  da  (da mist-lake mist-path)
             (da sub-mist bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
 ::
-    du-mist  =/  du  (du mist mist-path)
+    du-mist  =/  du  (du mist-lake mist-path)
             (du pub-mist bowl -:!>(*result:du))
-    :: de-mist  ((de mist) du-mist)
+    de-mist  ((de mist) du-mist)
 
 ++  scrio  ~(scry agentio bowl)
 ++  default-mist
@@ -533,8 +533,8 @@
   |=  [src=(unit ship) =stir:mist]
   ^-  (quip card _state)
   :: ~&  "start to stir mist. stir: {<goal>} pub-mist wyt: {<~(wyt by +.pub-mist)>}"
-  =^  [ssio-cards=(list card) =roars =grits:mist]  pub-mist
-    %-  (filter:de-mist [roars $~(closet skye)])
+  =^  [ssio-cards=(list card) [=roars *] =grits:mist]  pub-mist
+    %-  (filter:de-mist ,[roars $~(closet skye)])
     :*  mpath.stir
         `foam`[id.stir src]
         goals.stir
@@ -543,7 +543,8 @@
   =/  cards=(list card)
     =/  =stirred:mist  [%wave id.stir grits]
     [%give %fact [;;(path mpath.stir)]~ %mist-stirred !>(stirred)]~
-  [(weld ssio-cards cards) state]
+  =^  pond-cards=(list card)  state  (sync-avatar)
+  [:(weld ssio-cards cards pond-cards) state]
 :: ++  stir-mist
 ::   |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
 ::   ^-  (quip card _state)
@@ -556,7 +557,7 @@
 ::   [:(weld sss-cards cards pond-cards) state]
 ++  give-mist
   |=  [mpath=mist-path =goal:mist]
-  (stir-mist mpath ~ [goal]~)
+  (stir-mist ~ mpath ~ [goal]~)
 ++  stir-pond
   |=  [src=(unit ship) =stir:pond]
   ^-  (quip card _state)
