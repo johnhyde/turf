@@ -147,4 +147,11 @@
 ::
 +$  pond-path  [%pond *]
 +$  mist-path  [%mist *]
++$  stir-ids  (map ship @t)
++$  stir-id  (unit @t)
++$  foam
+  $:  id=stir-id
+      src=(unit ship)
+  ==
+:: ++  stirred-rock
 --

@@ -4,76 +4,68 @@
 |%
 ++  name  %mist
 +$  rock  ^rock
-+$  wave  ^wave
-++  wash
-  |=  [=rock =wave]
-  ^-  ^rock
-  :: avatar.wave
-  :: ?@  wave
-  ::   ?-  wave
-  ::     %del-turf  ~
-  ::       %inc-counter
-  ::     rock(stuff-counter.plot.u +(stuff-counter.plot.turf))
-  ::   ==
-  =*  avatar  avatar.rock
-  ?-  -.wave
-    %set-ctid  rock(ctid turf-id.wave)
-    %set-avatar  rock(avatar avatar.wave)
-    %set-color  rock(color.body.avatar color.wave)
-    %add-thing  rock(things.avatar (snoc things.avatar thing.wave))
-    %del-thing  rock(things.avatar (oust [index.wave 1] things.avatar))
-  ::   %del-shade  `(del-shade turf +.wave)
-  ::     %chat
-  ::   rock(chats.ephemera.u [chat.wave chats.ephemera.turf])
-  ::     %move
-  ::   =*  players  players.ephemera.turf
-  ::   ?.  (~(has by players) ship.wave)  rock
-  ::   =.  players
-  ::     %+  ~(jab by players)
-  ::       ship.wave
-  ::     |=  =player
-  ::     player(pos pos.wave)
-  ::   rock
-  ==
++$  goal  ^goal
++$  foam  ^foam  :: from lib/turf
++$  grit  ^grit
+++  wash  wash-grit
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
 +$  rock
+  $:  =stir-ids
+      core
+  ==
++$  core
   $:  ctid=(unit turf-id)
       =avatar
   ==
-+$  wave
++$  goals  (list goal)
++$  goal
+  $+  mist-goal
+  $%  grit
+      [%add-thing-from-closet =form-id]
+  ==
++$  grits  (list grit)
++$  grit
+  $+  mist-grit
   :: ?(%del-av %inc-counter)
   :: $@  ?(%del-av %inc-counter)
-  $%  set-ctid-wave
-      set-avatar-wave
-      set-color-wave
-      add-thing-wave
-      del-thing-wave
-      :: del-shade-wave
-      :: chat-wave
-      :: move-wave
+  $%  set-ctid-grit
+      set-avatar-grit
+      set-color-grit
+      add-thing-grit
+      del-thing-grit
   ==
-+$  set-ctid-wave  [%set-ctid turf-id=(unit turf-id)]
-+$  set-avatar-wave  [%set-avatar =avatar]
-+$  set-color-wave  [%set-color color=@ux]
-+$  add-thing-wave  [%add-thing =thing]
-+$  del-thing-wave  [%del-thing index=@ud]
-:: +$  chat-wave  [%chat =chat]
-:: +$  move-wave  [%move =ship pos=svec2]
++$  set-ctid-grit  [%set-ctid turf-id=(unit turf-id)]
++$  set-avatar-grit  [%set-avatar =avatar]
++$  set-color-grit  [%set-color color=@ux]
++$  add-thing-grit  [%add-thing =thing]
++$  del-thing-grit  [%del-thing index=@ud]
 :: ::
-+$  stir-id  (unit @t)
 +$  stir
   $:  mpath=mist-path
       id=stir-id
-      wave=stir-wave
-  ==
-+$  stir-wave
-  $%  wave
-      [%add-thing-from-closet =form-id]
+      =goals
   ==
 +$  stirred
     $%  [what=%rock =rock]
-        [what=%wave id=stir-id wave=(unit wave)]
+        [what=%wave id=stir-id =grits]
     ==
+
+++  wash-grit
+  |=  [=rock [id=stir-id src=(unit ship)] =grit]
+  ^-  ^rock
+  =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
+    (~(put by stir-ids.rock) (need src) (need id))
+  :-  stir-ids.rock
+  ^-  core
+  =*  core  +.rock
+  =*  avatar  avatar.rock
+  ?-  -.grit
+    %set-ctid  core(ctid turf-id.grit)
+    %set-avatar  core(avatar avatar.grit)
+    %set-color  core(color.body.avatar color.grit)
+    %add-thing  core(things.avatar (snoc things.avatar thing.grit))
+    %del-thing  core(things.avatar (oust [index.grit 1] things.avatar))
+  ==
 --

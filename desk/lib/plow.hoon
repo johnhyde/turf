@@ -13,27 +13,33 @@
       [%player-del =ship]
   ==
 +$  roars  (list roar)
-+$  ctx  [=bowl:gall =rock:pond top=?]
+:: +$  [=bowl:gall =rock:pond top=?]
 ++  filter-mist-goal
-  |=  [=rock:mist wave=stir-wave:mist closet=skye]
-  ^-  (unit wave:mist)
-  ?+    -.wave  `wave
+  |=  [[=bowl:gall =rock:mist top=?] [pre-roars=roars closet=skye] =goal:mist]
+  ^-  [[roars skye] grits:mist goals:mist]
+  =-  [[(weld pre-roars roars) closet] grits goals]
+  ^-  [=roars =grits:mist =goals:mist]
+  ?+    -.goal  `~[goal]~
       %add-thing-from-closet
-    =/  form  (~(get by closet) form-id.wave)
-    ?~  form  ~
-    :-  ~
+    =/  form  (~(get by closet) form-id.goal)
+    ?~  form  ``~
+    :-  roars=~
+    :_  goals=~
+    :_  ~
     :-  %add-thing
     ^-  thing
-    :-  [form-id.wave 0 *husk-bits]
+    :-  [form-id.goal 0 *husk-bits]
     u.form
   ==
 ++  filter-pond-goal
-  |=  [=ctx =goal:pond]
+  |=  [[=bowl:gall =rock:pond top=?] pre-roars=roars =goal:pond]
   ^-  [roars grits:pond goals:pond]
-  =*  bowl  bowl.ctx
-  =*  rock  rock.ctx
+  =*  bowl  bowl
+  =*  rock  rock
   :: :-  ~
-  ~&  "filtering goal {<-.goal>}, top: {<top.ctx>}"
+  ~&  "filtering goal {<-.goal>}, top: {<top>}"
+  =-  [(weld pre-roars roars) grits goals]
+  ^-  [=roars =grits:pond =goals:pond]
   =/  uturf  turf.rock
   ?~  uturf
     ?+    goal  ``~
@@ -105,11 +111,11 @@
     ``goals
     ::
       %add-portal
-    ?:  &(top.ctx !=(our src):bowl)  ``~
+    ?:  &(top !=(our src):bowl)  ``~
     `~[goal]~
     ::
       %del-portal
-    ?:  &(top.ctx !=(our src):bowl)  ``~
+    ?:  &(top !=(our src):bowl)  ``~
     =/  portal  (~(get by portals.deed.turf) from.goal)
     ?~  portal  ``~
     =/  roars
@@ -272,8 +278,7 @@
     ^-  json
     %+  frond  %rock
     %-  pairs
-    :~  :-  'stirIds'
-        (pairs (turn ~(tap by stir-ids.rock) stir-id-pair))
+    :~  'stirIds'^(stir-ids stir-ids.rock)
       ::
         :-  %turf
         ?~  turf.rock  ~
@@ -363,31 +368,42 @@
     ^-  json
     %+  frond  %rock
     %-  pairs
-    :~  :-  'turfId'
+    :~  'stirIds'^(stir-ids stir-ids.rock)
+      ::
+        :-  'currentTurfId'
         ?~  ctid.rock  ~
         (path (turf-id-to-path u.ctid.rock))
       ::
         avatar+(avatar avatar.rock)
     ==
   ++  mist-wave
-    |=  [id=stir-id:mist uwave=(unit wave:mist)]
+    |=  [id=stir-id:mist =grits:mist]
+    ^-  json
+    %+  frond  %wave
+    %-  pairs
+    :_  [id+(fall (bind id |=(i=@t s+i)) ~)]~
+    :-  %grits
+    a+(turn grits mist-grit)
+  ++  mist-grit
+    |=  [=grit:mist]
     ^-  json
     %-  pairs
-    :_  :-  id+(fall (bind id |=(i=@t s+i)) ~)  ~
-    :-  %wave
-    ?~  uwave  ~
-    =*  wave  u.uwave
-    %-  pairs
     :~  :-  %type
-        s+-.wave
+        :: s+?@(grit grit -.grit)
+        s+-.grit
       ::
         :-  %arg
-        ?+  -.wave  ~
+        :: ?@  grit  ~
+        ?+  -.grit  ~
             %set-avatar
-          (avatar +.wave)
+          (avatar +.grit)
             %set-color
-          (numb +.wave)
+          (numb +.grit)
     ==  ==
+  ++  stir-ids
+    |=  [ids=^stir-ids]
+    ^-  json
+    (pairs (turn ~(tap by ids) stir-id-pair))
   ++  stir-id-pair
     |=  [src=^ship id=@t]
     :-  (scot %p src)
@@ -661,15 +677,14 @@
   =,  dejs:format
   =*  soft  dejs-soft:format
   |%
-    ++  wave
-      |*  [wave=mold pairs=(pole [cord fist])]
+    ++  goal
+      |*  [goal=mold pairs=(pole [cord fist])]
       |=  jon=json
-      ^-  wave
+      ^-  goal
       ?:  ?=([%s *] jon)
-        ;;(wave (so jon))
+        ;;(goal (so jon))
       ?>  ?=([%o *] jon)
       ((of pairs) jon)
-    :: todo: support rocks as well as waves
     ++  pond-stir
       |=  jon=json
       ^-  stir:pond
@@ -685,7 +700,7 @@
       |=  jon=json
       ^-  goal:pond
       %.  jon
-      %+  wave  goal:pond
+      %+  goal  goal:pond
       :: todo: set-turf?
       :~  size-turf+(ot ~[offset+svec2 size+vec2])
           add-husk+husk-spec
@@ -706,13 +721,6 @@
           move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
       ==
-    ++  maybe-ni
-      |*  wit=fist
-      |=  jon=json
-      ^-  ?(@ud _(wit *json))
-      ?:  ?=(%n -.jon)
-        (ni jon)
-      (wit jon)
     ::
     ++  mist-stir
       |=  jon=json
@@ -721,13 +729,13 @@
       %-  ot
       :~  path+|=(=json ;;(mist-path (pa json)))
           id+so:soft
-          goals+(at ~[mist-wave])
+          goals+(ar mist-goal)
       ==
-    ++  mist-wave
+    ++  mist-goal
       |=  jon=json
-      ^-  stir-wave:mist
+      ^-  goal:mist
       %.  jon
-      %+  wave  stir-wave:mist
+      %+  goal  goal:mist
       :~  set-color+ni
           add-thing-from-closet+pa
           del-thing+ni
@@ -771,6 +779,13 @@
       |=  jon=json
       ^-  ^vec2
       ((ot ~[x+ni y+ni]) jon)
+    ++  maybe-ni
+      |*  wit=fist
+      |=  jon=json
+      ^-  ?(@ud _(wit *json))
+      ?:  ?=(%n -.jon)
+        (ni jon)
+      (wit jon)
     ++  ns  :: signed integer!
       |=  jon=json
       ^-  @sd

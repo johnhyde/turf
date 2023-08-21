@@ -39,8 +39,8 @@
   +$  goals  (list goal:pool)
   +$  grits  (list grit:pool)
   ++  filter
-    |*  acc=mold
-    |*  [path=paths:du =foam:pool =goals fil=$-([ctx goal:pool] [acc grits goals]) com=$-([acc acc] acc)]
+    |*  acc=mold 
+    |*  [path=paths:du =foam:pool =goals fil=$-([ctx acc goal:pool] [acc grits goals]) com=$-([acc acc] acc)]
     ^-  [[(list card) acc grits] pubs:du]
     =/  read  (~(gut by read:du) path ~)
     =/  rock  ?~(read *rock:pool rock.read)
@@ -50,12 +50,12 @@
       |-  ^-  [[^acc ^grits] rock:pool]
       =/  =ctx  [bowl:du rock =(top 0)]
       ?~  goals  [[acc grits] rock]
-      =/  [sub-acc=^acc sub-grits=^grits sub-goals=^goals]
-        (fil ctx i.goals)
+      =/  [new-acc=^acc sub-grits=^grits sub-goals=^goals]
+        (fil ctx acc i.goals)
       =.  top  ?~(top 0 (sub top 1))
       %=  $
         rock  (wash:lake:du rock [foam sub-grits])
-        acc  (com acc sub-acc)
+        acc  new-acc
         grits  (weld grits sub-grits)
         goals  (weld sub-goals t.goals)
         top  (add top (lent sub-goals))

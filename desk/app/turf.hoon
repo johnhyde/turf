@@ -11,15 +11,13 @@
 /$  c4  %pond-stirred  %json
 :: =/  hm           (mk-lake-1)
 =/  pond-lake      (mk-lake pond)
-:: =/  mist-lake      (mk-lake mist)
+=/  mist-lake      (mk-lake mist)
 =/  res-pond       (response:poke pond-lake *)
 :: =/  sub-hm-init  (mk-subs hm pond-path)
 =/  sub-pond-init  (mk-subs pond-lake pond-path)
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
-:: =/  sub-mist-init  (mk-subs mist-lake mist-path)
-:: =/  pub-mist-init  (mk-pubs mist-lake mist-path)
-=/  sub-mist-init  (mk-subs mist mist-path)
-=/  pub-mist-init  (mk-pubs mist mist-path)
+=/  sub-mist-init  (mk-subs mist-lake mist-path)
+=/  pub-mist-init  (mk-pubs mist-lake mist-path)
 |%
 +$  versioned-state
   $%  state-0
@@ -62,10 +60,10 @@
             (du pub-pond bowl -:!>(*result:du))
     de-pond  ((de pond) du-pond)
 ::
-    da-mist  =/  da  (da mist mist-path)
+    da-mist  =/  da  (da mist-lake mist-path)
             (da sub-mist bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
 ::
-    du-mist  =/  du  (du mist mist-path)
+    du-mist  =/  du  (du mist-lake mist-path)
             (du pub-mist bowl -:!>(*result:du))
     de-mist  ((de mist) du-mist)
 ::
@@ -213,17 +211,27 @@
     :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
+    ::   %mist-stir
+    :: =+  !<(stir:mist (fled vase))
+    :: ?>  =(our src):bowl
+    :: :: ~&  >  "accepting mist wave from client: {<?^(wave -.wave wave)>}"
+    :: :: ~&  >  "accepting mist wave from client: {<-.wave wave>}"
+    :: =/  pub  (~(get by read:du-mist) mpath)
+    :: =/  fwave=(unit wave:mist)
+    ::   ?~  pub  ~
+    ::   (filter-mist-goal rock.u.pub wave closet)
+    :: =^  cards  state  (stir-mist:hc mpath id fwave)
+    :: cards^this
+  ::
       %mist-stir
-    =+  !<(stir:mist (fled vase))
-    ?>  =(our src):bowl
-    :: ~&  >  "accepting mist wave from client: {<?^(wave -.wave wave)>}"
-    :: ~&  >  "accepting mist wave from client: {<-.wave wave>}"
-    =/  pub  (~(get by read:du-mist) mpath)
-    =/  fwave=(unit wave:mist)
-      ?~  pub  ~
-      (filter-mist-goal rock.u.pub wave closet)
-    =^  cards  state  (stir-mist:hc mpath id fwave)
+    =/  stir  !<(stir:mist (fled vase))
+    :: =/  target  ship.turf-id.stir
+    :: ?:  =(our.bowl target)
+    =^  cards  state  (stir-mist:hc `src.bowl stir)
     cards^this
+    :: ?>  =(our src):bowl
+    :: :_  this
+    :: [%pass [%mist-stir (drop id.stir)] %agent [target %turf] %poke [%mist-stir vase]]~
   ::
       %pond-stir
     =/  stir  !<(stir:pond vase)
@@ -522,19 +530,33 @@
   ==
 ::
 ++  stir-mist
-  |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
+  |=  [src=(unit ship) =stir:mist]
   ^-  (quip card _state)
+  :: ~&  "start to stir mist. stir: {<goal>} pub-mist wyt: {<~(wyt by +.pub-mist)>}"
+  =^  [ssio-cards=(list card) =roars =grits:mist]  pub-mist
+    %-  (filter:de-mist [roars $~(closet skye)])
+    :*  mpath.stir
+        `foam`[id.stir src]
+        goals.stir
+        filter-mist-goal
+    ==
   =/  cards=(list card)
-    =/  =stirred:mist  [%wave id wave]
-    [%give %fact [;;(path mpath)]~ %mist-stirred !>(stirred)]~
-  ?~  wave  cards^state
-  =^  sss-cards  pub-mist  (give:du-mist mpath u.wave)
-  =^  pond-cards=(list card)  state  (sync-avatar)
-  [:(weld sss-cards cards pond-cards) state]
-  :: [(weld sss-cards cards) state]
+    =/  =stirred:mist  [%wave id.stir grits]
+    [%give %fact [;;(path mpath.stir)]~ %mist-stirred !>(stirred)]~
+  [(weld ssio-cards cards) state]
+:: ++  stir-mist
+::   |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
+::   ^-  (quip card _state)
+::   =/  cards=(list card)
+::     =/  =stirred:mist  [%wave id wave]
+::     [%give %fact [;;(path mpath)]~ %mist-stirred !>(stirred)]~
+::   ?~  wave  cards^state
+::   =^  sss-cards  pub-mist  (give:du-mist mpath u.wave)
+::   =^  pond-cards=(list card)  state  (sync-avatar)
+::   [:(weld sss-cards cards pond-cards) state]
 ++  give-mist
-  |=  [mpath=mist-path =wave:mist]
-  (stir-mist mpath ~ `wave)
+  |=  [mpath=mist-path =goal:mist]
+  (stir-mist mpath ~ [goal]~)
 ++  stir-pond
   |=  [src=(unit ship) =stir:pond]
   ^-  (quip card _state)
@@ -543,10 +565,9 @@
   =^  [ssio-cards=(list card) =roars =grits:pond]  pub-pond
     %-  (filter:de-pond roars)
     :*  ppath
-        `foam:pond`[id.stir src]
+        `foam`[id.stir src]
         goals.stir
         filter-pond-goal
-        weld
     ==
   =/  cards=(list card)
     =/  =stirred:pond  [%wave id.stir grits]
