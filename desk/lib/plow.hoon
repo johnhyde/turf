@@ -27,65 +27,37 @@
     :-  [form-id.wave 0 *husk-bits]
     u.form
   ==
-++  filter-pond-goals
-  |=  [=ctx =goals:pond]
-  ^-  [roars grits:pond]
-  =<  [roars ?~(grits [%noop]~ grits)]
-  %+  roll  goals
-    |=  [sub-goal=goal:pond [[=roars =grits:pond] rock=$~(rock.ctx rock:pond)]]
-    ^-  [[^roars grits:pond] rock:pond]
-    =/  [sub-roars=^roars sub-grits=grits:pond]
-      (filter-pond-goal ctx(rock rock) sub-goal)
-    :: ~&  ["sub-roars and sub-grits" sub-roars sub-grits]
-    :: ~&  ["roars and grits" roars grits]
-    :-  :-  (weld roars sub-roars)
-            (weld grits sub-grits)
-    (wash-grits rock sub-grits)
-++  mix-pond-grals
-  |=  [=ctx =roars =grits:pond =goals:pond]
-  ^-  [^roars grits:pond]
-  ?~  goals  roars^grits
-  =.  rock.ctx  (wash-grits rock.ctx grits)
-  =+  rgs=(filter-pond-goals ctx goals)
-  [(weld roars -.rgs) (weld grits +.rgs)]
-++  wash-grits
-  |=  [=rock:pond =grits:pond]
-  ?~  grits  rock
-  %=  $
-    rock  (wash:pond rock *foam:pond i.grits)
-    grits  t.grits
-  ==
 ++  filter-pond-goal
   |=  [=ctx =goal:pond]
-  ^-  [roars grits:pond]
+  ^-  [roars grits:pond goals:pond]
   =*  bowl  bowl.ctx
   =*  rock  rock.ctx
   :: :-  ~
-  ~&  "filtering goal {<-.goal>}"
+  ~&  "filtering goal {<-.goal>}, top: {<top.ctx>}"
   =/  uturf  turf.rock
   ?~  uturf
-    ?+    goal  `~
+    ?+    goal  ``~
         [%set-turf *]
       ?.  =(our.bowl src.bowl)
-        `~
-      `[goal]~
+        ``~
+      `~[goal]~
     ==
   =*  turf  u.uturf
   ?@  goal
-    `[goal]~
-  ?+    -.goal  `[goal]~
+    `~[goal]~
+  ?+    -.goal  `~[goal]~
       %del-shade
     =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
-    ?~  shade-fx  `~
+    ?~  shade-fx  ``~
     =/  portal-counts  (count-portal-effects full-fx.u.shade-fx)
     =/  =goals:pond
       %+  turn  ~(tap in ~(key by portal-counts))
       |=  =portal-id
       [%del-shade-from-portal portal-id shade-id.goal]
-    (mix-pond-grals ctx(top |) ~ [goal]~ goals)
+    [~ [goal]~ goals]
       %set-shade-effect
     =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
-    ?~  shade-fx  `~
+    ?~  shade-fx  ``~
     =,  u.shade-fx
     =/  =goals:pond
       =/  og-effect  (~(get by full-fx) trigger.goal) 
@@ -107,7 +79,7 @@
       =/  count  (~(gut by portal-counts) u.del-portal-id 0)
       ?:  (gth count 1)  ~
       [%del-shade-from-portal u.del-portal-id shade-id.goal]~
-    (mix-pond-grals ctx(top |) ~ [goal]~ goals)
+    [~ [goal]~ goals]
     ::
       %create-bridge
     :: $:  %create-bridge
@@ -130,16 +102,16 @@
             `[%set-shade-effect shade-id trigger.goal `port+portal-id]
         ==
       same
-    (filter-pond-goals ctx(top |) goals)
+    ``goals
     ::
       %add-portal
-    ?.  =(our src):bowl  `~
-    `[goal]~
+    ?:  &(top.ctx !=(our src):bowl)  ``~
+    `~[goal]~
     ::
       %del-portal
-    ?:  &(top.ctx !=(our src):bowl)  `~
+    ?:  &(top.ctx !=(our src):bowl)  ``~
     =/  portal  (~(get by portals.deed.turf) from.goal)
-    ?~  portal  `~
+    ?~  portal  ``~
     =/  roars
       ?.  loud.goal  ~
       ?~  at.u.portal
@@ -149,11 +121,11 @@
     =/  goals
       ?~  shade-id.u.portal  ~
       [%del-portal-from-shade u.shade-id.u.portal from.goal]~
-    (mix-pond-grals ctx(top |) roars grits goals)
+    [roars grits goals]
     ::
       %add-shade-to-portal
     =/  portal  (~(gut by portals.deed.turf) from.goal ~)
-    ?~  portal  `~
+    ?~  portal  ``~
     =/  roars
       ?^  shade-id.portal  ~
       ?~  at.portal
@@ -164,20 +136,20 @@
       ?:  =(shade-id.portal `shade-id.goal)
         ~
       [%del-portal-from-shade u.shade-id.portal from.goal]~
-    (mix-pond-grals ctx(top |) roars [goal]~ goals)
+    [roars [goal]~ goals]
     ::
       %del-shade-from-portal
     =/  portal  (~(get by portals.deed.turf) from.goal)
-    ?~  portal  `~
+    ?~  portal  ``~
     ?.  =(shade-id.u.portal `shade-id.goal)
-      `~
-    (mix-pond-grals ctx(top |) ~ [goal]~ [%del-portal from.goal loud=%.y]~)
+      ``~
+    [~ [goal]~ [%del-portal from.goal loud=%.y]~]
     ::
       %del-portal-from-shade  
     =/  shade  (~(gut by cave.plot.turf) shade-id.goal ~)
-    ?~  shade  `~
+    ?~  shade  ``~
     ?.  =(/portal (scag 3 form-id.shade))
-      `[goal]~
+      `~[goal]~
     =/  shade-fx  (get-effects-by-shade turf shade)
     =/  portal-counts  (count-portal-effects full-fx.shade-fx)
     =/  =goals:pond
@@ -186,14 +158,14 @@
       ?.  =(~(wyt by portal-counts) 1)
         ~
       [%del-shade shade-id.goal]~
-    (mix-pond-grals ctx(top |) ~ [goal]~ goals)
+    [~ [goal]~ goals]
     ::
       %portal-requested
-    ?.  =(src.bowl ship.for.goal)  `~
-    `[%add-portal for.goal `at.goal]~
+    ?.  =(src.bowl ship.for.goal)  ``~
+    ``[%add-portal for.goal `at.goal]~
     ::
       %portal-retracted
-    ?.  =(src.bowl ship.for.goal)  `~
+    ?.  =(src.bowl ship.for.goal)  ``~
     =/  portals  ~(tap by portals.deed.turf)
     =/  portal-id
       |-  ^-  (unit portal-id)
@@ -203,64 +175,63 @@
         `p.i.portals
       $(portals t.portals)
     :: ~&  "we got this portal id based on our search: {<portal-id>}"
-    ?~  portal-id  `~
-    (filter-pond-goal ctx(top |) [%del-portal u.portal-id loud=%.n])
+    ?~  portal-id  ``~
+    ``[%del-portal u.portal-id loud=%.n]~
       %portal-confirmed
     =/  portal  (~(get by portals.deed.turf) from.goal)
-    ?~  portal  `~
-    ?.  =(src.bowl ship.for.u.portal)  `~
-    `[goal]~
+    ?~  portal  ``~
+    ?.  =(src.bowl ship.for.u.portal)  ``~
+    `~[goal]~
       %portal-discarded
     =/  portal  (~(get by portals.deed.turf) from.goal)
-    ?~  portal  `~
-    ?.  =(src.bowl ship.for.u.portal)  `~
-    (filter-pond-goal ctx(top |) [%del-portal from.goal loud=%.n])
+    ?~  portal  ``~
+    ?.  =(src.bowl ship.for.u.portal)  ``~
+    ``[%del-portal from.goal loud=%.n]~
       %send-chat
-    ?.  =(src.bowl from.goal)  `~
-    `[%chat from.goal now.bowl text.goal]~
+    ?.  =(src.bowl from.goal)  ``~
+    ``[%chat from.goal now.bowl text.goal]~
       %move
     =*  players  players.ephemera.turf
     =/  player  (~(get by players) ship.goal)
-    ?~  player  `~
+    ?~  player  ``~
     =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
     =/  player-colliding  (get-collidable turf pos.u.player)
     =/  will-be-colliding  (get-collidable turf pos)
     ?:  &(will-be-colliding !player-colliding)
       :: todo: get bump effects
-      `~
-    ?:  =(pos pos.u.player)  `~
-    =/  leave=[roars grits:pond]  (pull-trigger turf ship.goal %leave pos.u.player)
-    =/  step=[roars grits:pond]  (pull-trigger turf ship.goal %step pos)
+      ``~
+    ?:  =(pos pos.u.player)  ``~
+    =/  leave=[roars goals:pond]  (pull-trigger turf ship.goal %leave pos.u.player)
+    =/  step=[roars goals:pond]  (pull-trigger turf ship.goal %step pos)
     :-  (weld -.leave -.step)
-    :-  goal(pos pos)
+    :-  [goal(pos pos)]~
     (weld +.leave +.step)
       %join-player
     =|  =player
-    :-  [%player-add ship.goal]~
-    [%add-player ship.goal player(avatar avatar.goal)]~
+    ``[%add-player ship.goal player(avatar avatar.goal)]~
       %add-player
     :-  [%player-add ship.goal]~
-    [goal]~
+    ~[goal]~
       %del-player
     :-  [%player-del ship.goal]~
-    [goal]~
+    ~[goal]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
-  ^-  [=roars =grits:pond]
+  ^-  [=roars =goals:pond]
   =/  things  (get-things turf pos)
   =/  effects=(list effect)
     %+  murn  things
     |=  =thing
     (get-effect thing trigger)
   %+  roll  effects
-  |=  [=effect =roars =grits:pond]
+  |=  [=effect =roars =goals:pond]
   =/  res  (apply-effect turf ship effect)
   :-  (weld roars roars.res)
-  (weld grits grits.res)
+  (weld goals goals.res)
 ++  apply-effect
   |=  [=turf =ship =effect]
-  ^-  [=roars =grits:pond]
+  ^-  [=roars =goals:pond]
   ?+    -.effect  `~
       %port
     =/  portal  (~(get by portals.deed.turf) portal-id.effect)

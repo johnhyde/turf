@@ -1,9 +1,5 @@
 /-  *sss, *ssio
 /+  *sss
-::  dbug: agent wrapper for generic debugging tools
-::
-::    usage: %-(agent:dbug your-agent)
-::
 |%
 +$  card  $+(card card:agent:gall)
 ++  mk-mar
@@ -11,7 +7,6 @@
   (^mk-mar (mk-lake pool))
 ++  mk-lake
   |*  =(pool)
-  :: =-  ^-  (lake rock:- wave:-)  -
   |%
   ++  name  name:pool
   +$  rock  rock:pool
@@ -27,7 +22,6 @@
   --
 ++  mk-lake-1
   |.
-  :: =-  ^-  (lake rock:- wave:-)  -
   |%
   ++  name  %hm
   +$  rock  ~
@@ -41,17 +35,33 @@
   |*  =(pool)
   |*  du=_((du (mk-lake pool) *mold))
   |%
-  +$  ctx  [=bowl:gall =rock:lake:du top=?]
+  +$  ctx  [=bowl:gall =rock:pool top=?]
   +$  goals  (list goal:pool)
   +$  grits  (list grit:pool)
   ++  filter
-    |*  [path=paths:du =foam:pool =goals fun=$-([ctx goals] [* grits])]
-    ^-  [[(list card) _(fun)] pubs:du]
+    |*  acc=mold
+    |*  [path=paths:du =foam:pool =goals fil=$-([ctx goal:pool] [acc grits goals]) com=$-([acc acc] acc)]
+    ^-  [[(list card) acc grits] pubs:du]
     =/  read  (~(gut by read:du) path ~)
-    =/  rock  ?~(read *rock:lake:du rock.read)
-    =/  rgs  (fun [bowl:du rock top=%.y] goals)
+    =/  rock  ?~(read *rock:pool rock.read)
+    =|  top=@ud
+    =^  [=acc =grits]  rock
+      =|  [=acc =grits]
+      |-  ^-  [[^acc ^grits] rock:pool]
+      =/  =ctx  [bowl:du rock =(top 0)]
+      ?~  goals  [[acc grits] rock]
+      =/  [sub-acc=^acc sub-grits=^grits sub-goals=^goals]
+        (fil ctx i.goals)
+      =.  top  ?~(top 0 (sub top 1))
+      %=  $
+        rock  (wash:lake:du rock [foam sub-grits])
+        acc  (com acc sub-acc)
+        grits  (weld grits sub-grits)
+        goals  (weld sub-goals t.goals)
+        top  (add top (lent sub-goals))
+      ==
     =/  [cards=(list card) pub=pubs:du]
-      (give:du path [foam +.rgs])
-    [[cards rgs] pub]
+      (give:du path [foam grits])
+    [[cards acc grits] pub]
   --
 --

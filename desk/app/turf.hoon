@@ -11,10 +11,13 @@
 /$  c4  %pond-stirred  %json
 :: =/  hm           (mk-lake-1)
 =/  pond-lake      (mk-lake pond)
+:: =/  mist-lake      (mk-lake mist)
 =/  res-pond       (response:poke pond-lake *)
 :: =/  sub-hm-init  (mk-subs hm pond-path)
 =/  sub-pond-init  (mk-subs pond-lake pond-path)
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
+:: =/  sub-mist-init  (mk-subs mist-lake mist-path)
+:: =/  pub-mist-init  (mk-pubs mist-lake mist-path)
 =/  sub-mist-init  (mk-subs mist mist-path)
 =/  pub-mist-init  (mk-pubs mist mist-path)
 |%
@@ -57,12 +60,14 @@
 ::
     du-pond  =/  du  (du pond-lake pond-path)
             (du pub-pond bowl -:!>(*result:du))
+    de-pond  ((de pond) du-pond)
 ::
     da-mist  =/  da  (da mist mist-path)
             (da sub-mist bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
 ::
     du-mist  =/  du  (du mist mist-path)
             (du pub-mist bowl -:!>(*result:du))
+    de-mist  ((de mist) du-mist)
 ::
 ++  on-init
   ^-  (quip card _this)
@@ -445,12 +450,14 @@
 ::
     du-pond  =/  du  (du pond-lake pond-path)
             (du pub-pond bowl -:!>(*result:du))
+    de-pond  ((de pond) du-pond)
 ::
     da-mist  =/  da  (da mist mist-path)
             (da sub-mist bowl -:!>(*result:da) -:!>(*from:da) -:!>(*fail:da))
 ::
     du-mist  =/  du  (du mist mist-path)
             (du pub-mist bowl -:!>(*result:du))
+    :: de-mist  ((de mist) du-mist)
 
 ++  scrio  ~(scry agentio bowl)
 ++  default-mist
@@ -534,11 +541,12 @@
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id.stir)
   =^  [ssio-cards=(list card) =roars =grits:pond]  pub-pond
-    %-  filter:((de pond) du-pond)
+    %-  (filter:de-pond roars)
     :*  ppath
         `foam:pond`[id.stir src]
         goals.stir
-        filter-pond-goals
+        filter-pond-goal
+        weld
     ==
   =/  cards=(list card)
     =/  =stirred:pond  [%wave id.stir grits]
