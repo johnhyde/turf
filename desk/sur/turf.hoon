@@ -43,8 +43,9 @@
 +$  deed
   $:  =perms
       =portals
-      =join-reqs
-      =join-recs
+      =port-reqs
+      =port-recs
+      =port-offers
   ==
 +$  portals  (map portal-id portal)
 +$  portal-id  shade-id
@@ -53,8 +54,10 @@
       for=turf-id
       at=(unit portal-id)  :: the portal on the other side
   ==
-+$  join-reqs  (map ship [=portal-id =avatar])
-+$  join-recs  (jug portal-id ship)
++$  port-reqs  (map ship [=portal-id =avatar])
++$  port-recs  (jug portal-id ship)
++$  port-offers  (map ship portal-id)
++$  port-offer  [of=turf-id from=portal-id for=turf-id at=portal-id]
 +$  perms
   $+  perms
   $:  default=$~(%in perm)

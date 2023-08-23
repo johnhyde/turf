@@ -1,25 +1,20 @@
 /-  *turf, pond, mist
 /+  *turf, sss
 |%
-:: roars are turf-scoped effects emitted by filters
-:: which update state and produce cards
-+$  roar
-  $%  [%portal-request from=portal-id for=turf-id]
-      [%portal-retract from=portal-id for=turf-id]
-      [%portal-confirm from=portal-id for=turf-id at=portal-id]
-      [%portal-discard for=turf-id at=portal-id]
-      [%port =ship for=turf-id at=portal-id]
-      [%player-add =ship]
-      [%player-del =ship]
-  ==
-+$  roars  (list roar)
 :: +$  [=bowl:gall =rock:pond top=?]
 ++  filter-mist-goal
-  |=  [[=bowl:gall =rock:mist top=?] [pre-roars=roars closet=skye] =goal:mist]
+  |=  [[=bowl:gall =rock:mist top=?] [pre-roars=roars:mist closet=skye] =goal:mist]
+  =*  roar  roar:mist
+  =*  roars  roars:mist
   ^-  [[roars skye] grits:mist goals:mist]
   =-  [[(weld pre-roars roars) closet] grits goals]
   ^-  [=roars =grits:mist =goals:mist]
   ?+    -.goal  `~[goal]~
+      %set-ctid
+    ?:  =(ctid.rock turf-id.goal)  ``~
+    :-  ?~  ctid.rock  ~
+        [%turf-exit u.ctid.rock]~
+    ~[goal]~
       %add-thing-from-closet
     =/  form  (~(get by closet) form-id.goal)
     ?~  form  ``~
@@ -30,9 +25,42 @@
     ^-  thing
     :-  [form-id.goal 0 *husk-bits]
     u.form
+      %port-offered
+    :-  ~
+    ?.  =(src.bowl ship.of.goal)  `~
+    ?.  =(`for.goal ttid.rock)
+      ~[goal]~
+    `[%export-self +.goal]~
+      %accept-port-offer
+    :-  ~
+    ?~  port-offer.rock  ~[goal]~
+    ?.  =(for.goal for.u.port-offer.rock)
+      ~[goal]~
+    `[%export-self u.port-offer.rock]~
+      %reject-port-offer
+    :-  ?~  off=port-offer.rock  ~
+        [%port-offer-reject of.u.port-offer.rock from.u.port-offer.rock]~
+    ~[goal]~
+      %export-self
+    :-  [%port-offer-accept +.goal]~
+    :-  [goal]~
+    [%set-ctid `for.goal]~
+      %port-accepted
+    :_  `~
+    ?.  =(ship.for.goal src.bowl)  ~
+    ?.  =(`for.goal ctid.rock)  ~
+    [%turf-join for.goal]~
+      %port-rejected
+    :-  ~
+    :-  ~
+    ?.  =(ship.for.goal src.bowl)  ~
+    ?.  =(`for.goal ctid.rock)  ~
+    [%set-ctid ~]~
   ==
 ++  filter-pond-goal
-  |=  [[=bowl:gall =rock:pond top=?] pre-roars=roars =goal:pond]
+  |=  [[=bowl:gall =rock:pond top=?] pre-roars=roars:pond =goal:pond]
+  =*  roar  roar:pond
+  =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
   ~&  "filtering goal {<-.goal>}, top: {<top>}"
@@ -123,6 +151,7 @@
       [%portal-discard for.u.portal u.at.u.portal]~
     =/  grits  [goal]~
     =/  goals
+      :-  [%del-port-recs from.goal]
       ?~  shade-id.u.portal  ~
       [%del-portal-from-shade u.shade-id.u.portal from.goal]~
     [roars grits goals]
@@ -210,6 +239,60 @@
     :-  (weld -.leave -.step)
     :-  [goal(pos pos)]~
     (weld +.leave +.step)
+      %port-offer-accepted
+    ?.  =(src.bowl ship.goal)  ``~
+    =/  offer  (~(get by port-offers.deed.turf) ship.goal)
+    ?~  offer  ``~
+    =/  portal  (~(gut by portals.deed.turf) u.offer ~)
+    ?:  |(?=(~ portal) ?=(~ at.portal))
+      ``[%del-port-offer ship.goal]~
+    :: ?~  at.portal  ``~
+    :-  [%port ship.goal for.portal u.at.portal]~
+    `[%del-player ship.goal]~
+      %port-offer-rejected
+    ?.  =(src.bowl ship.goal)  ``~
+    =/  offer  (~(get by port-offers.deed.turf) ship.goal)
+    ?~  offer  ``~
+    ?.  =(u.offer from.goal)  ``~
+    ``[%del-port-offer ship.goal]~
+      %import-player
+    :-  ~
+    :-  ~
+    =|  =player
+    %+  murn
+      ^-  (list (unit goal:pond))
+      :~  `[%add-player ship.goal player(avatar avatar.goal)]
+        ::
+          ?.  (~(has ju port-recs.deed.turf) from.goal ship.goal)
+            ~
+          `[%del-port-rec from.goal ship.goal]
+        ::
+          ?.  (~(has by port-reqs.deed.turf) ship.goal)
+            ~
+          `[%del-port-req ship.goal]
+      ==
+    same
+      %add-port-offer
+    =/  portal  (~(gut by portals.deed.turf) from.goal ~)
+    ?~  portal  ``~
+    ?~  at.portal  ``~
+    :-  [%port-offer ship.goal from.goal for.portal u.at.portal]~
+    ~[goal]~
+      %add-port-req
+    ?.  (~(has by portals.deed.turf) from.goal)  ``~
+    ?.  =(ship.goal src.bowl)  ``~
+    ?:  (~(has ju port-recs.deed.turf) from.goal ship.goal)
+      ``[%import-player +.goal]~
+    `~[goal]~
+      %add-port-rec
+    =/  portal  (~(gut by portals.deed.turf) from.goal ~)
+    ?~  portal  ``~
+    ?.  =(ship.for.portal src.bowl)  ``~
+    =/  req  (~(gut by port-reqs.deed.turf) ship.goal ~)
+    ?~  req  `~[goal]~
+    ?.  =(portal-id.req from.goal)
+      `~[goal]~
+    ``[%import-player ship.goal from.goal avatar.req]~
       %join-player
     =|  =player
     ``[%add-player ship.goal player(avatar avatar.goal)]~
@@ -218,33 +301,32 @@
     ~[goal]~
       %del-player
     :-  [%player-del ship.goal]~
-    ~[goal]~
+    :-  [goal]~
+    [%del-port-offer ship.goal]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
-  ^-  [=roars =goals:pond]
+  ^-  [=roars:pond =goals:pond]
   =/  things  (get-things turf pos)
   =/  effects=(list effect)
     %+  murn  things
     |=  =thing
     (get-effect thing trigger)
   %+  roll  effects
-  |=  [=effect =roars =goals:pond]
+  |=  [=effect =roars:pond =goals:pond]
   =/  res  (apply-effect turf ship effect)
   :-  (weld roars roars.res)
   (weld goals goals.res)
 ++  apply-effect
   |=  [=turf =ship =effect]
-  ^-  [=roars =goals:pond]
+  ^-  [=roars:pond =goals:pond]
   ?+    -.effect  `~
       %port
-    =/  portal  (~(get by portals.deed.turf) portal-id.effect)
-    :-
-      ?~  portal  ~
-      ?~  at.u.portal  ~
-      [%port ship for.u.portal u.at.u.portal]~
-    :: [%del-player ship]~
-    ~
+    :-  ~
+    =/  portal  (~(gut by portals.deed.turf) portal-id.effect ~)
+    ?~  portal  ~
+    ?~  at.portal  ~
+    [%add-port-offer ship portal-id.effect]~
       %jump
     `[%move ship to.effect]~
   ==
@@ -356,6 +438,33 @@
           (face +.grit)
             %set-avatar
           (pond-set-avatar +.grit)
+            %add-port-offer
+          %-  pairs
+          :~  ship+(ship-json ship.grit)
+              from+(numb from.grit)
+          ==
+            %del-port-offer
+          (ship-json ship.grit)
+            %add-port-req
+          %-  pairs
+          :~  ship+(ship-json ship.grit)
+              from+(numb from.grit)
+              avatar+(avatar avatar.grit)
+          ==
+            %del-port-req
+          (ship-json ship.grit)
+            %add-port-rec
+          %-  pairs
+          :~  from+(numb from.grit)
+              ship+(ship-json ship.grit)
+          ==
+            %del-port-rec
+          %-  pairs
+          :~  from+(numb from.grit)
+              ship+(ship-json ship.grit)
+          ==
+            %del-port-recs
+          (numb from.grit)
             %add-player
           (add-player +.grit)
             %del-player

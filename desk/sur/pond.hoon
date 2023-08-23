@@ -36,6 +36,13 @@
       move-grit
       face-grit
       set-avatar-grit
+      add-port-offer-grit
+      del-port-offer-grit
+      add-port-req-grit
+      del-port-req-grit
+      add-port-rec-grit
+      del-port-rec-grit
+      del-port-recs-grit
       add-player-grit
       del-player-grit
   ==
@@ -70,8 +77,13 @@
 +$  move-grit  [%move =ship pos=svec2]
 +$  face-grit  [%face =ship =dir]
 +$  set-avatar-grit  [%set-avatar =ship =avatar]
++$  add-port-offer-grit  [%add-port-offer =ship from=portal-id]
++$  del-port-offer-grit  [%del-port-offer =ship]
 +$  add-port-req-grit  [%add-port-req =ship from=portal-id =avatar]
++$  del-port-req-grit  [%del-port-req =ship]
 +$  add-port-rec-grit  [%add-port-rec from=portal-id =ship]
++$  del-port-rec-grit  [%del-port-rec from=portal-id =ship]
++$  del-port-recs-grit  [%del-port-recs from=portal-id]
 +$  add-player-grit  [%add-player =ship =player]
 +$  del-player-grit  [%del-player =ship]
 ::
@@ -91,6 +103,9 @@
       portal-requested-goal
       portal-retracted-goal
       portal-discarded-goal
+      port-offer-accepted-goal
+      port-offer-rejected-goal
+      import-player-goal
   ==
 ::  let's us create a shade and/or portal
 ::  and link them in one transaction
@@ -100,11 +115,27 @@
       =trigger
       portal=?(portal-id turf-id)
   ==
++$  port-offer-accepted-goal  [%port-offer-accepted =ship from=portal-id]
++$  port-offer-rejected-goal  [%port-offer-rejected =ship from=portal-id]
++$  import-player-goal  [%import-player =ship from=portal-id =avatar]
 +$  stirred
     $%  [what=%rock =rock]
         [what=%wave id=stir-id =grits]
     ==
 ::
+:: roars are turf-scoped effects emitted by filters
+:: which update state and produce cards
++$  roar
+  $%  [%portal-request from=portal-id for=turf-id]
+      [%portal-retract from=portal-id for=turf-id]
+      [%portal-confirm from=portal-id for=turf-id at=portal-id]
+      [%portal-discard for=turf-id at=portal-id]
+      [%port =ship for=turf-id at=portal-id]
+      [%port-offer =ship from=portal-id for=turf-id at=portal-id]
+      [%player-add =ship]
+      [%player-del =ship]
+  ==
++$  roars  (list roar)
 ::
 ::
 ++  wash-grit
@@ -202,6 +233,34 @@
     %^  jab-by-players  turf  ship.grit
     |=  =player
     player(avatar avatar.grit)
+      %add-port-offer
+    =.  port-offers.deed.turf
+      (~(put by port-offers.deed.turf) ship.grit from.grit)
+    turf
+      %del-port-offer
+    =.  port-offers.deed.turf
+      (~(del by port-offers.deed.turf) ship.grit)
+    turf
+      %add-port-req
+    =.  port-reqs.deed.turf
+      (~(put by port-reqs.deed.turf) ship.grit [from.grit avatar.grit])
+    turf
+      %del-port-req
+    =.  port-reqs.deed.turf
+      (~(del by port-reqs.deed.turf) ship.grit)
+    turf
+      %add-port-rec
+    =.  port-recs.deed.turf
+      (~(put ju port-recs.deed.turf) from.grit ship.grit)
+    turf
+      %del-port-rec
+    =.  port-recs.deed.turf
+      (~(del ju port-recs.deed.turf) from.grit ship.grit)
+    turf
+      %del-port-recs
+    =.  port-recs.deed.turf
+      (~(del by port-recs.deed.turf) from.grit)
+    turf
       %add-player
     =.  players
       (~(put by players) ship.grit player.grit)

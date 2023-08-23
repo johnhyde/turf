@@ -24,7 +24,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_28
+      reset=_29
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -229,7 +229,6 @@
     :: ?:  =(our.bowl target)
     =^  cards  state  (stir-mist:hc `src.bowl stir)
     cards^this
-    :: ?>  =(our src):bowl
     :: :_  this
     :: [%pass [%mist-stir (drop id.stir)] %agent [target %turf] %poke [%mist-stir vase]]~
   ::
@@ -528,13 +527,27 @@
       [ship.turf-id %turf]
       [%poke %pond-stir !>([stir])]
   ==
+++  mist-stir-card
+  |=  [=wire who=ship =goal:mist]
+  ^-  card
+  =/  stir=stir:mist
+    :*  dmpath
+        ~
+        [goal]~
+    ==
+  :*  %pass
+      wire
+      %agent
+      [who %turf]
+      [%poke %mist-stir !>([stir])]
+  ==
 ::
 ++  stir-mist
   |=  [src=(unit ship) =stir:mist]
   ^-  (quip card _state)
   :: ~&  "start to stir mist. stir: {<goal>} pub-mist wyt: {<~(wyt by +.pub-mist)>}"
-  =^  [ssio-cards=(list card) [=roars *] =grits:mist]  pub-mist
-    %-  (filter:de-mist ,[roars $~(closet skye)])
+  =^  [ssio-cards=(list card) [=roars:mist *] =grits:mist]  pub-mist
+    %-  (filter:de-mist ,[roars:mist $~(closet skye)])
     :*  mpath.stir
         `foam`[id.stir src]
         goals.stir
@@ -543,8 +556,43 @@
   =/  cards=(list card)
     =/  =stirred:mist  [%wave id.stir grits]
     [%give %fact [;;(path mpath.stir)]~ %mist-stirred !>(stirred)]~
+  =^  roar-cards=(list card)  state
+    %+  roll  roars
+    |=  [=roar:mist [cards=(list card) sub-state=_state]]
+    =.  state  sub-state
+    =^  new-cards  state
+      ?-    -.roar
+          %port-offer-accept
+        :_  state
+        :~  %^    pond-stir-card
+                /port-offer-accept
+              of.roar
+            [%port-offer-accepted our.bowl from.roar]
+            %^    pond-stir-card
+                /port-request
+              for.roar
+            [%add-port-req our.bowl from=at.roar avatar:(need (default-mist:hc))]
+        ==
+          %port-offer-reject
+        :_  state
+        :_  ~
+        %^    pond-stir-card
+            /port-offer-reject
+          of.roar
+        [%port-offer-rejected our.bowl from.roar]
+          %turf-join
+        =^  cards  sub-pond
+          ?:  =(our.bowl ship.turf-id.roar)  `sub-pond
+          (surf:da-pond (turf-id-to-sub-key turf-id.roar))
+        cards^state
+          %turf-exit
+        =.  sub-pond
+          (quit:da-pond (turf-id-to-sub-key turf-id.roar))
+        `state
+      ==
+    (weld cards new-cards)^state
   =^  pond-cards=(list card)  state  (sync-avatar)
-  [:(weld ssio-cards cards pond-cards) state]
+  [:(weld ssio-cards cards roar-cards pond-cards) state]
 :: ++  stir-mist
 ::   |=  [mpath=mist-path id=stir-id:mist wave=(unit wave:mist)]
 ::   ^-  (quip card _state)
@@ -563,8 +611,8 @@
   ^-  (quip card _state)
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id.stir)
-  =^  [ssio-cards=(list card) =roars =grits:pond]  pub-pond
-    %-  (filter:de-pond roars)
+  =^  [ssio-cards=(list card) =roars:pond =grits:pond]  pub-pond
+    %-  (filter:de-pond roars:pond)
     :*  ppath
         `foam`[id.stir src]
         goals.stir
@@ -575,20 +623,10 @@
     [%give %fact [(turf-id-to-path turf-id.stir)]~ %pond-stirred !>(stirred)]~
   =^  roar-cards=(list card)  state
     %+  roll  roars
-    |=  [=roar [cards=(list card) sub-state=_state]]
+    |=  [=roar:pond [cards=(list card) sub-state=_state]]
     =.  state  sub-state
     =^  new-cards  state
       ?-    -.roar
-          %player-add
-        :: ~&  "we are surfing"
-        =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
-        cards^state
-          %player-del
-        =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
-        `state
-          %port
-        :: todo send suggestion and vouch
-        `state
           %portal-request
         :_  state
         :_  ~
@@ -617,6 +655,34 @@
             /portal-discard
           for.roar
         [%portal-discarded from=at.roar]
+        ::
+          %port
+        :: todo send suggestion and vouch
+        :_  state
+        :_  ~
+        %^    pond-stir-card
+            /port-vouch
+          for.roar
+        [%add-port-rec from=at.roar ship.roar]
+          %port-offer
+        :: todo send suggestion and vouch
+        :_  state
+        :_  ~
+        %^    mist-stir-card
+            /port-offer
+          ship.roar
+        [%port-offered turf-id.stir from.roar for.roar at.roar]
+          %player-add
+        =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
+        =/  mist-card=card
+          %^    mist-stir-card
+              /port-accept
+            ship.roar
+          [%port-accepted turf-id.stir]
+        [mist-card cards]^state
+          %player-del
+        =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
+        `state
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
