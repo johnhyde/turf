@@ -14,6 +14,7 @@ var game, scene, cam, cursors, keys = {}, player, tiles;
 var formIndexMap, players = {}, shades = {};
 
 async function loadImage(id, url, isWall = false, config = {}) {
+  console.log("trying to load image: " + id)
   if (game.textures.exists(id)) return;
   return new Promise((resolve, reject) => {
     const onError = (key) => {
@@ -28,22 +29,26 @@ async function loadImage(id, url, isWall = false, config = {}) {
       resolve();
     });
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
-    if (isWall) {
-      const img = new Image();
-      img.onload = () => game.textures.addSpriteSheet(id, img, {
-        frameWidth: 32,
-        frameHeight: 64,
-        ...config,
-      });
-      img.onabort = () => {
-        console.log('aborted');
-        onError(id);
+    try {
+      if (isWall) {
+        const img = new Image();
+        img.onload = () => game.textures.addSpriteSheet(id, img, {
+          frameWidth: 32,
+          frameHeight: 64,
+          ...config,
+        });
+        img.onabort = () => {
+          console.log('aborted');
+          onError(id);
+        }
+        img.onerror = () => onError(id);
+        img.src = url;
+        // game.textures.addImage(id, img);
+      } else {
+        game.textures.addBase64(id, url);
       }
-      img.onerror = () => onError(id);
-      img.src = url;
-      // game.textures.addImage(id, img);
-    } else {
-      game.textures.addBase64(id, url);
+    } catch (e) {
+      if (!game.textures.exists(id)) reject(e);
     }
   });
 }

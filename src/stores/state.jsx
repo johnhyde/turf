@@ -1,4 +1,4 @@
-import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps, batch } from "solid-js";
+import { createSignal, createContext, createEffect, createMemo, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
@@ -97,6 +97,7 @@ export function getState() {
   });
 
   const selectedTab = () => state.selectedTab;
+  const owner = getOwner();
 
   const _state = mergeProps(state, {
     $: $state,
@@ -104,21 +105,25 @@ export function getState() {
       $state('name', name);
     },
     subToTurf(id) {
-      if (!state.ponds[id]) {
-        $state('ponds', id, new Pond(id));
-      } else {
-        state.ponds[id].subscribe();
-      }
+      runWithOwner(owner, () => {
+        if (!state.ponds[id]) {
+          $state('ponds', id, new Pond(id));
+        } else {
+          state.ponds[id].subscribe();
+        }
+      });
     },
     switchToTurf(id) {
-      id = '/pond/' + id;
-      if (!state.ponds[id]) {
-        $state('ponds', id, new Pond(id));
-      } else {
-        state.ponds[id].subscribe();
-      }
-      api.switchToTurf(id);
-      $state('currentTurfId', id);
+      runWithOwner(owner, () => {
+        id = '/pond/' + id;
+        if (!state.ponds[id]) {
+          $state('ponds', id, new Pond(id));
+        } else {
+          state.ponds[id].subscribe();
+        }
+        api.switchToTurf(id);
+        $state('currentTurfId', id);
+      });
     },
     sendPondWave(type, arg, id) {
       id = id || this.currentTurfId;

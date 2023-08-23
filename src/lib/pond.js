@@ -1,295 +1,13 @@
-import { batch, on, createEffect, createMemo, createSignal, mergeProps, getOwner } from "solid-js";
-import { createStore, unwrap, produce, reconcile } from "solid-js/store";
+import { createMemo } from "solid-js";
+import { produce } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
-import isEqual from 'lodash/isEqual';
 import * as api from 'lib/api.js';
 import {
   clampToTurf, isInTurf, getCollision, getEffectsByShade,
   jabBySpaces, delShade, delPortal
 } from 'lib/turf';
-import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
-
-function gritsTypeStr(grits) {
-  return `batch: [${grits.map(w => w?.type || 'no-op').join(', ')}]`;
-}
-
-export class Pond { // we use a class so we can put it inside a store without getting proxied
-  constructor(id, options = {}) {
-    this.id = id;
-    const [pond, $pond] = getPond();
-    this._ = pond;
-    this.$ = $pond;
-
-    this.firstChargeTimer = null;
-    this.lastChargeTimer = null;
-    this.minBatchLatency = options.minBatchLatency || 300;
-    this.maxBatchLatency = options.maxBatchLatency || 1200;
-    this.subscribe();
-    // this.sendWave('') // todo join turf
-  }
-
-  get turf() {
-    return this._.turf;
-  }
-
-  get pulses() {
-    return this._.pulses;
-  }
-
-  get charges() {
-    return this._.charges;
-  }
-
-  get ether() {
-    const parent = this;
-    return this._.ether;
-  }
-  get grid() {
-    return this._.grid;
-  }
-
-  // returns true/false whether we attempted to send the wave or not
-  // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
-  sendWave(type, arg, batch = true) {
-    let charge = filterGoals(this.ether, [{ type, arg }]);
-    if (!charge) return false;
-    if (batch) {
-      this.addCharge(charge);
-    } else {
-      const {goals, grits} = charge;
-      const uuid = uuidv4();
-      console.log('sending grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
-      this.addPulse({
-        id: uuid,
-        grits,
-      });
-      this.sendWavePoke(goals, uuid);
-    }
-    return true;
-  }
-  async sendWavePoke(goals, uuid, retries = 0) {
-    try {
-      await api.sendPondWave(this.id, goals, uuid);
-    } catch (e) {
-      if (e?.message === 'Failed to fetch') {
-        // internet connectivity issue
-        if (retries < 4) { // 15 seconds before pulse is discarded (1+2+4+8)
-          const timeout = Math.pow(2, retries)*1000;
-          retries++;
-          console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
-          setTimeout(() => this.sendWavePoke(goal, uuid, retries), timeout);
-        } else {
-          console.warn('Failed to send wave, no more retries, rolling back');
-          this.removePulse(uuid);
-          this.replayEther();
-        }
-      } else {
-        console.warn('Failed to send wave, can\'t retry, rolling back');
-        this.removePulse(uuid);
-        this.replayEther();
-      }
-    }
-  }
-
-  onPondRes(res) {
-    batch(() => {
-      if (res.hasOwnProperty('rock')) {
-        const newTurf = rockToTurf(res.rock.turf, this.id);
-        console.log(`new turf for ${this.id} from rock`, newTurf);
-        this.$('turf', reconcile(newTurf, { merge: true }));
-        this.updatePulses(false, res.rock.stirIds[our]); // always resets ether because grit is undefined
-        // this.resetEther();
-        // this.removePulses();
-        console.log('leftover pulses: ', this.pulses.length);
-      } else if (res.hasOwnProperty('wave')) {
-        const { grits, id } = res.wave;
-        console.log(`getting wave for ${this.id}`, gritsTypeStr(grits), 'with id', id ? id.substring(0, 4) : id);
-        const noop = !grits || grits.length === 0;
-        const noPulses = this.pulses.length === 0;
-        const noCharges = this.charges.length === 0;
-        
-        if (!noop) {
-          washTurf(this.updateTurf.bind(this), grits);
-        }
-        if (!noop && noPulses && noCharges) {
-          washTurf(this.updateEther.bind(this), grits);
-        } else {
-          this.updatePulses(noop, id, grits);
-        }
-      } else {
-        console.error('Pond response not a rock or wave???', res);
-      }
-    });
-  }
-
-  subscribe() {
-    const onPondErr = () => {};
-    const onPondQuit = () => {};
-    api.subscribeToTurf(this.id, this.onPondRes.bind(this), onPondErr, onPondQuit);
-  }
-
-  applyGrits(wave) {
-    washTurf(this.updateEther.bind(this), wave);
-  }
-
-  addPulse(pulse, apply = true) {
-    batch(() => {
-      this.$('pulses', (pulses) => [...pulses, pulse]);
-      if (apply) this.applyGrits(pulse.grits);
-    });
-  }
-
-  applyPulses() {
-    this.pulses.forEach((pulse) => {
-      this.applyGrits(pulse.grits);
-    });
-  }
-
-  removePulse(uuid) {
-    const pulseI = this.pulses.findIndex(p => p.id === uuid);
-    this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
-  }
-
-  removePulses() {
-    this.$('pulses', []);
-  }
-
-  updatePulses(noop, id, grits) {
-    const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
-    const matches = pulseI >= 0;
-    const matchesFirst = pulseI === 0;
-    const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].grits), grits);
-    const changesSomething = !noop || matches;
-    const etherInvalidated = changesSomething && !(matchesFirst && confirms);
-    if (matches) {
-      // once we can guarantee that pokes are send to ship in order,
-      // we can throw out any pulses before the matched one
-      // this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
-      if (!confirms) console.log('DID NOT CONFIRM\nDID NOT CONFIRM');
-      if (pulseI > 0) console.log(`THROWING AWAY ${pulseI} UNMATCHED PULSE(S)`);
-      this.$('pulses', p => p.slice(pulseI + 1));
-    }
-    if (etherInvalidated) {
-      this.replayEther();
-    }
-  }
-
-  addCharge(charge, apply = true) {
-    // console.log('adding charge')
-    if (this.charges.length == 0) {
-      this.setFirstChargeTimer();
-    }
-    this.setLastChargeTimer();
-    batch(() => {
-      this.$('charges', (charges) => [...charges, charge]);
-      if (apply) this.applyGrits(charge.grits);
-    });
-  }
-
-  setFirstChargeTimer() {
-    if (this.firstChargeTimer) {
-      clearTimeout(this.firstChargeTimer);
-    }
-    this.firstChargeTimer = setTimeout(() => {
-      // console.log(`at least ${this.maxBatchLatency}ms since first charge; firing`);
-      if (this.charges.length >= 1) {
-        this.fireCharges();
-      }
-    }, this.maxBatchLatency);
-  }
-
-  setLastChargeTimer() {
-    if (this.lastChargeTimer) {
-      clearTimeout(this.lastChargeTimer);
-    }
-    this.lastChargeTimer = setTimeout(() => {
-      // console.log(`at least ${this.minBatchLatency}ms since last charge; firing`);
-      if (this.charges.length >= 1) {
-        this.fireCharges();
-      }
-    }, this.minBatchLatency);
-  }
-
-  applyCharges() {
-    this.charges.forEach((charge) => {
-      this.applyGrits(charge.grits);
-    });
-  }
-
-  fireCharges() {
-    batch(() => {
-      if (this.firstChargeTimer)
-        clearTimeout(this.firstChargeTimer);
-      if (this.lastChargeTimer)
-        clearTimeout(this.lastChargeTimer);
-      let goals = [], grits = [];
-      this.charges.forEach(c => {
-        goals = [...goals, ...c.goals]
-        grits = [...grits, ...c.grits]
-      });
-      const uuid = uuidv4();
-      console.log('sending grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
-      this.$('charges', []);
-      this.addPulse({
-        id: uuid,
-        grits,
-      }, false); // don't apply because charges were already applied
-      this.sendWavePoke(goals, uuid);
-    });
-  }
-
-  resetEther() {
-    // console.log('resetting ether');
-    const turfCopy = js.turf(cloneDeep(this.turf));
-    this.$('ether', reconcile(turfCopy, { merge: true }));
-  }
-
-  replayEther() {
-    console.log('replaying ether');
-    batch(() => {
-      this.resetEther();
-      this.applyPulses();
-      this.applyCharges();
-    });
-  }
-
-  updateTurf(fun) {
-    // console.log('updating base turf')
-    batch(() => {
-      if (this.turf && !this.turf.id) this.$('turf', 'id', this.id);
-      this.$('turf', fun);
-    });
-  }
-  
-  updateEther(fun) {
-    // console.log('updating ether')
-    batch(() => {
-      if (this.ether && !this.ether.id) this.$('ether', 'id', this.id);
-      this.$('ether', fun);
-    });
-  }
-}
-
-export function getPond() {
-  let ether, grid;
-  const [pond, $pond] = createStore({
-    turf: null,
-    ether: null,
-    pulses: [], // waves that have been sent but not confirmed
-    charges: [], // grits to be sent in the next batch
-    get grid() {
-      return grid();
-    },
-  });
-
-  grid = createMemo(() => {
-    console.log('recomputing grid, for some reason');
-    if (!pond.ether) return null;
-    return getTurfGrid(pond.ether);
-  });
-
-  return [pond, $pond];
-}
+import { vec2, vecToStr, jClone } from 'lib/utils';
+import { getPool } from 'lib/pool';
 
 function getTurfGrid(turf) {
   const grid = [];
@@ -311,10 +29,65 @@ function getTurfGrid(turf) {
   return grid;
 }
 
-export function rockToTurf(rock, id) {
-  if (rock) rock.id = id;
-  js.turf(rock);
-  return rock;
+export class Pond { // we use a class so we can put it inside a store without getting proxied
+  constructor(id, options = {}) {
+    this.id = id;
+    const wash = (update, grits) => {
+      update((turf) => {
+        if (!turf?.id) return { ...turf, id };
+        return turf;
+      });
+      washTurf(update, grits);
+    }
+    const hydrate = (rock) => {
+      if (rock) rock.id = id;
+      return js.turf(rock);
+    }
+    const apiSendWave = (...args) => {
+      api.sendPondWave(id, ...args);
+    };
+    this._ = getPool(wash, hydrate, apiSendWave, filters);
+    this.$ = this._.$;
+
+    this._grid = createMemo(() => {
+      if (!this.ether) return null;
+      return getTurfGrid(this.ether);
+    });
+
+    this.subscribe();
+  }
+
+  get turf() {
+    return this._.real;
+  }
+
+  get pulses() {
+    return this._.pulses;
+  }
+
+  get charges() {
+    return this._.charges;
+  }
+
+  get ether() {
+    return this._.fake;
+  }
+
+  get grid() {
+    return this._grid();
+  }
+
+  // returns true/false whether we attempted to send the wave or not
+  // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
+  sendWave(type, arg, batch = true) {
+    this._.sendWave(type, arg, batch);
+  }
+
+  subscribe() {
+    const onPondErr = () => {};
+    const onPondQuit = () => {};
+    api.subscribeToTurf(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
+  }
 }
 
 const pondGrits = {
@@ -482,8 +255,12 @@ export function _washTurf(grit) {
       };
     default:
       return produce((turf) => {
-        pondGrits[grit.type](turf, grit.arg);
-        js.turf(turf);
+        if (pondGrits[grit.type]) {
+          pondGrits[grit.type](turf, grit.arg);
+          js.turf(turf);
+        } else {
+          console.warn(`Could not process grit of type: ${grit.type}`);
+        }
       });
   }
 }
@@ -512,7 +289,7 @@ const filters = {
     const newPos = clampToTurf(turf, pos);
     const playerColliding = getCollision(turf, player.pos);
     const willBeColliding = getCollision(turf, newPos);
-    if (willBeColliding && !playerColliding) return false;
+    // if (willBeColliding && !playerColliding) return false;
     if (newPos.equals(player.pos)) return false;
     goal.arg.pos = newPos;
     return goal;
@@ -534,39 +311,6 @@ const filters = {
     debugger;
   }
 };
-
-// returns false if wave is rejected
-// otherwise, returns {goals, grits}
-function filterGoals(turf, goals) {
-  const [temp, $temp] = createStore(js.turf(cloneDeep(turf)));
-  const newGoals = [], grits = [];
-  goals.forEach((goal) => {
-    const filtered = filterGoal(temp, goal);
-    if (filtered) {
-      newGoals.push(filtered.goal);
-      grits.push(filtered.grit);
-      washTurf($temp, [filtered.grit]);
-    }
-  });
-
-  if (!grits.length) return false;
-  return {
-    goals: newGoals,
-    grits,
-  };
-}
-
-function filterGoal(turf, goal) {
-  if (filters[goal.type]) {
-    const goalGrit = filters[goal.type](turf, goal);
-    if (!goalGrit) return false;
-    if (goalGrit instanceof Array) {
-      return { goal: goalGrit[0], grit: goalGrit[1] };
-    }
-    return { goal: goalGrit, grit: goalGrit };
-  }
-  return { goal: goal, grit: goal };
-}
 
 // We mutate everything I guess!
 const js = {
