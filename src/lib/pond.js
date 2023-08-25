@@ -114,6 +114,15 @@ export class Pond { // we use a class so we can put it inside a store without ge
         } else {
           this.updatePulses(noop, id, grit);
         }
+        //Proof of concept for the movement actionqueue system.
+        //TODO: move this where it actually should be. pond.js's pondWaves?
+        console.log(id, grit);
+        const tmpBatch = grit.type == "batch" ? grit : {"arg": [grit]}; //make the system plural so I only have to type the logic once.
+        for (const wave of tmpBatch.arg) {
+          if (wave.arg.ship != player.patp) { //guard against the own player repeating its action.
+            players[wave.arg.ship].actionQueue.push(wave); //Put the grit in the ship's queue. Iff it's not us.
+           }
+        }
       } else {
         console.error('Pond response not a rock or wave???', res);
       }
