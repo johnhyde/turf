@@ -23,3 +23,21 @@ Well, hopefully that's helpful!
 
 ## Remark
 There is probably "objectively" too much duplication of code in this project. However, much of this may be unavoidable, because of the many conversions that take place in a simple roundtrip from the front-end to the back-end (javascript values and validation to json to hoon values and validation, and then back through in reverse), not to mention hoon's native obsession with persnickety types. However, some of this may be alleviatable with metaprogramming (delete this suggestion if it turns out to be embarrassingly bad).
+
+## Control flow between the front-end and the back-end
+
+### How information passes from the front-end to the back-end
+
+Most pokes go through state.jsx which calls a function in pond.js which uses api.js.
+
+player.js, game.js and various Solid components can all originate these pokes.
+
+Lab.jsx sends mist pokes (avatar) rather than pond pokes (turf), but it's a similar concept.
+
+### How information passes from the back-end to the front-end
+
+Through the sss system. Pond.js receives updates about the turf and does things to ensure the state is up to date
+
+Then different parts of the code can access state.e to get the ether (the theorized but unconfirmed turf state)
+
+You might not need to understand it for this feature, but a lot of things rely on the SolidJS system of reactivity. state is a SolidJS store. state.jsx defines all the shortcuts so you can see what's what. It's just a question of using it in such a way that code is rerun when the state changes. When you see a createEffect, as in player.js, that's setting up code to be rerun when the reactive things used within change. The special property is that all the properties are behind proxies which enable reactivity, but you just use it as an object.

@@ -5,6 +5,7 @@
   "scripts": {
     "init": "cp .env .env.local",
     "start": "vite",
+    "start2": "SHIP_URL='http://127.0.0.1:8081' npm run dev -- --port 3001",
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
