@@ -1,7 +1,20 @@
 |%
++$  turf-id  [=ship =path]
++$  form-id  path
++$  shade-id  @ud
++$  dest  [for=turf-id at=portal-id]
++$  vec2  [x=@ud y=@ud]
++$  svec2  [x=@sd y=@sd]
++$  dir  ?(%right %up %left %down)
++$  color  $~(0xff.ffff @ux)
++$  flug  $~(%.n ?)  :: flag which is false by default
++$  off-size  [offset=svec2 size=vec2]
++$  tl-br  [tl=svec2 br=svec2]
+::
 +$  turf
   $+  turf
   $:  =ephemera
+      =deed
       =plot
   ==
 ::
@@ -27,6 +40,31 @@
       text=cord
   ==
 ::
++$  deed
+  $:  =perms
+      =portals
+      =port-reqs
+      =port-recs
+      =port-offers
+  ==
++$  portals  (map portal-id portal)
++$  portal-id  shade-id
++$  portal
+  $:  shade-id=(unit shade-id)  :: the shade that triggers the portal
+      for=turf-id
+      at=(unit portal-id)  :: the portal on the other side
+  ==
++$  port-reqs  (map ship [=portal-id =avatar])
++$  port-recs  (jug portal-id ship)
++$  port-offers  (map ship portal-id)
++$  port-offer  [of=turf-id from=portal-id for=turf-id at=portal-id]
++$  perms
+  $+  perms
+  $:  default=$~(%in perm)
+      except=(map ship perm)
+  ==
++$  perm  ?(%admin %take %add %in %n)
+::
 +$  plot
   $:  size=$~((vec2 16 8) vec2)
       offset=svec2  :: Where is the top left corner? May change due to resizing
@@ -36,21 +74,11 @@
       =cave
       stuff-counter=@ud
   ==
-+$  turf-id  [=ship =path]
-+$  form-id  path
-+$  shade-id  @ud
-+$  vec2  [x=@ud y=@ud]
-+$  svec2  [x=@sd y=@sd]
-+$  dir  ?(%right %up %left %down)
-+$  color  $~(0xff.ffff @ux)
-+$  flug  $~(%.n ?)  :: flag which is false by default
-+$  off-size  [offset=svec2 size=vec2]
-+$  tl-br  [tl=svec2 br=svec2]
-+$  spaces  (map svec2 space)
++$  spaces  $+  spaces  (map svec2 space)
 +$  grid  (list col)
 +$  col  (list space)
-+$  skye  (map form-id form)
-+$  cave  (map shade-id shade)
++$  skye  $+  skye  (map form-id form)
++$  cave  $+  cave  (map shade-id shade)
 +$  space
   $+  space
   $:  tile=(unit husk)
@@ -59,6 +87,10 @@
 +$  thing
   $:  husk
       =form
+  ==
++$  shade
+  $:  pos=svec2
+      husk
   ==
 +$  husk
   $+  husk
@@ -69,11 +101,7 @@
 +$  husk-bits
   $:  offset=svec2  :: added to form offset
       collidable=(unit flug)  :: use form collidable if null
-      effects=(map trigger (unit possible-effect))  :: override form effects and implement form seeds
-  ==
-+$  shade
-  $:  pos=svec2
-      husk
+      effects=ufx  :: override form effects and implement form seeds
   ==
 +$  form
   $+  form
@@ -85,8 +113,8 @@
 +$  form-bits
   $:  offset=svec2
       collidable=flug
-      effects=(map trigger effect)
-      seeds=(map trigger effect-type)
+      effects=fx
+      seeds=sfx
   ==
 +$  form-type  ?(%tile %wall %item %garb)
 +$  space-form-type  ?(%tile %wall %item)
@@ -104,11 +132,15 @@
   $:  type=?(%loop %once %pong %rand)
       frames=(list png)
   ==
++$  fx   (map trigger effect)
++$  sfx  (map trigger effect-type)
++$  pfx  (map trigger possible-effect)
++$  ufx  (map trigger (unit possible-effect))
 +$  trigger  ?(%step %leave %bump %interact)
 +$  possible-effect  $@(effect-type effect)
 +$  effect-type  ?(%port %jump %read %swap)
 +$  effect
-  $%  [%port for=turf-id at=shade-id]
+  $%  [%port =portal-id]
       [%jump to=svec2]
       [%read note=@t]
       [%swap with=form-id]  :: for opening/closing doors
@@ -116,6 +148,13 @@
 ::
 +$  husk-spec  [pos=svec2 =form-id variation=@ud]
 ::
-++  pond-path  ,[%pond *]
-++  mist-path  ,[%mist *]
++$  pond-path  [%pond *]
++$  mist-path  [%mist *]
++$  stir-ids  (map ship @t)
++$  stir-id  (unit @t)
++$  foam
+  $:  id=stir-id
+      src=(unit ship)
+  ==
+:: ++  stirred-rock
 --

@@ -8,7 +8,7 @@
       ^-  ^json
       ?:  ?=(%rock what.strd)
         (mist-rock:enjs rock.strd)
-      (mist-wave:enjs id.strd wave.strd)
+      (mist-wave:enjs id.strd grits.strd)
     --
   ++  grab
     |%

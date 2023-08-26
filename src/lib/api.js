@@ -5,23 +5,27 @@ window.imgData = {};
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
+// keeping this code around because some of it might
+// be helpful for when we have to munge images for
+// custom item art uploader/editor
+
 // addImage(treeUrl, 'treeUrl');
 
-function addImage(url, id) {
-  const image = new Image();
-  image.src = url;
-  image.onload = () => createImageBitmap(image).then((bitmap) => {
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    ctx.drawImage(bitmap, 0, 0);
+// function addImage(url, id) {
+//   const image = new Image();
+//   image.src = url;
+//   image.onload = () => createImageBitmap(image).then((bitmap) => {
+//     canvas.width = bitmap.width;
+//     canvas.height = bitmap.height;
+//     ctx.drawImage(bitmap, 0, 0);
     
-    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    // addTile(imageData, id);
-    let dataUrl = canvas.toDataURL();
-    imgData[id] = dataUrl;
-    console.log('loaded ' + id, dataUrl);
-  });
-}
+//     let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+//     // addTile(imageData, id);
+//     let dataUrl = canvas.toDataURL();
+//     imgData[id] = dataUrl;
+//     console.log('loaded ' + id, dataUrl);
+//   });
+// }
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
@@ -29,7 +33,7 @@ api.ship = window.ship;
 window.api = api;
 // api.connect();
 
-export async function unsubscribeToTurf(id) {
+export async function unsubscribeToPool(id) {
   let existingSubs = [...api.outstandingSubscriptions];
   if (id) {
     existingSubs = existingSubs.filter(([_, sub]) => {
@@ -39,28 +43,27 @@ export async function unsubscribeToTurf(id) {
   await Promise.all(existingSubs.map(([subId, _]) => api.unsubscribe(subId)));
 }
 
-export async function subscribeToTurf(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
-  await unsubscribeToTurf(id);
+export async function subscribeToPool(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
+  await unsubscribeToPool(id);
   return api.subscribe({
     app: 'turf',
     path: id,
     event: (res) => {
-      // console.log('got a turf thing: ', res);
       onRes(res);
     },
     err: (err) => {
-      console.error(`Subscription to turf/pond just got "err". Turf may not exist yet.`, err);
+      console.error(`Subscription to turf${id} just got "err". Pool may not exist yet.`, err);
       onErr(err);
     },
     quit: (data) => {
-      console.error(`Subscription to turf/pond just got "quit"`, data);
-      subscribeToTurf(id, onRes, onErr, onQuit);
+      console.error(`Subscription to turf${id} just got "quit"`, data);
+      subscribeToPool(id, onRes, onErr, onQuit);
       onQuit(data);
     }
   })
 }
 
-export async function sendWave(mark, path, goal, stirId) {
+export async function sendWave(mark, path, goals, stirId) {
   stirId = stirId || uuidv4();
   await api.poke({
     app: 'turf',
@@ -68,33 +71,30 @@ export async function sendWave(mark, path, goal, stirId) {
     json: {
       path,
       id: stirId,
-      goal: goalToApiGoal(goal),
-      // goal: {
-      //   batch: [(arg === undefined) ? type : { [type]: arg }],
-      // }
+      goals: goalsToApiGoals(goals),
     },
     onError: (e) => {
       console.error('caught error in sending wave', e);
-      debugger;
+      // debugger;
     }
   });
   return stirId;
 }
 
-function goalToApiGoal(goal) {
-  if (goal.arg === undefined) return goal.type;
-  if (goal.type === 'batch') {
-    return { batch: goal.arg.map(goalToApiGoal) };
+function goalsToApiGoals(goals) {
+  if (Array.isArray(goals)) {
+    return goals.map(goalsToApiGoals);
   }
-  return { [goal.type]: goal.arg };
+  if (goals.arg === undefined) return goals.type;
+  return { [goals.type]: goals.arg };
 }
 
-export async function sendPondWave(id, goal, stirId) {
-  sendWave('pond-stir', id, goal, stirId);
+export async function sendPondWave(id, goals, stirId) {
+  return sendWave('pond-stir', id, goals, stirId);
 }
 
-export async function sendMistWave(type, arg, stirId) {
-  sendWave('mist-stir', '/mist', {type, arg}, stirId);
+export async function sendMistWave(id, goals, stirId) {
+  return sendWave('mist-stir', id, goals, stirId);
 }
 
 export async function switchToTurf(id) {

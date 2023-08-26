@@ -34,6 +34,12 @@
         :-  /grass
         (new-tile 'Grass' grass)
       ::
+        :-  /cobble
+        (new-tile 'Cobble' cobble)
+      ::
+        :-  /cobble/red
+        (new-tile 'Red Cobble' cobble-red)
+      ::
         :-  /table/round
         =/  table  (new-form %item 'Round Table' table)
         table(collidable %.y)
@@ -41,16 +47,24 @@
         :-  /stool
         (new-form %item 'Stool' stool)
       ::
+        :-  /barrel
+        =/  barrel  (new-form %item 'Barrel' barrel)
+        barrel(collidable %.y)
+      ::
         :-  /tree
         =/  tree  (new-form-offset %item 'Tree' tree [--16 --42])
         tree(collidable %.y)
       ::
         :-  /wall/stone
-        =/  wall-stone  (new-form-variations %wall 'wall-stone' wall-stones)
+        =/  wall-stone  (new-form-variations %wall 'Stone Wall' wall-stone)
         %=  wall-stone
           collidable  %.y
           offset      [--0 --32]
         ==
+      ::
+        :-  /fence/wood
+        =/  fence-wood  (new-form-variations %wall 'Wood Fence' fence-wood)
+        fence-wood(collidable %.y)
       ::
         :-  /portal
         =/  portal  (new-form %item 'Portal' portal)
@@ -63,6 +77,18 @@
         %=  tunnel
           seeds  (malt [%step %jump]~)
         ==
+      ::
+        :-  /tunnel/big
+        =/  tunnel-big  (new-form %item 'Big Tunnel' tunnel-big)
+        %=  tunnel-big
+          seeds  (malt [%step %jump]~)
+        ==
+      ::
+        :-  /flowers/red
+        (new-form %item 'Red Flowers' flowers-red)
+      ::
+        :-  /shrub
+        (new-form %item 'Shrub' shrub)
     ==
   ++  default-closet
     ^-  skye
@@ -253,17 +279,42 @@
   =/  form  (get-form turf form-id)
   ?~  form  ~
   `type.u.form
+++  get-thing-by-shade-id
+  |=  [=turf =shade-id]
+  ^-  (unit thing)
+  =/  shade  (~(get by cave.plot.turf) shade-id)
+  ?~  shade  ~
+  (get-thing-by-shade turf u.shade)
+++  get-thing-by-shade
+  |=  [=turf =shade]
+  ^-  (unit thing)
+  =/  form  (get-form turf form-id.shade)
+  ?~  form  ~
+  `[+.shade u.form]
 ++  jab-by-spaces
-  |=  [=spaces pos=svec2 fun=$-(space space)]
-  ^-  ^spaces
-  %+  ~(put by spaces)
-    pos
-  (fun (get-space spaces pos))
+  |=  [=turf pos=svec2 fun=$-(space space)]
+  ^-  ^turf
+  =.  spaces.plot.turf
+    %+  ~(put by spaces.plot.turf)
+      pos
+    (fun (get-space spaces.plot.turf pos))
+  turf
 ++  jab-by-players
-  |=  [=players =ship fun=$-(player player)]
-  ^-  ^players
-  ?.  (~(has by players) ship)  players
-  (~(jab by players) ship fun)
+  |=  [=turf =ship fun=$-(player player)]
+  ^-  ^turf
+  =*  players  players.ephemera.turf
+  =.  players
+    ?.  (~(has by players) ship)  players
+    (~(jab by players) ship fun)
+  turf
+++  jab-by-portals
+  |=  [=turf =portal-id fun=$-(portal portal)]
+  ^-  ^turf
+  =*  portals  portals.deed.turf
+  =.  portals
+    ?.  (~(has by portals) portal-id)  portals
+    (~(jab by portals) portal-id fun)
+  turf
 ::
 ++  is-husk-collidable
   |=  [=turf =husk]
@@ -305,6 +356,54 @@
   ?:  &(?=(^ shade) (is-husk-collidable turf +.u.shade))
     %.y
   $(shades t.shades)
+++  get-effect
+  |=  [=thing =trigger]
+  ^-  (unit effect)
+  =/  form-eff  (~(get by effects.form.thing) trigger)
+  =/  mpeff  (~(get by effects.thing) trigger)
+  ?~  mpeff  form-eff
+  ?~  u.mpeff  form-eff
+  ?@  u.u.mpeff  form-eff
+  `u.u.mpeff
+++  get-effects-by-shade-id
+  |=  [=turf =shade-id]
+  ^-  %-  unit
+      $:  full-fx=ufx
+          husk-fx=ufx
+          form-fx=pfx
+      ==
+  =/  shade  (~(get by cave.plot.turf) shade-id)
+  ?~  shade  ~
+  `(get-effects-by-shade turf u.shade)
+++  get-effects-by-shade
+  |=  [=turf =shade]
+  ^-  $:  full-fx=ufx
+          husk-fx=ufx
+          form-fx=pfx
+      ==
+  =/  form  (get-form turf form-id.shade)
+  ?~  form  [effects.shade effects.shade ~]
+  =/  form-fx  (~(uni by `pfx`seeds.u.form) `pfx`effects.u.form)
+  :-  (~(uni by `ufx`(~(run by form-fx) some)) effects.shade)
+  [effects.shade form-fx]
+++  count-portal-effects
+  |=  =ufx
+  ^-  (map portal-id @)
+  %+  roll  ~(val by ufx)
+  |=  [eff=(unit possible-effect) count=(map portal-id @)]
+  ?~  eff  count
+  ?@  u.eff  count
+  ?.  ?=(%port -.u.eff)  count
+  %+  ~(put by count)  portal-id.u.eff
+  =/  c  (~(get by count) portal-id.u.eff)
+  ?~(c 1 +(u.c))
+++  get-maybe-effect-portal
+  |=  eff=(unit possible-effect)
+  ^-  (unit portal-id)
+  ?~  eff  ~
+  ?@  u.eff  ~
+  ?.  ?=(%port -.u.eff)  ~
+  `portal-id.u.eff
 ::
 :: resets husk-bits for tile - [offset collidable effects]
 :: does not verify form
@@ -314,11 +413,9 @@
   =,  spec
   =/  new-husk=husk
     [form-id variation *husk-bits]
-  =.  spaces.plot.turf
-    %^  jab-by-spaces  spaces.plot.turf  pos
-    |=  =space  ^-  _space
-    space(tile `new-husk)
-  turf
+  %^  jab-by-spaces  turf  pos
+  |=  =space  ^-  _space
+  space(tile `new-husk)
 ::
 :: does not verify form
 ++  add-shade
@@ -332,8 +429,8 @@
     %+  ~(put by cave.plot.turf)
       stuff-counter
     [pos new-husk]
-  =.  spaces.plot.turf
-    %^  jab-by-spaces  spaces.plot.turf  pos
+  =.  turf
+    %^  jab-by-spaces  turf  pos
     |=  =space  ^-  _space
     space(shades [stuff-counter shades.space])
   =.  stuff-counter  +(stuff-counter)
@@ -355,11 +452,9 @@
   =/  shade  (~(gut by cave.plot.turf) id ~)
   ?~  shade  turf
   =.  cave.plot.turf  (~(del by cave.plot.turf) id)
-  =.  spaces.plot.turf
-    %^  jab-by-spaces  spaces.plot.turf  pos.shade
-    |=  =space
-    space(shades (skip shades.space |=(sid=@ =(sid id))))
-  turf
+  %^  jab-by-spaces  turf  pos.shade
+  |=  =space
+  space(shades (skip shades.space |=(sid=@ =(sid id))))
 ::
 ++  cycle-shade
   |=  [=turf id=shade-id amt=@ud]
@@ -397,4 +492,27 @@
       (~(put by effects.shade) trigger effect)
     ==
   turf
+++  add-portal
+  |=  [=turf for=turf-id at=(unit portal-id)]
+  ^-  ^turf
+  =/  portals  portals.deed.turf
+  %=  turf
+    portals.deed  (~(put by portals) stuff-counter.plot.turf [~ for at])
+    stuff-counter.plot  +(stuff-counter.plot.turf)
+  ==
+++  del-portal
+  |=  [=turf from=portal-id]
+  ^-  ^turf
+  %=  turf
+    portals.deed  (~(del by portals.deed.turf) from)
+  ==
+++  burn-bridge
+  |=  [=turf from=portal-id]
+  ^-  ^turf
+  =/  portals  portals.deed.turf
+  =/  portal  (~(get by portals) from)
+  ?~  portal  turf
+  =?  turf  ?=(^ shade-id.u.portal)
+    (del-shade turf u.shade-id.u.portal)
+  (del-portal turf from)
 --

@@ -76,9 +76,9 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.name) this.name.remove();
     this.name = document.createElement('span');
     this.name.textContent = this.patp;
-    this.name.className = 'absolute font-mono font-bold text-md text-white leading-none translate-x-[-50%] translate-y-[-100%]'
+    this.name.className = 'absolute font-mono font-bold text-md text-white leading-none translate-x-[-50%] translate-y-[-100%] z-0 pointer-events-none'
     this.positionName();
-    document.body.appendChild(this.name);
+    root.appendChild(this.name);
     
     await this.loadPlayerSprites(this.t);
     this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });

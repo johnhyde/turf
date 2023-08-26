@@ -102,6 +102,10 @@ export function jClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+export function stripPathPrefix(path) {
+  return path.replace(/\/[^/]+\//, '');
+}
+
 
 /** Random global functions
  *  @namespace Random */

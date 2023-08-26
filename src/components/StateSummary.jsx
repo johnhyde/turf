@@ -26,7 +26,7 @@ function StateSummary() {
     state.$('currentTurfId', turfId);
   }
   function unsubToTurfs() {
-    api.unsubscribeToTurf();
+    api.unsubscribeToPool();
   }
   function addHusk(formId) {
     state.onPondRes(state.currentTurfId)({

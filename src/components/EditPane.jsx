@@ -1,4 +1,4 @@
-import { createSignal, createSelector, onCleanup } from 'solid-js';
+import { createMemo, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused } from 'lib/utils';
@@ -21,12 +21,13 @@ export default function EditPane() {
     state.selectTool(tool);
   }
   const entries = () => Object.entries(state.e?.skye || {});
-  const formsByType = (type) => entries().filter(([id, form]) => form.type === type);
+  const formsByType = (type) => entries().filter(([id, form]) => form.type === type && id !== '/portal');
   const types = ['tile', 'item', 'wall'];
 
-  const selectedShade = () => {
+  const selectedShade = createMemo(() => {
+    if (!state.e) return undefined;
     return getShadeWithForm(state.e, state.editor.selectedShadeId);
-  }
+  });
 
   const onKeyDown = (e) => {
     if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
@@ -80,7 +81,9 @@ export default function EditPane() {
         selected={isToolSelected(tools.RESIZER)}
         tooltip='R'
       />
-      <ShadeEditor shade={selectedShade()} />
+      <Show when={selectedShade()} keyed >
+        {(shade) => <ShadeEditor shade={shade} />}
+      </Show>
       <div>
         <For each={types}>
           {(type) => (

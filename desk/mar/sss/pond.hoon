@@ -1,3 +1,3 @@
 /-  pond
-/+  *sss
+/+  *ssio
 (mk-mar pond)
