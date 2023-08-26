@@ -4,7 +4,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
   clampToTurf, isInTurf, getCollision, getEffectsByShade,
-  jabBySpaces, delShade, delPortal
+  generateHusk, jabBySpaces, delShade, delPortal
 } from 'lib/turf';
 import { vec2, vecToStr, jClone } from 'lib/utils';
 import { getPool } from 'lib/pool';
@@ -46,7 +46,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     const apiSendWave = (...args) => {
       api.sendPondWave(id, ...args);
     };
-    this._ = getPool(wash, hydrate, apiSendWave, filters);
+    this._ = getPool(wash, hydrate, apiSendWave, filters, options);
     this.$ = this._.$;
 
     this._grid = createMemo(() => {
@@ -61,14 +61,6 @@ export class Pond { // we use a class so we can put it inside a store without ge
     return this._.real;
   }
 
-  get pulses() {
-    return this._.pulses;
-  }
-
-  get charges() {
-    return this._.charges;
-  }
-
   get ether() {
     return this._.fake;
   }
@@ -80,13 +72,20 @@ export class Pond { // we use a class so we can put it inside a store without ge
   // returns true/false whether we attempted to send the wave or not
   // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
   sendWave(type, arg, batch = true) {
-    this._.sendWave(type, arg, batch);
+    return this._.sendWave(type, arg, batch);
   }
 
-  subscribe() {
+  async subscribe() {
     const onPondErr = () => {};
     const onPondQuit = () => {};
-    api.subscribeToTurf(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
+    this.sub = await api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
+    return this.sub;
+  }
+
+  destroy() {
+    if (this.sub) {
+      api.api.unsubscribe(this.sub);
+    }
   }
 }
 
@@ -108,13 +107,7 @@ const pondGrits = {
     if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
     if (pos.x >= turf.offset.x + turf.size.x || pos.y >= turf.offset.y + turf.size.y) return;
     const formType = turf.skye[formId]?.type;
-    const newHusk = {
-      formId,
-      variation,
-      offset: vec2(),
-      collidable: null,
-      effects: {},
-    }
+    const newHusk = generateHusk(formId, variation);
     if (formType === 'tile') {
       jabBySpaces(turf, pos, space => space.tile = newHusk);
     } else if (formType == 'wall' || formType == 'item') {
@@ -220,8 +213,38 @@ const pondGrits = {
       player.avatar = arg.avatar;
     }
   },
-  'add-player': (turf, arg) => {
-    turf.players[arg.ship] = arg.player;
+  'add-port-offer': (turf, arg) => {
+    const { ship, from } = arg;
+    turf.portOffers[ship] = from;
+  },
+  'del-port-offer': (turf, ship) => {
+    delete turf.portOffers[ship];
+  },
+  'add-port-req': (turf, arg) => {
+    const { ship, from, avatar } = arg;
+    turf.portReqs[ship] = { from, avatar };
+  },
+  'del-port-req': (turf, ship) => {
+    delete turf.portReqs[ship];
+  },
+  'add-port-rec': (turf, arg) => {
+    const { from, ship } = arg;
+    if (!turf.portRecs[from]) {
+      turf.portRecs[from] = [];
+    }
+    if (!turf.portRecs[from].includes(ship)) {
+      turf.portRecs[from].push(ship);
+    }
+  },
+  'del-port-rec': (turf, arg) => {
+    const { from, ship } = arg;
+    if (!turf.portRecs[from]) {
+      return;
+    }
+    turf.portRecs[from] = turf.portRecs[from].filter(s => s !== ship);
+  },
+  'del-port-recs': (turf, from) => {
+    delete turf.portRecs[from];
   },
   'add-player': (turf, arg) => {
     turf.players[arg.ship] = arg.player;
@@ -289,7 +312,7 @@ const filters = {
     const newPos = clampToTurf(turf, pos);
     const playerColliding = getCollision(turf, player.pos);
     const willBeColliding = getCollision(turf, newPos);
-    // if (willBeColliding && !playerColliding) return false;
+    if (willBeColliding && !playerColliding) return false;
     if (newPos.equals(player.pos)) return false;
     goal.arg.pos = newPos;
     return goal;
@@ -308,7 +331,8 @@ const filters = {
     ]
   },
   'create-bridge': (turf, goal) => {
-    debugger;
+    // debugger;
+    return goal;
   }
 };
 

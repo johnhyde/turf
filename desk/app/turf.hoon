@@ -1,5 +1,4 @@
-:: /-  *turf, pond, pond-pool, mist
-/-  *turf, pond, mist
+/-  *turf, pond, mist, hark
 /+  *turf, *sss, *ssio, *plow, default-agent, dbug, verb, agentio
 /%  mist-stir-mark  %mist-stir
 /%  mist-stirred-mark  %mist-stirred
@@ -24,11 +23,11 @@
   ==
 +$  state-0
   $:  %0
-      reset=_29
+      reset=_37
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
-      :: ctid=(unit turf-id)
+      :: usage=(map turf-id (jug @daa ship))
       sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
       sub-mist=$~(sub-mist-init _sub-mist-init)
@@ -36,7 +35,6 @@
 
       dppath=$~([%pond ~] pond-path)
       dmpath=$~([%mist ~] mist-path)
-      :: =ephemera
   ==
 +$  current-state  state-0
 ::
@@ -379,6 +377,11 @@
       ::  tell frontend what we have
       (give-pond-rock:hc id %.y)
     (weld cards-1 cards-2)^this
+      [%mist *]
+    ?>  =(our src):bowl
+    =^  cards  state
+      (give-mist-rock:hc path %.y)
+    cards^this
   ==
 ++  on-leave
   |=  =path
@@ -402,7 +405,7 @@
   :: ?~  p.sign  `this
   :: %-  %-  slog
   ::     ^-  tang
-  ::     :-  leaf+"poke from {<dap.bowl>} on wire {<wire>}"
+  ::     :-  leaf+"poke-ack from {<src.bowl>} on wire {<wire>}"
   ::     ?~  p.sign  ~
   ::     u.p.sign
   ?+    wire  (on-agent:def wire sign)
@@ -625,7 +628,7 @@
     %+  roll  roars
     |=  [=roar:pond [cards=(list card) sub-state=_state]]
     =.  state  sub-state
-    =^  new-cards  state
+    =^  new-cards=(list card)  state
       ?-    -.roar
           %portal-request
         :_  state
@@ -655,6 +658,27 @@
             /portal-discard
           for.roar
         [%portal-discarded from=at.roar]
+        ::
+          %portal-hark
+        :_  state
+        =/  turf-path  (turf-id-to-path turf-id.stir)
+        =/  =id:hark  (end 7 (shas %turf-portal eny.bowl))
+        ~&  ["using id" id]
+        =/  wer=path  :(weld turf-path /portal [(crip (a-co:co from.roar))]~)
+        =/  =rope:hark  [~ ~ %turf wer]
+        =/  msg=content:hark
+          ?-  event.roar
+            %requested  ' would like to make a portal to your turf'
+            %retracted  ' no longer wants to make a portal to your turf'
+            %confirmed  ' has accepted your portal to their turf'
+            %rejected   ' has rejected your portal to their turf'
+            %discarded  ' has removed the portal between your turf and theirs'
+          ==
+        =/  con=(list content:hark)  ~[[%ship ship.for.roar] msg]
+        :: clicking the notification takes you to
+        :: /apps/turf/?grid-note=%2Fpond%2F~nec%2Fportal%2F12
+        =/  =action:hark  [%add-yarn & & id rope now.bowl con wer ~]
+        [%pass /hark %agent [our.bowl %hark] %poke [%hark-action !>(action)]]~
         ::
           %port
         :: todo send suggestion and vouch
@@ -713,6 +737,18 @@
     ?:  on-watch  ~
     [path.id]~
   [%give %fact give-paths %pond-stirred !>(stirred)]~
+++  give-mist-rock
+  |=  [mpath=mist-path on-watch=?]
+  ^-  (quip card _state)
+  :_  state
+  ~&  ["trying to give mist rock to client" mpath]
+  =/  =rock:mist
+    rock:(~(got by read:du-mist) mpath)
+  =/  =stirred:mist  [%rock rock]
+  =/  give-paths
+    ?:  on-watch  ~
+    [;;(path mpath)]~
+  [%give %fact give-paths %mist-stirred !>(stirred)]~
 ++  sync-avatar
   |.
   ^-  (quip card _state)

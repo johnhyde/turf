@@ -4,20 +4,21 @@ import * as api from 'lib/api.js';
 import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
 import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf';
 import { Pond } from 'lib/pond';
+import { Mist } from 'lib/mist';
 
 export const StateContext = createContext();
 
 export function getState() {
   const [state, $state] = createStore({
     ponds: {},
-    currentTurfId: '/pond/' + our,
+    mist: new Mist('/mist'),
+    get currentTurfId() {
+      return this.mist.vapor?.currentTurfId;
+    },
     get player() {
       const player = this.e?.players[our];
       if (!player) return null;
-      const parent = this;
-      return {
-        ...player,
-      };
+      return player;
     },
     name: 'hi there',
     selectedTab: null,
@@ -58,6 +59,7 @@ export function getState() {
         return selectedTab() === 'lab';
       },
     },
+    portalToPlace: null,
     scale: 0.5,
     get current() {
       const parent = this;
@@ -73,6 +75,12 @@ export function getState() {
         },
         get ether() {
           return this.pond?.ether;
+        },
+        get mist() {
+          return parent.mist?.mist;
+        },
+        get vapor() {
+          return parent.mist?.vapor;
         },
         get selectedForm() {
           if (!parent.editor.editing) return null;
@@ -93,6 +101,12 @@ export function getState() {
     },
     get e() {
       return this.p?.ether;
+    },
+    get m() {
+      return this.c.mist;
+    },
+    get v() {
+      return this.c.vapor;
     },
   });
 
@@ -122,14 +136,27 @@ export function getState() {
           state.ponds[id].subscribe();
         }
         api.switchToTurf(id);
-        $state('currentTurfId', id);
       });
+    },
+    clearTurfs(id) {
+      for (const turfId in state.ponds) {
+        if (turfId !== id) {
+          state.ponds[turfId].destroy();
+          $state('ponds', turfId, undefined);
+        }
+      }
     },
     sendPondWave(type, arg, id) {
       id = id || this.currentTurfId;
       const pond = this.ponds[id];
       if (pond) {
         return pond.sendWave(type, arg, id);
+      }
+    },
+    sendMistWave(type, arg, id) {
+      id = id || '/mist';
+      if (this.mist) {
+        return this.mist.sendWave(type, arg, id);
       }
     },
     setPos(pos) {
@@ -149,20 +176,6 @@ export function getState() {
         from: our,
         text: message,
       });
-    },
-    avatar: {
-      setColor(color) {
-        if (typeof color === 'string' && color[0] === '#') {
-          color = hexToInt(color);
-        }
-        api.sendMistWave('set-color', Number(color));
-      },
-      addThing(formId) {
-        api.sendMistWave('add-thing-from-closet', formId);
-      },
-      delThing(index) {
-        api.sendMistWave('del-thing', Number(index));
-      },
     },
     resizeTurf(offset, size) {
       if (size.x <= 0 && size.y <= 0) return false;
@@ -235,7 +248,9 @@ export function getState() {
       ];
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
-
+    createBridge(shade, portal, trigger='step') {
+      this.sendPondWave('create-bridge', { shade, trigger, portal });
+    },
     createPortal(ship, path) {
       this.sendPondWave('add-portal', {
         for: {
@@ -264,8 +279,10 @@ export function getState() {
       if (id) this.selectTool(this.editor.tools.BRUSH);
     },
     selectShade(id, _) {
-      $state('editor', 'selectedShadeId', id);
-      if (id) this.selectTool(null);
+      batch(() => {
+        if (id) this.selectTool(null);
+        $state('editor', 'selectedShadeId', id);
+      });
     },
     selectTool(tool) {
       batch(() => {
@@ -273,11 +290,14 @@ export function getState() {
         if (tool === this.editor.tools.RESIZER) {
           this.setScale(Math.max(this.scale, 1.5));
         }
+        this.selectShade(null);
       });
     },
     selectTab(tab) {
       batch(() => {
         $state('selectedTab', tab);
+        $state('portalToPlace', null);
+        this.selectShade(null);
         if (tab === state.tabs.LAB) {
           this.setScale(Math.min(this.scale, 0.25));
         }
@@ -286,9 +306,20 @@ export function getState() {
         }
       });
     },
+    startPlacingPortal(portalId) {
+      $state('portalToPlace', portalId);
+    }
   });
 
-  _state.switchToTurf(our);
+  createEffect(() => {
+    if (_state.c.id) {
+      batch(() => {
+        _state.subToTurf(_state.c.id);
+        _state.clearTurfs(_state.c.id);
+      })
+    }
+  });
+
   return _state;
 }
 

@@ -78,14 +78,14 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
     onRes(res) {
       batch(() => {
         if (res.hasOwnProperty('rock')) {
-          const newTurf = hydrate(res.rock.turf);
-          console.log(`new rock with id ${newTurf?.id} from rock`, newTurf);
-          this.updateReal(reconcile(newTurf, { merge: true }));
+          const newCore = hydrate(res.rock.core);
+          console.log(`new core with id ${newCore?.id} from rock`, newCore);
+          this.updateReal(reconcile(newCore, { merge: true }));
           this.updatePulses(false, res.rock.stirIds[our]); // always resets ether because grit is undefined
           console.log('leftover pulses: ', this.pulses.length);
         } else if (res.hasOwnProperty('wave')) {
           const { grits, id } = res.wave;
-          console.log(`getting wave for ${this.id}`, gritsTypeStr(grits), 'with id', id ? id.substring(0, 4) : id);
+          console.log(`getting wave for ${this.real?.id}`, gritsTypeStr(grits), 'with id', id ? id.substring(0, 4) : id);
           const noop = !grits || grits.length === 0;
           const noPulses = this.pulses.length === 0;
           const noCharges = this.charges.length === 0;
@@ -230,7 +230,7 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
     },
   
     updateReal(fun) {
-      // console.log('updating base turf')
+      // console.log('updating base core')
       batch(() => {
         // if (pool.real && !pool.real.id) this.$('real', 'id', this.id);
         this.$('real', fun);
@@ -238,7 +238,7 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
     },
     
     updateFake(fun) {
-      // console.log('updating fake')
+      // console.log('updating fake core')
       batch(() => {
         // if (this.fake && !this.fake.id) this.$('fake', 'id', this.id);
         this.$('fake', fun);

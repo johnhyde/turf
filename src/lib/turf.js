@@ -1,5 +1,14 @@
 import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
 
+export function generateHusk(formId, variation = 0) {
+  return {
+    formId,
+    variation,
+    offset: vec2(),
+    collidable: null,
+    effects: {},
+  };
+}
 export function jabBySpaces(turf, pos, fn) {
   const id = vecToStr(pos);
   let space = turf.spaces[id] || {};
@@ -145,21 +154,31 @@ export function burnBridge(turf, portalId) {
 export function extractSkyeSprites(skye) {
   const sprites = {};
   Object.entries(skye).forEach(([formId, form]) => {
-    form.variations.forEach((variation, i) => {
-      if (variation) {
-        sprites[spriteName(formId, i)] = variation.sprite;
-      }
-    });
+      addFormSprites(sprites, form, formId);
   });
   return sprites;
 }
 
-function addThingSprites(sprites, thing, patp) {
-  thing.form.variations.forEach((variation, i) => {
-    if (variation) {
-      sprites[spriteName(thing.formId, i, patp)] = variation.sprite;
+export function extractSkyeTileSprites(skye) {
+  const sprites = {};
+  Object.entries(skye).forEach(([formId, form]) => {
+    if (form.type === 'tile') {
+      addFormSprites(sprites, form, formId);
     }
   });
+  return sprites;
+}
+
+function addFormSprites(sprites, form, formId, patp) {
+  form.variations.forEach((variation, i) => {
+    if (variation) {
+      sprites[spriteName(formId, i, patp)] = variation.sprite;
+    }
+  });
+}
+
+function addThingSprites(sprites, thing, patp) {
+  addFormSprites(sprites, thing.form, thing.formId, patp)
 }
 
 export function extractPlayerSprites(players) {

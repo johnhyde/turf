@@ -25,7 +25,7 @@
 +$  grit
   $+  mist-grit
   :: ?(%del-av %inc-counter)
-  :: $@  ?(%del-av %inc-counter)
+  $@  %clear-port-offer
   $%  set-ctid-grit
       set-avatar-grit
       set-color-grit
@@ -34,7 +34,6 @@
       port-offered-grit
       accept-port-offer-grit
       reject-port-offer-grit
-      export-self-grit
   ==
 +$  set-ctid-grit  [%set-ctid turf-id=(unit turf-id)]
 +$  set-avatar-grit  [%set-avatar =avatar]
@@ -44,7 +43,6 @@
 +$  port-offered-grit  [%port-offered port-offer]
 +$  accept-port-offer-grit  [%accept-port-offer for=turf-id]
 +$  reject-port-offer-grit  [%reject-port-offer for=turf-id]
-+$  export-self-grit  [%export-self port-offer]
 ::
 +$  goals  (list goal)
 +$  goal
@@ -53,6 +51,7 @@
       [%add-thing-from-closet =form-id]
       [%port-accepted for=turf-id]
       [%port-rejected for=turf-id]
+      [%export-self port-offer]
   ==
 :: ::
 +$  stir
@@ -82,6 +81,9 @@
   ^-  core
   =*  core  +.rock
   =*  avatar  avatar.rock
+  ?@  grit
+    :: %clear-port-offer
+    core(ttid ~, port-offer ~)
   ?-  -.grit
     %set-ctid  core(ctid turf-id.grit)
     %set-avatar  core(avatar avatar.grit)
@@ -98,6 +100,5 @@
     =?  ttid.core  =(`for.grit ttid.core)
       ~
     core
-    %export-self  core(ttid ~, port-offer ~)
   ==
 --

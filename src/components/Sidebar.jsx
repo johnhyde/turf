@@ -14,7 +14,7 @@ import rightCaret from 'assets/icons/right-caret.png';
 import lab from 'assets/icons/lab.png';
 import shovel from 'assets/icons/shovel.png';
 import help from 'assets/icons/help.png';
-import cycle from 'assets/icons/cycle.png';
+import portal from 'assets/icons/portal.png';
 
 function Sidebar() {
   const state = useState();
@@ -77,7 +77,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 z-[100] h-full p-1')}
+      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 z-[100] h-full p-1')}
     >
       <Show when={open()} fallback={(
         <div class="flex-grow">
@@ -110,7 +110,7 @@ function Sidebar() {
             />
             <Button
               onClick={[toggleTab, state.tabs.PORTALS]}
-              src={cycle}
+              src={portal}
               selected={isSelected(state.tabs.PORTALS)}
               tooltip='G'
             />

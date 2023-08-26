@@ -1,29 +1,24 @@
-import { createMemo } from "solid-js";
+import { createMemo, createResource } from "solid-js";
 import { produce } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
-import { vec2, vecToStr, jClone } from 'lib/utils';
+import {
+  generateHusk,
+} from 'lib/turf';
+import { hexToInt, vec2, vecToStr, jClone } from 'lib/utils';
 import { getPool } from 'lib/pool';
 
 export class Mist { // we use a class so we can put it inside a store without getting proxied
   constructor(id, options = {}) {
     this.id = id;
-    const wash = (update, grits) => {
-      update((mist) => {
-        if (!mist?.id) return { ...mist, id };
-        return mist;
-      });
-      washMist(update, grits);
-    }
-    const hydrate = (rock) => {
-      if (rock) rock.id = id;
-      return js.mist(rock);
-    }
     const apiSendWave = (...args) => {
       api.sendMistWave(id, ...args);
     };
-    this._ = getPool(wash, hydrate, apiSendWave, filters);
+    this._ = getPool(washMist, null, apiSendWave, filters(this), options);
     this.$ = this._.$;
+    const [closet, { mutate, refetch }] = createResource(api.getCloset);
+    this._closet = closet;
+
 
     this.subscribe();
   }
@@ -32,40 +27,89 @@ export class Mist { // we use a class so we can put it inside a store without ge
     return this._.real;
   }
 
-  get pulses() {
-    return this._.pulses;
-  }
-
-  get charges() {
-    return this._.charges;
-  }
-
-  get ether() {
+  get vapor() {
     return this._.fake;
+  }
+
+  get closet() {
+    return this._closet();
   }
 
   // returns true/false whether we attempted to send the wave or not
   // returns false if stir was judged to be unworthy (e.g. placing a duplicate item)
   sendWave(type, arg, batch = true) {
-    this._.sendWave(type, arg, batch);
+    return this._.sendWave(type, arg, batch);
   }
 
   subscribe() {
     const onMistErr = () => {};
     const onMistQuit = () => {};
-    api.subscribeToMist(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
+    api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
+  }
+
+  acceptPortOffer() {
+    if (this.vapor?.portOffer) {
+      this.sendWave('accept-port-offer', this.vapor.portOffer.for);
+    }
+  }
+
+  rejectPortOffer() {
+    if (this.vapor?.portOffer) {
+      this.sendWave('reject-port-offer', this.vapor.portOffer.for);
+    }
+  }
+
+  setColor(color) {
+    if (typeof color === 'string' && color[0] === '#') {
+      color = hexToInt(color);
+    }
+    this.sendWave('set-color', Number(color));
+  }
+
+  addThing(formId) {
+    this.sendWave('add-thing-from-closet', formId);
+  }
+
+  delThing(index) {
+    this.sendWave('del-thing', Number(index));
   }
 }
 
 const mistGrits = {
-  'size-mist': (mist, arg) => {
-    mist.offset = arg.offset;
-    mist.size = arg.size;
-    Object.values(mist.players).forEach((player) => {
-      const newPos = clampToMist(mist, player.pos);
-      player.pos.x = newPos.x;
-      player.pos.y = newPos.y;
-    });
+  'set-ctid': (mist, turfId) => {
+    mist.currentTurfId = turfId;
+  },
+  'set-avatar': (mist, avatar) => {
+    mist.avatar = avatar;
+  },
+  'set-color': (mist, color) => {
+    mist.avatar.body.color = color;
+  },
+  'add-thing': (mist, thing) => {
+    mist.avatar.things = [...mist.avatar.things, thing];
+  },
+  'del-thing': (mist, index) => {
+    mist.avatar.things.splice(index, 1);
+  },
+  'port-offered': (mist, portOffer) => {
+    mist.portOffer = portOffer;
+    mist.targetTurfId = null;
+  },
+  'accept-port-offer': (mist, turfId) => {
+    mist.targetTurfId = turfId
+    mist.portOffer = null;
+  },
+  'reject-port-offer': (mist, turfId) => {
+    if (mist.portOffer?.for === turfId) {
+      mist.portOffer = null;
+    }
+    if (mist.targetTurfId === turfId) {
+      mist.targetTurfId = null;
+    }
+  },
+  'clear-port-offer': (mist, _) => {
+    mist.targetTurfId = null;
+    mist.portOffer = null;
   },
 };
 
@@ -78,74 +122,39 @@ export function washMist(update, grits) {
 export function _washMist(grit) {
   grit = cloneDeep(grit);
   // console.log('washing a mist with grit', JSON.stringify(grit, null, 2))
-  switch (grit.type) {
-    case 'noop':
-      return (mist) => mist
-    case 'del-mist':
-      return null;
-    case 'set-mist':
-      return (mist) => {
-        const newMist = {
-          id: mist?.id,
-          ...grit.arg,
-        };
-        return js.mist(newMist);
-      };
-    default:
-      return produce((mist) => {
-        if (mistGrits[grit.type]) {
-          mistGrits[grit.type](mist, grit.arg);
-          js.mist(mist);
-        } else {
-          console.warn(`Could not process grit of type: ${grit.type}`);
-        }
-      });
-  }
+  return produce((mist) => {
+    if (mistGrits[grit.type]) {
+      mistGrits[grit.type](mist, grit.arg);
+    } else {
+      console.warn(`Could not process grit of type: ${grit.type}`);
+    }
+  });
 }
 
-// returns false if goal is rejected
+// returns an object of functions which
+// return false if goal is rejected
 // otherwise, returns a pair of [goal, grit]
 // or, more commonly, a single goal/grit
-const filters = {
-  'add-husk': (mist, goal) => {
-    const { pos, formId } = goal.arg;
-    if (!isInMist(mist, pos)) return false;
-    const currentSpace = mist.spaces[vecToStr(pos)];
-    const currentTile = currentSpace?.tile;
-    const currentShades = (currentSpace?.shades || []).map(sid => mist.cave[sid]);
-    const tileAlreadyHere = currentTile?.formId === formId;
-    const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
-    if (!tileAlreadyHere && !shadeAlreadyHere) {
-      return goal;
+function filters(mistPool) {
+  return {
+    'add-thing-from-closet': (mist, goal) => {
+      const formId = goal.arg;
+      const form = mistPool.closet?.[formId];
+      const husk = {
+        ...generateHusk(formId),
+        form,
+      }
+      if (!form) {
+        return false;
+      } else {
+        return [
+          goal,
+          {
+            type: 'add-thing',
+            arg: husk,
+          }
+        ]
+      }
     }
-    return false;
-  },
-  'move': (mist, goal) => {
-    const { ship, pos } = goal.arg;
-    const player = mist.players[ship];
-    if (!player) return false;
-    const newPos = clampToMist(mist, pos);
-    const playerColliding = getCollision(mist, player.pos);
-    const willBeColliding = getCollision(mist, newPos);
-    // if (willBeColliding && !playerColliding) return false;
-    if (newPos.equals(player.pos)) return false;
-    goal.arg.pos = newPos;
-    return goal;
-  },
-  'send-chat': (mist, goal) => {
-    return [
-      goal,
-      {
-        type: 'chat',
-        arg: {
-          from: goal.arg.from,
-          at: Date.now(),
-          text: goal.arg.text,
-        }
-      },
-    ]
-  },
-  'create-bridge': (mist, goal) => {
-    debugger;
-  }
-};
+  };
+}

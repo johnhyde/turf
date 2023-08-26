@@ -9,6 +9,8 @@
   ^-  [[roars skye] grits:mist goals:mist]
   =-  [[(weld pre-roars roars) closet] grits goals]
   ^-  [=roars =grits:mist =goals:mist]
+  ~&  "filtering mist goal {<?@(goal goal -.goal)>}, top: {<top>}"
+  ?@  goal  `~[goal]~
   ?+    -.goal  `~[goal]~
       %set-ctid
     ?:  =(ctid.rock turf-id.goal)  ``~
@@ -19,7 +21,7 @@
     =/  form  (~(get by closet) form-id.goal)
     ?~  form  ``~
     :-  roars=~
-    :_  goals=~
+    :-  grits=~
     :_  ~
     :-  %add-thing
     ^-  thing
@@ -43,8 +45,7 @@
     ~[goal]~
       %export-self
     :-  [%port-offer-accept +.goal]~
-    :-  [goal]~
-    [%set-ctid `for.goal]~
+    `[%clear-port-offer [%set-ctid `for.goal] ~]
       %port-accepted
     :_  `~
     ?.  =(ship.for.goal src.bowl)  ~
@@ -63,7 +64,7 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  ~&  "filtering goal {<-.goal>}, top: {<top>}"
+  ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   =-  [(weld pre-roars roars) grits goals]
   ^-  [=roars =grits:pond =goals:pond]
   =/  uturf  turf.rock
@@ -119,6 +120,7 @@
     ::     =trigger
     ::     portal=?(portal-id turf-id)
     :: ==
+    ?:  &(top !=(our src):bowl)  ``~
     =/  shade-id
       ?@  shade.goal  shade.goal
       stuff-counter.plot.turf
@@ -195,7 +197,8 @@
     ::
       %portal-requested
     ?.  =(src.bowl ship.for.goal)  ``~
-    ``[%add-portal for.goal `at.goal]~
+    :-  [%portal-hark %requested stuff-counter.plot.turf for.goal]~
+    `[%add-portal for.goal `at.goal]~
     ::
       %portal-retracted
     ?.  =(src.bowl ship.for.goal)  ``~
@@ -209,17 +212,20 @@
       $(portals t.portals)
     :: ~&  "we got this portal id based on our search: {<portal-id>}"
     ?~  portal-id  ``~
-    ``[%del-portal u.portal-id loud=%.n]~
+    :-  [%portal-hark %retracted u.portal-id for.goal]~
+    `[%del-portal u.portal-id loud=%.n]~
       %portal-confirmed
     =/  portal  (~(get by portals.deed.turf) from.goal)
     ?~  portal  ``~
     ?.  =(src.bowl ship.for.u.portal)  ``~
-    `~[goal]~
+    :-  [%portal-hark %confirmed from.goal for.u.portal]~
+    ~[goal]~
       %portal-discarded
     =/  portal  (~(get by portals.deed.turf) from.goal)
     ?~  portal  ``~
     ?.  =(src.bowl ship.for.u.portal)  ``~
-    ``[%del-portal from.goal loud=%.n]~
+    :-  [%portal-hark ?~(at.u.portal %rejected %discarded) from.goal for.u.portal]~
+    `[%del-portal from.goal loud=%.n]~
       %send-chat
     ?.  =(src.bowl from.goal)  ``~
     ``[%chat from.goal now.bowl text.goal]~
@@ -258,10 +264,17 @@
       %import-player
     :-  ~
     :-  ~
+    =/  portal  (~(gut by portals.deed.turf) from.goal ~)
+    ?~  portal  ~
+    ?~  shade-id.portal  ~
+    =/  shade  (~(gut by cave.plot.turf) u.shade-id.portal ~)
+    ?~  shade  ~
     =|  =player
+    =.  pos.player  pos.shade
+    =.  avatar.player  avatar.goal
     %+  murn
       ^-  (list (unit goal:pond))
-      :~  `[%add-player ship.goal player(avatar avatar.goal)]
+      :~  `[%add-player ship.goal player]
         ::
           ?.  (~(has ju port-recs.deed.turf) from.goal ship.goal)
             ~
@@ -360,7 +373,7 @@
     %-  pairs
     :~  'stirIds'^(stir-ids stir-ids.rock)
       ::
-        :-  %turf
+        :-  %core
         ?~  turf.rock  ~
         (turf u.turf.rock)
     ==
@@ -477,12 +490,13 @@
     %-  pairs
     :~  'stirIds'^(stir-ids stir-ids.rock)
       ::
-        :-  'currentTurfId'
-        ?~  ctid.rock  ~
-        (path (turf-id-to-path u.ctid.rock))
-      ::
-        avatar+(avatar avatar.rock)
-    ==
+        :-  'core'
+        %-  pairs
+        :~  'currentTurfId'^(maybe-turf-id-path ctid.rock)
+            'targetTurfId'^(maybe-turf-id-path ttid.rock)
+            'portOffer'^?~(port-offer.rock ~ (port-offer u.port-offer.rock))
+            avatar+(avatar avatar.rock)
+    ==  ==
   ++  mist-wave
     |=  [id=stir-id:mist =grits:mist]
     ^-  json
@@ -496,16 +510,27 @@
     ^-  json
     %-  pairs
     :~  :-  %type
-        :: s+?@(grit grit -.grit)
-        s+-.grit
+        s+?@(grit grit -.grit)
       ::
         :-  %arg
-        :: ?@  grit  ~
-        ?+  -.grit  ~
+        ?@  grit  ~
+        ?-  -.grit
+            %set-ctid
+          (maybe-turf-id-path +.grit)
             %set-avatar
           (avatar +.grit)
             %set-color
           (numb +.grit)
+            %add-thing
+          (thing +.grit)
+            %del-thing
+          (numb +.grit)
+            %port-offered
+          (port-offer +.grit)
+            %accept-port-offer
+          (turf-id-path +.grit)
+            %reject-port-offer
+          (turf-id-path +.grit)
     ==  ==
   ++  stir-ids
     |=  [ids=^stir-ids]
@@ -526,6 +551,9 @@
         chats+a+(turn chats chat)
         :: todo: add perms (?)
         portals+portals
+        'portReqs'^port-reqs
+        'portRecs'^port-recs
+        'portOffers'^port-offers
         size+(vec2 size)
         offset+(svec2 offset)
         'tileSize'^(vec2 tile-size)
@@ -542,6 +570,34 @@
       ^-  [@t json]
       :-  (numbt key)
       (portal pol)
+    ++  port-reqs
+      ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^port-reqs)
+      |=  [key=^ship =portal-id av=^avatar]
+      ^-  [@t json]
+      :-  (ship-cord key)
+      %-  pairs
+      :~  'portalId'^(numb portal-id)
+          avatar+(avatar av)
+      ==
+    ++  port-recs
+      ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^port-recs)
+      |=  [key=portal-id ships=(set ^ship)]
+      ^-  [@t json]
+      :-  (numbt key)
+      :-  %a
+      (turn ~(tap in ships) ship-json)
+    ++  port-offers
+      ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^port-offers)
+      |=  [key=^ship =portal-id]
+      ^-  [@t json]
+      :-  (ship-cord key)
+      (numb portal-id)
     ++  spaces
       ^-  json
       %-  pairs
@@ -567,6 +623,15 @@
     |=  [=form-id =form]
     :-  (spat form-id)
     (pairs (form-pairs form))
+  ++  port-offer
+    |=  po=^port-offer
+    ^-  json
+    %-  pairs
+    :~  of+(turf-id-path of.po)
+        from+(numb from.po)
+        for+(turf-id-path for.po)
+        at+(numb at.po)
+    ==
   ++  vec2
     |=  =^vec2
     ^-  json
@@ -736,6 +801,15 @@
   ++  effect-type
     |=  [=trigger =^effect-type]
     [trigger s+effect-type]
+  ++  maybe-turf-id-path
+    |=  tid=(unit ^turf-id)
+    ^-  json
+    ?~  tid  ~
+    (turf-id-path u.tid)
+  ++  turf-id-path
+    |=  tid=^turf-id
+    ^-  json
+    (path (turf-id-to-path tid))
   ++  turf-id
     |=  id=^turf-id
     ^-  json
@@ -779,6 +853,10 @@
     |=  shp=^ship
     ^-  json
     s+(scot %p shp)
+  ++  ship-cord
+    |=  shp=^ship
+    ^-  @t
+    (scot %p shp)
   --
 ++  dejs
   =,  dejs:format
@@ -846,6 +924,8 @@
       :~  set-color+ni
           add-thing-from-closet+pa
           del-thing+ni
+          accept-port-offer+pa-turf-id
+          reject-port-offer+pa-turf-id
       ==
     ::
     ++  husk-spec

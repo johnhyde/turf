@@ -1,39 +1,35 @@
-import { createEffect, createSignal, createDeferred, createResource, Show, createUniqueId, on, onCleanup } from 'solid-js';
+import { createResource, mapArray, onCleanup } from 'solid-js';
 import { leading, throttle } from "@solid-primitives/scheduled";
-import { getCloset } from 'lib/api';
 import { bind, intToHex } from 'lib/utils';
 import { useState } from 'stores/state.jsx';
 import FormSelect from '@/FormSelect';
+import Heading from '@/Heading';
 
 export default function Lab() {
   const state = useState();
 
   const setColor = leading(throttle, (c) => {
-    // $color(c);
     if (c !== avColor()) {
-      state.avatar.setColor(c);
+      state.mist.setColor(c);
     }
   }, 500);;
   onCleanup(() => setColor.clear())
 
-  const avatar = () => state.player?.avatar;
+  const avatar = () => state.v?.avatar;
   const avColor = () => intToHex(avatar()?.body.color || 0);
   const things = () => {
     const av = avatar();
     if (!av) return undefined;
-    return av.things.map((thing) => [thing.formId, thing.form]);
+    return mapArray(() => av.things, (thing) => {
+      return [thing.formId, thing.form];
+    });
   }
-  const [closet, { mutate, refetch }] = createResource(getCloset);
-  // const [color, $color] = createSignal();
-  // createEffect(() => {
-  //   $color(avColor());
-  // });
   function addThing(formId) {
-    state.avatar.addThing(formId);
+    state.mist.addThing(formId);
     console.log('add ' + formId + ' to player');
   }
   function delThing(_, i) {
-    state.avatar.delThing(i);
+    state.mist.delThing(i);
     console.log('delete thing #' + (i + 1) + ' to player');
   }
 
@@ -41,32 +37,29 @@ export default function Lab() {
   return (
     <div class="text-black text-center space-y-2">
       <div class="flex items-center justify-center">
-      {/* <div class=""> */}
-        <p class={pClass + ' ml-0 mr-1'}>
+        <Heading class="ml-0 mr-1">
           Skin Color
-        </p>
+        </Heading>
         <input
           type="color"
           default={intToHex(avColor())}
           use:bind={[avColor, setColor]}
         />
       </div>
-      {/* <div class="border-t"> */}
       <div class="">
-        <p class={pClass}>
+        <Heading>
           Equipped Features
-        </p>
+        </Heading>
         <Show when={avatar() !== undefined} fallback={'Loading Avatar'}>
-            <FormSelect forms={things()} select={delThing} fallback={'No Features Equipped'} background={'sprites/garb/body-gray.png'} />
+            <FormSelect forms={things()()} select={delThing} fallback={'No Features Equipped'} background={'sprites/garb/body-gray.png'} />
         </Show>
       </div>
-      {/* <div class="border-t"> */}
       <div class="">
-        <p class={pClass}>
+        <Heading>
           Closet
-        </p>
-        <Show when={closet() !== undefined} fallback={'Loading Closet'}>
-            <FormSelect forms={Object.entries(closet() || {})} select={addThing} background={'sprites/garb/body-gray.png'} sort={true} />
+        </Heading>
+        <Show when={state.mist.closet !== undefined} fallback={'Loading Closet'}>
+            <FormSelect forms={Object.entries(state.mist.closet || {})} select={addThing} background={'sprites/garb/body-gray.png'} sort={true} />
         </Show>
       </div>
     </div>

@@ -3,18 +3,20 @@ import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
 import { vec2, minV, flattenGrid, near, pixelsToTiles, dirs, swapAxes, getDirFromVec } from 'lib/utils';
 import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
-import { extractSkyeSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
+import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
+import { Shade } from "./shade";
+import { Preview } from "./preview";
 import { Resizer } from "./resizer";
 
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
-var game, scene, cam, cursors, keys = {}, player, tiles;
+var game, scene, cam, cursors, keys = {}, player, tiles, preview;
 var formIndexMap, players = {}, shades = {};
 
 async function loadImage(id, url, isWall = false, config = {}) {
-  console.log("trying to load image: " + id)
+  // console.log("trying to load image: " + id)
   if (game.textures.exists(id)) return;
   return new Promise((resolve, reject) => {
     const onError = (key) => {
@@ -23,10 +25,26 @@ async function loadImage(id, url, isWall = false, config = {}) {
         reject();
       }
     };
-    // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
-    game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, () => {
-      // console.log('loaded image', id);
-      resolve();
+    // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, (texture) => {
+    //   // console.log('loaded image', id);
+    //   resolve();
+    // });
+    game.textures.addListener(Phaser.Textures.Events.LOAD, (key, texture) => {
+      if (id === key) {
+        console.log('loaded image', id, texture.source?.[0]?.image?.complete);
+        if (texture.source?.[0]?.image && !texture.source[0].image.complete) {
+          console.log('wtf', id);
+          const oldOnLoad = texture.source[0].image.onload;
+          texture.source[0].image.onload = () => {
+            console.log('image finally loaded', id);
+            resolve();
+            oldOnLoad();
+          }
+        } else {
+          console.log('loaded!');
+          resolve();
+        }
+      }
     });
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
     try {
@@ -54,11 +72,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
 }
 
 function createShade(shade, id, turf) {
-  const huskPos = vec2(shade.pos).scale(turf.tileSize.x);
-  let sprite = scene.add.image(huskPos.x, huskPos.y, spriteName(shade.formId, shade.variation));
-  let form = turf.skye[shade.formId];
-  sprite.setDisplayOrigin(form.offset.x, form.offset.y);
-  sprite.setDepth(shade.pos.y);
+  let sprite = new Shade(scene, shade, turf, true);
   sprite.setInteractive();
 
   // here "touch" means that the shade was touched by the cursor
@@ -169,10 +183,17 @@ export function startPhaser(_owner, _container) {
         const alpha = 1;
         let draw = false;
         function mapEdit(pointer) {
-          if (state.c.selectedForm) {
+          if (state.c.selectedForm || state.portalToPlace) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
-            if (state.c.selectedForm.type === 'wall') {
+            if (state.portalToPlace) {
+              state.createBridge({
+                pos,
+                formId: '/portal',
+                variation: 0,
+              }, state.portalToPlace);
+              state.startPlacingPortal(null);
+            } else if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(state.e, pos);
               const added = state.addHusk(pos, state.editor.selectedFormId, variation);
               if (added) state.updateWallsAroundPos(pos, true);
@@ -194,12 +215,9 @@ export function startPhaser(_owner, _container) {
           if (pointer.isDown) {
             mapEdit(pointer);
           }
-            // if (draw)
-            // {
-            //     graphics.clear();
-            //     graphics.lineStyle(thickness, color, alpha);
-            //     graphics.strokeRect(pointer.downX, pointer.downY, pointer.x - pointer.downX, pointer.y - pointer.downY);
-            // }
+          if (preview) {
+            preview.updatePointer(pointer);
+          }
         });
 
         this.input.on('wheel', (pointer) => {
@@ -236,20 +254,22 @@ export function startPhaser(_owner, _container) {
       createEffect(on(() => [
         loader.state,
         state.c.id,
+        state.player,
         JSON.stringify(state.e?.size),
         JSON.stringify(state.e?.offset),
       ], (_, __, lastTurfId) => {
         if (loader.state === 'ready') {
           if (lastTurfId || state.e) destroyCurrentTurf();
-          if (state.e) {
+          if (state.e && state.player) {
             initTurf(state.e, state.p.grid, state.player);
             initPlayers(state.e);
             initShades(state.e);
+            initShadePreview(state.e);
           }
           return state.c.id;
         };
       }));
-      createEffect(on(() => JSON.stringify(state.p.grid), (_, lastGrid) => {
+      createEffect(on(() => JSON.stringify(state.p?.grid), (_, lastGrid) => {
         lastGrid = JSON.parse(lastGrid || '[]');
         // console.log('running tile effect');
         const turf = state.e;
@@ -310,6 +330,7 @@ export function startPhaser(_owner, _container) {
     window.player = player = null;
     window.players = players = {};
     shades = {};
+    preview = null;
     (scene.add.displayList.list || []).map(e => e).forEach(e => e.destroy());
     (scene.add.updateList.list || []).map(e => e).forEach(e => e.destroy());
     game.scene.start(scene);
@@ -358,8 +379,8 @@ export function startPhaser(_owner, _container) {
     
     const [level, tilesetData] = generateMap(turf, grid);
     const map = scene.make.tilemap({ data: level, tileWidth: turf.tileSize.x, tileHeight: turf.tileSize.y });
-    const tilesets = tilesetData.map((tileset, i) => {
-      return map.addTilesetImage(tileset.image, undefined, undefined, undefined, undefined, undefined, i + 1);
+    const tilesets = tilesetData.map((image, i) => {
+      return map.addTilesetImage(image, undefined, undefined, undefined, undefined, undefined, i + 1);
     });
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
     layer.setDepth(turf.offset.y - 10);
@@ -424,23 +445,19 @@ export function startPhaser(_owner, _container) {
       });
     }
   }
+
+  function initShadePreview(turf) {
+    preview = new Preview(scene, turf.id);
+  }
 }
 
-const coreTiles = [
-  {
-    id: 0,
-    image: 'void',
-  }
-];
+const coreTiles = ['void'];
 
 function generateMap(turf, grid) {
   formIndexMap = {};
-  const tiles = Object.entries(extractSkyeSprites(turf.skye)).map(([id, _], i) => {
+  const tiles = Object.entries(extractSkyeTileSprites(turf.skye)).map(([id, _], i) => {
     formIndexMap[id] = i + coreTiles.length + 1;
-    return {
-      id: i,
-      image: id,
-    };
+    return id;
   });
   const data = swapAxes(grid).map((row) => row.map((space) => {
     if (!space.tile) return 1;

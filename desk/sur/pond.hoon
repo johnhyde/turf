@@ -125,11 +125,13 @@
 ::
 :: roars are turf-scoped effects emitted by filters
 :: which update state and produce cards
++$  portal-event  ?(%requested %retracted %confirmed %rejected %discarded)
 +$  roar
   $%  [%portal-request from=portal-id for=turf-id]
       [%portal-retract from=portal-id for=turf-id]
       [%portal-confirm from=portal-id for=turf-id at=portal-id]
       [%portal-discard for=turf-id at=portal-id]
+      [%portal-hark event=portal-event from=portal-id for=turf-id]
       [%port =ship for=turf-id at=portal-id]
       [%port-offer =ship from=portal-id for=turf-id at=portal-id]
       [%player-add =ship]

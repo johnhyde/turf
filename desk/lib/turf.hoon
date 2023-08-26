@@ -34,6 +34,12 @@
         :-  /grass
         (new-tile 'Grass' grass)
       ::
+        :-  /cobble
+        (new-tile 'Cobble' cobble)
+      ::
+        :-  /cobble/red
+        (new-tile 'Red Cobble' cobble-red)
+      ::
         :-  /table/round
         =/  table  (new-form %item 'Round Table' table)
         table(collidable %.y)
@@ -41,16 +47,24 @@
         :-  /stool
         (new-form %item 'Stool' stool)
       ::
+        :-  /barrel
+        =/  barrel  (new-form %item 'Barrel' barrel)
+        barrel(collidable %.y)
+      ::
         :-  /tree
         =/  tree  (new-form-offset %item 'Tree' tree [--16 --42])
         tree(collidable %.y)
       ::
         :-  /wall/stone
-        =/  wall-stone  (new-form-variations %wall 'wall-stone' wall-stones)
+        =/  wall-stone  (new-form-variations %wall 'Stone Wall' wall-stone)
         %=  wall-stone
           collidable  %.y
           offset      [--0 --32]
         ==
+      ::
+        :-  /fence/wood
+        =/  fence-wood  (new-form-variations %wall 'Wood Fence' fence-wood)
+        fence-wood(collidable %.y)
       ::
         :-  /portal
         =/  portal  (new-form %item 'Portal' portal)
@@ -63,6 +77,18 @@
         %=  tunnel
           seeds  (malt [%step %jump]~)
         ==
+      ::
+        :-  /tunnel/big
+        =/  tunnel-big  (new-form %item 'Big Tunnel' tunnel-big)
+        %=  tunnel-big
+          seeds  (malt [%step %jump]~)
+        ==
+      ::
+        :-  /flowers/red
+        (new-form %item 'Red Flowers' flowers-red)
+      ::
+        :-  /shrub
+        (new-form %item 'Shrub' shrub)
     ==
   ++  default-closet
     ^-  skye

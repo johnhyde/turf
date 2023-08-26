@@ -17,18 +17,26 @@
 ++  floor  'sprites/floor.png'
 ++  floor-stone  'sprites/floor-stone.png'
 ++  grass  'sprites/grass.png'
-++  wall-stone  'sprites/walls/wall-stone.png'
-++  wall-stones
+++  cobble  'sprites/cobble.png'
+++  cobble-red  'sprites/cobble-red.png'
+++  gen-walls
+  |=  prefix=@t
   %+  turn  (gulf 0 15)
   |=  a=@
   ;:  welk
-      'sprites/walls/wall-stone-'
+      prefix
       (pad-2 a)
       '.png'
   ==
+++  wall-stone  (gen-walls 'sprites/walls/wall-stone-')
+++  fence-wood  (gen-walls 'sprites/walls/fence-wood-')
 ++  table  'sprites/table.png'
 ++  stool  'sprites/stool.png'
+++  barrel  'sprites/barrel.png'
 ++  tree  'sprites/tree.png'
 ++  portal  'sprites/portal.png'
 ++  tunnel  'sprites/tunnel.png'
+++  tunnel-big  'sprites/tunnel-big.png'
+++  flowers-red  'sprites/flowers-red.png'
+++  shrub  'sprites/shrub.png'
 --
