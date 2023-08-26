@@ -69,11 +69,11 @@ export default function ShadeEditor(props) {
         </For>
         <Show when={Object.keys(newEffects).length}>
           <div class="flex justify-center space-x-2">
-            <SmallButton onClick={cancel}>
-              Cancel
-            </SmallButton>
             <SmallButton onClick={save}>
               Save
+            </SmallButton>
+            <SmallButton onClick={cancel}>
+              Cancel
             </SmallButton>
           </div>
         </Show>

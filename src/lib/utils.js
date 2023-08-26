@@ -184,6 +184,14 @@ export function bind(el, accessor) {
   }); 
 }
 
+export function autofocus(el, _) {
+  if (el.offsetHeight) {
+    el.focus();
+  } else {
+    setTimeout(() => autofocus(el), 10);
+  }
+}
+
 export function input(el, callbacks) {
   function focus() {
     el.focus();

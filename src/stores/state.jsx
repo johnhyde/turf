@@ -20,7 +20,6 @@ export function getState() {
       if (!player) return null;
       return player;
     },
-    name: 'hi there',
     selectedTab: null,
     tabs: {
       HELP: 'help',
@@ -125,17 +124,6 @@ export function getState() {
         } else {
           state.ponds[id].subscribe();
         }
-      });
-    },
-    switchToTurf(id) {
-      runWithOwner(owner, () => {
-        id = '/pond/' + id;
-        if (!state.ponds[id]) {
-          $state('ponds', id, new Pond(id));
-        } else {
-          state.ponds[id].subscribe();
-        }
-        api.switchToTurf(id);
       });
     },
     clearTurfs(id) {

@@ -53,7 +53,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
       if (!this.ether) return null;
       return getTurfGrid(this.ether);
     });
-
+    this.sub = null;
     this.subscribe();
   }
 
@@ -75,16 +75,28 @@ export class Pond { // we use a class so we can put it inside a store without ge
     return this._.sendWave(type, arg, batch);
   }
 
+  // this one gets weird because of the awaits
+  // the idea is for it to be idempotent
   async subscribe() {
-    const onPondErr = () => {};
-    const onPondQuit = () => {};
-    this.sub = await api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
-    return this.sub;
+    if (this.sub === null) {
+      const onPondErr = () => {};
+      const onPondQuit = () => {};
+      this.sub = api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
+      return this.sub
+    } else {
+      const oldSub = await this.sub;
+      if (this.sub && !api.api.outstandingSubscriptions.has(oldSub)) {
+        this.sub = null;
+        return this.subscribe();
+      }
+    }
   }
 
-  destroy() {
-    if (this.sub) {
-      api.api.unsubscribe(this.sub);
+  async destroy() {
+    const sub = await this.sub;
+    if (sub !== null) {
+      api.api.unsubscribe(sub);
+      this.sub = null;
     }
   }
 }

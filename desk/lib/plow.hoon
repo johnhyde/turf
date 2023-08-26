@@ -29,7 +29,10 @@
     u.form
       %port-offered
     :-  ~
-    ?.  =(src.bowl ship.of.goal)  `~
+    ?.  ?~  via.goal
+          =(src.bowl ship.for.goal)
+        =(src.bowl ship.of.u.via.goal)
+      `~
     ?.  =(`for.goal ttid.rock)
       ~[goal]~
     `[%export-self +.goal]~
@@ -41,7 +44,8 @@
     `[%export-self u.port-offer.rock]~
       %reject-port-offer
     :-  ?~  off=port-offer.rock  ~
-        [%port-offer-reject of.u.port-offer.rock from.u.port-offer.rock]~
+        ?~  via.u.off  ~
+        [%port-offer-reject of.u.via.u.off from.u.via.u.off]~
     ~[goal]~
       %export-self
     :-  [%port-offer-accept +.goal]~
@@ -264,21 +268,28 @@
       %import-player
     :-  ~
     :-  ~
-    =/  portal  (~(gut by portals.deed.turf) from.goal ~)
-    ?~  portal  ~
-    ?~  shade-id.portal  ~
-    =/  shade  (~(gut by cave.plot.turf) u.shade-id.portal ~)
-    ?~  shade  ~
+    =/  pos=(unit svec2)
+      ?~  from.goal
+        ?.  =(our.bowl ship.goal)  ~
+        `offset.plot.turf
+      =/  portal  (~(gut by portals.deed.turf) u.from.goal ~)
+      ?~  portal  ~
+      ?~  shade-id.portal  ~
+      =/  shade  (~(gut by cave.plot.turf) u.shade-id.portal ~)
+      ?~  shade  ~
+      `pos.shade
+    ?~  pos  ~
     =|  =player
-    =.  pos.player  pos.shade
+    =.  pos.player  u.pos
     =.  avatar.player  avatar.goal
     %+  murn
       ^-  (list (unit goal:pond))
       :~  `[%add-player ship.goal player]
         ::
-          ?.  (~(has ju port-recs.deed.turf) from.goal ship.goal)
+          ?~  from.goal  ~
+          ?.  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
             ~
-          `[%del-port-rec from.goal ship.goal]
+          `[%del-port-rec u.from.goal ship.goal]
         ::
           ?.  (~(has by port-reqs.deed.turf) ship.goal)
             ~
@@ -292,9 +303,12 @@
     :-  [%port-offer ship.goal from.goal for.portal u.at.portal]~
     ~[goal]~
       %add-port-req
-    ?.  (~(has by portals.deed.turf) from.goal)  ``~
     ?.  =(ship.goal src.bowl)  ``~
-    ?:  (~(has ju port-recs.deed.turf) from.goal ship.goal)
+    ?~  from.goal
+      ?.  =(ship.goal our.bowl)  ``~
+      ``[%import-player +.goal]~
+    ?.  (~(has by portals.deed.turf) u.from.goal)  ``~
+    ?:  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
       ``[%import-player +.goal]~
     `~[goal]~
       %add-port-rec
@@ -305,7 +319,7 @@
     ?~  req  `~[goal]~
     ?.  =(portal-id.req from.goal)
       `~[goal]~
-    ``[%import-player ship.goal from.goal avatar.req]~
+    ``[%import-player ship.goal `from.goal avatar.req]~
       %join-player
     =|  =player
     ``[%add-player ship.goal player(avatar avatar.goal)]~
@@ -461,7 +475,7 @@
             %add-port-req
           %-  pairs
           :~  ship+(ship-json ship.grit)
-              from+(numb from.grit)
+              from+?~(from.grit ~ (numb u.from.grit))
               avatar+(avatar avatar.grit)
           ==
             %del-port-req
@@ -627,10 +641,10 @@
     |=  po=^port-offer
     ^-  json
     %-  pairs
-    :~  of+(turf-id-path of.po)
-        from+(numb from.po)
-        for+(turf-id-path for.po)
-        at+(numb at.po)
+    :~  for+(turf-id-path for.po)
+        of+?~(via.po ~ (turf-id-path of.u.via.po))
+        from+?~(via.po ~ (numb from.u.via.po))
+        at+?~(via.po ~ (numb at.u.via.po))
     ==
   ++  vec2
     |=  =^vec2
@@ -926,6 +940,7 @@
           del-thing+ni
           accept-port-offer+pa-turf-id
           reject-port-offer+pa-turf-id
+          export-self+port-offer
       ==
     ::
     ++  husk-spec
@@ -954,6 +969,14 @@
         %read  read+(so arg)
         %swap  swap+(pa arg)
       ==
+    ++  port-offer
+      |=  jon=json
+      ^-  ^port-offer
+      :-  ((ot ~[for+pa-turf-id]) jon)
+      %.  jon
+      %-  ot:soft
+      ~[of+pa-turf-id-soft from+ni:soft at+ni:soft]
+
     ++  dir
       |=  jon=json
       ^-  ^dir
@@ -978,7 +1001,8 @@
       ^-  @sd
       ?>  ?=([%n *] jon)
       (need (toi:rd (ne jon)))
-    ++  pa-turf-id  :(cork pa path-to-turf-id need)
+    ++  pa-turf-id-soft  (cork pa path-to-turf-id)
+    ++  pa-turf-id  (cork pa-turf-id-soft need)
     ++  ot-turf-id
       |=  jon=json
       ^-  ^turf-id

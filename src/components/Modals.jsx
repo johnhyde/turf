@@ -1,7 +1,7 @@
 import { createSignal, createSelector } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
-import { stripPathPrefix } from 'lib/utils';
+import { stripPathPrefix, autofocus } from 'lib/utils';
 import Button from '@/Button';
 import cycle from 'assets/icons/cycle.png';
 
@@ -47,20 +47,24 @@ export default function Modals() {
 
   return (
     <>
-      <Show when={state.v?.portOffer}>
+      <Show when={state.v?.portOffer} keyed>
         <Modal class="bg-teal-700 text-slate-100">
           <p>
-            You've activated a portal. Would you like to travel to:
+            {state.v.portOffer.of ?
+              "You've activated a portal! Would you like to travel to:"
+            :
+              "You've been summoned! Would you like to travel to:"
+            }
           </p>
           <p class="text-center text-lg">
             <span class="font-bold">{stripPathPrefix(state.v.portOffer.for)}</span>?
           </p>
           <div class="flex w-full justify-center mt-2 space-x-4">
+            <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.acceptPortOffer.bind(state.mist)}>
+              Yes
+            </button>
             <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.rejectPortOffer.bind(state.mist)}>
               No
-            </button>
-            <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.acceptPortOffer.bind(state.mist)}>
-              Yes
             </button>
           </div>
         </Modal>

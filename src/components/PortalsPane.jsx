@@ -45,8 +45,8 @@ export default function PortalsPane() {
   });
 
   const [toShip, $toShip] = createSignal('');
-  function createPortal() {
-    state.createPortal(toShip(), '/');
+  function goHome() {
+    state.mist.goHome();
   }
   function placeNewPortal() {
     state.startPlacingPortal({
@@ -91,7 +91,8 @@ export default function PortalsPane() {
   // });
 
   return (
-    <div>
+    <div class="flex flex-col">
+      <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto mb-2">Teleport Home</SmallButton>
       <Heading>
         Create a Portal to:
       </Heading>

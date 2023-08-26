@@ -79,7 +79,7 @@
 +$  set-avatar-grit  [%set-avatar =ship =avatar]
 +$  add-port-offer-grit  [%add-port-offer =ship from=portal-id]
 +$  del-port-offer-grit  [%del-port-offer =ship]
-+$  add-port-req-grit  [%add-port-req =ship from=portal-id =avatar]
++$  add-port-req-grit  [%add-port-req =ship from=(unit portal-id) =avatar]
 +$  del-port-req-grit  [%del-port-req =ship]
 +$  add-port-rec-grit  [%add-port-rec from=portal-id =ship]
 +$  del-port-rec-grit  [%del-port-rec from=portal-id =ship]
@@ -117,7 +117,7 @@
   ==
 +$  port-offer-accepted-goal  [%port-offer-accepted =ship from=portal-id]
 +$  port-offer-rejected-goal  [%port-offer-rejected =ship from=portal-id]
-+$  import-player-goal  [%import-player =ship from=portal-id =avatar]
++$  import-player-goal  [%import-player =ship from=(unit portal-id) =avatar]
 +$  stirred
     $%  [what=%rock =rock]
         [what=%wave id=stir-id =grits]
@@ -244,8 +244,9 @@
       (~(del by port-offers.deed.turf) ship.grit)
     turf
       %add-port-req
+    ?~  from.grit  turf
     =.  port-reqs.deed.turf
-      (~(put by port-reqs.deed.turf) ship.grit [from.grit avatar.grit])
+      (~(put by port-reqs.deed.turf) ship.grit [u.from.grit avatar.grit])
     turf
       %del-port-req
     =.  port-reqs.deed.turf

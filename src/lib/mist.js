@@ -47,6 +47,12 @@ export class Mist { // we use a class so we can put it inside a store without ge
     api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
   }
 
+  goHome() {
+    this.sendWave('export-self', {
+      for: '/pond/' + our,
+    });
+  }
+
   acceptPortOffer() {
     if (this.vapor?.portOffer) {
       this.sendWave('accept-port-offer', this.vapor.portOffer.for);

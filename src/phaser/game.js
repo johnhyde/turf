@@ -31,7 +31,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
     // });
     game.textures.addListener(Phaser.Textures.Events.LOAD, (key, texture) => {
       if (id === key) {
-        console.log('loaded image', id, texture.source?.[0]?.image?.complete);
+        // console.log('loaded image', id, texture.source?.[0]?.image?.complete);
         if (texture.source?.[0]?.image && !texture.source[0].image.complete) {
           console.log('wtf', id);
           const oldOnLoad = texture.source[0].image.onload;
@@ -41,7 +41,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
             oldOnLoad();
           }
         } else {
-          console.log('loaded!');
+          // console.log('loaded!');
           resolve();
         }
       }

@@ -23,7 +23,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_37
+      reset=_39
       =avatar
       closet=$~(default-closet:gen skye)
       dtid=turf-id
@@ -240,30 +240,30 @@
     :_  this
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
-      %join-turf
-    ?>  =(our src):bowl
-    =/  tid  !<((unit turf-id) vase)
-    =/  ctid  (ctid:hc)
-    ?:  =(tid ctid)  `this
-    =/  cards-1=(list card)
-      ?~  ctid  ~
-      =/  exit-stir
-        :*  u.ctid
-            ~
-            [%del-player our.bowl]~
-        ==
-      [%pass /exit-turf %agent [ship.u.ctid %turf] %poke [%pond-stir !>(exit-stir)]]~
-    =^  cards-2  state
-      (give-mist:hc dmpath set-ctid+tid)
-    =/  cards-3=(list card)
-      ?~  tid  ~
-      =/  join-stir
-        :*  u.tid
-            ~
-            [%join-player our.bowl avatar:(need (default-mist:hc))]~
-        ==
-      [%pass /join-turf %agent [ship.u.tid %turf] %poke [%pond-stir !>(join-stir)]]~
-    :(weld cards-1 cards-2 cards-3)^this
+      %join-turf  !!
+    :: ?>  =(our src):bowl
+    :: =/  tid  !<((unit turf-id) vase)
+    :: =/  ctid  (ctid:hc)
+    :: ?:  =(tid ctid)  `this
+    :: =/  cards-1=(list card)
+    ::   ?~  ctid  ~
+    ::   =/  exit-stir
+    ::     :*  u.ctid
+    ::         ~
+    ::         [%del-player our.bowl]~
+    ::     ==
+    ::   [%pass /exit-turf %agent [ship.u.ctid %turf] %poke [%pond-stir !>(exit-stir)]]~
+    :: =^  cards-2  state
+    ::   (give-mist:hc dmpath set-ctid+tid)
+    :: =/  cards-3=(list card)
+    ::   ?~  tid  ~
+    ::   =/  join-stir
+    ::     :*  u.tid
+    ::         ~
+    ::         [%join-player our.bowl avatar:(need (default-mist:hc))]~
+    ::     ==
+    ::   [%pass /join-turf %agent [ship.u.tid %turf] %poke [%pond-stir !>(join-stir)]]~
+    :: :(weld cards-1 cards-2 cards-3)^this
   ::
   :: Boilerplate
   ::
@@ -548,6 +548,7 @@
 ++  stir-mist
   |=  [src=(unit ship) =stir:mist]
   ^-  (quip card _state)
+  =/  old-tid  (ctid)
   :: ~&  "start to stir mist. stir: {<goal>} pub-mist wyt: {<~(wyt by +.pub-mist)>}"
   =^  [ssio-cards=(list card) [=roars:mist *] =grits:mist]  pub-mist
     %-  (filter:de-mist ,[roars:mist $~(closet skye)])
@@ -567,15 +568,28 @@
       ?-    -.roar
           %port-offer-accept
         :_  state
-        :~  %^    pond-stir-card
-                /port-offer-accept
-              of.roar
-            [%port-offer-accepted our.bowl from.roar]
-            %^    pond-stir-card
+        :-  %^    pond-stir-card
                 /port-request
               for.roar
-            [%add-port-req our.bowl from=at.roar avatar:(need (default-mist:hc))]
-        ==
+            [%add-port-req our.bowl from=?~(via.roar ~ `at.u.via.roar) avatar:(need (default-mist:hc))]
+        :: if we have been invited somewhere
+        :: or invited ourselves home,
+        :: delete ourselves from current turf
+        ?~  via.roar
+          ?~  old-tid  ~
+          ?:  =(old-tid (ctid))  ~
+          :_  ~
+          %^    pond-stir-card
+              (weld /pond-stir (drop id.stir))
+            u.old-tid
+          [%del-player our.bowl]
+        :: otherwise accept the port offer
+        :: which will allow us to travel
+        :_  ~
+        %^    pond-stir-card
+            /port-offer-accept
+          of.u.via.roar
+        [%port-offer-accepted our.bowl from.u.via.roar]
           %port-offer-reject
         :_  state
         :_  ~
@@ -681,7 +695,6 @@
         [%pass /hark %agent [our.bowl %hark] %poke [%hark-action !>(action)]]~
         ::
           %port
-        :: todo send suggestion and vouch
         :_  state
         :_  ~
         %^    pond-stir-card
@@ -689,13 +702,12 @@
           for.roar
         [%add-port-rec from=at.roar ship.roar]
           %port-offer
-        :: todo send suggestion and vouch
         :_  state
         :_  ~
         %^    mist-stir-card
             /port-offer
           ship.roar
-        [%port-offered turf-id.stir from.roar for.roar at.roar]
+        [%port-offered for.roar `[turf-id.stir from.roar at.roar]]
           %player-add
         =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
         =/  mist-card=card

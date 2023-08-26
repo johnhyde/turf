@@ -57,7 +57,7 @@
 +$  port-reqs  (map ship [=portal-id =avatar])
 +$  port-recs  (jug portal-id ship)
 +$  port-offers  (map ship portal-id)
-+$  port-offer  [of=turf-id from=portal-id for=turf-id at=portal-id]
++$  port-offer  [for=turf-id via=(unit [of=turf-id from=portal-id at=portal-id])]
 +$  perms
   $+  perms
   $:  default=$~(%in perm)

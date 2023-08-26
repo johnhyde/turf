@@ -81,6 +81,7 @@ export class Player extends Phaser.GameObjects.Container {
     root.appendChild(this.name);
     
     await this.loadPlayerSprites(this.t);
+    if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
     this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });
     this.bodyImage.setTint(avatar.body.color);
     if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
