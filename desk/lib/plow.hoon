@@ -1,5 +1,5 @@
 /-  *turf, pond, mist
-/+  *turf, sss
+/+  *turf, sss, vita-client
 |%
 :: +$  [=bowl:gall =rock:pond top=?]
 ++  filter-mist-goal
@@ -554,6 +554,19 @@
     |=  [src=^ship id=@t]
     :-  (scot %p src)
     s+id
+  ++  local
+    |=  loc=^local
+    ^-  json
+    %-  pairs
+    :~  config+(vita-config config.loc)
+        closet+(skye closet.loc)
+    ==
+  ++  vita-config
+    |=  =config:vita-client
+    %-  pairs
+    :~  enabled+b+enabled.config
+        'vitaParent'^(ship-json vita-parent.config)
+    ==
   ++  turf
     |=  =^turf
     =,  ephemera.turf
@@ -1016,5 +1029,10 @@
       =/  path  (pa jon)
       ?~  path  ~
       `(need (path-to-turf-id path))
+    ++  vita-action
+      |=  jon=json
+      ^-  action:vita-client
+      %.  jon
+      (of ~[set-enabled+bo])
   --
 --

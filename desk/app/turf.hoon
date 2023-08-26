@@ -1,18 +1,16 @@
 /-  *turf, pond, mist, hark
-/+  *turf, *sss, *ssio, *plow, default-agent, dbug, verb, agentio
-/%  mist-stir-mark  %mist-stir
-/%  mist-stirred-mark  %mist-stirred
-/%  pond-stir-mark  %pond-stir
-/%  pond-stirred-mark  %pond-stirred
-/$  c1  %json  %mist-stir
-/$  c2  %json  %pond-stir
-/$  c3  %mist-stirred  %json
-/$  c4  %pond-stirred  %json
-:: =/  hm           (mk-lake-1)
+/+  *turf, *sss, *ssio, *plow, default-agent, dbug, verb, agentio, vita-client
+:: /%  mist-stir-mark  %mist-stir
+:: /%  mist-stirred-mark  %mist-stirred
+:: /%  pond-stir-mark  %pond-stir
+:: /%  pond-stirred-mark  %pond-stirred
+:: /$  c1  %json  %mist-stir
+:: /$  c2  %json  %pond-stir
+:: /$  c3  %mist-stirred  %json
+:: /$  c4  %pond-stirred  %jsonh
 =/  pond-lake      (mk-lake pond)
 =/  mist-lake      (mk-lake mist)
 =/  res-pond       (response:poke pond-lake *)
-:: =/  sub-hm-init  (mk-subs hm pond-path)
 =/  sub-pond-init  (mk-subs pond-lake pond-path)
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
 =/  sub-mist-init  (mk-subs mist-lake mist-path)
@@ -23,8 +21,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_39
-      =avatar
+      reset=_45
       closet=$~(default-closet:gen skye)
       dtid=turf-id
       :: usage=(map turf-id (jug @daa ship))
@@ -41,6 +38,10 @@
 +$  card  $+(card card:agent:gall)
 --
 %-  agent:dbug
+=/  vita-config=config:vita-client
+  [| ~dister-midlev-mindyr]
+  :: [| ~nec]
+%-  (agent:vita-client vita-config)
 =|  current-state
 =*  state  -
 :: %+  verb  &
@@ -233,11 +234,14 @@
       %pond-stir
     =/  stir  !<(stir:pond vase)
     =/  target  ship.turf-id.stir
+    =/  vita-card  (active:vita-client bowl)
     ?:  =(our.bowl target)
       =^  cards  state  (stir-pond:hc `src.bowl stir)
+      =?  cards  =(our src):bowl  [vita-card cards]
       cards^this
     ?>  =(our src):bowl
     :_  this
+    :-  vita-card
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
       %join-turf  !!
@@ -391,11 +395,9 @@
 ++  on-peek
   |=  =path
   ^-  (unit (unit cage))
-  :: (on-peek:def path)
   ?+     path  (on-peek:def path)
-  :: ?-     path
-      [%x %closet ~]
-    ``skye+!>(closet)
+      [%x %local ~]
+    ``local+!>(local:hc)
       :: *  ``noun+!<(~)
   ==
 ++  on-agent
@@ -516,6 +518,14 @@
   ?=  ^
   (~(get by read:du-pond) (turf-id-to-ppath id))
 ::
+++  config
+  ^-  config:vita-client
+  =/  secret-config  (~(got by sup.bowl) [/vita]~)
+  :-  =(/yes +.secret-config)
+  -.secret-config
+++  local
+  ^-  ^local
+  [config closet]
 ++  pond-stir-card
   |=  [=wire =turf-id =goal:pond]
   ^-  card

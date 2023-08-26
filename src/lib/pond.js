@@ -1,4 +1,4 @@
-import { createMemo } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import { produce } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
@@ -32,6 +32,13 @@ function getTurfGrid(turf) {
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id, options = {}) {
     this.id = id;
+    const [isNew, $isNew] = createSignal(false);
+    this.isNew = isNew;
+    this.$isNew = $isNew;
+    options = {
+      ...options,
+      onNew: () => $isNew(true),
+    };
     const wash = (update, grits) => {
       update((turf) => {
         if (!turf?.id) return { ...turf, id };
@@ -67,6 +74,14 @@ export class Pond { // we use a class so we can put it inside a store without ge
 
   get grid() {
     return this._grid();
+  }
+
+  get new() {
+    return this.isNew();
+  }
+
+  markNotNew() {
+    this.$isNew(false);
   }
 
   // returns true/false whether we attempted to send the wave or not

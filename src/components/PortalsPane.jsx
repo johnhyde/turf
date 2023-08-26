@@ -92,20 +92,20 @@ export default function PortalsPane() {
 
   return (
     <div class="flex flex-col">
-      <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto mb-2">Teleport Home</SmallButton>
+      <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
       <Heading>
         Create a Portal to:
       </Heading>
       <div class="flex justify-center items-center space-x-2">
         <input
-            class="rounded-md"
+            class="rounded-md max-w-[175px]"
             use:input
             use:bind={[
               toShip,
               $toShip,
             ]} />
         {state.portalToPlace?.ship === toShip() ?
-          <SmallButton onClick={[placePortal, null]}>x</SmallButton>
+          <SmallButton onClick={[placePortal, null]}>–</SmallButton>
         :
           <SmallButton onClick={placeNewPortal}>+</SmallButton>
         }
@@ -178,7 +178,7 @@ function Portal(props) {
       <Switch fallback="✓">
         <Match when={props.portal.shadeId === null}>
           {props.placingPortal(props.portal.id) ?          
-            <SmallButton onClick={[props.place, null]}>x</SmallButton>
+            <SmallButton onClick={[props.place, null]}>–</SmallButton>
           :
             <SmallButton onClick={[props.place, props.portal.id]}>+</SmallButton>
           }

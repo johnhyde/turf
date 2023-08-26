@@ -7,39 +7,28 @@ import cycle from 'assets/icons/cycle.png';
 
 export default function Modals() {
   const state = useState();
+  
+  function optIn() {
+    state.p.markNotNew();
+    state.mist.setVitaEnabled(true);
+  }
+  
+  function optOut() {
+    state.p.markNotNew();
+  }
 
   // document.addEventListener('keydown', (e) => {
   //   if (!e.defaultPrevented && !isTextInputFocused()) {
   //     if (e.code === 'Escape') {
-  //       if (state.selectedTab) {
   //         selectTab(null);
-  //       } else {
-  //         if (open()) {
-  //           closeSidebar();
-  //         } else {
-  //           openSidebar();
-  //         }
   //         e.preventDefault();
   //       }
   //     }
   //     switch (e.key) {
-  //       case '?':
-  //       case 'h':
-  //         toggleTab(state.tabs.HELP);
-  //         openSidebar();
-  //         break;
   //       case 'p':
   //         toggleTab(state.tabs.LAB);
   //         openSidebar();
   //       break;
-  //       case 'e':
-  //         toggleTab(state.tabs.EDITOR);
-  //         openSidebar();
-  //         break;
-  //       case 'g':
-  //         toggleTab(state.tabs.PORTALS);
-  //         openSidebar();
-  //         break;
   //       default:
   //     }
   //   }
@@ -67,6 +56,33 @@ export default function Modals() {
               No
             </button>
           </div>
+        </Modal>
+      </Show>
+      <Show when={state.p?.id === ourPond && state.p?.new && state.mist.config?.enabled !== undefined && !state.mist.config.enabled} keyed>
+        <Modal class="bg-teal-700 text-slate-100">
+          <p class="text-xl mb-4 text-center">
+            You Are Opted Out of Usage Tracking
+          </p>
+          <p class="mb-2">
+            Turf uses %vita to automatically track how many people are using Turf each day.
+          </p>
+          <p class="mb-2">
+            When enabled, Turf sends at most one message per day to {state.mist.config.vitaParent}, saying that you used app.
+          </p>
+          <p class="italic">
+            Please consider opting in—this gives us the data we need to get funding to keep improving Turf.
+          </p>
+          <div class="flex w-full justify-center my-4 space-x-4">
+            <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={optIn}>
+              Opt In
+            </button>
+            <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={optOut}>
+              Close
+            </button>
+          </div>
+          <p class="italic">
+            You can change this setting at any time from the <span class="font-bold">?</span> tab.
+          </p>
         </Modal>
       </Show>
     </>

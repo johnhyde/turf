@@ -9,6 +9,7 @@ import App from './App';
 window.desk = window.desk || 'turf';
 window.ship = window.ship || 'zod';
 window.our = '~' + ship;
+window.ourPond = '/pond/' + our;
 
 // const root = document.getElementById('root');
 

@@ -97,22 +97,24 @@ export async function sendMistWave(id, goals, stirId) {
   return sendWave('mist-stir', id, goals, stirId);
 }
 
-export async function switchToTurf(id) {
-  await api.poke({
-    app: 'turf',
-    mark: 'join-turf',
-    json: id,
-  });
-}
-
 export function scry(path) {
   return api.scry({ app: 'turf', path });
 }
 
-export async function getCloset() {
-  const closet = await scry('/closet');
-  console.log('got closet', closet);
-  return closet;
+export async function getLocal() {
+  const local = await scry('/local');
+  console.log('got local', local);
+  return local;
+}
+
+export async function setVitaEnabled(enabled) {
+  return api.poke({
+    app: 'turf',
+    mark: 'vita-client',
+    json: {
+      'set-enabled': enabled,
+    }
+  });
 }
 
 export { api };

@@ -77,7 +77,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 z-[100] h-full p-1')}
+      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show when={open()} fallback={(
         <div class="flex-grow">

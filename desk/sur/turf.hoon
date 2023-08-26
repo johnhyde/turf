@@ -1,3 +1,4 @@
+/+  vita-client
 |%
 +$  turf-id  [=ship =path]
 +$  form-id  path
@@ -157,4 +158,9 @@
       src=(unit ship)
   ==
 :: ++  stirred-rock
+::
++$  local
+  $:  =config:vita-client
+      closet=skye
+  ==
 --

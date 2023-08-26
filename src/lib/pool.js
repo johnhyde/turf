@@ -80,6 +80,10 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
         if (res.hasOwnProperty('rock')) {
           const newCore = hydrate(res.rock.core);
           console.log(`new core with id ${newCore?.id} from rock`, newCore);
+          console.log(`stir ids for ${newCore?.id} rock:`, res.rock.stirIds);
+          if (!res.rock.stirIds[our]) {
+            if (options.onNew) options.onNew();
+          }
           this.updateReal(reconcile(newCore, { merge: true }));
           this.updatePulses(false, res.rock.stirIds[our]); // always resets ether because grit is undefined
           console.log('leftover pulses: ', this.pulses.length);

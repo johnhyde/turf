@@ -16,8 +16,9 @@ export class Mist { // we use a class so we can put it inside a store without ge
     };
     this._ = getPool(washMist, null, apiSendWave, filters(this), options);
     this.$ = this._.$;
-    const [closet, { mutate, refetch }] = createResource(api.getCloset);
-    this._closet = closet;
+    const [local, { mutate, refetch }] = createResource(api.getLocal);
+    this._local = local;
+    this.refetchLocal = refetch;
 
 
     this.subscribe();
@@ -31,8 +32,12 @@ export class Mist { // we use a class so we can put it inside a store without ge
     return this._.fake;
   }
 
+  get config() {
+    return this._local().config;
+  }
+
   get closet() {
-    return this._closet();
+    return this._local().closet;
   }
 
   // returns true/false whether we attempted to send the wave or not
@@ -49,7 +54,7 @@ export class Mist { // we use a class so we can put it inside a store without ge
 
   goHome() {
     this.sendWave('export-self', {
-      for: '/pond/' + our,
+      for: ourPond,
     });
   }
 
@@ -78,6 +83,15 @@ export class Mist { // we use a class so we can put it inside a store without ge
 
   delThing(index) {
     this.sendWave('del-thing', Number(index));
+  }
+
+  async setVitaEnabled(enabled) {
+    await api.setVitaEnabled(enabled);
+    this.refetchLocal();
+  }
+
+  toggleVitaEnabled() {
+    this.setVitaEnabled(!this.config.enabled);
   }
 }
 
