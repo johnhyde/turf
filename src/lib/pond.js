@@ -226,12 +226,14 @@ const pondGrits = {
       const newPos = clampToTurf(turf, arg.pos);
       player.pos.x = newPos.x;
       player.pos.y = newPos.y;
+      player.actionQueue.push({type: "move", arg: arg});
     }
   },
   'face': (turf, arg) => {
     const player = turf.players[arg.ship];
     if (player) {
       player.dir = arg.dir;
+      player.actionQueue.push({type: "face", arg: arg});
     }
   },
   'set-avatar': (turf, arg) => {
