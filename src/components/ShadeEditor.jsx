@@ -1,71 +1,83 @@
-import { createSignal, createSelector, mergeProps } from 'solid-js';
-import { produce } from "solid-js/store";
+import { batch, createMemo, createSelector, mergeProps } from 'solid-js';
+import { createStore, produce, reconcile } from "solid-js/store";
 import { vec2, bind, input } from 'lib/utils';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
+import Heading from '@/Heading';
+import SmallButton from '@/SmallButton';
 
 export default function ShadeEditor(props) {
   const state = useState();
-  // const combinedEffects = () => {
+  const [newEffects, $newEffects] = createStore({});
 
-  // }
-  const effects = () => {
+  function clearNewEffects() {
+    $newEffects(reconcile({}));
+  }
+
+  const effects = createMemo(() => {
     if (!props.shade) return {};
-    const merged = mergeProps(props.shade.form.seeds, props.shade.form.effects, props.shade.effects);
+    const merged = mergeProps(props.shade.form.seeds, props.shade.form.effects, props.shade.effects, newEffects);
     return mapValues(merged, (effect) => {
       if (typeof effect === 'string') {
         return { type: effect, arg: null };
       }
       return effect;
     });
-  };
+  });
 
   function setArg(trigger, type, arg) {
-    if (arg !== null) {
-      state.p.$('ether', 'cave', props.shade.id, 'effects', trigger, { type, arg });
-    } else {
-      state.p.$('ether', 'cave', props.shade.id, 'effects',
-        produce((e) => {
-          delete e[trigger];
-        })
-      );
-    }
+    $newEffects(trigger, { type, arg });
   }
 
   function save() {
-    Object.entries(effects()).forEach(([trigger, effect]) => {
-      state.setShadeEffect(
-        props.shade.id,
-        trigger,
-        effect.arg === null ? effect.type : effect,
-      )
+    batch(() => {
+      Object.entries(effects()).forEach(([trigger, effect]) => {
+        state.setShadeEffect(
+          props.shade.id,
+          trigger,
+          effect.arg === null ? effect.type : effect,
+        );
+      });
+      clearNewEffects();
     });
   }
 
+  function cancel() {
+    clearNewEffects();
+  }
+
   return (
-    <Show when={props.shade}>
-      {(shade) =>
-        <div>
-          <For each={Object.entries(effects())} >
-            {([trigger, effect]) => {
-              return <div>
-                {trigger}: {effect.type}
+    <Show when={Object.entries(effects()).length > 0 && props.shade}>
+      <div class="m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
+        <Heading>{props.shade.form.name}</Heading>
+        Effects:
+        <For each={Object.entries(effects())} >
+          {([trigger, effect]) => {
+            return (
+              <div class="mb-2">
+                <div class="flex items-center mb-1">
+                  on {trigger}: {effect.type}
+                </div>
                 <ArgInput
-                  shade={shade()}
+                  shade={props.shade}
                   type={effect.type} arg={effect.arg}
                   setArg={(arg) => setArg(trigger, effect.type, arg)}
                 />
-              </div>;
-            }}
-          </For>
-          <button onClick={save}>
-            Save
-          </button>
-          <pre>
-            {JSON.stringify(shade(), null, 2)}
-          </pre>
-        </div>
-      }
+              </div>
+            );
+          }}
+        </For>
+        <Show when={Object.keys(newEffects).length}>
+          <div class="flex justify-center space-x-2">
+            <SmallButton onClick={save}>
+              Save
+            </SmallButton>
+            <SmallButton onClick={cancel}>
+              Cancel
+            </SmallButton>
+          </div>
+        </Show>
+      </div>
     </Show>
   );
 };
@@ -76,13 +88,7 @@ function ArgInput(props) {
   function defaultArg() {
     switch (props.type) {
       case 'port':
-        return {
-          for: {
-            ship: '~',
-            path: '/',
-          },
-          at: Number(props.shade.id),
-        };
+        return '';
       case 'jump':
         return vec2(state.e.offset);
       default:
@@ -90,49 +96,55 @@ function ArgInput(props) {
     }
   }
 
-  function updateShip(ship) {
-    props.setArg({
-      ...props.arg,
-      for: {
-        ...props.arg.for,
-        ship,
-      }
-    });
+  function updatePortal(portalId) {
+    portalId = Number.parseInt(portalId);
+    if (Number.isNaN(portalId)) {
+      props.setArg('');
+    } else {
+      props.setArg(portalId);
+    }
   }
   return (<>
-    { props.arg ? <div>
-      <Switch>
-        <Match when={props.type === 'port'}>
-          <input
-            use:input
-            use:bind={[
-              () => props.arg.for.ship,
-              updateShip,
-            ]} />
-          <button onClick={[props.setArg, null]} >x</button>
-        </Match>
-        <Match when={props.type === 'jump'}>
-          <input type="number"
-            min={state.e.offset.x}
-            max={state.e.offset.x + state.e.size.x - 1} 
-            use:input
-            use:bind={[
-              () => props.arg.x,
-              (s) => props.setArg(vec2(s, props.arg.y))
-            ]} />
-          <input type="number"
-            min={state.e.offset.y}
-            max={state.e.offset.y + state.e.size.y - 1} 
-            use:input
-            use:bind={[
-              () => props.arg.y,
-              (s) => props.setArg(vec2(props.arg.x, s))
-            ]} />
-          <button onClick={[props.setArg, null]} >x</button>
-        </Match>
-      </Switch>
-    </div> :
-    <button onClick={[props.setArg, defaultArg()]} >+</button>
-    }
+    <div class="flex justify-center items-center space-x-2">
+      { props.arg !== null ? 
+        <Switch>
+          <Match when={props.type === 'port'}>
+            <span>Portal ID:</span>
+            <input
+              type='number'
+              class="max-w-[80px]"
+              use:input
+              use:bind={[
+                () => props.arg,
+                updatePortal,
+              ]} />
+            <SmallButton onClick={[props.setArg, null]} >x</SmallButton>
+          </Match>
+          <Match when={props.type === 'jump'}>
+            <span>to x:</span>
+            <input type="number"
+              min={state.e.offset.x}
+              max={state.e.offset.x + state.e.size.x - 1} 
+              use:input
+              use:bind={[
+                () => props.arg.x,
+                (s) => props.setArg(vec2(s, props.arg.y))
+              ]} />
+            <span>y:</span>
+            <input type="number"
+              min={state.e.offset.y}
+              max={state.e.offset.y + state.e.size.y - 1} 
+              use:input
+              use:bind={[
+                () => props.arg.y,
+                (s) => props.setArg(vec2(props.arg.x, s))
+              ]} />
+            <SmallButton onClick={[props.setArg, null]} >x</SmallButton>
+          </Match>
+        </Switch>
+      :
+        <SmallButton onClick={[props.setArg, defaultArg()]} >+</SmallButton>
+      }
+    </div> 
   </>);
 }

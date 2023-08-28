@@ -9,7 +9,8 @@ export default function ChatBar() {
   function sendChat(text) {
     const joinMatch = text.match(/^\/join (.*)/)
     if (joinMatch) {
-      state.switchToTurf(joinMatch[1]);
+      // state.switchToTurf(joinMatch[1]);
+      alert('/join commands have been disabled.\nTry using portals instead :)');
     } else {
       state.sendChat(chatbox.value);
     }

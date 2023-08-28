@@ -1,30 +1,31 @@
-import { createSignal, createContext, createEffect, createMemo, useContext, mergeProps, batch } from "solid-js";
+import { createSignal, createContext, createEffect, createMemo, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
 import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf';
 import { Pond } from 'lib/pond';
+import { Mist } from 'lib/mist';
 
 export const StateContext = createContext();
 
 export function getState() {
   const [state, $state] = createStore({
     ponds: {},
-    currentTurfId: '/pond/' + our,
+    mist: new Mist('/mist'),
+    get currentTurfId() {
+      return this.mist.vapor?.currentTurfId;
+    },
     get player() {
       const player = this.e?.players[our];
       if (!player) return null;
-      const parent = this;
-      return {
-        ...player,
-      };
+      return player;
     },
-    name: 'hi there',
     selectedTab: null,
     tabs: {
       HELP: 'help',
       LAB: 'lab',
       EDITOR: 'editor',
+      PORTALS: 'portals',
     },
     editor: {
       get editing() {
@@ -57,12 +58,19 @@ export function getState() {
         return selectedTab() === 'lab';
       },
     },
-    scale: 0.5,
+    portalToPlace: null,
+    scaleLog: -1,
+    get scale() {
+      return Math.pow(2, Math.round(this.scaleLog));
+    },
     get current() {
       const parent = this;
       const current = {
         get id() {
           return parent.currentTurfId;
+        },
+        get name() {
+          return this.id ? this.id.replace('/pond/', '') : '';
         },
         get pond() {
           return parent.ponds[this.id];
@@ -72,6 +80,12 @@ export function getState() {
         },
         get ether() {
           return this.pond?.ether;
+        },
+        get mist() {
+          return parent.mist?.mist;
+        },
+        get vapor() {
+          return parent.mist?.vapor;
         },
         get selectedForm() {
           if (!parent.editor.editing) return null;
@@ -93,9 +107,16 @@ export function getState() {
     get e() {
       return this.p?.ether;
     },
+    get m() {
+      return this.c.mist;
+    },
+    get v() {
+      return this.c.vapor;
+    },
   });
 
   const selectedTab = () => state.selectedTab;
+  const owner = getOwner();
 
   const _state = mergeProps(state, {
     $: $state,
@@ -103,27 +124,33 @@ export function getState() {
       $state('name', name);
     },
     subToTurf(id) {
-      if (!state.ponds[id]) {
-        $state('ponds', id, new Pond(id));
-      } else {
-        state.ponds[id].subscribe();
-      }
+      runWithOwner(owner, () => {
+        if (!state.ponds[id]) {
+          $state('ponds', id, new Pond(id));
+        } else {
+          state.ponds[id].subscribe();
+        }
+      });
     },
-    switchToTurf(id) {
-      id = '/pond/' + id;
-      if (!state.ponds[id]) {
-        $state('ponds', id, new Pond(id));
-      } else {
-        state.ponds[id].subscribe();
+    clearTurfs(id) {
+      for (const turfId in state.ponds) {
+        if (turfId !== id) {
+          state.ponds[turfId].destroy();
+          $state('ponds', turfId, undefined);
+        }
       }
-      api.switchToTurf(id);
-      $state('currentTurfId', id);
     },
     sendPondWave(type, arg, id) {
       id = id || this.currentTurfId;
       const pond = this.ponds[id];
       if (pond) {
         return pond.sendWave(type, arg, id);
+      }
+    },
+    sendMistWave(type, arg, id) {
+      id = id || '/mist';
+      if (this.mist) {
+        return this.mist.sendWave(type, arg, id);
       }
     },
     setPos(pos) {
@@ -143,20 +170,6 @@ export function getState() {
         from: our,
         text: message,
       });
-    },
-    avatar: {
-      setColor(color) {
-        if (typeof color === 'string' && color[0] === '#') {
-          color = hexToInt(color);
-        }
-        api.sendMistWave('set-color', Number(color));
-      },
-      addThing(formId) {
-        api.sendMistWave('add-thing-from-closet', formId);
-      },
-      delThing(index) {
-        api.sendMistWave('del-thing', Number(index));
-      },
     },
     resizeTurf(offset, size) {
       if (size.x <= 0 && size.y <= 0) return false;
@@ -229,8 +242,30 @@ export function getState() {
       ];
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
-    setScale(scale) {
-      $state('scale', Math.max(0.125, Math.min(6, Number(scale))));
+    createBridge(shade, portal, trigger='step') {
+      this.sendPondWave('create-bridge', { shade, trigger, portal });
+    },
+    createPortal(ship, path) {
+      this.sendPondWave('add-portal', {
+        for: {
+          ship,
+          path,
+        },
+        at: null,
+      });
+    },
+    discardPortal(portalId) {
+      this.sendPondWave('del-portal', {
+        from: Number(portalId),
+        loud: true,
+      });
+    },
+
+
+    setScaleLog(scaleLog) {
+      scaleLog = state.editor.editing ? scaleLog : Math.min(1, Number(scaleLog));
+      $state('scaleLog', Math.max(-1, scaleLog));
+      // $state('scaleLog', Math.max(-1, Number(scaleLog)));
     },
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);
@@ -240,31 +275,49 @@ export function getState() {
       if (id) this.selectTool(this.editor.tools.BRUSH);
     },
     selectShade(id, _) {
-      $state('editor', 'selectedShadeId', id);
-      if (id) this.selectTool(null);
+      batch(() => {
+        if (id) this.selectTool(null);
+        $state('editor', 'selectedShadeId', id);
+      });
     },
     selectTool(tool) {
       batch(() => {
         $state('editor', 'selectedTool', tool);
         if (tool === this.editor.tools.RESIZER) {
-          this.setScale(Math.max(this.scale, 1.5));
+          this.setScaleLog(Math.max(this.scaleLog, 1));
         }
+        this.selectShade(null);
       });
     },
     selectTab(tab) {
       batch(() => {
         $state('selectedTab', tab);
+        $state('portalToPlace', null);
+        this.selectShade(null);
         if (tab === state.tabs.LAB) {
-          this.setScale(Math.min(this.scale, 0.25));
+          this.setScaleLog(Math.min(this.scaleLog, -2));
         }
         if (tab === state.tabs.EDITOR) {
           this.selectTool(this.editor.selectedTool);
+        } else {
+          this.setScaleLog(this.scaleLog);
         }
       });
     },
+    startPlacingPortal(portalId) {
+      $state('portalToPlace', portalId);
+    }
   });
 
-  _state.switchToTurf(our);
+  createEffect(() => {
+    if (_state.c.id) {
+      batch(() => {
+        _state.subToTurf(_state.c.id);
+        _state.clearTurfs(_state.c.id);
+      })
+    }
+  });
+
   return _state;
 }
 

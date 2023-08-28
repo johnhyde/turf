@@ -1,13 +1,13 @@
 import { StateProvider } from 'stores/state.jsx';
-import StateSummary from '@/StateSummary';
 import Sidebar from '@/Sidebar';
+import Modals from '@/Modals';
 import Game from '@/Game';
 
 function App() {
   return (
     <StateProvider>
-      {/* <StateSummary/> */}
       <Sidebar/>
+      <Modals/>
       <Game/>
     </StateProvider>
   );

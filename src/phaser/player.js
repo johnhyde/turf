@@ -9,7 +9,7 @@ export class Player extends Phaser.GameObjects.Container {
     const state = useState();
     const turf = () => state.ponds[turfId]?.ether;
     const player = () => turf()?.players[patp];
-    const pos = vec2(player()?.pos || 0).scale(32);
+    const pos = vec2(player()?.pos || 0).scale(tileFactor);
     super(scene, pos.x, pos.y);
     this.s = state;
     this.turf = turf;
@@ -25,6 +25,8 @@ export class Player extends Phaser.GameObjects.Container {
       scene.cameras.main.startFollow(this);
     }
     this.loadPlayerSprites = load;
+    this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
+    this.add(this.avatar);
     this.recreateAvatar();
     this.setupEffects();
     this.addToUpdateList();
@@ -73,15 +75,10 @@ export class Player extends Phaser.GameObjects.Container {
   async recreateAvatar() {
     if (!(this.p && this.t)) return;
     const avatar = this.p.avatar;
-    this.removeAll(true);
-    if (this.name) this.name.remove();
-    this.name = document.createElement('span');
-    this.name.textContent = this.patp;
-    this.name.className = 'absolute font-mono font-bold text-md text-white leading-none translate-x-[-50%] translate-y-[-100%]'
-    this.positionName();
-    document.body.appendChild(this.name);
+    this.avatar.removeAll(true);
     
     await this.loadPlayerSprites(this.t);
+    if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
     this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });
     this.bodyImage.setTint(avatar.body.color);
     if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
@@ -89,6 +86,7 @@ export class Player extends Phaser.GameObjects.Container {
     }
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
+    this.bodyImage.setScale(factor);
     this.things = avatar.things.map((thing) => {
       const texture = spriteNameWithDir(thing.formId, thing.form, this.p.dir, this.patp);
       if (!texture) return null;
@@ -98,16 +96,16 @@ export class Player extends Phaser.GameObjects.Container {
         img.setFlipX(true);
       }
       img.setDisplayOrigin(offset.x, offset.y);
+      img.setScale(factor);
       return img;
     }).filter(thing => !!thing);
-    this.add([this.bodyImage, ...this.things]);
-    this.positionName();
-    // this.name = scene.make.text({ text: this.patp, style: { fontSize: '8px', fontFamily: 'monospace', fontSmooth: 'never',
-    // '--webkit-font-smoothing': 'none' }});
-    // this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width/2, playerOffset.y + this.name.height);
-    // this.add(this.name);
-    const dims = vec2(this.bodyImage.width, this.bodyImage.height);
-    const cameraOffset = vec2().subtract(dims).scale(0.5).add(playerOffset);
+    this.avatar.add([this.bodyImage, ...this.things]);
+    this.name = scene.make.text({ text: this.patp, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    '--webkit-font-smoothing': 'none' }});
+    this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
+    this.add(this.name);
+    const dims = vec2(this.bodyImage.width, this.bodyImage.height).scale(factor);
+    const cameraOffset = vec2().subtract(dims).scale(0.5).add(vec2(playerOffset).scale(factor));
     // console.log('player dims', this.bodyImage.width, this.bodyImage.height)
     scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
   }
@@ -126,9 +124,9 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.depth !== this.tilePos.y) {
       this.setDepth(this.tilePos.y + 0.5);
     }
-    const speed = 170;
+    const speed = 170*factor;
     let justMoved = false;
-    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(32);
+    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
     if (this.dPos.equals(targetPos)) {
       this.actionQueue.shift(); //Remove the item from the action queue
@@ -187,22 +185,10 @@ export class Player extends Phaser.GameObjects.Container {
       }
     }
     justMoved = false;
-    setTimeout(() => this.positionName(), 0);
-  }
-
-  positionName() {
-    const wv = scene.cameras.main.worldView;
-    const bodyOffset = this.bodyImage ? vec2(this.bodyImage.displayOriginX, this.bodyImage.displayOriginY) : vec2(0);
-    const centerOffset = this.bodyImage ? vec2(this.bodyImage.width/2, 0) : vec2(16, 0);
-    const canvasOffset = vec2(shell.offsetLeft, shell.offsetTop);
-    const globalPos = vec2(this.x, this.y).subtract(bodyOffset).add(centerOffset).subtract(vec2(wv.x, wv.y)).scale(1/this.s.scale).add(canvasOffset);
-    this.name.style.left = globalPos.x + 'px';
-    this.name.style.top = globalPos.y + 'px';
   }
 
   destroy(fromScene) {
     if (this.dispose) this.dispose();
-    if (this.name) this.name.remove();
     super.destroy(fromScene);
   }
 }

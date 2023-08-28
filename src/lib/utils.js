@@ -48,11 +48,15 @@ export function near(a, b, epsilon=1e-2) {
   return Math.abs(a - b) <= epsilon;
 }
 
+export function nearestPow2(x) {
+  return Math.pow(2, Math.round(Math.log(x)/0.6931471805599453)) // 0.693... being Math.log(2)
+}
+
 export function pixelsToTiles(pixels, tileSize=32) {
   pixels = vec2(pixels);
   return vec2(
-    Math.floor(pixels.x/tileSize),
-    Math.floor(pixels.y/tileSize),
+    Math.floor(pixels.x/(factor*tileSize)),
+    Math.floor(pixels.y/(factor*tileSize)),
   );
 }
 
@@ -100,6 +104,10 @@ export function vecToStr(vec) {
 
 export function jClone(obj) {
   return JSON.parse(JSON.stringify(obj));
+}
+
+export function stripPathPrefix(path) {
+  return path.replace(/\/[^/]+\//, '');
 }
 
 
@@ -178,6 +186,14 @@ export function bind(el, accessor) {
   createRenderEffect(() => {
     el.value = s();
   }); 
+}
+
+export function autofocus(el, _) {
+  if (el.offsetHeight) {
+    el.focus();
+  } else {
+    setTimeout(() => autofocus(el), 10);
+  }
 }
 
 export function input(el, callbacks) {

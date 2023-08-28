@@ -1,16 +1,16 @@
 /-  mist, turf
 /+  *sss, *plow
-|_  sky=skye
+|_  loc=local
   ++  grow
     |%
-    ++  noun  sky
+    ++  noun  loc
     ++  json
       ^-  ^json
-      (skye:enjs sky)
+      (local:enjs loc)
     --
   ++  grab
     |%
-    ++  noun  skye
+    ++  noun  local
     --
   ++  grad  %noun
   --

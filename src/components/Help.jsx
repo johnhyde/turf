@@ -1,6 +1,9 @@
+import { useState } from 'stores/state.jsx';
 import StateSummary from "@/StateSummary";
 
 export default function Help() {
+  const state = useState();
+
   return (
     <div class="m-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50">
       {import.meta.env.DEV && <StateSummary />}
@@ -69,7 +72,21 @@ export default function Help() {
       </div>
       <div class="border-t border-yellow-50"></div>
       <p>
-        Turf is in super-pre-alpha. Anything you create will be erased in future updates.
+        Turf is in Season -1: Alpha Testing. Anything you create will be erased on October 1st, 2023 (if not sooner).
+      </p>
+      <p>
+        You are currently opted {state.mist.config.enabled ? 'in to' : 'out of' } daily usage tracking. When enabled, Turf tells {state.mist.config.vitaParent} whether you used app once per day.
+      </p>
+      <p>
+        Sharing your data helps us get funding to keep improving Turf.
+      </p>
+      <p class="w-full text-center">
+        <button
+          class="bg-yellow-700 px-2 py-1 rounded-md"
+          onClick={state.mist.toggleVitaEnabled.bind(state.mist)}
+        >
+          {state.mist.config.enabled ? 'Opt Out' : 'Opt In'}
+        </button>
       </p>
       <p>
         Come ask questions or give feedback in the group:

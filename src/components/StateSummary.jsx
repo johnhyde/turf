@@ -26,7 +26,7 @@ function StateSummary() {
     state.$('currentTurfId', turfId);
   }
   function unsubToTurfs() {
-    api.unsubscribeToTurf();
+    api.unsubscribeToPool();
   }
   function addHusk(formId) {
     state.onPondRes(state.currentTurfId)({
@@ -53,7 +53,7 @@ function StateSummary() {
         view scale
       </p>
       <div>
-        <input type="range" min="0.25" max="2" step="0.25" use:bind={[() => state.scale, (s) => state.setScale(s)]} />
+        <input type="range" min="-2" max="4" step="1" use:bind={[() => state.scaleLog, (s) => state.setScaleLog]} />
       </div>
       <h3>Current Turf:</h3>
       <p>{state.currentTurfId}</p>

@@ -4,3 +4,5 @@ urbit/pkg/landscape/lib/docket.hoon
 urbit/pkg/landscape/mar/docket-0.hoon
 urbit/pkg/landscape/sur/docket.hoon
 docs/docs-dev-desk(?)
+tloncorp/landscape-apps/desk/sur/hark.hoon (edited to not import groups)
+assemblycapital/vita/vita-client

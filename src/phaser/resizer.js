@@ -53,8 +53,11 @@ export class Resizer extends Phaser.GameObjects.Container {
   get t() {
     return state.ponds[this.turfId]?.ether;
   }
+  get scale() {
+    return state.scale * window.devicePixelRatio;
+  }
   get stroke() {
-    return this.strokeWidth * state.scale;
+    return this.strokeWidth * this.scale;
   }
   get offset() {
     return this.tileOffsetToOffset(this.t?.offset);
@@ -70,19 +73,19 @@ export class Resizer extends Phaser.GameObjects.Container {
   }
 
   tileOffsetToOffset(offset) {
-    return vec2(offset || 0).scale(32).subtract(vec2(this.stroke));
+    return vec2(offset || 0).scale(tileFactor).subtract(vec2(this.stroke));
   }
 
   tileSizeToSize(size) {
-    return vec2(size || 0).scale(32).add(vec2(this.stroke*2));
+    return vec2(size || 0).scale(tileFactor).add(vec2(this.stroke*2));
   }
 
   offsetToTileOffset(offset) {
-    return roundV(vec2(offset).add(vec2(this.stroke)).scale(1/32));
+    return roundV(vec2(offset).add(vec2(this.stroke)).scale(1/tileFactor));
   }
 
   sizeToTileSize(size) {
-    return roundV(vec2(size).subtract(vec2(this.stroke*2)).scale(1/32));
+    return roundV(vec2(size).subtract(vec2(this.stroke*2)).scale(1/tileFactor));
   }
 
   updateShapes() {
@@ -96,21 +99,21 @@ export class Resizer extends Phaser.GameObjects.Container {
     this.rects[1].setSize(rectW, size.y);
     this.rects[2].setSize(size.x, rectW);
     this.rects[3].setSize(rectW, size.y);
-    const triOffset = rectW + (16 * this.s.scale); 
+    const triOffset = rectW + (16 * this.scale); 
     this.tris[0].setPosition(size.x / 2, size.y + triOffset);
     this.tris[1].setPosition(size.x + triOffset, size.y / 2);
     this.tris[2].setPosition(size.x / 2, -triOffset);
     this.tris[3].setPosition(-triOffset, size.y / 2);
 
     this.tris.forEach((t, i) => {
-      t.setScale(20 * this.s.scale);
+      t.setScale(20 * this.scale);
     });
   }
 
   updateN(dir, drag) {
     const rectW = this.stroke;
-    const min = 32 + rectW*2;
-    const triOffset = rectW + (16 * this.s.scale);
+    const min = 32*factor + rectW*2;
+    const triOffset = rectW + (16*factor * this.scale);
     const br = vec2(this.offset).add(this.size);
     const offsetDrag = vec2(drag).add(this.offset).add(vec2(triOffset));
     batch(() => {
