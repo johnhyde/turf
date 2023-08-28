@@ -23,7 +23,7 @@
  - `npm start`
 - Visit http://127.0.0.1:3000/ and sign in with your access code (`+code` in the dojo to get this access code) (you will get cryptic Urbit api and file-not-found errors in the web console if you forget this step. Notably, session.js will be missing, although other errors will also cause this.)
 - Visit http://127.0.0.1:3000/apps/turf/ (the trailing slash is crucial)
-- If you make changes to the front-end, you will have to kill and start this process again (it's supposed to hot-reload, but wasn't designed to work with phaser so it often doesn't really work properly). You can, however, leave this open while you modify the back-end with `npm run desks`
+- If you make changes to the front-end, you will have to refresh the web page, or possibly hit r on the command line window running vite, depending on your operating system or perhaps other factors (it's supposed to hot-reload, but wasn't designed to work with phaser so it often doesn't really work properly). You can, however, leave this open while you modify the back-end with `npm run desks`, which is orthogonal.
 
 ### Setting Up And Running Multiple Ships
 
@@ -35,7 +35,7 @@ For multiple ships, eg to test multiplayer:
 
 ## Updating Source Code
 
-To push the hoon source code to the ships, run `npm run desks` or `npm run desks`. Since(?) we've `|install`ed the desks, they will hot-reload automatically when the new source code is pushed to them thereby.
+To push the hoon source code to the ships, run `npm run desks` or `npm run desks`. Since this script includes a `|commit` to the desks, they will hot-reload automatically when the new source code is pushed to them thereby.
 
 # Vite Template Stuff
 ## Usage
