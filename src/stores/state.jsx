@@ -59,12 +59,18 @@ export function getState() {
       },
     },
     portalToPlace: null,
-    scale: 0.5,
+    scaleLog: -1,
+    get scale() {
+      return Math.pow(2, Math.round(this.scaleLog));
+    },
     get current() {
       const parent = this;
       const current = {
         get id() {
           return parent.currentTurfId;
+        },
+        get name() {
+          return this.id ? this.id.replace('/pond/', '') : '';
         },
         get pond() {
           return parent.ponds[this.id];
@@ -256,8 +262,10 @@ export function getState() {
     },
 
 
-    setScale(scale) {
-      $state('scale', Math.max(0.125, Math.min(6, Number(scale))));
+    setScaleLog(scaleLog) {
+      scaleLog = state.editor.editing ? scaleLog : Math.min(1, Number(scaleLog));
+      $state('scaleLog', Math.max(-1, scaleLog));
+      // $state('scaleLog', Math.max(-1, Number(scaleLog)));
     },
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);
@@ -276,7 +284,7 @@ export function getState() {
       batch(() => {
         $state('editor', 'selectedTool', tool);
         if (tool === this.editor.tools.RESIZER) {
-          this.setScale(Math.max(this.scale, 1.5));
+          this.setScaleLog(Math.max(this.scaleLog, 1));
         }
         this.selectShade(null);
       });
@@ -287,10 +295,12 @@ export function getState() {
         $state('portalToPlace', null);
         this.selectShade(null);
         if (tab === state.tabs.LAB) {
-          this.setScale(Math.min(this.scale, 0.25));
+          this.setScaleLog(Math.min(this.scaleLog, -2));
         }
         if (tab === state.tabs.EDITOR) {
           this.selectTool(this.editor.selectedTool);
+        } else {
+          this.setScaleLog(this.scaleLog);
         }
       });
     },

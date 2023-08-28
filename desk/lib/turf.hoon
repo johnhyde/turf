@@ -42,14 +42,30 @@
       ::
         :-  /table/round
         =/  table  (new-form %item 'Round Table' table)
-        table(collidable %.y)
+        table(collidable %.y, offset [--0 --4])
       ::
         :-  /stool
-        (new-form %item 'Stool' stool)
+        =/  stool  (new-form %item 'Stool' stool)
+        stool(offset [--0 --4])
       ::
         :-  /barrel
         =/  barrel  (new-form %item 'Barrel' barrel)
-        barrel(collidable %.y)
+        %=  barrel
+          collidable  %.y
+          offset      [--0 --6]
+        ==
+      ::
+        :-  /crate
+        =/  crate  (new-form %item 'Crate' crate)
+        crate(collidable %.y, offset [--0 --2])
+      ::
+        :-  /sign
+        =/  sign  (new-form %item 'Sign' sign)
+        %=  sign
+          collidable  %.y
+          offset  [--0 --6]
+          :: seeds  (malt [%step %read]~)
+        ==
       ::
         :-  /tree
         =/  tree  (new-form-offset %item 'Tree' tree [--16 --42])
@@ -62,9 +78,13 @@
           offset      [--0 --32]
         ==
       ::
+        :-  /wall/stone/small
+        =/  wall-stone-small  (new-form-variations %wall 'Smal Stone Wall' wall-stone-small)
+        wall-stone-small(collidable %.y, offset [--0 --8])
+      ::
         :-  /fence/wood
         =/  fence-wood  (new-form-variations %wall 'Wood Fence' fence-wood)
-        fence-wood(collidable %.y)
+        fence-wood(collidable %.y, offset [--0 --8])
       ::
         :-  /portal
         =/  portal  (new-form %item 'Portal' portal)
@@ -88,7 +108,8 @@
         (new-form %item 'Red Flowers' flowers-red)
       ::
         :-  /shrub
-        (new-form %item 'Shrub' shrub)
+        =/  shrub  (new-form %item 'Shrub' shrub)
+        shrub(offset [--0 --6])
     ==
   ++  default-closet
     ^-  skye

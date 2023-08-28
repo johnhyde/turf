@@ -17,6 +17,10 @@ export default function Modals() {
     state.p.markNotNew();
   }
 
+  function goHome() {
+    state.mist.goHome();
+  }
+
   // document.addEventListener('keydown', (e) => {
   //   if (!e.defaultPrevented && !isTextInputFocused()) {
   //     if (e.code === 'Escape') {
@@ -37,23 +41,47 @@ export default function Modals() {
   return (
     <>
       <Show when={state.v?.portOffer} keyed>
-        <Modal class="bg-teal-700 text-slate-100">
-          <p>
+        <Modal class="bg-teal-700 text-slate-100 w-96">
+          <p class="text-xl mb-4 text-center">
             {state.v.portOffer.of ?
-              "You've activated a portal! Would you like to travel to:"
+              "You've activated a portal!"
             :
-              "You've been summoned! Would you like to travel to:"
+              "You've been summoned!"
             }
+          </p>
+          <p class="mb-2">
+            Would you like to travel to:
           </p>
           <p class="text-center text-lg">
             <span class="font-bold">{stripPathPrefix(state.v.portOffer.for)}</span>?
           </p>
-          <div class="flex w-full justify-center mt-2 space-x-4">
+          <div class="flex w-full justify-center mt-4 space-x-4">
             <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.acceptPortOffer.bind(state.mist)}>
               Yes
             </button>
             <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.rejectPortOffer.bind(state.mist)}>
               No
+            </button>
+          </div>
+        </Modal>
+      </Show>
+      <Show when={state.m && (!state.e || !state.player)} keyed>
+        <Modal class="bg-teal-700 text-slate-100 w-96">
+          <p class="text-xl mb-4 text-center">
+            {state.c.id ? `Teleporting to ${state.c.name}...` : 'You are in the void, not present in any turf'}
+          </p>
+          {state.c.id && (
+              <p class="mb-2">
+            {!state.e ?
+              'If this takes a long time, it may be because the host is offline.'
+            :
+              'Connected! Waiting for the latest update...'
+            }
+              </p>
+          )}
+          <div class="flex w-full justify-center mt-4 space-x-4">
+            <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={goHome}>
+              Go Home {state.c.id ? 'Instead' : ''}
             </button>
           </div>
         </Modal>

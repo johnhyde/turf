@@ -21,7 +21,7 @@
   ==
 +$  state-0
   $:  %0
-      reset=_45
+      reset=_53
       closet=$~(default-closet:gen skye)
       dtid=turf-id
       :: usage=(map turf-id (jug @daa ship))

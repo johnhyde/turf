@@ -48,7 +48,7 @@ export class Preview extends Phaser.GameObjects.Container {
   updatePointer(pointer) {
     const tileSize = this.turf().tileSize.x;
     const tilePos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY), tileSize);
-    const pos = vec2(tilePos).scale(tileSize);
+    const pos = vec2(tilePos).scale(tileFactor);
     this.setX(pos.x);
     this.setY(pos.y);
     const cam = this.scene.cameras.main;

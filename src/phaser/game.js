@@ -14,6 +14,12 @@ import voidUrl from 'assets/sprites/void.png';
 let owner, setBounds, container;
 var game, scene, cam, cursors, keys = {}, player, tiles, preview;
 var formIndexMap, players = {}, shades = {};
+const factor = 8;
+const tileSize = 32;
+const tileFactor = factor * tileSize;
+window.factor = factor;
+window.tileSize = tileSize;
+window.tileFactor = tileFactor;
 
 async function loadImage(id, url, isWall = false, config = {}) {
   // console.log("trying to load image: " + id)
@@ -74,6 +80,26 @@ async function loadImage(id, url, isWall = false, config = {}) {
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
   sprite.setInteractive();
+  if (shade.formId === '/portal') {
+    const state = useState();
+    createEffect(() => {
+      shade = state.e?.cave?.[id];
+      if (shade) {
+        const step = shade.effects['step'];
+        if (step?.type === 'port' &&
+            step.arg !== undefined &&
+            step.arg !== null &&
+            state.e.portals[step.arg]?.at
+        ) {
+          sprite.setAlpha(1);
+          sprite.setTint(0xffffff)
+        } else {
+          sprite.setAlpha(0.7);
+          sprite.setTint(0xbbbbbb)
+        }
+      }
+    })
+  }
 
   // here "touch" means that the shade was touched by the cursor
   // as it passed through or clicked
@@ -115,14 +141,21 @@ function createShade(shade, id, turf) {
 function setGameSize() {
   console.log('resized')
   const el = game.scale.isFullscreen ? game.canvas.parentElement : container;
-  const width = ~~(state.scale * el.clientWidth);
-  const height = ~~(state.scale * el.clientHeight);
+  const width = ~~(window.devicePixelRatio * el.clientWidth);
+  const height = ~~(window.devicePixelRatio * el.clientHeight);
   if (!near(width, game.scale.width, 1) || !near(height, game.scale.height, 1)) {
     game.scale.resize(width, height);
     game.canvas.style.setProperty('width', '100%');
     game.canvas.style.setProperty('height', '100%');
   }
-  if (setBounds) setBounds();
+  if (cam) {
+    const oldZoom = cam.zoom;
+    const newZoom = 1/state.scale;
+    if (oldZoom !== newZoom) {
+      cam.setZoom(newZoom);
+      if (setBounds) setBounds();
+    }
+  }
 }
 
 export function startPhaser(_owner, _container) {
@@ -140,7 +173,7 @@ export function startPhaser(_owner, _container) {
         pixelArt: true,
         roundPixels: true,
         backgroundColor: '#a6e4e8',
-        // zoom: 1,
+        // zoom: 0.25,
         scene: {
           init,
           preload: preload,
@@ -221,7 +254,7 @@ export function startPhaser(_owner, _container) {
         });
 
         this.input.on('wheel', (pointer) => {
-          state.setScale(state.scale + pointer.deltaY/200);
+          state.setScaleLog(state.scaleLog + pointer.deltaY/200);
         });
       }
 
@@ -251,6 +284,7 @@ export function startPhaser(_owner, _container) {
       const [loader, { mutate, refetch }] = createResource(
         () => state.e,
         (turf) => loadSprites(turf));
+      const readyToRender = () => !!(loader.state === 'ready' && state.e && state.player);
       createEffect(on(() => [
         loader.state,
         state.c.id,
@@ -260,7 +294,7 @@ export function startPhaser(_owner, _container) {
       ], (_, __, lastTurfId) => {
         if (loader.state === 'ready') {
           if (lastTurfId || state.e) destroyCurrentTurf();
-          if (state.e && state.player) {
+          if (readyToRender()) {
             initTurf(state.e, state.p.grid, state.player);
             initPlayers(state.e);
             initShades(state.e);
@@ -273,7 +307,7 @@ export function startPhaser(_owner, _container) {
         lastGrid = JSON.parse(lastGrid || '[]');
         // console.log('running tile effect');
         const turf = state.e;
-        if (turf && loader.state == 'ready') {
+        if (readyToRender()) {
           console.log('updating tiles');
           state.p.grid.map((col, i) => {
             col.map((space, j) => {
@@ -290,12 +324,12 @@ export function startPhaser(_owner, _container) {
         return [];
       }, { defer: false }));
       createEffect(on(() => [loader.state, JSON.stringify(Object.keys(state.e?.players || {}))], () => {
-        if (loader.state == 'ready') {
+        if (readyToRender()) {
           initPlayers(state.e);
         }
       }, { defer: true }));
       createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
-        if (loader.state == 'ready') {
+        if (readyToRender()) {
           initShades(state.e);
         }
       }, { defer: true }));
@@ -339,22 +373,24 @@ export function startPhaser(_owner, _container) {
   window.destroyTurf = destroyCurrentTurf;
   async function initTurf(turf, grid, _player) {
     const bounds = {
-      x: turf.offset.x * turf.tileSize.x,
-      y: turf.offset.y * turf.tileSize.y,
-      w: turf.size.x * turf.tileSize.x,
-      h: turf.size.y * turf.tileSize.y,
+      x: turf.offset.x * turf.tileSize.x * factor,
+      y: turf.offset.y * turf.tileSize.y * factor,
+      w: turf.size.x * turf.tileSize.x * factor,
+      h: turf.size.y * turf.tileSize.y * factor,
     };
     setBounds = () => {
       // const width = ~~container.clientWidth;
       // const height = ~~container.clientHeight;
-      const width = ~~game.scale.width;
-      const height = ~~game.scale.height;
+      // const width = ~~game.scale.width;
+      // const height = ~~game.scale.height;
+      const width = ~~cam.displayWidth;
+      const height = ~~cam.displayHeight;
       // adjust the viewport bounds if level is smaller
       const buffer = {
-        l: turf.tileSize.x * 1,
-        t: turf.tileSize.y * 3,
-        r: turf.tileSize.x * 1,
-        b: turf.tileSize.y * 1,
+        l: turf.tileSize.x * factor * 1,
+        t: turf.tileSize.y * factor * 3,
+        r: turf.tileSize.x * factor * 1,
+        b: turf.tileSize.y * factor * 1,
       };
       const bbounds = {
         x: bounds.x + Math.min(-buffer.l, -~~(Math.max(0, width - bounds.w) / 2)),
@@ -384,6 +420,7 @@ export function startPhaser(_owner, _container) {
     });
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
     layer.setDepth(turf.offset.y - 10);
+    layer.setScale(factor);
     window.tiles = tiles = layer;
     // window.players = Object.entries(turf.players).map(([patp, p]) => {
     //   const thisPlayer = new Player(scene, turf.id, patp, loadPlayerSprites);

@@ -28,11 +28,14 @@
       (pad-2 a)
       '.png'
   ==
-++  wall-stone  (gen-walls 'sprites/walls/wall-stone-')
-++  fence-wood  (gen-walls 'sprites/walls/fence-wood-')
+++  wall-stone  (gen-walls 'sprites/walls/wall-stone/wall-stone-')
+++  wall-stone-small  (gen-walls 'sprites/walls/wall-stone-small/wall-stone-small-')
+++  fence-wood  (gen-walls 'sprites/walls/fence-wood/fence-wood-')
 ++  table  'sprites/table.png'
 ++  stool  'sprites/stool.png'
 ++  barrel  'sprites/barrel.png'
+++  crate  'sprites/crate.png'
+++  sign  'sprites/sign.png'
 ++  tree  'sprites/tree.png'
 ++  portal  'sprites/portal.png'
 ++  tunnel  'sprites/tunnel.png'

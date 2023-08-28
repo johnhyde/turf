@@ -92,71 +92,75 @@ export default function PortalsPane() {
 
   return (
     <div class="flex flex-col">
-      <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
-      <Heading>
-        Create a Portal to:
-      </Heading>
-      <div class="flex justify-center items-center space-x-2">
-        <input
-            class="rounded-md max-w-[175px]"
-            use:input
-            use:bind={[
-              toShip,
-              $toShip,
-            ]} />
-        {state.portalToPlace?.ship === toShip() ?
-          <SmallButton onClick={[placePortal, null]}>–</SmallButton>
-        :
-          <SmallButton onClick={placeNewPortal}>+</SmallButton>
-        }
-      </div>
-      <Show when={portals().draft.length > 0}>
-        <div class="my-2">
-          <Heading>
-            Portal Drafts
-          </Heading>
-          <For each={portals().draft} >
-            {(portal) => {
-              return <Portal icon={portalTo} label="DRAFT TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
-            }}
-          </For>
-        </div>
+      <Show when={state.c.id !== ourPond}>
+        <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
       </Show>
-      <Show when={portals().from.length > 0}>
-        <div class="my-2">
-          <Heading>
-            Incoming Portal Requests
-          </Heading>
-          <For each={portals().from} >
-            {(portal) => {
-              return <Portal icon={portalFrom} label="FROM" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
-            }}
-          </For>
+      <Show when={state.c.id === ourPond}>
+        <Heading>
+          Create a Portal to:
+        </Heading>
+        <div class="flex justify-center items-center space-x-2">
+          <input
+              class="rounded-md max-w-[175px]"
+              use:input
+              use:bind={[
+                toShip,
+                $toShip,
+              ]} />
+          {state.portalToPlace?.ship === toShip() ?
+            <SmallButton onClick={[placePortal, null]}>–</SmallButton>
+          :
+            <SmallButton onClick={placeNewPortal}>+</SmallButton>
+          }
         </div>
-      </Show>
-      <Show when={portals().to.length > 0}>
-        <div class="my-2">
-          <Heading>
-            Outgoing Portal Requests
-          </Heading>
-          <For each={portals().to} >
-            {(portal) => {
-              return <Portal icon={portalTo} label="TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
-            }}
-          </For>
-        </div>
-      </Show>
-      <Show when={portals().with.length > 0}>
-        <div class="my-2">
-          <Heading>
-            Active Portals
-          </Heading>
-          <For each={portals().with} >
-            {(portal) => {
-              return <Portal icon={portalWith} label="WITH" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
-            }}
-          </For>
-        </div>
+        <Show when={portals().draft.length > 0}>
+          <div class="my-2">
+            <Heading>
+              Portal Drafts
+            </Heading>
+            <For each={portals().draft} >
+              {(portal) => {
+                return <Portal icon={portalTo} label="DRAFT TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+              }}
+            </For>
+          </div>
+        </Show>
+        <Show when={portals().from.length > 0}>
+          <div class="my-2">
+            <Heading>
+              Incoming Portal Requests
+            </Heading>
+            <For each={portals().from} >
+              {(portal) => {
+                return <Portal icon={portalFrom} label="FROM" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+              }}
+            </For>
+          </div>
+        </Show>
+        <Show when={portals().to.length > 0}>
+          <div class="my-2">
+            <Heading>
+              Outgoing Portal Requests
+            </Heading>
+            <For each={portals().to} >
+              {(portal) => {
+                return <Portal icon={portalTo} label="TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+              }}
+            </For>
+          </div>
+        </Show>
+        <Show when={portals().with.length > 0}>
+          <div class="my-2">
+            <Heading>
+              Active Portals
+            </Heading>
+            <For each={portals().with} >
+              {(portal) => {
+                return <Portal icon={portalWith} label="WITH" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+              }}
+            </For>
+          </div>
+        </Show>
       </Show>
     </div>
   );

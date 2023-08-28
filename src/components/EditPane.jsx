@@ -30,11 +30,12 @@ export default function EditPane() {
   });
 
   const onKeyDown = (e) => {
+    if (e.key === 'Esc' && state.editor.selectedTool) {
+      selectTool(null);
+      e.preventDefault();
+    }
     if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
       switch (e.key) {
-        case 'Enter':
-          selectTool(null);
-          break;
         case 'Delete':
         case 'Backspace':
           selectTool(tools.ERASER);
@@ -61,7 +62,7 @@ export default function EditPane() {
         onClick={[selectTool, null]}
         src={point}
         selected={isToolSelected(null)}
-        tooltip='Enter'
+        tooltip='Esc'
       />
       <Button
         onClick={[selectTool, tools.ERASER]}
