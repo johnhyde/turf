@@ -114,22 +114,23 @@ export class Player extends Phaser.GameObjects.Container {
     // this.upreUpdate.super(time, dt);
     //TODO: action queue retirement here. What do the objects in the action queue look like? Currently it's required to have an absolute position. And other parts of the code need to guard us against getting our self-started actions in the action queue.
     //TODO: put some of this pond.js's pondWaves?
-    if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
-      this.actionQueue = [];
-      console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
-    }
-    while(this.actionQueue[0]?.type == "face") { //TODO: handle face turns in sequence.
-      this.actionQueue.shift();
-    }
+    // if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
+    //   this.actionQueue = [];
+    //   console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
+    // }
+    // while(this.actionQueue[0]?.type == "face") { //TODO: handle face turns in sequence.
+    //   this.actionQueue.shift();
+    // }
     if (this.depth !== this.tilePos.y) {
       this.setDepth(this.tilePos.y + 0.5);
     }
     const speed = 170*factor;
     let justMoved = false;
-    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
+    // let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
+    let targetPos = vec2(this.tilePos).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
     if (this.dPos.equals(targetPos)) {
-      this.actionQueue.shift(); //Remove the item from the action queue
+      // this.actionQueue.shift(); //Remove the item from the action queue
     } else { //just move like regular
       const dif = vec2(targetPos).subtract(this.dPos);
       let step = speed * dt / 1000;

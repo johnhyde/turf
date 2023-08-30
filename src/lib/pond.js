@@ -226,6 +226,7 @@ const pondGrits = {
       const newPos = clampToTurf(turf, arg.pos);
       player.pos.x = newPos.x;
       player.pos.y = newPos.y;
+      if (!player.actionQueue) player.actionQueue = [];
       player.actionQueue.push({type: "move", arg: arg});
     }
   },
@@ -233,6 +234,7 @@ const pondGrits = {
     const player = turf.players[arg.ship];
     if (player) {
       player.dir = arg.dir;
+      if (!player.actionQueue) player.actionQueue = [];
       player.actionQueue.push({type: "face", arg: arg});
     }
   },
