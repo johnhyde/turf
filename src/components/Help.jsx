@@ -41,6 +41,9 @@ export default function Help() {
             Press P to customize your profile/avatar
           </li>
           <li>
+            Press G to place portals to other turfs
+          </li>
+          <li>
             Press H or ? to bring up this help page
           </li>
           <li>

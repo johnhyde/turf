@@ -16,10 +16,10 @@ export default function ChatLog(props) {
     });
     return grouped;
   };
+  let log;
   createEffect(on(() => [props.chats.length, props.context], () => {
     if (log) log.scroll(0, log.scrollHeight);
   }));
-  let log;
   return (
     <div class="mt-1 flex-[1_5_0%] min-h-[59px] flex flex-col-reverse">
       <div ref={el => log = el} class="p-2 bg-yellow-950/60 rounded-md text-white overflow-y-auto max-h-full">

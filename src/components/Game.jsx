@@ -1,5 +1,6 @@
 import { getOwner, onMount } from 'solid-js';
 import { startPhaser } from '~/phaser/game';
+import Overlay from '@/Overlay';
 
 function Game() {
   const owner = getOwner();
@@ -9,7 +10,8 @@ function Game() {
   });
 
   return (
-    <div id="shell">
+    <div id="shell" class="relative">
+      <Overlay/>
       <div id="gameContainer" style={{ 'background-color': 'green' }}>
       </div>
     </div>
