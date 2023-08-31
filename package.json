@@ -48,7 +48,8 @@
     "@urbit/vite-plugin-urbit": "^1.0.0",
     "dotenv-cli": "^7.2.1",
     "lodash": "^4.17.21",
-    "solid-js": "^1.6.10"
+    "solid-js": "^1.6.10",
+    "urbit-ob": "^5.0.1"
   },
   "bugs": {
     "url": "https://github.com/johnhyde/turf/issues"

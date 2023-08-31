@@ -1,3 +1,4 @@
+import { hex2patp, patp2hex, patp } from 'urbit-ob';
 import { createRenderEffect } from 'solid-js';
 
 const Vector2 = Phaser.Math.Vector2;
@@ -100,6 +101,40 @@ export function intToHex(color) {
 
 export function vecToStr(vec) {
   return vec.x + ',' + vec.y;
+}
+
+export function sig(str) {
+  if (str[0] !== '~') {
+    return '~' + str;
+  }
+  return str;
+}
+
+export function desig(str) {
+  if (str[0] === '~') {
+    return str.substring(1);
+  }
+  return str;
+}
+
+export function sanitizePatpInput(str) {
+  return str.toLowerCase().trim();
+}
+
+export function normalizeId(patp) {
+  return unpadPatp(sig(sanitizePatpInput(patp)));
+}
+
+export function normalizeIdAndDesig(patp) {
+  return desig(normalizeId(patp));
+}
+
+export function unpadPatp(patp) {
+  try {
+    return hex2patp(patp2hex(patp));
+  } catch {
+    return patp;
+  }
 }
 
 export function jClone(obj) {

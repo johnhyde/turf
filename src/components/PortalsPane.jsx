@@ -1,6 +1,7 @@
 import { createSignal, createMemo, createSelector, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { bind, isTextInputFocused, input } from 'lib/utils';
+import { bind, isTextInputFocused, input, normalizeId } from 'lib/utils';
+import { isValidPatp } from 'urbit-ob';
 import SmallButton from '@/SmallButton';
 import Heading from '@/Heading';
 import portalFrom from 'assets/icons/portal-from.png';
@@ -11,6 +12,16 @@ import resize from 'assets/icons/resize.png';
 export default function PortalsPane() {
   const state = useState();
   const placingPortal = createSelector(() => state.portalToPlace);
+  const [toShipValid, $toShipValid] = createSignal(null);
+  const validBorder = () => {
+    if (toShipValid()) {
+      return 'bg-green-100';
+    } else if (toShipValid() === false) {
+      return 'bg-red-200';
+    } else {
+      return '';
+    }
+  }
   const portals = createMemo(() => {
     const sort = (p1, p2) => { return p1.id - p2.id; };
     const portalsDraft = [];
@@ -48,11 +59,25 @@ export default function PortalsPane() {
   function goHome() {
     state.mist.goHome();
   }
+  function updateToShip(ship) {
+    let patp = normalizeId(ship);
+    $toShip(patp);
+    if (isValidPatp(patp)) {
+      $toShipValid(true);
+    } else {
+      $toShipValid(null);
+    }
+  }
   function placeNewPortal() {
-    state.startPlacingPortal({
-      ship: toShip(),
-      path: '/',
-    });
+    const patp = toShip();
+    if (isValidPatp(patp)) {
+      state.startPlacingPortal({
+        ship: toShip(),
+        path: '/',
+      });
+    } else {
+      $toShipValid(false);
+    }
   }
   function discardPortal(portalId) {
     state.discardPortal(Number.parseInt(portalId));
@@ -101,11 +126,11 @@ export default function PortalsPane() {
         </Heading>
         <div class="flex justify-center items-center space-x-2">
           <input
-              class="rounded-md max-w-[175px]"
+              class={"rounded-md max-w-[175px] " + validBorder()}
               use:input
               use:bind={[
                 toShip,
-                $toShip,
+                updateToShip,
               ]} />
           {state.portalToPlace?.ship === toShip() ?
             <SmallButton onClick={[placePortal, null]}>–</SmallButton>
