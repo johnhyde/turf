@@ -12,6 +12,7 @@ import { Resizer } from "./resizer";
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
+let pinger;
 var game, scene, cam, cursors, keys = {}, player, tiles, preview;
 var formIndexMap, players = {}, shades = {};
 const factor = 8;
@@ -79,7 +80,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
 
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
-  sprite.setInteractive();
+  sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
   if (shade.formId === '/portal') {
     const state = useState();
     createEffect(() => {
@@ -199,6 +200,7 @@ export function startPhaser(_owner, _container) {
 
       function preload() {
         console.log('preload');
+        this.load.audio('ping', ['audio/ping.mp3']);
       }
 
       let updateTime;
@@ -256,6 +258,16 @@ export function startPhaser(_owner, _container) {
         this.input.on('wheel', (pointer) => {
           state.setScaleLog(state.scaleLog + pointer.deltaY/200);
         });
+        const ping = this.sound.add('ping');
+        this.sound.pauseOnBlur = false;
+        if (pinger) window.removeEventListener('pond-ping-player', pinger);
+        pinger = (e) => {
+          if (e.grit.arg.ship === our) {
+            if (!this.sound.locked) ping.play();
+            state.notify(e.grit.arg.by + ' has pinged you!');
+          }
+        };
+        window.addEventListener('pond-ping-player', pinger);
       }
 
       function update() {

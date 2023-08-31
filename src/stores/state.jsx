@@ -59,10 +59,11 @@ export function getState() {
       },
     },
     portalToPlace: null,
-    scaleLog: -1,
+    scaleLog: 0,
     get scale() {
       return Math.pow(2, Math.round(this.scaleLog));
     },
+    notifications: [],
     get current() {
       const parent = this;
       const current = {
@@ -153,6 +154,12 @@ export function getState() {
         return this.mist.sendWave(type, arg, id);
       }
     },
+    sendChat(message) {
+      this.sendPondWave('send-chat', {
+        from: our,
+        text: message,
+      });
+    },
     setPos(pos) {
       this.sendPondWave('move', {
         ship: our,
@@ -165,10 +172,10 @@ export function getState() {
         dir,
       });
     },
-    sendChat(message) {
-      this.sendPondWave('send-chat', {
-        from: our,
-        text: message,
+    pingPlayer(patp) {
+      this.sendPondWave('ping-player', {
+        ship: patp,
+        by: our,
       });
     },
     resizeTurf(offset, size) {
@@ -306,6 +313,25 @@ export function getState() {
     },
     startPlacingPortal(portalId) {
       $state('portalToPlace', portalId);
+    },
+    notify(msg) {
+      const notification = {
+        msg,
+      };
+      $state('notifications', (n) => [...n, notification]);
+      setTimeout(() => {
+        this.removeNotification(notification);
+      }, 10000);
+    },
+    unnotify(index) {
+      $state('notifications', (n) => {
+        return [...n.slice(0, index), ...n.slice(index + 1)];
+      });
+    },
+    removeNotification(notification) {
+      $state('notifications', (notifs) => {
+        return notifs.filter(n => n !== notification);
+      });
     }
   });
 

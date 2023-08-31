@@ -96,6 +96,7 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
           
           if (!noop) {
             wash(this.updateReal.bind(this), grits);
+            if (options.onNewGrits) options.onNewGrits(grits);
           }
           if (!noop && noPulses && noCharges) {
             wash(this.updateFake.bind(this), grits);

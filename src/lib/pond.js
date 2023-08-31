@@ -38,6 +38,9 @@ export class Pond { // we use a class so we can put it inside a store without ge
     options = {
       ...options,
       onNew: () => $isNew(true),
+      onNewGrits: (grits) => {
+        grits.forEach((grit) => window.dispatchEvent(new PondGritEvent(grit)));
+      },
     };
     const wash = (update, grits) => {
       update((turf) => {
@@ -296,7 +299,7 @@ export function _washTurf(grit) {
   // console.log('washing a turf with grit', JSON.stringify(grit, null, 2))
   switch (grit.type) {
     case 'noop':
-      return (turf) => turf
+      return (turf) => turf;
     case 'del-turf':
       return null;
     case 'set-turf':
@@ -307,6 +310,8 @@ export function _washTurf(grit) {
         };
         return js.turf(newTurf);
       };
+    case 'ping-player':
+      return (turf) => turf;
     default:
       return produce((turf) => {
         if (pondGrits[grit.type]) {
@@ -316,6 +321,13 @@ export function _washTurf(grit) {
           console.warn(`Could not process grit of type: ${grit.type}`);
         }
       });
+  }
+}
+
+export class PondGritEvent extends Event {
+  constructor(grit, options = {}) {
+    super('pond-' + grit.type, options);
+    this.grit = grit;
   }
 }
 

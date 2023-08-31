@@ -234,6 +234,7 @@
     ?.  =(src.bowl from.goal)  ``~
     ``[%chat from.goal now.bowl text.goal]~
       %move
+    ?.  =(src.bowl ship.goal)  ``~
     =*  players  players.ephemera.turf
     =/  player  (~(get by players) ship.goal)
     ?~  player  ``~
@@ -249,6 +250,9 @@
     :-  (weld -.leave -.step)
     :-  [goal(pos pos)]~
     (weld +.leave +.step)
+      %ping-player
+    ?.  =(src.bowl by.goal)  ``~
+    `~[goal]~
       %port-offer-accepted
     ?.  =(src.bowl ship.goal)  ``~
     =/  offer  (~(get by port-offers.deed.turf) ship.goal)
@@ -463,6 +467,11 @@
           (move +.grit)
             %face
           (face +.grit)
+            %ping-player
+          %-  pairs
+          :~  ship+(ship-json ship.grit)
+              by+(ship-json by.grit)
+          ==
             %set-avatar
           (pond-set-avatar +.grit)
             %add-port-offer
@@ -932,6 +941,7 @@
           send-chat+(ot ~[from+(se %p) text+so])
           move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
+          ping-player+(ot ~[ship+(se %p) by+(se %p)])
       ==
     ::
     ++  mist-stir

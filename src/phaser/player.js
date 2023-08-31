@@ -28,6 +28,14 @@ export class Player extends Phaser.GameObjects.Container {
     this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.avatar);
     this.recreateAvatar();
+    this.setInteractive({
+      cursor: 'pointer',
+      hitArea: new Phaser.Geom.Rectangle(),
+      hitAreaCallback: CreatePixelPerfectHandler(game.textures, 255),
+    });
+    this.on('pointerdown', this.onClick.bind(this));
+    this.on('pointermove', this.onHover.bind(this));
+    this.on('pointerout', this.onLeave.bind(this));
     this.setupEffects();
     this.addToUpdateList();
     // this.scene.events.on('update', (time, delta) => { this.update(time, delta)} );
@@ -87,6 +95,8 @@ export class Player extends Phaser.GameObjects.Container {
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
     this.bodyImage.setScale(factor);
+    // this.bodyImage.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
+    // this.bodyImage.on('pointerdown', this.onClick.bind(this));
     this.things = avatar.things.map((thing) => {
       const texture = spriteNameWithDir(thing.formId, thing.form, this.p.dir, this.patp);
       if (!texture) return null;
@@ -104,6 +114,10 @@ export class Player extends Phaser.GameObjects.Container {
     '--webkit-font-smoothing': 'none' }});
     this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
     this.add(this.name);
+    this.ping = scene.make.text({ text: '(ping)', style: { fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    '--webkit-font-smoothing': 'none' }});
+    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height + this.ping.height);
+    this.ping.setVisible(false);
     const dims = vec2(this.bodyImage.width, this.bodyImage.height).scale(factor);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(vec2(playerOffset).scale(factor));
     // console.log('player dims', this.bodyImage.width, this.bodyImage.height)
@@ -188,8 +202,74 @@ export class Player extends Phaser.GameObjects.Container {
     justMoved = false;
   }
 
+  onClick(pointer) {
+    console.log('clicked on', this.patp);
+    if (this.ping && this.p) {
+      this.s.pingPlayer(this.patp);
+      this.ping.setText('pinged!');
+      this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+    }
+  }
+
+  onHover(pointer) {
+    console.log('hovered over', this.patp)
+    if (!this.isUs && !this.list.includes(this.ping)) {
+      this.add(this.ping);
+      this.ping.setVisible(true);
+    }
+  }
+  
+  onLeave(pointer) {
+    console.log('left', this.patp)
+    this.ping.setVisible(false);
+    this.remove(this.ping);
+    this.ping.setText('(ping)');
+    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+  }
+
+  // todo: adapt this code from https://github.com/photonstorm/phaser/issues/4492
+
   destroy(fromScene) {
     if (this.dispose) this.dispose();
     super.destroy(fromScene);
   }
+}
+
+
+function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
+  function pixelPerfectHitTest (hitArea, x, y, gameObject) {
+    // if this gameObject has a texture and a frame, then it is something we can query for pixels - so do it and return the result
+    if (gameObject.texture && gameObject.frame) {
+      const alpha = textureManager.getPixelAlpha(x, y, gameObject.texture.key, gameObject.frame.name)
+      return (alpha && alpha >= alphaTolerance)
+    }
+
+    // see if the gameObject might be a Container, and if it is, check the children looking for a hit
+    if (gameObject.list) {
+      for (const child of gameObject.list) {
+        const isName = child instanceof Phaser.GameObjects.Text;
+        let childX = x/child.scale + child.displayOriginX;
+        if (child.flipX) {
+          childX = child.width - childX;
+        }
+        childX = Math.floor(childX);
+        let childY = y/child.scale + child.displayOriginY;
+        if (child.flipY) {
+          childY = child.height - childY;
+        }
+        childY = Math.floor(childY);
+        if (isName) {
+          const rect = new Phaser.Geom.Rectangle(0, 0, child.width, child.height);
+          if (Phaser.Geom.Rectangle.Contains(rect, childX, childY, child)) return true;
+        } else if (pixelPerfectHitTest(hitArea, childX, childY, child)) {
+          return true
+        }
+      }
+    }
+
+    // we could find nothing that was hit
+    return false
+  }
+
+  return pixelPerfectHitTest
 }

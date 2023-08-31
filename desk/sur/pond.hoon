@@ -35,6 +35,7 @@
       chat-grit
       move-grit
       face-grit
+      [%ping-player =ship by=ship]
       set-avatar-grit
       add-port-offer-grit
       del-port-offer-grit
@@ -231,6 +232,8 @@
     %^  jab-by-players  turf  ship.grit
     |=  =player
     player(dir dir.grit)
+      %ping-player
+    turf
       %set-avatar
     %^  jab-by-players  turf  ship.grit
     |=  =player
