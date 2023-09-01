@@ -12,7 +12,7 @@ import { Resizer } from "./resizer";
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
-let pinger;
+let pinger, moveQueuer, faceQueuer;
 var game, scene, cam, cursors, keys = {}, player, tiles, preview;
 var formIndexMap, players = {}, shades = {};
 const factor = 8;
@@ -268,6 +268,14 @@ export function startPhaser(_owner, _container) {
           }
         };
         window.addEventListener('pond-ping-player', pinger);
+
+        if (moveQueuer) window.removeEventListener('pond-move', moveQueuer);
+        moveQueuer = (e) => { players[e.grit.arg.ship].actionQueue.push(e.grit); };
+        window.addEventListener('pond-move', moveQueuer);
+
+        if (faceQueuer) window.removeEventListener('pond-face', faceQueuer);
+        faceQueuer = (e) => { players[e.grit.arg.ship].actionQueue.push(e.grit); };
+        window.addEventListener('pond-face', faceQueuer);
       }
 
       function update() {

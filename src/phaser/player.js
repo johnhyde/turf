@@ -15,6 +15,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.turf = turf;
     this.player = player;
     this.actionQueue = [];
+    this.apparentDir = null;
     this.tilePos = vec2(player().pos);
     this.oldTilePos = vec2(player().pos);
     this.patp = patp;
@@ -87,9 +88,9 @@ export class Player extends Phaser.GameObjects.Container {
     
     await this.loadPlayerSprites(this.t);
     if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
-    this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });
+    this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.apparentDir??this.p.dir, this.patp) });
     this.bodyImage.setTint(avatar.body.color);
-    if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
+    if (avatar.body.thing.form.variations.length < 4 && (this.apparentDir??this.p.dir) === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
     }
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
@@ -98,11 +99,11 @@ export class Player extends Phaser.GameObjects.Container {
     // this.bodyImage.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
     // this.bodyImage.on('pointerdown', this.onClick.bind(this));
     this.things = avatar.things.map((thing) => {
-      const texture = spriteNameWithDir(thing.formId, thing.form, this.p.dir, this.patp);
+      const texture = spriteNameWithDir(thing.formId, thing.form, this.apparentDir??this.p.dir, this.patp);
       if (!texture) return null;
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
       const img = scene.make.image({ key: texture });
-      if (thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
+      if (thing.form.variations.length < 4 && (this.apparentDir??this.p.dir) === dirs.LEFT) {
         img.setFlipX(true);
       }
       img.setDisplayOrigin(offset.x, offset.y);
@@ -125,30 +126,37 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   preUpdate(time, dt) {
-    // this.upreUpdate.super(time, dt);
-    //TODO: action queue retirement here. What do the objects in the action queue look like? Currently it's required to have an absolute position. And other parts of the code need to guard us against getting our self-started actions in the action queue.
-    //TODO: put some of this pond.js's pondWaves?
-    // if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
-    //   this.actionQueue = [];
-    //   console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
-    // }
-    // while(this.actionQueue[0]?.type == "face") { //TODO: handle face turns in sequence.
-    //   this.actionQueue.shift();
-    // }
+    // this.upreUpdate.super(time, dt); //TODO: remove this comment?
+    //Action queue retirement here. The objects in the action queue are just grits.
+    //The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. 
+    //So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
+    if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
+      this.actionQueue = [];
+      console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
+    }
+    while(this.actionQueue[0]?.arg.ship === our) {
+      //Filter out actions we originated. Actually, it's not clear this is robust; maybe other things can `move` or `face` our player? Environmental hazards or whatever?
+      //This code could be refactored so the aforementioned event handlers (or, eventually, possibly, the event-firing code) are responsible for filtering out events that we originated, so that we only get foreign events and this while loop becomes unnecessary.
+      this.actionQueue.shift();
+    }
+    while(this.actionQueue[0]?.type === "face") {
+      this.apparentDir = this.actionQueue[0].arg.dir;
+      this.recreateAvatar();
+      this.actionQueue.shift();
+    }
     if (this.depth !== this.tilePos.y) {
       this.setDepth(this.tilePos.y + 0.5);
     }
     const speed = 170*factor;
     let justMoved = false;
-    // let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
-    let targetPos = vec2(this.tilePos).scale(tileFactor);
+    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
     if (this.dPos.equals(targetPos)) {
-      // this.actionQueue.shift(); //Remove the item from the action queue
+      this.actionQueue.shift(); //Remove the item from the action queue
     } else { //just move like regular
       const dif = vec2(targetPos).subtract(this.dPos);
       let step = speed * dt / 1000;
-      // step =  Phaser.Math.Interpolation.SmoothStep(Math.min(dif.length, 100)/8, 0.2 * step, step);
+      // step =  Phaser.Math.Interpolation.SmoothStep(Math.min(dif.length, 100)/8, 0.2 * step, step); //TODO: remove this comment?
       if (step > dif.length()) {
         this.dPos = vec2(targetPos);
         this.setPosition(targetPos.x, targetPos.y);
@@ -185,6 +193,8 @@ export class Player extends Phaser.GameObjects.Container {
         const tilePosChanged = !newTilePos.equals(this.tilePos);
         
         if (newDir && newDir !== this.p.dir && this.dir !== 'turning') {
+          this.apparentDir = null; //clear the apparentDir so it doesn't mess with the manual control.
+          //TODO: manually turning causes our avatar to flicker (not foreign avatars, however)
           this.dir = 'turning';
           this.s.setDir(newDir);
           setTimeout(() => {
