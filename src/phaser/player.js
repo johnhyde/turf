@@ -29,6 +29,8 @@ export class Player extends Phaser.GameObjects.Container {
     this.add(this.avatar);
     const [walking, $walking] = createSignal(false);
     this.walking = walking, this.$walking = $walking;
+    const [apparentDir, $apparentDir] = createSignal(null);
+    this.apparentDir = apparentDir, this.$apparentDir = $apparentDir;
     this.recreateAvatar();
     this.updateAnims();
     this.setInteractive({
@@ -52,6 +54,10 @@ export class Player extends Phaser.GameObjects.Container {
     return this.player();
   }
 
+  get dir() {
+    return this.apparentDir() ?? this.p?.dir;
+  }
+
   setupEffects() {
     createRoot((dispose) => {
       this.dispose = dispose;
@@ -73,7 +79,7 @@ export class Player extends Phaser.GameObjects.Container {
       });
       createEffect(on(() => {
         if (!this.p) return null;
-        return [this.p.dir, this.walking()];
+        return [this.dir, this.walking()];
       }, async () => {
         if (this.p?.avatar) {
           await sleep(0);
@@ -102,10 +108,10 @@ export class Player extends Phaser.GameObjects.Container {
     if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
     const frameRate = 7;
     const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
-    this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.p.dir]], frame: 0 });
+    this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
     this.bodyImage.setTint(avatar.body.color);
     this.bodyImage.thing = avatar.body.thing;
-    if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
+    if (avatar.body.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
     }
     bodyDirs.forEach((key, i) => {
@@ -123,10 +129,10 @@ export class Player extends Phaser.GameObjects.Container {
       const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
       const defaultDir = spriteDirs.filter(key => key)[0];
-      const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.p.dir]] || defaultDir });
-      if (!spriteDirs[dirs[this.p.dir]]) sprite.setVisible(false);
+      const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });
+      if (!spriteDirs[dirs[this.dir]]) sprite.setVisible(false);
       sprite.thing = thing;
-      if (thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
+      if (thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
         sprite.setFlipX(true);
       }
       spriteDirs.forEach((key, i) => {
@@ -162,12 +168,12 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.p) {
       this.avatar.list.forEach((sprite) => {
         if (sprite.anims) {
-          const newAnim = sprite.anims.get(this.p.dir);
+          const newAnim = sprite.anims.get(this.dir);
           const curAnim = sprite.anims.currentAnim;
           if (newAnim) {
             sprite.setVisible(true);
             if (newAnim !== curAnim) {
-              sprite.play(this.p.dir);
+              sprite.play(this.dir);
             }
             if (this.walking()) {
               if (sprite.anims && !sprite.anims.isPlaying) {
@@ -182,30 +188,13 @@ export class Player extends Phaser.GameObjects.Container {
             sprite.setVisible(false);
           }
         }
-        if (sprite.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
+        if (sprite.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
           sprite.setFlipX(true);
         } else {
           sprite.setFlipX(false);
         }
       });
     }
-  }
-
-  pause() {
-    this.avatar.list.forEach((sprite) => {
-      if (sprite.anims && sprite.anims.isPlaying) {
-        sprite.anims.pause(sprite.anims.currentAnim?.getFrameAt(0));
-      }
-    });
-  }
-
-  resume() {
-    this.updateAnims();
-    this.avatar.list.forEach((sprite) => {
-      if (sprite.anims && !sprite.anims.isPlaying) {
-        sprite.anims.resume(sprite.anims.currentAnim?.getFrameAt(1));
-      }
-    });
   }
 
   stand() {
@@ -221,37 +210,40 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   preUpdate(time, dt) {
-    // this.upreUpdate.super(time, dt);
-    //TODO: action queue retirement here. What do the objects in the action queue look like? Currently it's required to have an absolute position. And other parts of the code need to guard us against getting our self-started actions in the action queue.
-    //TODO: put some of this pond.js's pondWaves?
-    // if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
-    //   this.actionQueue = [];
-    //   console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
-    // }
-    // while(this.actionQueue[0]?.type == "face") { //TODO: handle face turns in sequence.
-    //   this.actionQueue.shift();
-    // }
+    //Action queue retirement here. The objects in the action queue are just grits.
+    //The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. 
+    //So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
+    if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
+      this.actionQueue = [];
+      console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
+    }
+    while(this.actionQueue[0]?.arg.ship === our) {
+      //Filter out actions we originated. Actually, it's not clear this is robust; maybe other things can `move` or `face` our player? Environmental hazards or whatever?
+      //This code could be refactored so the aforementioned event handlers (or, eventually, possibly, the event-firing code) are responsible for filtering out events that we originated, so that we only get foreign events and this while loop becomes unnecessary.
+      this.actionQueue.shift();
+    }
+    while(this.actionQueue[0]?.type === "face") {
+      this.$apparentDir(this.actionQueue[0].arg.dir);
+      this.recreateAvatar();
+      this.actionQueue.shift();
+    }
     if (this.depth !== this.tilePos.y) {
       this.setDepth(this.tilePos.y + 0.5);
     }
     const speed = 170*factor;
     let justMoved = false;
-    // let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
-    let targetPos = vec2(this.tilePos).scale(tileFactor);
+    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
     if (this.dPos.equals(targetPos)) {
-      // this.actionQueue.shift(); //Remove the item from the action queue
+      this.actionQueue.shift(); //Remove the item from the action queue
     } else { //just move like regular
       const dif = vec2(targetPos).subtract(this.dPos);
       let step = speed * dt / 1000;
-      // step =  Phaser.Math.Interpolation.SmoothStep(Math.min(dif.length, 100)/8, 0.2 * step, step);
       if (step > dif.length()) {
         this.dPos = vec2(targetPos);
         this.setPosition(targetPos.x, targetPos.y);
       } else {
         const change = vec2(dif).normalize().scale(step);
-        // this.x += change.x;
-        // this.y += change.y;
         this.dPos.add(change);
         this.setPosition(Math.round(this.dPos.x), Math.round(this.dPos.y));
       }
@@ -280,17 +272,15 @@ export class Player extends Phaser.GameObjects.Container {
         }
         const tilePosChanged = !newTilePos.equals(this.tilePos);
         
-        if (newDir && newDir !== this.p.dir && this.dir !== 'turning') {
-          this.dir = 'turning';
+        if (newDir && newDir !== this.dir && !this.turning) {
+          this.$apparentDir(null); //clear the apparentDir so it doesn't mess with the manual control.
+          this.turning = true;
           this.s.setDir(newDir);
           setTimeout(() => {
-            this.dir = this.p.dir;
+            this.turning = false;
           }, 50)
-          // this.s.setDir(newDir);
         }
-        if (tilePosChanged && (this.dir !== 'turning' || justMoved)) {
-          // console.log('changed!');
-          // this.s.setDir(getDirFromVec(vec2(newTilePos).subtract(this.tilePos)));
+        if (tilePosChanged && (!this.turning || justMoved)) {
           this.s.setPos(newTilePos);
         }
       }
@@ -327,8 +317,6 @@ export class Player extends Phaser.GameObjects.Container {
     this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
   }
 
-  // todo: adapt this code from https://github.com/photonstorm/phaser/issues/4492
-
   destroy(fromScene) {
     if (this.dispose) this.dispose();
     super.destroy(fromScene);
@@ -347,7 +335,6 @@ function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
     // see if the gameObject might be a Container, and if it is, check the children looking for a hit
     if (gameObject.list) {
       for (const child of gameObject.list) {
-        const isName = child instanceof Phaser.GameObjects.Text;
         let childX = x/child.scale + child.displayOriginX;
         if (child.flipX) {
           childX = child.width - childX;
@@ -358,6 +345,7 @@ function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
           childY = child.height - childY;
         }
         childY = Math.floor(childY);
+        const isName = child instanceof Phaser.GameObjects.Text;
         if (isName) {
           const rect = new Phaser.Geom.Rectangle(0, 0, child.width, child.height);
           if (Phaser.Geom.Rectangle.Contains(rect, childX, childY, child)) return true;
