@@ -224,7 +224,6 @@ export class Player extends Phaser.GameObjects.Container {
     }
     while(this.actionQueue[0]?.type === "face") {
       this.$apparentDir(this.actionQueue[0].arg.dir);
-      this.recreateAvatar();
       this.actionQueue.shift();
     }
     if (this.depth !== this.tilePos.y) {
