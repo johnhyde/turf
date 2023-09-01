@@ -1,3 +1,4 @@
+import { decToUd, udToDec, unixToDa } from '@urbit/api';
 import { hex2patp, patp2hex, patp } from 'urbit-ob';
 import { createRenderEffect } from 'solid-js';
 
@@ -89,6 +90,14 @@ export function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
+}
+
+export function makeTlonId() {
+  const time = Date.now();
+  return {
+    id: `${our}/${decToUd(unixToDa(time).toString())}`,
+    time,
+  };
 }
 
 export function hexToInt(color) {
@@ -254,4 +263,8 @@ export function input(el, callbacks) {
 
 export function isTextInputFocused() {
   return document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT';
+}
+
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

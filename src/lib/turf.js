@@ -172,7 +172,12 @@ export function extractSkyeTileSprites(skye) {
 function addFormSprites(sprites, form, formId, patp) {
   form.variations.forEach((variation, i) => {
     if (variation) {
-      sprites[spriteName(formId, i, patp)] = variation.sprite;
+      const name = spriteName(formId, i, patp);
+      if (typeof variation.sprite === 'string') {
+        sprites[name] = variation.sprite;
+      } else {
+        sprites[name] = variation.sprite.frames.slice();
+      }
     }
   });
 }

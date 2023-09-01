@@ -1,6 +1,6 @@
-import { createRoot, createEffect, on } from "solid-js";
+import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
-import { vec2, dirs } from 'lib/utils';
+import { vec2, dirs, sleep } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -27,7 +27,10 @@ export class Player extends Phaser.GameObjects.Container {
     this.loadPlayerSprites = load;
     this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.avatar);
+    const [walking, $walking] = createSignal(false);
+    this.walking = walking, this.$walking = $walking;
     this.recreateAvatar();
+    this.updateAnims();
     this.setInteractive({
       cursor: 'pointer',
       hitArea: new Phaser.Geom.Rectangle(),
@@ -38,7 +41,6 @@ export class Player extends Phaser.GameObjects.Container {
     this.on('pointerout', this.onLeave.bind(this));
     this.setupEffects();
     this.addToUpdateList();
-    // this.scene.events.on('update', (time, delta) => { this.update(time, delta)} );
     this.scene.add.existing(this);
   }
 
@@ -71,10 +73,21 @@ export class Player extends Phaser.GameObjects.Container {
       });
       createEffect(on(() => {
         if (!this.p) return null;
-        return JSON.stringify([this.p.dir, this.p.avatar.body.thing, this.p.avatar.things]);
+        return [this.p.dir, this.walking()];
+      }, async () => {
+        if (this.p?.avatar) {
+          await sleep(0);
+          setTimeout(this.updateAnims.bind(this),0);
+        }
+      }));
+      createEffect(on(() => {
+        if (!this.p) return null;
+        return JSON.stringify([this.p.avatar.body.thing, this.p.avatar.things]);
       }, async () => {
         if (this.p?.avatar) {
           this.recreateAvatar();
+          await sleep(0);
+          this.updateAnims();
         }
       }, { defer: true }));
     })
@@ -87,27 +100,49 @@ export class Player extends Phaser.GameObjects.Container {
     
     await this.loadPlayerSprites(this.t);
     if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
-    this.bodyImage = scene.make.image({ key: spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, this.p.dir, this.patp) });
+    const frameRate = 7;
+    const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
+    this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.p.dir]], frame: 0 });
     this.bodyImage.setTint(avatar.body.color);
+    this.bodyImage.thing = avatar.body.thing;
     if (avatar.body.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
     }
+    bodyDirs.forEach((key, i) => {
+      this.bodyImage.anims.create({
+        key: dirs[i],
+        frames: key,
+        repeat: -1,
+        frameRate,
+      });
+    });
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
     this.bodyImage.setScale(factor);
-    // this.bodyImage.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
-    // this.bodyImage.on('pointerdown', this.onClick.bind(this));
     this.things = avatar.things.map((thing) => {
-      const texture = spriteNameWithDir(thing.formId, thing.form, this.p.dir, this.patp);
-      if (!texture) return null;
+      const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
-      const img = scene.make.image({ key: texture });
+      const defaultDir = spriteDirs.filter(key => key)[0];
+      const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.p.dir]] || defaultDir });
+      if (!spriteDirs[dirs[this.p.dir]]) sprite.setVisible(false);
+      sprite.thing = thing;
       if (thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
-        img.setFlipX(true);
+        sprite.setFlipX(true);
       }
-      img.setDisplayOrigin(offset.x, offset.y);
-      img.setScale(factor);
-      return img;
+      spriteDirs.forEach((key, i) => {
+        if (!key) return;
+        let frameKeys = Object.keys(game.textures.get(key).frames);
+        const frames = frameKeys.map((frame) => { return { key, frame }});
+        sprite.anims.create({
+          key: dirs[i],
+          frames,
+          repeat: -1,
+          frameRate,
+        });
+      });
+      sprite.setDisplayOrigin(offset.x, offset.y);
+      sprite.setScale(factor);
+      return sprite;
     }).filter(thing => !!thing);
     this.avatar.add([this.bodyImage, ...this.things]);
     this.name = scene.make.text({ text: this.patp, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
@@ -120,8 +155,69 @@ export class Player extends Phaser.GameObjects.Container {
     this.ping.setVisible(false);
     const dims = vec2(this.bodyImage.width, this.bodyImage.height).scale(factor);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(vec2(playerOffset).scale(factor));
-    // console.log('player dims', this.bodyImage.width, this.bodyImage.height)
     scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
+  }
+
+  updateAnims() {
+    if (this.p) {
+      this.avatar.list.forEach((sprite) => {
+        if (sprite.anims) {
+          const newAnim = sprite.anims.get(this.p.dir);
+          const curAnim = sprite.anims.currentAnim;
+          if (newAnim) {
+            sprite.setVisible(true);
+            if (newAnim !== curAnim) {
+              sprite.play(this.p.dir);
+            }
+            if (this.walking()) {
+              if (sprite.anims && !sprite.anims.isPlaying) {
+                sprite.anims.resume(sprite.anims.currentAnim?.getFrameAt(1));
+              }
+            } else {
+              if (sprite.anims.isPlaying) {
+              sprite.anims.pause(sprite.anims.currentAnim?.getFrameAt(0));
+              }
+            }
+          } else {
+            sprite.setVisible(false);
+          }
+        }
+        if (sprite.thing.form.variations.length < 4 && this.p.dir === dirs.LEFT) {
+          sprite.setFlipX(true);
+        } else {
+          sprite.setFlipX(false);
+        }
+      });
+    }
+  }
+
+  pause() {
+    this.avatar.list.forEach((sprite) => {
+      if (sprite.anims && sprite.anims.isPlaying) {
+        sprite.anims.pause(sprite.anims.currentAnim?.getFrameAt(0));
+      }
+    });
+  }
+
+  resume() {
+    this.updateAnims();
+    this.avatar.list.forEach((sprite) => {
+      if (sprite.anims && !sprite.anims.isPlaying) {
+        sprite.anims.resume(sprite.anims.currentAnim?.getFrameAt(1));
+      }
+    });
+  }
+
+  stand() {
+    if (this.walking()) {
+      this.$walking(false);
+    }
+  }
+
+  walk() {
+    if (!this.walking()) {
+      this.$walking(true);
+    }
   }
 
   preUpdate(time, dt) {
@@ -199,12 +295,16 @@ export class Player extends Phaser.GameObjects.Container {
         }
       }
     }
-    justMoved = false;
+    if (justMoved) {
+      this.walk();
+    } else {
+      this.stand();
+    }
   }
 
   onClick(pointer) {
     console.log('clicked on', this.patp);
-    if (this.ping && this.p) {
+    if (this.ping && this.p && !this.isUs) {
       this.s.pingPlayer(this.patp);
       this.ping.setText('pinged!');
       this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
