@@ -45,11 +45,13 @@
     =/  read  (~(gut by read:du) path ~)
     =/  rock  ?~(read *rock:pool rock.read)
     =|  top=@ud
+    =|  len=@ud
     =^  [=acc =grits]  rock
       =|  [=acc =grits]
       |-  ^-  [[^acc ^grits] rock:pool]
       =/  =ctx  [bowl:du rock =(top 0)]
       ?~  goals  [[acc grits] rock]
+      ?:  (gth len 20)  [[acc grits] rock]
       =/  [new-acc=^acc sub-grits=^grits sub-goals=^goals]
         (fil ctx acc i.goals)
       =.  top  ?~(top 0 (sub top 1))
@@ -59,6 +61,7 @@
         grits  (weld grits sub-grits)
         goals  (weld sub-goals t.goals)
         top  (add top (lent sub-goals))
+        len  +(len)
       ==
     =/  [cards=(list card) pub=pubs:du]
       (give:du path [foam grits])
