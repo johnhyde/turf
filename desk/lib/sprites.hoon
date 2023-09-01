@@ -8,12 +8,27 @@
   ?.  (lth a 10)  b
   (welk '0' b)
 ++  garb
-  |=  [name=@t count=@ud]
+  |=  [name=@t var-count=@ud frame-count=@ud]
   ^-  (list look)
-  %+  turn  (gulf 0 (dec count))
+  ?:  =(0 var-count)  ~
+  %+  turn  (gulf 0 (dec var-count))
   |=  i=@ud
-  =/  =png  :(welk 'sprites/garb/' name '-' (scot %ud i) '.png')
-  `fore+png
+  ^-  look
+  :-  ~
+  :-  %fore
+  =/  base  :(welk 'sprites/garb/' name '-' (scot %ud i))
+  ?:  (lte frame-count 1)
+    (welk base '.png')
+  ^-  sprite
+  =/  frames=(list png)
+    %+  turn  (gulf 0 (dec frame-count))
+    |=  j=@ud
+    :(welk base '-' (scot %ud j) '.png')
+  :-  %loop
+  ?.  =(3 frame-count)
+    frames
+  ?>  ?=([png png png ~] frames)
+  `(list png)`[&1 &2 &1 &3 ~]:frames
 ++  floor  'sprites/floor.png'
 ++  floor-stone  'sprites/floor-stone.png'
 ++  grass  'sprites/grass.png'

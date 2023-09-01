@@ -1,5 +1,5 @@
 import UrbitApi from '@urbit/http-api';
-import { vec2, randInt, uuidv4 } from 'lib/utils';
+import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -113,6 +113,38 @@ export async function setVitaEnabled(enabled) {
     mark: 'vita-client',
     json: {
       'set-enabled': enabled,
+    }
+  });
+}
+
+export async function sendDM(patp, msg) {
+  const { id, time } = makeTlonId();
+  return api.poke({
+    app: 'chat',
+    mark: 'dm-action',
+    json: {
+      ship: patp,
+      diff: {
+        id,
+        delta: {
+          add: {
+            replying: null,
+            author: our,
+            sent: time,
+            content: {
+              story: {
+                inline: [
+                  msg,
+                  {
+                    break: null
+                  }
+                ],
+                block: []
+              }
+            }
+          }
+        }
+      }
     }
   });
 }

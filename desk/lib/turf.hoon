@@ -116,29 +116,29 @@
     %-  malt
     ^-  (list [form-id form])
     =,  sprites
-    :~  (new-garb-pair /eyes/tall 'Tall Eyes' 2)
-        (new-garb-pair /eyes/almond 'Almond Eyes' 2)
-        (new-garb-pair /eyes/small 'Small Eyes' 2)
-        (new-garb-pair /eyes/cute 'Cute Eyes' 2)
-        (new-garb-pair /eyes/big/blue 'Big Blue Eyes' 2)
-        (new-garb-pair /eyes/big/brown 'Big Brown Eyes' 2)
-        (new-garb-pair /eyes/big/green 'Big Green Eyes' 2)
-        (new-garb-pair /brows 'Plain Eyebrows' 2)
-        (new-garb-pair /brows/uni 'Unibrow' 2)
-        (new-garb-pair /brows/bushy 'Bushy Eyebrows' 2)
-        (new-garb-pair /brows/arch 'Arched Eyebrows' 2)
-        (new-garb-pair /brows/vulcan 'Vulcan Eyebrows' 2)
-        (new-garb-pair /mouth 'Basic Mouth' 2)
-        (new-garb-pair /mouth/small 'Small Mouth' 2)
-        (new-garb-pair /mouth/small/red 'Small Red Mouth' 2)
-        (new-garb-pair /mouth/small/open 'Small Open Mouth' 2)
-        (new-garb-pair /mouth/smirk 'Smirk' 2)
-        (new-garb-pair /mouth/smile 'Smile' 2)
-        (new-garb-pair /mouth/smile/big 'Big Smile' 2)
-        (new-garb-pair /hair/brown 'Brown Hair' 3)
-        (new-garb-pair /tshirt/white 'White T-Shirt' 3)
-        (new-garb-pair /skirt/red 'Red Skirt' 3)
-        (new-garb-pair /pants/blue 'Blue Pants' 3)
+    :~  (new-garb-pair /eyes/tall 'Tall Eyes' 2 1)
+        (new-garb-pair /eyes/almond 'Almond Eyes' 2 1)
+        (new-garb-pair /eyes/small 'Small Eyes' 2 1)
+        (new-garb-pair /eyes/cute 'Cute Eyes' 2 1)
+        (new-garb-pair /eyes/big/blue 'Big Blue Eyes' 2 1)
+        (new-garb-pair /eyes/big/brown 'Big Brown Eyes' 2 1)
+        (new-garb-pair /eyes/big/green 'Big Green Eyes' 2 1)
+        (new-garb-pair /brows 'Plain Eyebrows' 2 1)
+        (new-garb-pair /brows/uni 'Unibrow' 2 1)
+        (new-garb-pair /brows/bushy 'Bushy Eyebrows' 2 1)
+        (new-garb-pair /brows/arch 'Arched Eyebrows' 2 1)
+        (new-garb-pair /brows/vulcan 'Vulcan Eyebrows' 2 1)
+        (new-garb-pair /mouth 'Basic Mouth' 2 1)
+        (new-garb-pair /mouth/small 'Small Mouth' 2 1)
+        (new-garb-pair /mouth/small/red 'Small Red Mouth' 2 1)
+        (new-garb-pair /mouth/small/open 'Small Open Mouth' 2 1)
+        (new-garb-pair /mouth/smirk 'Smirk' 2 1)
+        (new-garb-pair /mouth/smile 'Smile' 2 1)
+        (new-garb-pair /mouth/smile/big 'Big Smile' 2 1)
+        (new-garb-pair /hair/brown 'Brown Hair' 3 1)
+        (new-garb-pair /tshirt/white 'White T-Shirt' 3 3)
+        (new-garb-pair /skirt/red 'Red Skirt' 3 3)
+        (new-garb-pair /pants/blue 'Blue Pants' 3 3)
     ==
   ++  default-player
     =|  =player
@@ -147,27 +147,27 @@
     =<  .(offset.form.thing.body [--0 --13])
     ^-  avatar
     :-  :-  color=0xd8.a57c
-        (new-garb-thing /body 'Basic Body' 3)
-    :~  (new-garb-thing /brows 'Plain Eyebrows' 2)
-        (new-garb-thing /eyes/tall 'Tall Eyes' 2)
-        (new-garb-thing /tshirt/white 'White T-Shirt' 3)
-        (new-garb-thing /pants/blue 'Blue Pants' 3)
+        (new-garb-thing /body 'Basic Body' 3 3)
+    :~  (new-garb-thing /brows 'Plain Eyebrows' 2 1)
+        (new-garb-thing /eyes/tall 'Tall Eyes' 2 1)
+        (new-garb-thing /tshirt/white 'White T-Shirt' 3 3)
+        (new-garb-thing /pants/blue 'Blue Pants' 3 3)
     ==
   ++  new-garb-pair
-    |=  [=form-id name=@t count=@ud]
+    |=  [=form-id name=@t var-count=@ud frame-count=@ud]
     :-  form-id
-    (new-garb name (path-to-cord form-id) count)
+    (new-garb name (path-to-cord form-id) var-count frame-count)
   ++  new-garb-thing
-    |=  [=form-id name=@t count=@ud]
+    |=  [=form-id name=@t var-count=@ud frame-count=@ud]
     ^-  thing
     :-   [form-id 0 *husk-bits]
-    (new-garb name (path-to-cord form-id) count)
+    (new-garb name (path-to-cord form-id) var-count frame-count)
   ++  new-garb
-    |=  [name=@t file=@t count=@ud]
+    |=  [name=@t file=@t var-count=@ud frame-count=@ud]
     ^-  form
     :*  name
         type=%garb
-        variations=(garb.sprites file count)
+        variations=(garb.sprites file var-count frame-count)
         *form-bits
     ==
   ++  new-tile

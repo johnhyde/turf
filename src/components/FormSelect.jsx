@@ -13,6 +13,13 @@ export default function FormSelect(props) {
     }
     return forms;
   };
+  function previewForm(form) {
+    const sprite = form.variations[0].sprite;
+    if (sprite.frames) {
+      return sprite.frames[0];
+    }
+    return sprite;
+  }
   return (
     <div class="flex flex-wrap justify-center">
       <For each={forms()} fallback={props.fallback || <div>Loading...</div>}>
@@ -44,7 +51,7 @@ export default function FormSelect(props) {
                   </Show>
                   <img
                     ref={onImg}
-                    src={form.variations[0].sprite}
+                    src={previewForm(form)}
                     draggable={false}
                     class="invisible w-full"
                   />
@@ -53,7 +60,7 @@ export default function FormSelect(props) {
                     onClick={() => props.select(id, i)}
                   >
                     <img
-                      src={form.variations[0].sprite}
+                      src={previewForm(form)}
                       draggable={false}
                       class=""
                       style={{

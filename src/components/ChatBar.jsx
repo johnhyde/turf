@@ -1,16 +1,23 @@
 import { onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { input } from 'lib/utils';
+import { isValidPatp } from 'urbit-ob';
+import { sendDM } from 'lib/api';
+import { input, normalizeId } from 'lib/utils';
 
 export default function ChatBar() {
   const state = useState();
   let chatbox;
 
   function sendChat(text) {
-    const joinMatch = text.match(/^\/join (.*)/)
+    const joinMatch = text.match(/^\/join (.*)/);
+    const dmMatch = text.match(/^\/dm (~?[-a-z_]+) (.*)/);
     if (joinMatch) {
-      // state.switchToTurf(joinMatch[1]);
       alert('/join commands have been disabled.\nTry using portals instead :)');
+    } else if (dmMatch) {
+      const patp = normalizeId(dmMatch[1]);
+      if (isValidPatp(patp)) {
+        sendDM(patp, dmMatch[2]);
+      }
     } else {
       state.sendChat(chatbox.value);
     }

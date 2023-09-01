@@ -127,9 +127,9 @@
   ==
 +$  deep  ?(%back %fore)
 +$  sprite
-  $@  png  animation
+  $@  png  anim
 +$  png  @t  :: base64 encoded from js frontend or relative path to sprite image
-+$  animation
++$  anim
   $:  type=?(%loop %once %pong %rand)
       frames=(list png)
   ==
