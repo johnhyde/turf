@@ -14,6 +14,12 @@ import resize from 'assets/icons/resize.png';
 export default function EditPane() {
   const state = useState();
   const tools = state.editor.tools;
+  const buttons = {
+    point: null,
+    erase: null,
+    cycle: null,
+    resize: null,
+  };
 
   const isToolSelected = createSelector(() => state.editor.selectedTool);
   function selectTool(tool) {
@@ -30,8 +36,9 @@ export default function EditPane() {
   });
 
   const onKeyDown = (e) => {
-    if (e.key === 'Esc' && state.editor.selectedTool) {
+    if (e.key === 'Escape' && (state.editor.selectedTool || state.editor.selectedShadeId)) {
       selectTool(null);
+      if (buttons.point) buttons.point.focus();
       e.preventDefault();
     }
     if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
@@ -39,12 +46,15 @@ export default function EditPane() {
         case 'Delete':
         case 'Backspace':
           selectTool(tools.ERASER);
+          if (buttons.erase) buttons.erase.focus();
           break;
         case 'c':
           selectTool(tools.CYCLER);
+          if (buttons.cycle) buttons.cycle.focus();
         break;
         case 'r':
           selectTool(tools.RESIZER);
+          if (buttons.resize) buttons.resize.focus();
         break;
         default:
       }
@@ -62,25 +72,29 @@ export default function EditPane() {
         onClick={[selectTool, null]}
         src={point}
         selected={isToolSelected(null)}
-        tooltip='Esc'
+        tooltip='Escape'
+        ref={buttons.point}
       />
       <Button
         onClick={[selectTool, tools.ERASER]}
         src={erase}
         selected={isToolSelected(tools.ERASER)}
         tooltip='Delete'
+        ref={buttons.erase}
       />
       <Button
         onClick={[selectTool, tools.CYCLER]}
         src={cycle}
         selected={isToolSelected(tools.CYCLER)}
         tooltip='C'
+        ref={buttons.cycle}
       />
       <Button
         onClick={[selectTool, tools.RESIZER]}
         src={resize}
         selected={isToolSelected(tools.RESIZER)}
         tooltip='R'
+        ref={buttons.resize}
       />
       <Show when={selectedShade()} keyed >
         {(shade) => <ShadeEditor shade={shade} />}

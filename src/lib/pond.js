@@ -54,7 +54,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
       return js.turf(rock);
     }
     const apiSendWave = (...args) => {
-      api.sendPondWave(id, ...args);
+      return api.sendPondWave(id, ...args);
     };
     this._ = getPool(wash, hydrate, apiSendWave, filters, options);
     this.$ = this._.$;
@@ -110,12 +110,16 @@ export class Pond { // we use a class so we can put it inside a store without ge
     }
   }
 
-  async destroy() {
+  async unsubscribe() {
     const sub = await this.sub;
     if (sub !== null) {
       api.api.unsubscribe(sub);
       this.sub = null;
     }
+  }
+
+  async destroy() {
+    return this.unsubscribe();
   }
 }
 

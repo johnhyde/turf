@@ -6,12 +6,15 @@ export default function Help() {
 
   return (
     <div class="m-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50">
-      {import.meta.env.DEV && <StateSummary />}
+      {dev && <StateSummary />}
       <p>
         Use arrow keys or WASD to move
       </p>
       <p>
         Scroll up/down to zoom in/out
+      </p>
+      <p>
+        Click on a player to get their attention
       </p>
       <div>
         <p>
@@ -23,6 +26,9 @@ export default function Help() {
           </li>
           <li>
             Press Enter to send a chat message
+          </li>
+          <li>
+            Send a DM like this "/dm ~sampel-palnet Hello"
           </li>
           <li>
             Press Escape to exit the chat box without sending a message
@@ -69,9 +75,28 @@ export default function Help() {
             Click on a tile or item sprite from the library to place it in the world
           </li>
           <li>
-            Press Enter to return to the pointer tool (the default)
+            Press Escape to return to the pointer tool (the default). This tool lets you select objects and see their properties.
           </li>
         </ul>
+      </div>
+      <div>
+        <p>
+          Using the portals tab:
+        </p>
+        <ol class="list-decimal list-inside">
+          <li>
+            Type the @p you want to visit
+          </li>
+          <li>
+            Press Enter or click the + button and place the portal on the turf
+          </li>
+          <li>
+            Wait for it to be accepted by the other ship
+          </li>
+          <li>
+            Step onto the portal to travel through it
+          </li>
+        </ol>
       </div>
       <div class="border-t border-yellow-50"></div>
       <p>

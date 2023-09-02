@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createSelector, onCleanup } from 'solid-js';
+import { createSignal, createMemo, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused, input, normalizeId } from 'lib/utils';
 import { isValidPatp } from 'urbit-ob';
@@ -89,31 +89,26 @@ export default function PortalsPane() {
       state.startPlacingPortal(Number.parseInt(portalId))
     }
   }
-  // const onKeyDown = (e) => {
-  //   if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
-  //     switch (e.key) {
-  //       case 'Enter':
-  //         selectTool(null);
-  //         break;
-  //       case 'Delete':
-  //       case 'Backspace':
-  //         selectTool(tools.ERASER);
-  //         break;
-  //       case 'c':
-  //         selectTool(tools.CYCLER);
-  //       break;
-  //       case 'r':
-  //         selectTool(tools.RESIZER);
-  //       break;
-  //       default:
-  //     }
-  //   }
-  // };
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape' && state.portalToPlace) {
+      placePortal(null);
+      e.preventDefault();
+    }
+  }
 
-  // document.addEventListener('keydown', onKeyDown);
-  // onCleanup(() => {
-  //   document.removeEventListener('keydown', onKeyDown);
-  // });
+  document.addEventListener('keydown', onKeyDown);
+  onCleanup(() => {
+    document.removeEventListener('keydown', onKeyDown);
+  });
+
+  function shipKeyDown(e) {
+    if (e.key === 'Enter') {
+      placeNewPortal();
+    }
+    if (e.key === 'Escape') {
+      e.target.blur();
+    }
+  }
 
   return (
     <div class="flex flex-col">
@@ -128,10 +123,13 @@ export default function PortalsPane() {
           <input
               class={"rounded-md max-w-[175px] " + validBorder()}
               use:input
+              autofocus
               use:bind={[
                 toShip,
                 updateToShip,
-              ]} />
+              ]}
+              onKeyDown={shipKeyDown}
+          />
           {state.portalToPlace?.ship === toShip() ?
             <SmallButton onClick={[placePortal, null]}>–</SmallButton>
           :

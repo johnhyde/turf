@@ -30,7 +30,7 @@ export class Resizer extends Phaser.GameObjects.Container {
     ];
     
     this.tris.forEach((t, i) => {
-      t.setInteractive({ draggable: true });
+      t.setInteractive({ draggable: true, cursor: 'pointer' });
       t.on('drag', (_pointer, dragX, dragY) => {
         batch(() => {
           this.updateN(i, vec2(dragX, dragY));
@@ -113,7 +113,7 @@ export class Resizer extends Phaser.GameObjects.Container {
   updateN(dir, drag) {
     const rectW = this.stroke;
     const min = 32*factor + rectW*2;
-    const triOffset = rectW + (16*factor * this.scale);
+    const triOffset = rectW + (16 * this.scale);
     const br = vec2(this.offset).add(this.size);
     const offsetDrag = vec2(drag).add(this.offset).add(vec2(triOffset));
     batch(() => {

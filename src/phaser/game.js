@@ -113,6 +113,7 @@ async function loadImage(id, url, isWall = false, config = {}) {
 
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
+  const { formId } = shade;
   sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
   if (shade.formId === '/portal') {
     const state = useState();
@@ -153,7 +154,7 @@ function createShade(shade, id, turf) {
     }
   }
   function onClick(pointer) {
-    console.log('got click on shade', id, shade.formId);
+    console.log('got click on shade', id, formId);
     if (state.editor.editing) {
       if (!state.editor.selectedTool) {
         state.selectShade(id);
@@ -357,8 +358,8 @@ export function startPhaser(_owner, _container) {
           if (lastTurfId || state.e) destroyCurrentTurf();
           if (readyToRender()) {
             initTurf(state.e, state.p.grid, state.player);
-            initPlayers(state.e);
             initShades(state.e);
+            initPlayers(state.e);
             initShadePreview(state.e);
           }
           return state.c.id;
@@ -384,14 +385,14 @@ export function startPhaser(_owner, _container) {
         }
         return [];
       }, { defer: false }));
-      createEffect(on(() => [loader.state, JSON.stringify(Object.keys(state.e?.players || {}))], () => {
-        if (readyToRender()) {
-          initPlayers(state.e);
-        }
-      }, { defer: true }));
       createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
         if (readyToRender()) {
           initShades(state.e);
+        }
+      }, { defer: true }));
+      createEffect(on(() => [loader.state, JSON.stringify(Object.keys(state.e?.players || {}))], () => {
+        if (readyToRender()) {
+          initPlayers(state.e);
         }
       }, { defer: true }));
     });

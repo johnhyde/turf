@@ -41,7 +41,10 @@ function Sidebar() {
   document.addEventListener('keydown', (e) => {
     if (!e.defaultPrevented && !isTextInputFocused()) {
       if (e.code === 'Escape') {
-        if (state.selectedTab) {
+        if (state.portalToPlace || (state.editor.editing && (state.editor.selectedTool || state.editor.selectedShadeId))) {
+          // let EditPane or PortalsPane handle this
+          // TODO: find a way to avoid replicating the above expression here and in other files
+        } else if (state.selectedTab) {
           selectTab(null);
         } else {
           if (open()) {

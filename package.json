@@ -45,7 +45,7 @@
   "dependencies": {
     "@solid-primitives/scheduled": "^1.3.2",
     "@urbit/api": "^2.3.0",
-    "@urbit/http-api": "^2.3.0",
+    "@urbit/http-api": "^2.4.5-debug",
     "@urbit/vite-plugin-urbit": "^1.0.0",
     "dotenv-cli": "^7.2.1",
     "lodash": "^4.17.21",

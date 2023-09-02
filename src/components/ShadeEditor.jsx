@@ -47,35 +47,40 @@ export default function ShadeEditor(props) {
   }
 
   return (
-    <Show when={Object.entries(effects()).length > 0 && props.shade}>
+    <Show when={props.shade}>
       <div class="m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
         <Heading>{props.shade.form.name}</Heading>
-        Effects:
-        <For each={Object.entries(effects())} >
-          {([trigger, effect]) => {
-            return (
-              <div class="mb-2">
-                <div class="flex items-center mb-1">
-                  on {trigger}: {effect.type}
+        <p class="text-center">
+          Position: {props.shade.pos.x}x{props.shade.pos.y}
+        </p>
+        <Show when={Object.entries(effects()).length > 0}>
+          Effects:
+          <For each={Object.entries(effects())} >
+            {([trigger, effect]) => {
+              return (
+                <div class="mb-2">
+                  <div class="flex items-center mb-1">
+                    on {trigger}: {effect.type}
+                  </div>
+                  <ArgInput
+                    shade={props.shade}
+                    type={effect.type} arg={effect.arg}
+                    setArg={(arg) => setArg(trigger, effect.type, arg)}
+                  />
                 </div>
-                <ArgInput
-                  shade={props.shade}
-                  type={effect.type} arg={effect.arg}
-                  setArg={(arg) => setArg(trigger, effect.type, arg)}
-                />
-              </div>
-            );
-          }}
-        </For>
-        <Show when={Object.keys(newEffects).length}>
-          <div class="flex justify-center space-x-2">
-            <SmallButton onClick={save}>
-              Save
-            </SmallButton>
-            <SmallButton onClick={cancel}>
-              Cancel
-            </SmallButton>
-          </div>
+              );
+            }}
+          </For>
+          <Show when={Object.keys(newEffects).length}>
+            <div class="flex justify-center space-x-2">
+              <SmallButton onClick={save}>
+                Save
+              </SmallButton>
+              <SmallButton onClick={cancel}>
+                Cancel
+              </SmallButton>
+            </div>
+          </Show>
         </Show>
       </div>
     </Show>

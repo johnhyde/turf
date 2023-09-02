@@ -6,6 +6,7 @@ export default function Button(props) {
       onClick={props.onClick}
       style={{ 'image-rendering': 'pixelated' }}
       title={props.tooltip}
+      ref={props.ref}
     >
       <img src={props.src} draggable={false} />
     </button>

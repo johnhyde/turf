@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
 import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
 
@@ -26,12 +27,27 @@ const ctx = canvas.getContext('2d');
 //     console.log('loaded ' + id, dataUrl);
 //   });
 // }
+const [connection, $connection] = createSignal('initial');
 
 console.log(`Initializing Urbit API at ${Date()}`);
 const api = new UrbitApi('', '', window.desk);
+api.on('status-update', ({ status }) => {
+  $connection(status);
+});
+// api.onOpen = () => $connection('open');
+// api.onRetry = () => $connection('reconnecting');
+// api.onError = () => $connection('closed');
 api.ship = window.ship;
+// api.verbose = window.dev;
+api.verbose = import.meta.env.DEV;
 window.api = api;
 // api.connect();
+
+export function reportBadConnection() {
+  if (['active', 'reconnected'].includes(connection())) {
+    api.eventSource();
+  }
+}
 
 export async function unsubscribeToPool(id) {
   let existingSubs = [...api.outstandingSubscriptions];
@@ -65,20 +81,27 @@ export async function subscribeToPool(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
 
 export async function sendWave(mark, path, goals, stirId) {
   stirId = stirId || uuidv4();
-  await api.poke({
-    app: 'turf',
-    mark,
-    json: {
-      path,
-      id: stirId,
-      goals: goalsToApiGoals(goals),
-    },
-    onError: (e) => {
-      console.error('caught error in sending wave', e);
-      // debugger;
-    }
-  });
-  return stirId;
+  try {
+    await api.poke({
+      app: 'turf',
+      mark,
+      json: {
+        path,
+        id: stirId,
+        goals: goalsToApiGoals(goals),
+      },
+      onError: (e) => {
+        console.error('caught error in sending wave', e);
+        // debugger;
+      }
+    });
+    return stirId;
+  } catch (e) {
+    // if (e.message === 'Failed to fetch' || e.message === 'Failed to PUT channel') { 
+    //   if (connection() === 'open') $connection('closed');
+    // }
+    throw e;
+  }
 }
 
 function goalsToApiGoals(goals) {
@@ -149,4 +172,4 @@ export async function sendDM(patp, msg) {
   });
 }
 
-export { api };
+export { api, connection };

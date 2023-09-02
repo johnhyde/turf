@@ -10,6 +10,7 @@ window.desk = window.desk || 'turf';
 window.ship = window.ship || 'zod';
 window.our = '~' + ship;
 window.ourPond = '/pond/' + our;
+window.dev = import.meta.env.DEV;
 
 // const root = document.getElementById('root');
 

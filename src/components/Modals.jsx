@@ -1,4 +1,4 @@
-import { createSignal, createSelector } from 'solid-js';
+import { createSignal, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { stripPathPrefix, autofocus } from 'lib/utils';
@@ -118,6 +118,12 @@ export default function Modals() {
 }
 
 function Modal(props) {
+  onMount(() => {
+    game.input.keyboard.enabled = false;
+  })
+  onCleanup(() => {
+    game.input.keyboard.enabled = true;
+  })
   return (
     <div class="absolute w-full h-full flex z-20">
       <div class={"m-auto max-w-md max-h-md p-4 rounded-2xl " + (props.class || '')}>

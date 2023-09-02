@@ -2,6 +2,7 @@ import { batch, mergeProps } from "solid-js";
 import { createStore, unwrap, produce, reconcile } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
+import { connection, reportBadConnection } from 'lib/api';
 import { uuidv4, jClone } from 'lib/utils';
 
 export function gritsTypeStr(grits) {
@@ -53,15 +54,19 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
 
     async sendWavePoke(goals, uuid, retries = 0) {
       try {
-        await apiSendWave(goals, uuid);
+        if (['active', 'reconnected'].includes(connection())) {
+          return await apiSendWave(goals, uuid);
+        }
       } catch (e) {
         if (e?.message === 'Failed to fetch') {
           // internet connectivity issue
           if (retries < 4) { // 15 seconds before pulse is discarded (1+2+4+8)
+            const now = Date.now();
             const timeout = Math.pow(2, retries)*1000;
             retries++;
             console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
-            setTimeout(() => this.sendWavePoke(goal, uuid, retries), timeout);
+            // await api.eventSource();
+            setTimeout(() => this.sendWavePoke(goals, uuid, retries), Math.max(0, timeout - (Date.now() - now)));
           } else {
             console.warn('Failed to send wave, no more retries, rolling back');
             this.removePulse(uuid);
@@ -69,6 +74,9 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
           }
         } else {
           console.warn('Failed to send wave, can\'t retry, rolling back');
+          if (e?.message === 'Failed to PUT channel') {
+            reportBadConnection();
+          }
           this.removePulse(uuid);
           this.replayFake();
         }

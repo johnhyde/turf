@@ -20,7 +20,7 @@ export class Mist { // we use a class so we can put it inside a store without ge
     this._local = local;
     this.refetchLocal = refetch;
 
-
+    this.sub = null;
     this.subscribe();
   }
 
@@ -46,10 +46,39 @@ export class Mist { // we use a class so we can put it inside a store without ge
     return this._.sendWave(type, arg, batch);
   }
 
-  subscribe() {
+  async subscribe() {
     const onMistErr = () => {};
     const onMistQuit = () => {};
-    api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
+    this.sub = await api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
+  }
+
+  // this one gets weird because of the awaits
+  // the idea is for it to be idempotent
+  async subscribe() {
+    if (this.sub === null) {
+      const onMistErr = () => {};
+      const onMistQuit = () => {};
+      this.sub = api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
+      return this.sub
+    } else {
+      const oldSub = await this.sub;
+      if (this.sub && !api.api.outstandingSubscriptions.has(oldSub)) {
+        this.sub = null;
+        return this.subscribe();
+      }
+    }
+  }
+
+  async unsubscribe() {
+    const sub = await this.sub;
+    if (sub !== null) {
+      api.api.unsubscribe(sub);
+      this.sub = null;
+    }
+  }
+
+  async destroy() {
+    return this.unsubscribe();
   }
 
   goHome() {

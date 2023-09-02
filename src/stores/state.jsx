@@ -141,6 +141,15 @@ export function getState() {
         }
       }
     },
+    async resetConnection() {
+      api.api.reset();
+      for (const turfId in state.ponds) {
+        state.ponds[turfId].unsubscribe();
+        state.ponds[turfId].subscribe();
+      }
+      state.mist.unsubscribe();
+      state.mist.subscribe();
+    },
     sendPondWave(type, arg, id) {
       id = id || this.currentTurfId;
       const pond = this.ponds[id];
@@ -332,7 +341,7 @@ export function getState() {
       $state('notifications', (notifs) => {
         return notifs.filter(n => n !== notification);
       });
-    }
+    },
   });
 
   createEffect(() => {
