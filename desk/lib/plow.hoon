@@ -9,7 +9,7 @@
   ^-  [[roars skye] grits:mist goals:mist]
   =-  [[(weld pre-roars roars) closet] grits goals]
   ^-  [=roars =grits:mist =goals:mist]
-  ~&  "filtering mist goal {<?@(goal goal -.goal)>}, top: {<top>}"
+  :: ~&  "filtering mist goal {<?@(goal goal -.goal)>}, top: {<top>}"
   ?@  goal  `~[goal]~
   ?+    -.goal  `~[goal]~
       %set-ctid
@@ -68,7 +68,7 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
+  :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   =-  [(weld pre-roars roars) grits goals]
   ^-  [=roars =grits:pond =goals:pond]
   =/  uturf  turf.rock
