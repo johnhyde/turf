@@ -1,10 +1,12 @@
 #!/bin/bash
 # Does this actually need to be bash? Who knows! You'll definitely need tmux, though.
 
-# Run these commands to guarantee up-to-date. The below commands are independent, so they can be run in parallel, but we do want to `wait` for them both to finish before proceeding, to make sure there's no funny business that will require a reload once we are in the tmux. I mean, you could just also not do that, I guess. For the glory of speed.
+echo Running commands to guarantee up-to-date...
+# The below commands are independent, so they can be run in parallel, but we do want to `wait` for them both to finish before proceeding, to make sure there's no funny business that will require a reload once we are in the tmux. I mean, you could just also not do that, I guess. For the glory of speed.
 npm run desks &
 npm install &
 wait
+echo Muxing our teas...
 tmux \
   new-session 'echo "This is tmux, a program that is paneful to use.
   I find it rather unergonomic, but it lets me run all of these commands at once, and continue to interact with them.
