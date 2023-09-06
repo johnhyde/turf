@@ -54,9 +54,11 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
 
     async sendWavePoke(goals, uuid, retries = 0) {
       try {
-        if (['active', 'reconnected'].includes(connection())) {
-          return await apiSendWave(goals, uuid);
-        }
+        // if (['active', 'reconnected'].includes(connection())) {
+        return await apiSendWave(goals, uuid);
+        // } else {
+        //   throw new Error('No connection to ship');
+        // }
       } catch (e) {
         if (e?.message === 'Failed to fetch') {
           // internet connectivity issue

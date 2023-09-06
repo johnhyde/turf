@@ -24,6 +24,7 @@ export default ({ mode }) => {
       urbitPlugin({ base: 'turf', target: SHIP_URL, secure: false }),
       solidPlugin(),
     ],
+    base: '/apps/turf/',
     resolve: {
       alias: {
         '~': path.resolve('./src'),
