@@ -1,7 +1,7 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, minV, flattenGrid, near, pixelsToTiles, dirs, swapAxes, getDirFromVec } from 'lib/utils';
+import { vec2, near, pixelsToTiles, swapAxes, sleep } from 'lib/utils';
 import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
@@ -12,7 +12,7 @@ import { Resizer } from "./resizer";
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
-let pinger, moveQueuer, faceQueuer;
+let gritController = new AbortController();
 var game, scene, cam, cursors, keys = {}, player, tiles, preview;
 var formIndexMap, players = {}, shades = {};
 const factor = 8;
@@ -22,7 +22,19 @@ window.factor = factor;
 window.tileSize = tileSize;
 window.tileFactor = tileFactor;
 
-async function loadImage(id, url, isWall = false, config = {}) {
+function addGritListener(eventName, handler) {
+  window.addEventListener(eventName, handler, { signal: gritController.signal });
+}
+
+async function loadImage(id, url, ...args) {
+  try {
+    return await loadImageUnsafe(id, url, ...args);
+  } catch (e) {
+    return loadImageUnsafe(id, voidUrl, ...args);
+  }
+}
+
+async function loadImageUnsafe(id, url, isWall = false, config = {}) {
   // console.log("trying to load image: " + id)
   if (game.textures.exists(id)) return;
   return new Promise(async (resolve, reject) => {
@@ -114,6 +126,10 @@ async function loadImage(id, url, isWall = false, config = {}) {
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
   const { formId } = shade;
+  if (!sprite) {
+    console.error('Could not create shade', formId);
+    return;
+  }
   sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
   if (shade.formId === '/portal') {
     const state = useState();
@@ -294,23 +310,26 @@ export function startPhaser(_owner, _container) {
         });
         const ping = this.sound.add('ping');
         this.sound.pauseOnBlur = false;
-        if (pinger) window.removeEventListener('pond-ping-player', pinger);
-        pinger = (e) => {
+
+        gritController.abort();
+        gritController = new AbortController();
+
+        addGritListener('pond-ping-player', (e) => {
           if (e.grit.arg.ship === our) {
-            if (!this.sound.locked) ping.play();
+            if (!this.sound.locked && state.soundOn) ping.play();
             state.notify(e.grit.arg.by + ' has pinged you!');
           }
-        };
-        window.addEventListener('pond-ping-player', pinger);
-
-        // todo combine queuers
-        if (moveQueuer) window.removeEventListener('pond-move', moveQueuer);
-        moveQueuer = (e) => { if (players[e.grit.arg.ship]) players[e.grit.arg.ship].actionQueue.push(e.grit); };
-        window.addEventListener('pond-move', moveQueuer);
-
-        if (faceQueuer) window.removeEventListener('pond-face', faceQueuer);
-        faceQueuer = (e) => { if (players[e.grit.arg.ship]) players[e.grit.arg.ship].actionQueue.push(e.grit); };
-        window.addEventListener('pond-face', faceQueuer);
+        });
+        const moveQueuer = (e) => { if (players[e.grit.arg.ship]) players[e.grit.arg.ship].actionQueue.push(e.grit); };
+        addGritListener('pond-move', moveQueuer);
+        addGritListener('pond-face', moveQueuer);
+        addGritListener('pond-chat', (e) => {
+          if (state.soundOn) {
+            var msg = new SpeechSynthesisUtterance();
+            msg.text = e.grit.arg.text;
+            window.speechSynthesis.speak(msg);
+          }
+        });
       }
 
       function update() {
@@ -337,10 +356,18 @@ export function startPhaser(_owner, _container) {
       game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
       setGameSize();
       const [loader, { mutate, refetch }] = createResource(
-        () => state.e,
-        async (turf) => {
+        () => {
+          if (!state.e) return {};
+          return {
+            ...extractPlayerSprites(state.e.players),
+            ...extractSkyeSprites(state.e.skye),
+            void: voidUrl,
+          };
+        },
+        async (sprites) => {
           try {
-            await loadSprites(turf)
+            const promise = loadSprites(sprites);
+            await promise;
           } catch (e) {
             console.error('Error in loading sprites', e);
             throw e;
@@ -398,28 +425,16 @@ export function startPhaser(_owner, _container) {
     });
   });
 
-  async function loadSprites(turf) {
-    console.log('loading sprites');
-    // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
-    return Promise.all([loadSkyeSprites(turf), loadPlayerSprites(turf)]);
-  }
-
-  async function loadSkyeSprites(turf) {
-    const sprites = extractSkyeSprites(turf.skye);
+  async function loadSprites(sprites) {
     const promises = Object.entries(sprites).map(([id, sprite]) => {
       return loadImage(id, sprite);
     });
-    promises.push(loadImage('void', voidUrl));
-    // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
     return Promise.all(promises);
   }
 
   async function loadPlayerSprites(turf) {
     const sprites = extractPlayerSprites(turf.players);
-    const promises = Object.entries(sprites).map(([id, sprite]) => {
-      return loadImage(id, sprite);
-    });
-    return Promise.all(promises);
+    return loadSprites(sprites);
   }
   
   function destroyCurrentTurf() {
@@ -427,10 +442,15 @@ export function startPhaser(_owner, _container) {
     window.players = players = {};
     shades = {};
     preview = null;
-    (scene.add.displayList.list || []).map(e => e).forEach(e => e.destroy());
-    (scene.add.updateList.list || []).map(e => e).forEach(e => e.destroy());
+    // I think we don't need these, as of 09/12/23
+    // TODO: Delete by Nov 2023 if not needed
+    // (scene.add.displayList.list || []).forEach((e) => {
+    //   if (e) e.destroy();
+    // });
+    // (scene.add.updateList.list || []).forEach((e) => {
+    //   if (e) e.destroy();
+    // });
     game.scene.start(scene);
-    // if (player) player.destroy();
   }
   window.destroyTurf = destroyCurrentTurf;
   async function initTurf(turf, grid, _player) {
@@ -441,10 +461,6 @@ export function startPhaser(_owner, _container) {
       h: turf.size.y * turf.tileSize.y * factor,
     };
     setBounds = () => {
-      // const width = ~~container.clientWidth;
-      // const height = ~~container.clientHeight;
-      // const width = ~~game.scale.width;
-      // const height = ~~game.scale.height;
       const width = ~~cam.displayWidth;
       const height = ~~cam.displayHeight;
       // adjust the viewport bounds if level is smaller
@@ -466,13 +482,6 @@ export function startPhaser(_owner, _container) {
     createEffect(() => {
       setGameSize();
     });
-    // window.removeEventListener('resize', setBounds);
-    // createEffect(on(() => state.scale, () => {
-    //   setBounds();
-    // }))
-    // _setBounds();
-    // setBounds = _setBounds;
-    // window.addEventListener('resize', setBounds);
     console.log("init turf tile layer", turf);
     
     const [level, tilesetData] = generateMap(turf, grid);
@@ -484,15 +493,7 @@ export function startPhaser(_owner, _container) {
     layer.setDepth(turf.offset.y - 10);
     layer.setScale(factor);
     window.tiles = tiles = layer;
-    // window.players = Object.entries(turf.players).map(([patp, p]) => {
-    //   const thisPlayer = new Player(scene, turf.id, patp, loadPlayerSprites);
-    //   if (patp === our) {
-    //     window.player = player = thisPlayer;
-    //   }
-    //   return thisPlayer;
-    // });
     window.resizer = new Resizer(scene, turf.id);
-    // cam.startFollow(player);
     game.input.keyboard.preventDefault = false;
   }
 

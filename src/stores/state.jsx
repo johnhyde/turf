@@ -8,6 +8,21 @@ import { Mist } from 'lib/mist';
 
 export const StateContext = createContext();
 
+export const lsKeys = {
+  get SOUND_ON () {
+    return our + '/turf/soundOn';
+  },
+};
+
+function initEditorState() {
+  return {
+    selectedFormId: null,
+    selectedShadeId: null,
+    selectedTool: null,
+    portalToPlace: null,
+  };
+}
+
 export function getState() {
   const [state, $state] = createStore({
     ponds: {},
@@ -31,9 +46,6 @@ export function getState() {
       get editing() {
         return selectedTab() === 'editor';
       },
-      selectedFormId: null,
-      selectedShadeId: null,
-      selectedTool: null,
       tools: {
         BRUSH: 'brush',
         ERASER: 'eraser',
@@ -52,18 +64,22 @@ export function getState() {
       get resizer() {
         return this.selectedTool === this.tools.RESIZER;
       },
+      ...initEditorState(),
+    },
+    get portalToPlace() {
+      return this.editor.portalToPlace;
     },
     lab:  {
       get editing() {
         return selectedTab() === 'lab';
       },
     },
-    portalToPlace: null,
     scaleLog: 0,
     get scale() {
       return Math.pow(2, Math.round(this.scaleLog));
     },
     notifications: [],
+    soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
     get current() {
       const parent = this;
       const current = {
@@ -157,6 +173,14 @@ export function getState() {
         return pond.sendWave(type, arg, id);
       }
     },
+    sendOurPondWave(type, arg, id) {
+      const pond = this.ponds[ourPond];
+      if (pond) {
+        return pond.sendWave(type, arg, id);
+      } else {
+        return api.sendPondWave(ourPond, [{ type, arg, }]);
+      }
+    },
     sendMistWave(type, arg, id) {
       id = id || '/mist';
       if (this.mist) {
@@ -187,12 +211,26 @@ export function getState() {
         by: our,
       });
     },
+    resetEditor() {
+      $state('editor', initEditorState());
+    },
     resizeTurf(offset, size) {
       if (size.x <= 0 && size.y <= 0) return false;
       this.sendPondWave('size-turf', {
         offset,
         size,
       });
+    },
+    addForm(form) {
+      return this.sendPondWave('add-form', form);
+    },
+    delForm(formId) {
+      return this.sendPondWave('del-form', {
+        formId,
+      });
+    },
+    importForm(form) {
+      return this.sendOurPondWave('add-form', form);
     },
     addHusk(pos, formId, variation = 0) {
       return this.sendPondWave('add-husk', {
@@ -286,7 +324,7 @@ export function getState() {
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);
     },
-    selectForm(id, _) {
+    selectForm(id) {
       $state('editor', 'selectedFormId', id);
       if (id) this.selectTool(this.editor.tools.BRUSH);
     },
@@ -308,7 +346,7 @@ export function getState() {
     selectTab(tab) {
       batch(() => {
         $state('selectedTab', tab);
-        $state('portalToPlace', null);
+        $state('editor', 'portalToPlace', null);
         this.selectShade(null);
         if (tab === state.tabs.LAB) {
           this.setScaleLog(Math.min(this.scaleLog, -2));
@@ -321,7 +359,10 @@ export function getState() {
       });
     },
     startPlacingPortal(portalId) {
-      $state('portalToPlace', portalId);
+      $state('editor', 'portalToPlace', portalId);
+    },
+    toggleSound() {
+      $state('soundOn', (muted) => !muted);
     },
     notify(msg) {
       const notification = {
@@ -349,8 +390,13 @@ export function getState() {
       batch(() => {
         _state.subToTurf(_state.c.id);
         _state.clearTurfs(_state.c.id);
+        _state.resetEditor();
       })
     }
+  });
+
+  createEffect(() => {
+    localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
   });
 
   return _state;

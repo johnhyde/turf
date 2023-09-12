@@ -16,7 +16,7 @@ const Vector2 = Phaser.Math.Vector2;
  * b = vec2();         // set b to (0, 0)
  * @memberof Utilities
  */
-export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(Number(x), y == undefined? Number(x) : Number(y)) : new Vector2(x.x, x.y);
+export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(Number(x), y == undefined? Number(x) : Number(y)) : new Vector2(Number(x.x), Number(x.y));
 window.vec2 = vec2;
 
 export function minV(a, b) {
@@ -146,6 +146,10 @@ export function unpadPatp(patp) {
   }
 }
 
+export function isValidPath(path) {
+  return /^(\/[-~._0-9a-z]*)+$/.test(path);
+}
+
 export function jClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
@@ -267,4 +271,34 @@ export function isTextInputFocused() {
 
 export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+
+export function makeImage(url) {
+  return new Promise((resolve, reject) => {
+    try {
+      const image = new Image();
+      image.onload = () => createImageBitmap(image).then((bitmap) => {
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        ctx.drawImage(bitmap, 0, 0);
+        
+        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let dataUrl = canvas.toDataURL();
+        console.log('loaded ' + url, dataUrl);
+        resolve({
+          image,
+          bitmap,
+          imageData,
+          dataUrl,
+        });
+      });
+      image.onerror = reject;
+      image.src = url;
+    } catch (e) {
+      reject(e);
+    }
+  })
 }

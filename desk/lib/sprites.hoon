@@ -9,11 +9,11 @@
   (welk '0' b)
 ++  garb
   |=  [name=@t var-count=@ud frame-count=@ud]
-  ^-  (list look)
+  ^-  (list luuk)
   ?:  =(0 var-count)  ~
   %+  turn  (gulf 0 (dec var-count))
   |=  i=@ud
-  ^-  look
+  ^-  luuk
   :-  ~
   :-  %fore
   =/  base  :(welk 'sprites/garb/' name '-' (scot %ud i))

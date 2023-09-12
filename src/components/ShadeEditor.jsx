@@ -1,10 +1,11 @@
 import { batch, createMemo, createSelector, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile } from "solid-js/store";
-import { vec2, bind, input } from 'lib/utils';
+import { vec2, bind, input, jClone } from 'lib/utils';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
+import FormEditor from '@/FormEditor';
 
 export default function ShadeEditor(props) {
   const state = useState();
@@ -46,10 +47,29 @@ export default function ShadeEditor(props) {
     clearNewEffects();
   }
 
+  const [newForm, $newForm] = createStore({});
+  function importForm() {
+    if (props.shade.formId && props.shade.form) $newForm(jClone({
+      formId: props.shade.formId,
+      form: props.shade.form,
+    }));
+  }
+
   return (
     <Show when={props.shade}>
-      <div class="m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
+      <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
         <Heading>{props.shade.form.name}</Heading>
+        {state.c.id !== ourPond && 
+          <>
+            <SmallButton onClick={importForm} class="mx-auto">
+              Import Item
+            </SmallButton>
+            <FormEditor form={newForm} $form={$newForm} addFn={state.importForm.bind(state)}/>
+          </>
+        }
+        <p class="text-center">
+          Item ID: {props.shade.formId}
+        </p>
         <p class="text-center">
           Position: {props.shade.pos.x}x{props.shade.pos.y}
         </p>
@@ -129,7 +149,7 @@ function ArgInput(props) {
             <span>to x:</span>
             <input type="number"
               min={state.e.offset.x}
-              max={state.e.offset.x + state.e.size.x - 1} 
+              max={state.e.offset.x + state.e.size.x - 1}
               use:input
               use:bind={[
                 () => props.arg.x,
@@ -138,7 +158,7 @@ function ArgInput(props) {
             <span>y:</span>
             <input type="number"
               min={state.e.offset.y}
-              max={state.e.offset.y + state.e.size.y - 1} 
+              max={state.e.offset.y + state.e.size.y - 1}
               use:input
               use:bind={[
                 () => props.arg.y,

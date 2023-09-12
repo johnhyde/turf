@@ -87,3 +87,7 @@ input[type="color"]::-moz-color-swatch {
   @apply border-2 border-yellow-950;
   box-sizing: border-box;
 }
+
+.rounded-input {
+  @apply px-2 py-0.5 rounded-md;
+}
