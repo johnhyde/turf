@@ -29,15 +29,17 @@ export class Preview extends Phaser.GameObjects.Container {
       createEffect(() => {
         const editor = this.s.editor;
         this.removeAll(true)
-        if ((editor.editing && editor.brush && editor.selectedFormId) || this.s.portalToPlace) {
+        if (this.turf() && ((editor.editing && editor.brush && editor.selectedFormId) || this.s.portalToPlace)) {
           const shadeDef = {
             formId: this.s.portalToPlace ? '/portal' : editor.selectedFormId,
             variation: 0,
             pos: vec2(),
           }
-          this.shade = new Shade(this.scene, shadeDef, this.turf(), true);
-          this.shade.setAlpha(0.8);
-          this.add([this.shade]);
+          this.shade = new Shade(this.scene, shadeDef, this.turf(), false);
+          if (this.shade) {
+            this.shade.setAlpha(0.8);
+            this.add([this.shade]);
+          }
         } else {
           this.shade = null;
         }
@@ -46,6 +48,7 @@ export class Preview extends Phaser.GameObjects.Container {
   }
 
   updatePointer(pointer) {
+    if (!this.turf()) return;
     const tileSize = this.turf().tileSize.x;
     const tilePos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY), tileSize);
     const pos = vec2(tilePos).scale(tileFactor);

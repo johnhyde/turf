@@ -285,6 +285,11 @@
   |=  =path
   (crip (zing (join "-" (turn path trip))))
 ++  welk  (cury cat 3)
+++  murp
+  |*  [a=(map) b=$-((pair) (unit (pair)))]
+  %-  malt
+  %+  murn  ~(tap by a)
+  b
 ::
 ++  get-space
   |=  [=spaces pos=svec2]
@@ -425,6 +430,41 @@
   ?@  u.eff  ~
   ?.  ?=(%port -.u.eff)  ~
   `portal-id.u.eff
+++  add-form
+  |=  [=turf spec=form-spec]
+  ^-  ^turf
+  =*  skye  skye.plot.turf
+  =.  skye
+    (~(put by skye) form-id.spec form.spec)
+  turf
+++  del-form
+  |=  [=turf =form-id]
+  ^-  ^turf
+  =/  form  (~(gut by skye.plot.turf) form-id ~)
+  =.  skye.plot.turf
+    (~(del by skye.plot.turf) form-id)
+  =/  shades  [keep=*(list [shade-id shade]) del=*(list [shade-id svec2])]
+  =.  shades
+    %+  roll  ~(tap by cave.plot.turf)
+    |=  [[=shade-id =shade] =_shades]
+    ?:  =(form-id form-id.shade)
+      [keep.shades [[shade-id pos.shade] del.shades]]
+    [[[shade-id shade] keep.shades] del.shades]
+  =.  cave.plot.turf  (malt keep.shades)
+  =.  turf
+    %+  roll  del.shades
+    |=  [[=shade-id pos=svec2] =_turf]
+    (del-shade-from-space turf shade-id pos)
+  =?    spaces.plot.turf
+      :: if form is null it might have been a tile
+      |(?=(~ form) ?=(%tile type.form)) 
+    %-  ~(run by spaces.plot.turf)
+    |=  =space
+    ?~  tile.space  space
+    ?.  =(form-id form-id.u.tile.space)
+      space
+    space(tile ~)
+  turf
 ::
 :: resets husk-bits for tile - [offset collidable effects]
 :: does not verify form
@@ -437,6 +477,12 @@
   %^  jab-by-spaces  turf  pos
   |=  =space  ^-  _space
   space(tile `new-husk)
+++  del-tile
+  |=  [=turf pos=svec2]
+  ^-  ^turf
+  %^  jab-by-spaces  turf  pos
+  |=  =space  ^-  _space
+  space(tile ~)
 ::
 :: does not verify form
 ++  add-shade
@@ -473,7 +519,12 @@
   =/  shade  (~(gut by cave.plot.turf) id ~)
   ?~  shade  turf
   =.  cave.plot.turf  (~(del by cave.plot.turf) id)
-  %^  jab-by-spaces  turf  pos.shade
+  (del-shade-from-space turf id pos.shade)
+::
+++  del-shade-from-space
+  |=  [=turf id=shade-id pos=svec2]
+  ^-  ^turf
+  %^  jab-by-spaces  turf  pos
   |=  =space
   space(shades (skip shades.space |=(sid=@ =(sid id))))
 ::

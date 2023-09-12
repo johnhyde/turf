@@ -108,7 +108,7 @@
   $+  form
   $:  name=@t
       type=form-type
-      variations=(list look)
+      variations=(list luuk)
       form-bits
   ==
 +$  form-bits
@@ -119,7 +119,7 @@
   ==
 +$  form-type  ?(%tile %wall %item %garb)
 +$  space-form-type  ?(%tile %wall %item)
-+$  look
++$  luuk
   %-  unit
   $:  =deep
       :: todo: tint=(unit color)
@@ -147,6 +147,7 @@
       [%swap with=form-id]  :: for opening/closing doors
   ==
 ::
++$  form-spec  [=form-id =form]
 +$  husk-spec  [pos=svec2 =form-id variation=@ud]
 ::
 +$  pond-path  [%pond *]

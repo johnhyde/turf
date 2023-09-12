@@ -13,7 +13,7 @@ export default function PortalsPane() {
   const state = useState();
   const placingPortal = createSelector(() => state.portalToPlace);
   const [toShipValid, $toShipValid] = createSignal(null);
-  const validBorder = () => {
+  const validBg = () => {
     if (toShipValid()) {
       return 'bg-green-100';
     } else if (toShipValid() === false) {
@@ -96,9 +96,9 @@ export default function PortalsPane() {
     }
   }
 
-  document.addEventListener('keydown', onKeyDown);
+  document.body.addEventListener('keydown', onKeyDown);
   onCleanup(() => {
-    document.removeEventListener('keydown', onKeyDown);
+    document.body.removeEventListener('keydown', onKeyDown);
   });
 
   function shipKeyDown(e) {
@@ -121,7 +121,7 @@ export default function PortalsPane() {
         </Heading>
         <div class="flex justify-center items-center space-x-2">
           <input
-              class={"rounded-md max-w-[175px] " + validBorder()}
+              class={"rounded-md max-w-[175px] " + validBg()}
               use:input
               autofocus
               use:bind={[

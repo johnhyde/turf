@@ -21,6 +21,8 @@
   $@  ?(%del-turf %inc-counter %noop)
   $%  set-turf-grit
       size-turf-grit
+      add-form-grit
+      del-form-grit
       add-husk-grit
       del-shade-grit
       cycle-shade-grit
@@ -50,6 +52,8 @@
 ::
 +$  set-turf-grit  [%set-turf =turf]
 +$  size-turf-grit  [%size-turf off-size]
++$  add-form-grit  [%add-form form-spec]
++$  del-form-grit  [%del-form =form-id]
 +$  add-husk-grit  [%add-husk husk-spec]
 +$  del-shade-grit  [%del-shade =shade-id]
 +$  cycle-shade-grit  [%cycle-shade =shade-id amt=@ud]
@@ -178,6 +182,8 @@
       player(pos (clamp-pos pos.player offset.grit size.grit))
     ==
     ::
+    %add-form  (add-form turf +.grit)
+    %del-form  (del-form turf form-id.grit)
     %add-husk  (add-husk turf +.grit)
     %del-shade  (del-shade turf +.grit)
     %cycle-shade  (cycle-shade turf +.grit)

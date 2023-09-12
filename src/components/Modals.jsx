@@ -2,8 +2,7 @@ import { createSignal, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { stripPathPrefix, autofocus } from 'lib/utils';
-import Button from '@/Button';
-import cycle from 'assets/icons/cycle.png';
+import Modal from '@/Modal';
 
 export default function Modals() {
   const state = useState();
@@ -115,20 +114,4 @@ export default function Modals() {
       </Show>
     </>
   );
-}
-
-function Modal(props) {
-  onMount(() => {
-    game.input.keyboard.enabled = false;
-  })
-  onCleanup(() => {
-    game.input.keyboard.enabled = true;
-  })
-  return (
-    <div class="absolute w-full h-full flex z-20">
-      <div class={"m-auto max-w-md max-h-md p-4 rounded-2xl " + (props.class || '')}>
-        {props.children}
-      </div>
-    </div>
-  )
 }

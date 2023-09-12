@@ -278,7 +278,7 @@
     ?-    msg
         [pond-path *]
       ~?  stale.msg  "turf from {<from.msg>} on {<src.msg>} is stale"
-      ~?  ?=(^ turf.rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.turf.rock.msg>}"
+      :: ~?  ?=(^ turf.rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.turf.rock.msg>}"
       =/  this-turf-id=turf-id  [src.msg ;;(path +.path.msg)]
       =/  this-turf-path=path  (turf-id-to-path this-turf-id)
       =/  =stirred:pond

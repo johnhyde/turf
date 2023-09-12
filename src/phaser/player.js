@@ -42,7 +42,6 @@ export class Player extends Phaser.GameObjects.Container {
     this.on('pointermove', this.onHover.bind(this));
     this.on('pointerout', this.onLeave.bind(this));
     this.setupEffects();
-    this.addToUpdateList();
     this.scene.add.existing(this);
   }
 
@@ -125,6 +124,7 @@ export class Player extends Phaser.GameObjects.Container {
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
     this.bodyImage.setScale(factor);
+    this.bodyImage.preDestroy = preDestroy;
     this.things = avatar.things.map((thing) => {
       const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
@@ -132,6 +132,7 @@ export class Player extends Phaser.GameObjects.Container {
       const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });
       if (!spriteDirs[dirs[this.dir]]) sprite.setVisible(false);
       sprite.thing = thing;
+      sprite.preDestroy = preDestroy;
       if (thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
         sprite.setFlipX(true);
       }
@@ -301,7 +302,6 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   onHover(pointer) {
-    console.log('hovered over', this.patp)
     if (!this.isUs && !this.list.includes(this.ping)) {
       this.add(this.ping);
       this.ping.setVisible(true);
@@ -309,16 +309,17 @@ export class Player extends Phaser.GameObjects.Container {
   }
   
   onLeave(pointer) {
-    console.log('left', this.patp)
-    this.ping.setVisible(false);
-    this.remove(this.ping);
-    this.ping.setText('(ping)');
-    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+    if (!this.isUs) {
+      this.ping.setVisible(false);
+      this.remove(this.ping);
+      this.ping.setText('(ping)');
+      this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+    }
   }
 
-  destroy(fromScene) {
+  preDestroy(fromScene) {
     if (this.dispose) this.dispose();
-    super.destroy(fromScene);
+    super.preDestroy(fromScene);
   }
 }
 
@@ -359,4 +360,10 @@ function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
   }
 
   return pixelPerfectHitTest
+}
+
+function preDestroy() {
+  this.anims.destroy();
+  this.anims = undefined;
+  this.ignoreDestroy = true;
 }

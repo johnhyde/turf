@@ -77,7 +77,7 @@ export function getTileWithForm(turf, pos) {
 export function getShadesAtPos(turf, pos) {
   const shades = getSpace(turf, pos)?.shades;
   if (!shades) return [];
-  return shades.map(sid => getShadeWithForm(turf, sid));
+  return shades.map(sid => getShadeWithForm(turf, sid)).filter(shade => shade);
 }
 
 export function getShadesAtPosByType(turf, pos, type) {
@@ -132,11 +132,15 @@ export function getEffectsByShade(turf, shade) {
 export function delShade(turf, shadeId) {
   const shade = turf.cave[shadeId];
   if (shade) {
-    jabBySpaces(turf, shade.pos, (space) => {
-      space.shades = space.shades.filter((shadeId) => shadeId !== shadeId);
-    });
+    delShadeFromSpace(turf, shadeId, shade.pos)
     delete turf.cave[shadeId];
   }
+}
+
+export function delShadeFromSpace(turf, shadeId, pos) {
+  jabBySpaces(turf, pos, (space) => {
+    space.shades = space.shades.filter((id) => id !== Number(shadeId));
+  });
 }
 
 export function delPortal(turf, portalId) {

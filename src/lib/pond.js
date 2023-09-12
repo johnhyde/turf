@@ -136,6 +136,25 @@ const pondGrits = {
       player.pos.y = newPos.y;
     });
   },
+  'add-form': (turf, arg) => {
+    const { formId, form } = arg;
+    turf.skye[formId] = form;
+  },
+  'del-form': (turf, arg) => {
+    const { formId } = arg;
+    const form = turf.skye[formId];
+    Object.entries(turf.cave).forEach(([shadeId, shade]) => {
+      if (shade.formId === formId) delShade(turf, Number(shadeId));
+    });
+    if (!form || form.type === 'tile') {
+      Object.entries(turf.spaces).forEach(([pos, space]) => {
+        if (space.tile && space.tile.formId === formId) {
+          space.tile = null;
+        }
+      });
+    }
+    delete turf.skye[formId];
+  },
   'add-husk': (turf, arg) => {
     const { pos, formId, variation } = arg;
     if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
@@ -315,8 +334,12 @@ export function _washTurf(grit) {
     default:
       return produce((turf) => {
         if (pondGrits[grit.type]) {
-          pondGrits[grit.type](turf, grit.arg);
-          js.turf(turf);
+          if (turf) {
+            pondGrits[grit.type](turf, grit.arg);
+            js.turf(turf);
+          } else {
+            console.warn(`Could not apply grit of type: ${grit.type} to ${turf} turf`);
+          }
         } else {
           console.warn(`Could not process grit of type: ${grit.type}`);
         }
@@ -340,7 +363,7 @@ const filters = {
     if (!isInTurf(turf, pos)) return false;
     const currentSpace = turf.spaces[vecToStr(pos)];
     const currentTile = currentSpace?.tile;
-    const currentShades = (currentSpace?.shades || []).map(sid => turf.cave[sid]);
+    const currentShades = (currentSpace?.shades || []).map(sid => turf.cave[sid]).filter(s => s);
     const tileAlreadyHere = currentTile?.formId === formId;
     const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
     if (!tileAlreadyHere && !shadeAlreadyHere) {
