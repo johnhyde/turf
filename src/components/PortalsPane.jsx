@@ -121,7 +121,7 @@ export default function PortalsPane() {
         </Heading>
         <div class="flex justify-center items-center space-x-2">
           <input
-              class={"rounded-md max-w-[175px] " + validBg()}
+              class={"rounded-input max-w-[175px] " + validBg()}
               use:input
               autofocus
               use:bind={[

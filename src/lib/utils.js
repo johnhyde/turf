@@ -278,24 +278,27 @@ const ctx = canvas.getContext('2d');
 
 export function makeImage(url) {
   return new Promise((resolve, reject) => {
-
-    const image = new Image();
-    image.onload = () => createImageBitmap(image).then((bitmap) => {
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      ctx.drawImage(bitmap, 0, 0);
-      
-      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      let dataUrl = canvas.toDataURL();
-      console.log('loaded ' + url, dataUrl);
-      resolve({
-        image,
-        bitmap,
-        imageData,
-        dataUrl,
+    try {
+      const image = new Image();
+      image.onload = () => createImageBitmap(image).then((bitmap) => {
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        ctx.drawImage(bitmap, 0, 0);
+        
+        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let dataUrl = canvas.toDataURL();
+        console.log('loaded ' + url, dataUrl);
+        resolve({
+          image,
+          bitmap,
+          imageData,
+          dataUrl,
+        });
       });
-    });
-    image.onerror = reject;
-    image.src = url;
+      image.onerror = reject;
+      image.src = url;
+    } catch (e) {
+      reject(e);
+    }
   })
 }

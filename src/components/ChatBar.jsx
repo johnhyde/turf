@@ -67,7 +67,7 @@ export default function ChatBar() {
 
   return (
     <div class="mt-1 text-sm overflow-y-hidden">
-      <textarea class="w-full max-h-full px-2 py-1 resize-none rounded-md border border-yellow-950"
+      <textarea class="rounded-input w-full max-h-full resize-none border border-yellow-950"
         ref={onChatBoxLoad} on:keydown={onKeyDown}
         onInput={onInput}
         use:input={{ onFocus: onInput, onBlur: onInput}}

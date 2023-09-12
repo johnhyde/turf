@@ -3,9 +3,11 @@ import { onMount, onCleanup } from 'solid-js';
 export default function Modal(props) {
   onMount(() => {
     game.input.enabled = false;
+    game.input.keyboard.enabled = false;
   });
   onCleanup(() => {
     game.input.enabled = true;
+    game.input.keyboard.enabled = true;
   });
 
   return (<>
