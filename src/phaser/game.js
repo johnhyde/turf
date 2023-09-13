@@ -51,88 +51,55 @@ async function loadImageUnsafe(id, url, config = {}) {
         reject('could not load image: ' + key);
       }
     };
-    // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, (texture) => {
-    //   // console.log('loaded image', id);
-    //   resolve();
-    // });
-    game.textures.addListener(Phaser.Textures.Events.LOAD, (key, texture) => {
-      if (id === key) {
-        // console.log('loaded image', id, texture.source?.[0]?.image?.complete);
-        if (texture.source?.[0]?.image && !texture.source[0].image.complete) {
-          console.log('wtf', id);
-          const oldOnLoad = texture.source[0].image.onload;
-          texture.source[0].image.onload = () => {
-            console.log('image finally loaded', id);
-            resolve();
-            oldOnLoad();
-          }
-        } else {
-          // console.log('loaded!');
-          resolve();
-        }
-      }
-    });
+    game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
     try {
-      if (config.isWall) {
+      // if (config.isWall) {
+      //   const img = new Image();
+      //   img.onload = () => game.textures.addSpriteSheet(id, img, {
+      //     frameWidth: 32,
+      //     frameHeight: 64,
+      //     ...config,
+      //   });
+      //   img.onabort = () => onError(id);
+      //   img.onerror = () => onError(id);
+      //   img.src = url;
+      // } else {
+      if (!Array.isArray(url)) url = [url];
+      let images = [], promises = [];
+      images = await Promise.all(url.map((u) => {
         const img = new Image();
-        img.onload = () => game.textures.addSpriteSheet(id, img, {
-          frameWidth: 32,
-          frameHeight: 64,
-          ...config,
+        return new Promise((resolve, reject) => {
+          const onError = (e) => {
+            console.error('could not load image: ' + u, e);
+            reject(e);
+          }
+          img.onload = () => resolve(img);
+          img.onerror = onError;
+          img.onabort = onError;
+          img.src = u;
         });
-        img.onabort = () => {
-          console.log('aborted');
-          onError(id);
-        }
-        img.onerror = () => onError(id);
-        img.src = url;
-      } else {
-        if (!Array.isArray(url)) url = [url]
-        if (Array.isArray(url)) {
-          let images = [], promises = [];
-          url.forEach((u) => {
-            const img = new Image();
-            promises.push(new Promise((resolve, reject) => {
-              const onError = (e) => {
-                console.error('could not load image: ' + u, e);
-                reject(e);
-              }
-              img.onload = resolve;
-              img.onerror = onError;
-              img.onabort = onError;
-            }));
-            img.src = u;
-            images.push(img);
-          });
-          await Promise.all(promises);
-          while (!images.every(i => i.complete)) {
-            console.log('waiting for images to load for some reason');
-            await sleep(10);
-          }
-          if (changeColor) {
-            images = await Promise.all(images.map(img => tintImage(img, config.color)));
-            if (game.textures.exists(id)) {
-              game.textures.removeKey(id);
-            }
-          }
-          const texture = game.textures.create(id, images, images[0].width, images[0].height);
-          if (!texture) reject('could not create texture for: ' + url[0]);
-          images.forEach((img, i) => {
-            texture.add(i, i, 0, 0, img.width, img.height);
-            if (i === 0) {
-              texture.add('__BASE', i, 0, 0, img.width, img.height);
-            }
-          })
-          if (images.length === 1) {
-            const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
-            frame.setTrim(frame.width, frame.height, 0, 1, frame.width, frame.height)
-          }
-          resolve();
-        } else {
-          game.textures.addBase64(id, url);
+      }));
+      if (changeColor) {
+        images = await Promise.all(images.map(img => tintImage(img, config.color)));
+        if (game.textures.exists(id)) {
+          game.textures.removeKey(id);
         }
       }
+      const texture = game.textures.create(id, images, images[0].width, images[0].height);
+      if (!texture) reject('could not create texture for: ' + url[0]);
+      images.forEach((img, i) => {
+        texture.add(i, i, 0, 0, img.width, img.height);
+        if (i === 0) {
+          texture.add('__BASE', i, 0, 0, img.width, img.height);
+        }
+      })
+      if (images.length === 1) {
+        const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
+        frame.setTrim(frame.width, frame.height, 0, 1, frame.width, frame.height)
+      }
+      resolve();
+      // }
     } catch (e) {
       if (!game.textures.exists(id)) reject(e);
     }
