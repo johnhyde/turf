@@ -108,6 +108,14 @@ export function intToHex(color) {
   return '#' + color.toString(16).padStart(6, '0');
 }
 
+export function intToRGB(decimal) {
+  return {
+    red: (decimal >> 16) & 0xff,
+    green: (decimal >> 8) & 0xff,
+    blue: decimal & 0xff,
+  };
+}
+
 export function vecToStr(vec) {
   return vec.x + ',' + vec.y;
 }
@@ -283,6 +291,7 @@ export function makeImage(url) {
       image.onload = () => createImageBitmap(image).then((bitmap) => {
         canvas.width = bitmap.width;
         canvas.height = bitmap.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(bitmap, 0, 0);
         
         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -301,4 +310,30 @@ export function makeImage(url) {
       reject(e);
     }
   })
+}
+
+export async function tintImage(image, color) {
+  const rgb = intToRGB(color);
+  canvas.width = image.width;
+  canvas.height = image.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0);
+  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    data[i] = (rgb.red * data[i])/256; // red
+    data[i + 1] = (rgb.green * data[i + 1])/256; // green
+    data[i + 2] = (rgb.blue * data[i + 2])/256; // blue
+  }
+  ctx.putImageData(imageData, 0, 0);
+  let dataUrl = canvas.toDataURL();
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      resolve(image);
+    };
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
 }

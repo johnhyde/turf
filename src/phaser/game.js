@@ -1,7 +1,7 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, near, pixelsToTiles, swapAxes, sleep } from 'lib/utils';
+import { vec2, near, pixelsToTiles, swapAxes, sleep, tintImage } from 'lib/utils';
 import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
@@ -34,9 +34,16 @@ async function loadImage(id, url, ...args) {
   }
 }
 
-async function loadImageUnsafe(id, url, isWall = false, config = {}) {
-  // console.log("trying to load image: " + id)
-  if (game.textures.exists(id)) return;
+async function loadImageUnsafe(id, url, config = {}) {
+  console.log("trying to load image: " + id)
+  const changeColor = config.color !== undefined && game.renderer.type === Phaser.CANVAS;
+  if (game.textures.exists(id)) {
+    if (changeColor) {
+      game.textures.removeKey(id);
+    } else {
+      return;
+    }
+  }
   return new Promise(async (resolve, reject) => {
     const onError = (key) => {
       console.error('could not load image', key);
@@ -67,7 +74,7 @@ async function loadImageUnsafe(id, url, isWall = false, config = {}) {
     });
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
     try {
-      if (isWall) {
+      if (config.isWall) {
         const img = new Image();
         img.onload = () => game.textures.addSpriteSheet(id, img, {
           frameWidth: 32,
@@ -83,7 +90,7 @@ async function loadImageUnsafe(id, url, isWall = false, config = {}) {
       } else {
         if (!Array.isArray(url)) url = [url]
         if (Array.isArray(url)) {
-          const images = [], promises = [];
+          let images = [], promises = [];
           url.forEach((u) => {
             const img = new Image();
             promises.push(new Promise((resolve, reject) => {
@@ -103,10 +110,19 @@ async function loadImageUnsafe(id, url, isWall = false, config = {}) {
             console.log('waiting for images to load for some reason');
             await sleep(10);
           }
+          if (changeColor) {
+            images = await Promise.all(images.map(img => tintImage(img, config.color)));
+            if (game.textures.exists(id)) {
+              game.textures.removeKey(id);
+            }
+          }
           const texture = game.textures.create(id, images, images[0].width, images[0].height);
           if (!texture) reject('could not create texture for: ' + url[0]);
           images.forEach((img, i) => {
             texture.add(i, i, 0, 0, img.width, img.height);
+            if (i === 0) {
+              texture.add('__BASE', i, 0, 0, img.width, img.height);
+            }
           })
           if (images.length === 1) {
             const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
@@ -218,6 +234,7 @@ export function startPhaser(_owner, _container) {
       console.log('container', container.clientWidth, container.clientHeight);
       var config = {
         type: Phaser.AUTO,
+        // type: Phaser.CANVAS,
         parent: container,
         width: ~~container.clientWidth || 500,
         height: ~~container.clientHeight || 500,
@@ -350,7 +367,6 @@ export function startPhaser(_owner, _container) {
       const state = useState();
       window.state = state;
 
-      // window.addEventListener('resize', setGameSize, false);
       new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
       game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
@@ -361,7 +377,9 @@ export function startPhaser(_owner, _container) {
           return {
             ...extractPlayerSprites(state.e.players),
             ...extractSkyeSprites(state.e.skye),
-            void: voidUrl,
+            void: {
+              sprite: voidUrl,
+            },
           };
         },
         async (sprites) => {
@@ -426,8 +444,8 @@ export function startPhaser(_owner, _container) {
   });
 
   async function loadSprites(sprites) {
-    const promises = Object.entries(sprites).map(([id, sprite]) => {
-      return loadImage(id, sprite);
+    const promises = Object.entries(sprites).map(([id, { sprite, config }]) => {
+      return loadImage(id, sprite, config);
     });
     return Promise.all(promises);
   }

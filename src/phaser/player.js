@@ -1,6 +1,6 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
-import { vec2, dirs, sleep } from 'lib/utils';
+import { vec2, dirs, sleep, intToHex } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -72,7 +72,11 @@ export class Player extends Phaser.GameObjects.Container {
       createEffect((lastColor) => {
         const color = this.p?.avatar.body.color;
         if (this.bodyImage && color && lastColor !== color) {
-          this.bodyImage.setTint(color);
+          if (game.renderer.type === Phaser.CANVAS) {
+            this.recreateAvatar();
+          } else {
+            this.bodyImage.setTint(color);
+          }
         }
         return color;
       });
@@ -108,7 +112,6 @@ export class Player extends Phaser.GameObjects.Container {
     const frameRate = 7;
     const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
     this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
-    this.bodyImage.setTint(avatar.body.color);
     this.bodyImage.thing = avatar.body.thing;
     if (avatar.body.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
@@ -125,6 +128,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
     this.bodyImage.setScale(factor);
     this.bodyImage.preDestroy = preDestroy;
+    this.bodyImage.setTint(avatar.body.color);
     this.things = avatar.things.map((thing) => {
       const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
