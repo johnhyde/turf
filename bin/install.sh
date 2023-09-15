@@ -19,8 +19,6 @@ PIER=$(dirname $DESK_DIR)
 DESK=$(basename $DESK_DIR)
 EXCLUDE_FILE="${cdir}"/../config/ignore_files_on_install.txt
 
-port=$(cat $PIER/.http.ports | grep loopback | tr -s ' ' '\n' | head -n 1)
-
 lensd() {
     curl -s                                                              \
     --data "{\"source\":{\"dojo\":\"$1\"},\"sink\":{\"stdout\":null}}" \
@@ -28,7 +26,7 @@ lensd() {
 }
 
 lensa() {
-    curl -s                                                              \
+    curl -s --retry-all-errors                                           \
     --data "{\"source\":{\"dojo\":\"$2\"},\"sink\":{\"app\":\"$1\"}}"  \
     "http://localhost:$port" | xargs printf %s | sed 's/\\n/\n/g'
 }
@@ -54,10 +52,26 @@ while getopts "wg" opt; do
 done
 
 if [ -z "$WATCH_MODE" ]; then
-    echo "Installed %turf to ${DESK_DIR}"
+    echo "Installing %turf to ${DESK_DIR}"
     rm -r $DESK_DIR/*
     sync
+
+    # Now, issue commands to the ship.
+    # First, we must ensure the ship is on.
+    if ! [ -f $PIER/.http.ports ] ; then
+      $PIER/.run --no-tty&
+      while ! [ -f $PIER/.http.ports ] ; do
+        echo "Waiting for $PIER to boot before I can send instructions..."
+        sleep 1
+      done
+    fi
+    port=$(cat $PIER/.http.ports | grep loopback | tr -s ' ' '\n' | head -n 1)
+    # Now, the commands themselves:
+    lensa 'hood' "+hood/new-desk %$DESK"
+    lensa 'hood' "+hood/mount %$DESK"
     lensa 'hood' "+hood/commit %$DESK"
+    lensa 'hood' "+hood/install our %$DESK"
+
     if [ "$GLOBBER" ]; then
         lensd '-garden!make-glob %globber /turf'
         GLOBS="$PIER/.urb/put"
