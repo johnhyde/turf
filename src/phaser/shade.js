@@ -9,7 +9,8 @@ export class Shade extends Phaser.GameObjects.Image {
       // this.destroy();
       return undefined;
     } else {
-      this.setDisplayOrigin(form.offset.x, form.offset.y);
+      this.offset = vec2(form.offset).add(vec2(shade.offset));
+      this.setDisplayOrigin(this.offset.x, this.offset.y);
       this.setDepth(shade.pos.y);
       this.setScale(factor);
       if (add) {

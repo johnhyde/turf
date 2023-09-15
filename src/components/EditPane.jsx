@@ -7,11 +7,12 @@ import Button from '@/Button';
 import FormEditor from '@/FormEditor';
 import ShadeEditor from '@/ShadeEditor';
 import FormSelect from '@/FormSelect';
+import FormInfo from '@/FormInfo';
+import MediumButton from '@/MediumButton';
 import point from 'assets/icons/point.png';
 import erase from 'assets/icons/delete.png';
 import cycle from 'assets/icons/cycle.png';
 import resize from 'assets/icons/resize.png';
-import MediumButton from './MediumButton';
 
 export default function EditPane() {
   const state = useState();
@@ -33,7 +34,13 @@ export default function EditPane() {
     if (formId === null) state.selectTool(null);
   }
   const entries = () => Object.entries(state.e?.skye || {});
-  const formsByType = (type) => entries().filter(([id, form]) => form.type === type && id !== '/portal');
+  const formsByType = (type) => {
+    return entries()
+      .filter(([id, form]) => form.type === type && id !== '/portal')
+      .sort(([a, formA], [b, formB]) => {
+        return a > b ? 1 : (a < b ? -1 : 0);
+      });
+  };
   const types = ['tile', 'item', 'wall'];
 
   const selectedShade = createMemo(() => {
@@ -144,6 +151,11 @@ export default function EditPane() {
         </MediumButton>
       }
       <FormEditor form={newForm} $form={$newForm} skye={state.e?.skye} />
+      <Show when={state.editor.selectedFormId}>
+        <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
+          <FormInfo formId={state.editor.selectedFormId} />
+        </div>
+      </Show>
       <Show when={selectedShade()} keyed>
         {(shade) => <ShadeEditor shade={shade} />}
       </Show>

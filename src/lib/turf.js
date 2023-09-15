@@ -113,7 +113,7 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
-export function getEffectsByShade(turf, shade) {
+export function getEffectsByHusk(turf, shade) {
   const form = turf.skye[shade.formId];
   if (!form) return {
     fullFx: shade.effects,

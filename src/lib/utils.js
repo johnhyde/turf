@@ -166,6 +166,39 @@ export function stripPathPrefix(path) {
   return path.replace(/\/[^/]+\//, '');
 }
 
+export function truncateString(str, maxLength) {
+  if (str.length > maxLength) {
+    const truncated = str.slice(0, maxLength - 3);
+    return truncated + '...';
+  }
+  return str;
+}
+
+export function getDateString(date, short = true) {
+  const today = new Date();
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = (hours > 11 && hours !== 24) ? 'pm' : 'am';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const time = `${hours}:${minutes}${ampm}`;
+  if (
+    short &&
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  ) {
+    return time;
+  } else {
+    // const year = date.getFullYear().toString().slice(2);
+    const months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+    const month = months[date.getMonth()];
+    const day = String(date.getDate()).padStart(2, '0');
+    // return `${time} ${day}.${month}.${year}`;
+    return `${time} ${month} ${day}`;
+  }
+}
+
 
 /** Random global functions
  *  @namespace Random */

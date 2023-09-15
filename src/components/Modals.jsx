@@ -3,6 +3,7 @@ import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { stripPathPrefix, autofocus } from 'lib/utils';
 import Modal from '@/Modal';
+import MediumButton from './MediumButton';
 
 export default function Modals() {
   const state = useState();
@@ -19,23 +20,6 @@ export default function Modals() {
   function goHome() {
     state.mist.goHome();
   }
-
-  // document.addEventListener('keydown', (e) => {
-  //   if (!e.defaultPrevented && !isTextInputFocused()) {
-  //     if (e.code === 'Escape') {
-  //         selectTab(null);
-  //         e.preventDefault();
-  //       }
-  //     }
-  //     switch (e.key) {
-  //       case 'p':
-  //         toggleTab(state.tabs.LAB);
-  //         openSidebar();
-  //       break;
-  //       default:
-  //     }
-  //   }
-  // });
 
   return (
     <>
@@ -110,6 +94,18 @@ export default function Modals() {
           <p class="italic">
             You can change this setting at any time from the <span class="font-bold">?</span> tab.
           </p>
+        </Modal>
+      </Show>
+      <Show when={state.text}>
+        <Modal class="border-yellow-950 border-4 rounded-md bg-yellow-700" onClose={() => state.displayText(null)}>
+          <p class="text-xl mb-4 text-center">
+            {state.text}
+          </p>
+          <div class="mt-4 text-center">
+            <MediumButton onClick={() => state.displayText(null)}>
+              Close
+            </MediumButton>
+          </div>
         </Modal>
       </Show>
     </>

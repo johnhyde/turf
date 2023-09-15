@@ -1,8 +1,8 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, near, pixelsToTiles, swapAxes, sleep, tintImage } from 'lib/utils';
-import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
+import { vec2, near, pixelsToTiles, swapAxes, truncateString, sleep, tintImage } from 'lib/utils';
+import { isInTurf, getShadeWithForm, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
 import { Shade } from "./shade";
@@ -35,7 +35,7 @@ async function loadImage(id, url, ...args) {
 }
 
 async function loadImageUnsafe(id, url, config = {}) {
-  console.log("trying to load image: " + id)
+  // console.log("trying to load image: " + id)
   const changeColor = config.color !== undefined && game.renderer.type === Phaser.CANVAS;
   if (game.textures.exists(id)) {
     if (changeColor) {
@@ -134,6 +134,28 @@ function createShade(shade, id, turf) {
       }
     })
   }
+  let textObj;
+  function addText(text, limit = 21) {
+    text = truncateString(text, limit);
+    if (!textObj) {
+      textObj = scene.make.text({ text, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    '--webkit-font-smoothing': 'none' }});
+      textObj.x = sprite.x;
+      textObj.y = sprite.y;
+      textObj.setDepth(sprite.depth);
+      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 - sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
+      scene.add.existing(textObj);
+    } else {
+      textObj.setText(text);
+    }
+  }
+
+  function removeText() {
+    if (textObj) {
+      textObj.destroy();
+      textObj = null;
+    }
+  }
 
   // here "touch" means that the shade was touched by the cursor
   // as it passed through or clicked
@@ -158,9 +180,22 @@ function createShade(shade, id, turf) {
       if (!state.editor.selectedTool) {
         state.selectShade(id);
       }
+    } else {
+      state.huskInteract(shade);
     }
   }
   sprite.on('pointermove', (pointer) => {
+    if (state.e && shade) {
+      const effects = getEffectsByHusk(state.e, shade).fullFx;
+      if (effects.interact?.type === 'read') {
+          addText(effects.interact.arg);
+      } else if (effects.step?.type === 'port') {
+        const portal = state.e.portals[effects.step.arg];
+        if (portal) {
+          addText(portal.for.ship);
+        }
+      }
+    }
     if (pointer.isDown) {
       onTouch(pointer);
     }
@@ -168,6 +203,9 @@ function createShade(shade, id, turf) {
   sprite.on('pointerdown', (pointer) => {
     onTouch(pointer);
     onClick(pointer);
+  });
+  sprite.on('pointerout', (pointer) => {
+    removeText();
   });
   return sprite;
 }
@@ -184,7 +222,7 @@ function setGameSize() {
   }
   if (cam) {
     const oldZoom = cam.zoom;
-    const newZoom = 1/state.scale;
+    const newZoom = (window.devicePixelRatio/state.scale)/2;
     if (oldZoom !== newZoom) {
       cam.setZoom(newZoom);
       if (setBounds) setBounds();
@@ -208,7 +246,6 @@ export function startPhaser(_owner, _container) {
         pixelArt: true,
         roundPixels: true,
         backgroundColor: '#a6e4e8',
-        // zoom: 0.25,
         scene: {
           init,
           preload: preload,
@@ -226,7 +263,6 @@ export function startPhaser(_owner, _container) {
       window.game = game = new Phaser.Game(config);
 
       function init() {
-        // window.scene = scene = game.scene.scenes[0];
         window.scene = scene = this;
         window.cam = cam = scene.cameras.main;
         $loaded(true);
@@ -240,8 +276,6 @@ export function startPhaser(_owner, _container) {
       let updateTime;
       function create() {
         updateTime = Date.now();
-        // cursors = this.input.keyboard.createCursorKeys();
-        // keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
         keys = {
           f: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']),
         };
@@ -272,12 +306,10 @@ export function startPhaser(_owner, _container) {
           }
         }
         this.input.on('pointerdown', (pointer) => {
-            // draw = true;
             mapEdit(pointer);
         });
 
         this.input.on('pointerup', () => {
-            // draw = false;
         });
 
         this.input.on('pointermove', (pointer) => {
