@@ -82,14 +82,20 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
+      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] pointer-events-none z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show when={open()} fallback={(
         <div class="flex-grow">
-          <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
+          <div class="pointer-events-auto inline-block relative">
+            <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
+            {state.portals()?.from.length > 0 &&
+            <div
+              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+            />}
+          </div>
         </div>
       )}>
-        <div class={state.selectedTab ? 'pb-1 border-b border-yellow-950' : ''}>
+        <div class={'pointer-events-auto ' + (state.selectedTab ? 'pb-1 border-b border-yellow-950' : '')}>
           <Button
             onClick={closeSidebar}
             src={leftCaret}
@@ -113,12 +119,18 @@ function Sidebar() {
             selected={isSelected(state.tabs.EDITOR)}
             tooltip='E'
           />
-          <Button
-            onClick={[toggleTab, state.tabs.PORTALS]}
-            src={portal}
-            selected={isSelected(state.tabs.PORTALS)}
-            tooltip='G'
-          />
+          <div class="inline-block relative">
+            <Button
+              onClick={[toggleTab, state.tabs.PORTALS]}
+              src={portal}
+              selected={isSelected(state.tabs.PORTALS)}
+              tooltip='G'
+            />
+            {state.portals()?.from.length > 0 &&
+            <div
+              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+            />}
+          </div>
           <Button
             onClick={state.toggleSound.bind(state)}
             src={state.soundOn ? unmuted : muted}
@@ -126,7 +138,7 @@ function Sidebar() {
           />
         </div>
         <Show when={state.selectedTab}>
-          <div class="overflow-y-auto">
+          <div class="overflow-y-auto pointer-events-auto">
             <div class="my-1">
               {state.selectedTab === state.tabs.PORTALS && <PortalsPane/>}
               {state.editor.editing && <EditPane/>}
@@ -137,7 +149,9 @@ function Sidebar() {
         </Show>
         <ChatLog chats={state.e?.chats || []} context={state.selectedTab} />
       </Show>
-      <ChatBar />
+      <div class="pointer-events-auto">
+        <ChatBar />
+      </div>
     </div>
   );
 }

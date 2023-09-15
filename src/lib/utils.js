@@ -108,6 +108,14 @@ export function intToHex(color) {
   return '#' + color.toString(16).padStart(6, '0');
 }
 
+export function intToRGB(decimal) {
+  return {
+    red: (decimal >> 16) & 0xff,
+    green: (decimal >> 8) & 0xff,
+    blue: decimal & 0xff,
+  };
+}
+
 export function vecToStr(vec) {
   return vec.x + ',' + vec.y;
 }
@@ -156,6 +164,39 @@ export function jClone(obj) {
 
 export function stripPathPrefix(path) {
   return path.replace(/\/[^/]+\//, '');
+}
+
+export function truncateString(str, maxLength) {
+  if (str.length > maxLength) {
+    const truncated = str.slice(0, maxLength - 3);
+    return truncated + '...';
+  }
+  return str;
+}
+
+export function getDateString(date, short = true) {
+  const today = new Date();
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = (hours > 11 && hours !== 24) ? 'pm' : 'am';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const time = `${hours}:${minutes}${ampm}`;
+  if (
+    short &&
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  ) {
+    return time;
+  } else {
+    // const year = date.getFullYear().toString().slice(2);
+    const months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+    const month = months[date.getMonth()];
+    const day = String(date.getDate()).padStart(2, '0');
+    // return `${time} ${day}.${month}.${year}`;
+    return `${time} ${month} ${day}`;
+  }
 }
 
 
@@ -283,6 +324,7 @@ export function makeImage(url) {
       image.onload = () => createImageBitmap(image).then((bitmap) => {
         canvas.width = bitmap.width;
         canvas.height = bitmap.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(bitmap, 0, 0);
         
         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -301,4 +343,30 @@ export function makeImage(url) {
       reject(e);
     }
   })
+}
+
+export async function tintImage(image, color) {
+  const rgb = intToRGB(color);
+  canvas.width = image.width;
+  canvas.height = image.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0);
+  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    data[i] = (rgb.red * data[i])/256; // red
+    data[i + 1] = (rgb.green * data[i + 1])/256; // green
+    data[i + 2] = (rgb.blue * data[i + 2])/256; // blue
+  }
+  ctx.putImageData(imageData, 0, 0);
+  let dataUrl = canvas.toDataURL();
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      resolve(image);
+    };
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
 }

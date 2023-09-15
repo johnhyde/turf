@@ -4,6 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=1.0, minimum-scale=0.5, user-scalable=no, minimal-ui">
     <meta name="theme-color" content="#000000" />
+    <meta 
+      http-equiv="Content-Security-Policy" 
+      content="
+        default-src * 'unsafe-eval' 'unsafe-inline';
+        connect-src 'self';
+        font-src 'self';
+        img-src * data:; 
+    ">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="shortcut icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">

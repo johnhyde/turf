@@ -2,7 +2,7 @@ import { createSignal, createContext, createEffect, createMemo, getOwner, runWit
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
-import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf';
+import { getWallsAtPos, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { Pond } from 'lib/pond';
 import { Mist } from 'lib/mist';
 
@@ -24,6 +24,7 @@ function initEditorState() {
 }
 
 export function getState() {
+  let portals;
   const [state, $state] = createStore({
     ponds: {},
     mist: new Mist('/mist'),
@@ -79,6 +80,7 @@ export function getState() {
       return Math.pow(2, Math.round(this.scaleLog));
     },
     notifications: [],
+    text: null,
     soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
     get current() {
       const parent = this;
@@ -130,6 +132,42 @@ export function getState() {
     get v() {
       return this.c.vapor;
     },
+    get portals() {
+      return portals;
+    },
+  });
+
+  portals = createMemo(() => {
+    const sort = (p1, p2) => { return p1.id - p2.id; };
+    const portalsDraft = [];
+    const portalsTo = [];
+    const portalsFrom = [];
+    const portalsWith = [];
+    Object.entries(state.e?.portals || {}).forEach(([portalId, portal]) => {
+      const portalObj = {
+        id: Number.parseInt(portalId),
+        ...portal
+      };
+      if (portal.shadeId !== null) {
+        if (portal.at !== null) {
+          portalsWith.push(portalObj);
+        } else {
+          portalsTo.push(portalObj);
+        }
+      } else {
+        if (portal.at !== null) {
+          portalsFrom.push(portalObj);
+        } else {
+          portalsDraft.push(portalObj);
+        }
+      }
+    });
+    return {
+      draft: portalsDraft.sort(sort),
+      to: portalsTo.sort(sort),
+      from: portalsFrom.sort(sort),
+      with: portalsWith.sort(sort),
+    };
   });
 
   const selectedTab = () => state.selectedTab;
@@ -295,6 +333,17 @@ export function getState() {
         [vec2(pos).add(vec2(0, -1)), y ? 1 : 0, n ? 14 : 15],
       ];
       poses.forEach((p) => this.updateWallsAtPos(...p));
+    },
+    huskInteract(husk) {
+      if (this.e && husk) {
+        const effects = getEffectsByHusk(this.e, husk).fullFx;
+        if (effects.interact?.type === 'read') {
+          this.displayText(effects.interact.arg);
+        }
+      }
+    },
+    displayText(text) {
+      $state('text', text);
     },
     createBridge(shade, portal, trigger='step') {
       this.sendPondWave('create-bridge', { shade, trigger, portal });

@@ -113,7 +113,7 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
-export function getEffectsByShade(turf, shade) {
+export function getEffectsByHusk(turf, shade) {
   const form = turf.skye[shade.formId];
   if (!form) return {
     fullFx: shade.effects,
@@ -173,27 +173,27 @@ export function extractSkyeTileSprites(skye) {
   return sprites;
 }
 
-function addFormSprites(sprites, form, formId, patp) {
+function addFormSprites(sprites, form, formId, patp, config = {}) {
   form.variations.forEach((variation, i) => {
     if (variation) {
       const name = spriteName(formId, i, patp);
       if (typeof variation.sprite === 'string') {
-        sprites[name] = variation.sprite;
+        sprites[name] = { sprite: variation.sprite, config };
       } else {
-        sprites[name] = variation.sprite.frames.slice();
+        sprites[name] = { sprite: variation.sprite.frames.slice(), config };
       }
     }
   });
 }
 
-function addThingSprites(sprites, thing, patp) {
-  addFormSprites(sprites, thing.form, thing.formId, patp)
+function addThingSprites(sprites, thing, patp, config = {}) {
+  addFormSprites(sprites, thing.form, thing.formId, patp, config)
 }
 
 export function extractPlayerSprites(players) {
   const sprites = {};
   Object.entries(players).forEach(([patp, player]) => {
-    addThingSprites(sprites, player.avatar.body.thing, patp);
+    addThingSprites(sprites, player.avatar.body.thing, patp, { color: player.avatar.body.color });
     player.avatar.things.forEach((thing) => {
       addThingSprites(sprites, thing, patp);
     });

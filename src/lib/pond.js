@@ -3,7 +3,7 @@ import { produce } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
-  clampToTurf, isInTurf, getCollision, getEffectsByShade,
+  clampToTurf, isInTurf, getCollision, getEffectsByHusk,
   generateHusk, jabBySpaces, delShade, delPortal
 } from 'lib/turf';
 import { vec2, vecToStr, jClone } from 'lib/utils';
@@ -229,7 +229,7 @@ const pondGrits = {
     const { shadeId, portalId } = arg;
     const shade = turf.cave[shadeId];
     if (shade) {
-      const { fullFx, huskFx, formFx } = getEffectsByShade(turf, shade);
+      const { fullFx, huskFx, formFx } = getEffectsByHusk(turf, shade);
       Object.entries(fullFx).forEach(([trigger, effect]) => {
         if (effect?.type === 'port' && effect?.arg === portalId) {
           shade[trigger] = 'port';

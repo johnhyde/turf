@@ -64,7 +64,7 @@
         %=  sign
           collidable  %.y
           offset  [--0 --6]
-          :: seeds  (malt [%step %read]~)
+          seeds  (malt [%interact %read]~)
         ==
       ::
         :-  /tree

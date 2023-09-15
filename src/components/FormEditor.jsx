@@ -126,10 +126,6 @@ export default function FormEditor(props) {
   }
 
   function onKeyDown(e) {
-    if (e.key === 'Escape' && form()) {
-      cancel();
-      e.stopPropagation();
-    }
     if (e.key === 'Enter' && form()) {
       if (urlInput === document.activeElement) {
         loadSprite();
@@ -148,7 +144,10 @@ export default function FormEditor(props) {
   let urlInput, uploader;
   return (
     <Show when={form()} keyed>
-      <Modal class="top-0 left-0 flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700" keydown={onKeyDown}>
+      <Modal
+        class="top-0 left-0 flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700"
+        onClose={cancel}
+      >
         <div>
           <p class="font-semibold">
             Item Name

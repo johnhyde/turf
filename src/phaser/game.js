@@ -1,8 +1,8 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, near, pixelsToTiles, swapAxes, sleep } from 'lib/utils';
-import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
+import { vec2, near, pixelsToTiles, swapAxes, truncateString, sleep, tintImage } from 'lib/utils';
+import { isInTurf, getShadeWithForm, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
 import { Shade } from "./shade";
@@ -34,9 +34,16 @@ async function loadImage(id, url, ...args) {
   }
 }
 
-async function loadImageUnsafe(id, url, isWall = false, config = {}) {
+async function loadImageUnsafe(id, url, config = {}) {
   // console.log("trying to load image: " + id)
-  if (game.textures.exists(id)) return;
+  const changeColor = config.color !== undefined && game.renderer.type === Phaser.CANVAS;
+  if (game.textures.exists(id)) {
+    if (changeColor) {
+      game.textures.removeKey(id);
+    } else {
+      return;
+    }
+  }
   return new Promise(async (resolve, reject) => {
     const onError = (key) => {
       console.error('could not load image', key);
@@ -44,79 +51,55 @@ async function loadImageUnsafe(id, url, isWall = false, config = {}) {
         reject('could not load image: ' + key);
       }
     };
-    // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, (texture) => {
-    //   // console.log('loaded image', id);
-    //   resolve();
-    // });
-    game.textures.addListener(Phaser.Textures.Events.LOAD, (key, texture) => {
-      if (id === key) {
-        // console.log('loaded image', id, texture.source?.[0]?.image?.complete);
-        if (texture.source?.[0]?.image && !texture.source[0].image.complete) {
-          console.log('wtf', id);
-          const oldOnLoad = texture.source[0].image.onload;
-          texture.source[0].image.onload = () => {
-            console.log('image finally loaded', id);
-            resolve();
-            oldOnLoad();
-          }
-        } else {
-          // console.log('loaded!');
-          resolve();
-        }
-      }
-    });
+    game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
     try {
-      if (isWall) {
+      // if (config.isWall) {
+      //   const img = new Image();
+      //   img.onload = () => game.textures.addSpriteSheet(id, img, {
+      //     frameWidth: 32,
+      //     frameHeight: 64,
+      //     ...config,
+      //   });
+      //   img.onabort = () => onError(id);
+      //   img.onerror = () => onError(id);
+      //   img.src = url;
+      // } else {
+      if (!Array.isArray(url)) url = [url];
+      let images = [], promises = [];
+      images = await Promise.all(url.map((u) => {
         const img = new Image();
-        img.onload = () => game.textures.addSpriteSheet(id, img, {
-          frameWidth: 32,
-          frameHeight: 64,
-          ...config,
+        return new Promise((resolve, reject) => {
+          const onError = (e) => {
+            console.error('could not load image: ' + u, e);
+            reject(e);
+          }
+          img.onload = () => resolve(img);
+          img.onerror = onError;
+          img.onabort = onError;
+          img.src = u;
         });
-        img.onabort = () => {
-          console.log('aborted');
-          onError(id);
-        }
-        img.onerror = () => onError(id);
-        img.src = url;
-      } else {
-        if (!Array.isArray(url)) url = [url]
-        if (Array.isArray(url)) {
-          const images = [], promises = [];
-          url.forEach((u) => {
-            const img = new Image();
-            promises.push(new Promise((resolve, reject) => {
-              const onError = (e) => {
-                console.error('could not load image: ' + u, e);
-                reject(e);
-              }
-              img.onload = resolve;
-              img.onerror = onError;
-              img.onabort = onError;
-            }));
-            img.src = u;
-            images.push(img);
-          });
-          await Promise.all(promises);
-          while (!images.every(i => i.complete)) {
-            console.log('waiting for images to load for some reason');
-            await sleep(10);
-          }
-          const texture = game.textures.create(id, images, images[0].width, images[0].height);
-          if (!texture) reject('could not create texture for: ' + url[0]);
-          images.forEach((img, i) => {
-            texture.add(i, i, 0, 0, img.width, img.height);
-          })
-          if (images.length === 1) {
-            const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
-            frame.setTrim(frame.width, frame.height, 0, 1, frame.width, frame.height)
-          }
-          resolve();
-        } else {
-          game.textures.addBase64(id, url);
+      }));
+      if (changeColor) {
+        images = await Promise.all(images.map(img => tintImage(img, config.color)));
+        if (game.textures.exists(id)) {
+          game.textures.removeKey(id);
         }
       }
+      const texture = game.textures.create(id, images, images[0].width, images[0].height);
+      if (!texture) reject('could not create texture for: ' + url[0]);
+      images.forEach((img, i) => {
+        texture.add(i, i, 0, 0, img.width, img.height);
+        if (i === 0) {
+          texture.add('__BASE', i, 0, 0, img.width, img.height);
+        }
+      })
+      if (images.length === 1) {
+        const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
+        frame.setTrim(frame.width, frame.height, 0, 1, frame.width, frame.height)
+      }
+      resolve();
+      // }
     } catch (e) {
       if (!game.textures.exists(id)) reject(e);
     }
@@ -151,6 +134,28 @@ function createShade(shade, id, turf) {
       }
     })
   }
+  let textObj;
+  function addText(text, limit = 21) {
+    text = truncateString(text, limit);
+    if (!textObj) {
+      textObj = scene.make.text({ text, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    '--webkit-font-smoothing': 'none' }});
+      textObj.x = sprite.x;
+      textObj.y = sprite.y;
+      textObj.setDepth(sprite.depth);
+      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 - sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
+      scene.add.existing(textObj);
+    } else {
+      textObj.setText(text);
+    }
+  }
+
+  function removeText() {
+    if (textObj) {
+      textObj.destroy();
+      textObj = null;
+    }
+  }
 
   // here "touch" means that the shade was touched by the cursor
   // as it passed through or clicked
@@ -175,9 +180,22 @@ function createShade(shade, id, turf) {
       if (!state.editor.selectedTool) {
         state.selectShade(id);
       }
+    } else {
+      state.huskInteract(shade);
     }
   }
   sprite.on('pointermove', (pointer) => {
+    if (state.e && shade) {
+      const effects = getEffectsByHusk(state.e, shade).fullFx;
+      if (effects.interact?.type === 'read') {
+          addText(effects.interact.arg);
+      } else if (effects.step?.type === 'port') {
+        const portal = state.e.portals[effects.step.arg];
+        if (portal) {
+          addText(portal.for.ship);
+        }
+      }
+    }
     if (pointer.isDown) {
       onTouch(pointer);
     }
@@ -185,6 +203,9 @@ function createShade(shade, id, turf) {
   sprite.on('pointerdown', (pointer) => {
     onTouch(pointer);
     onClick(pointer);
+  });
+  sprite.on('pointerout', (pointer) => {
+    removeText();
   });
   return sprite;
 }
@@ -201,7 +222,7 @@ function setGameSize() {
   }
   if (cam) {
     const oldZoom = cam.zoom;
-    const newZoom = 1/state.scale;
+    const newZoom = (window.devicePixelRatio/state.scale)/2;
     if (oldZoom !== newZoom) {
       cam.setZoom(newZoom);
       if (setBounds) setBounds();
@@ -218,13 +239,13 @@ export function startPhaser(_owner, _container) {
       console.log('container', container.clientWidth, container.clientHeight);
       var config = {
         type: Phaser.AUTO,
+        // type: Phaser.CANVAS,
         parent: container,
         width: ~~container.clientWidth || 500,
         height: ~~container.clientHeight || 500,
         pixelArt: true,
         roundPixels: true,
         backgroundColor: '#a6e4e8',
-        // zoom: 0.25,
         scene: {
           init,
           preload: preload,
@@ -242,7 +263,6 @@ export function startPhaser(_owner, _container) {
       window.game = game = new Phaser.Game(config);
 
       function init() {
-        // window.scene = scene = game.scene.scenes[0];
         window.scene = scene = this;
         window.cam = cam = scene.cameras.main;
         $loaded(true);
@@ -256,8 +276,6 @@ export function startPhaser(_owner, _container) {
       let updateTime;
       function create() {
         updateTime = Date.now();
-        // cursors = this.input.keyboard.createCursorKeys();
-        // keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
         keys = {
           f: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']),
         };
@@ -288,12 +306,10 @@ export function startPhaser(_owner, _container) {
           }
         }
         this.input.on('pointerdown', (pointer) => {
-            // draw = true;
             mapEdit(pointer);
         });
 
         this.input.on('pointerup', () => {
-            // draw = false;
         });
 
         this.input.on('pointermove', (pointer) => {
@@ -350,7 +366,6 @@ export function startPhaser(_owner, _container) {
       const state = useState();
       window.state = state;
 
-      // window.addEventListener('resize', setGameSize, false);
       new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
       game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
@@ -361,7 +376,9 @@ export function startPhaser(_owner, _container) {
           return {
             ...extractPlayerSprites(state.e.players),
             ...extractSkyeSprites(state.e.skye),
-            void: voidUrl,
+            void: {
+              sprite: voidUrl,
+            },
           };
         },
         async (sprites) => {
@@ -426,8 +443,8 @@ export function startPhaser(_owner, _container) {
   });
 
   async function loadSprites(sprites) {
-    const promises = Object.entries(sprites).map(([id, sprite]) => {
-      return loadImage(id, sprite);
+    const promises = Object.entries(sprites).map(([id, { sprite, config }]) => {
+      return loadImage(id, sprite, config);
     });
     return Promise.all(promises);
   }
