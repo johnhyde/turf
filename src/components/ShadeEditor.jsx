@@ -138,7 +138,7 @@ function ArgInput(props) {
             <SmallButton onClick={[props.setArg, null]} >x</SmallButton>
           </Match>
           <Match when={props.type === 'read'}>
-            <input
+            <textarea
               class="rounded-input max-w-[160px]"
               use:input
               use:bind={[
