@@ -211,7 +211,7 @@ function createShade(shade, id, turf) {
 }
 
 function setGameSize() {
-  console.log('resized')
+  // console.log('resized')
   const el = game.scale.isFullscreen ? game.canvas.parentElement : container;
   const width = ~~(window.devicePixelRatio * el.clientWidth);
   const height = ~~(window.devicePixelRatio * el.clientHeight);
@@ -565,7 +565,7 @@ export function startPhaser(_owner, _container) {
         } else {
           if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
             shadeObject.setTexture(sprite);
-            console.log('updated shade at', shadeData.pos)
+            // console.log('updated shade at', shadeData.pos)
           }
         }
       });

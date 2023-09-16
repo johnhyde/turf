@@ -20,8 +20,10 @@ export class Player extends Phaser.GameObjects.Container {
     this.patp = patp;
     this.isUs = patp === our;
     if (this.isUs) {
-      this.cursors = scene.input.keyboard.createCursorKeys();
-      this.keys = scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
+      this.keys = {
+        ...scene.input.keyboard.createCursorKeys(),
+        ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
+      };
       scene.cameras.main.startFollow(this);
     }
     this.loadPlayerSprites = load;
@@ -65,7 +67,7 @@ export class Player extends Phaser.GameObjects.Container {
         if (pos) {
           // make sure to use x and y so solid knows to track them
           // we aren't tracking player, so that's no help
-          console.log('new player pos', pos.x, pos.y)
+          // console.log('new player pos', pos.x, pos.y)
           this.tilePos = vec2(pos.x, pos.y)
         }
       });
@@ -143,7 +145,7 @@ export class Player extends Phaser.GameObjects.Container {
       spriteDirs.forEach((key, i) => {
         if (!key) return;
         let frameKeys = Object.keys(game.textures.get(key).frames);
-        const frames = frameKeys.map((frame) => { return { key, frame }});
+        const frames = frameKeys.map((frame) => { return { key, frame }}).filter(({ frame }) => frame !== '__BASE');
         sprite.anims.create({
           key: dirs[i],
           frames,
@@ -215,6 +217,9 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   preUpdate(time, dt) {
+    if (!game.input.keyboard.enabled && this.keys) {
+      Object.values(this.keys).forEach(k => k.reset());
+    }
     //Action queue retirement here. The objects in the action queue are just grits.
     //The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. 
     //So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
@@ -255,19 +260,19 @@ export class Player extends Phaser.GameObjects.Container {
       const newTilePos = vec2(this.tilePos);
       let newDir;
       if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
-        if (this.cursors.left.isDown || this.keys.a.isDown) {
+        if (this.keys.left.isDown || this.keys.a.isDown) {
           newDir = dirs.LEFT;
           newTilePos.x--;
         }
-        if (this.cursors.right.isDown || this.keys.d.isDown) {
+        if (this.keys.right.isDown || this.keys.d.isDown) {
           newDir = dirs.RIGHT;
           newTilePos.x++;
         }
-        if (this.cursors.up.isDown || this.keys.w.isDown) {
+        if (this.keys.up.isDown || this.keys.w.isDown) {
           newDir = dirs.UP;
           newTilePos.y--;
         }
-        if (this.cursors.down.isDown || this.keys.s.isDown) {
+        if (this.keys.down.isDown || this.keys.s.isDown) {
           newDir = dirs.DOWN;
           newTilePos.y++;
         }
