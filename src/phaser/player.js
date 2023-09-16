@@ -182,11 +182,11 @@ export class Player extends Phaser.GameObjects.Container {
             }
             if (this.walking()) {
               if (sprite.anims && !sprite.anims.isPlaying) {
-                sprite.anims.resume(sprite.anims.currentAnim?.getFrameAt(1));
+                sprite.anims.resume(newAnim?.getFrameAt(1));
               }
             } else {
               if (sprite.anims.isPlaying) {
-              sprite.anims.pause(sprite.anims.currentAnim?.getFrameAt(0));
+                sprite.anims.pause(newAnim?.getFrameAt(0));
               }
             }
           } else {
@@ -222,11 +222,6 @@ export class Player extends Phaser.GameObjects.Container {
       this.actionQueue = [];
       console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
     }
-    while(this.actionQueue[0]?.arg.ship === our) {
-      //Filter out actions we originated. Actually, it's not clear this is robust; maybe other things can `move` or `face` our player? Environmental hazards or whatever?
-      //This code could be refactored so the aforementioned event handlers (or, eventually, possibly, the event-firing code) are responsible for filtering out events that we originated, so that we only get foreign events and this while loop becomes unnecessary.
-      this.actionQueue.shift();
-    }
     while(this.actionQueue[0]?.type === "face") {
       this.$apparentDir(this.actionQueue[0].arg.dir);
       this.actionQueue.shift();
@@ -236,16 +231,18 @@ export class Player extends Phaser.GameObjects.Container {
     }
     const speed = 170*factor;
     let justMoved = false;
-    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
+    let targetPos = () => vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
-    if (this.dPos.equals(targetPos)) {
+    if (this.dPos.equals(targetPos())) {
       this.actionQueue.shift(); //Remove the item from the action queue
-    } else { //just move like regular
-      const dif = vec2(targetPos).subtract(this.dPos);
+    }
+    if (!this.dPos.equals(targetPos())) {
+      //just move like regular
+      const dif = vec2(targetPos()).subtract(this.dPos);
       let step = speed * dt / 1000;
       if (step > dif.length()) {
-        this.dPos = vec2(targetPos);
-        this.setPosition(targetPos.x, targetPos.y);
+        this.dPos = vec2(targetPos());
+        this.setPosition(targetPos().x, targetPos().y);
       } else {
         const change = vec2(dif).normalize().scale(step);
         this.dPos.add(change);
@@ -257,7 +254,7 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.isUs) {
       const newTilePos = vec2(this.tilePos);
       let newDir;
-      if (this.dPos.equals(targetPos)) {
+      if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
         if (this.cursors.left.isDown || this.keys.a.isDown) {
           newDir = dirs.LEFT;
           newTilePos.x--;
@@ -286,6 +283,7 @@ export class Player extends Phaser.GameObjects.Container {
         }
         if (tilePosChanged && (!this.turning || justMoved)) {
           this.s.setPos(newTilePos);
+          justMoved = true;
         }
       }
     }

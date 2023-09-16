@@ -362,12 +362,15 @@
 ++  get-things
   |=  [=turf pos=svec2]
   ^-  (list thing)
-  %+  murn  (get-shades turf pos)
-  |=  =shade
-  =/  form  (get-form turf form-id.shade)
+  =/  space  (get-space spaces.plot.turf pos)
+  =/  husks=(list husk)
+    (turn (get-shades turf pos) |=(=shade +.shade))
+  =.  husks  ?~(tile.space husks [u.tile.space husks])
+  %+  murn  husks
+  |=  =husk
+  =/  form  (get-form turf form-id.husk)
   ?~  form  ~
-  `[+.shade u.form]
-  
+  `[husk u.form]
 ::
 ++  get-collidable
   |=  [=turf pos=svec2]

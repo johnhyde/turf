@@ -82,6 +82,7 @@ export function getState() {
     notifications: [],
     text: null,
     soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
+    portOffer: null,
     get current() {
       const parent = this;
       const current = {
@@ -224,6 +225,9 @@ export function getState() {
       if (this.mist) {
         return this.mist.sendWave(type, arg, id);
       }
+    },
+    setPortOffer(portOffer) {
+      $state('portOffer', portOffer);
     },
     sendChat(message) {
       this.sendPondWave('send-chat', {
@@ -446,6 +450,19 @@ export function getState() {
 
   createEffect(() => {
     localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
+  });
+
+  window.addEventListener('pond-roar-port-offer', ({ roar, turfId }) => {
+    const { ship, from, for: forId, at } = roar.arg;
+    if (ship !== our) return;
+    setTimeout(() => {
+      _state.setPortOffer({
+        for: forId,
+        of: turfId,
+        from,
+        at,
+      });
+    }, 200);
   });
 
   return _state;

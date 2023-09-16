@@ -14,7 +14,12 @@ export class Mist { // we use a class so we can put it inside a store without ge
     const apiSendWave = (...args) => {
       api.sendMistWave(id, ...args);
     };
-    this._ = getPool(washMist, null, apiSendWave, filters(this), options);
+    options = {
+      ...options,
+      // preFilters,
+      filters: filters(this),
+    };
+    this._ = getPool(washMist, null, apiSendWave, options);
     this.$ = this._.$;
     const [local, { mutate, refetch }] = createResource(api.getLocal);
     this._local = local;
@@ -87,15 +92,15 @@ export class Mist { // we use a class so we can put it inside a store without ge
     });
   }
 
-  acceptPortOffer() {
-    if (this.vapor?.portOffer) {
-      this.sendWave('accept-port-offer', this.vapor.portOffer.for);
+  acceptPortOffer(portOffer) {
+    if (portOffer) {
+      this.sendWave('accept-port-offer', portOffer.for);
     }
   }
 
-  rejectPortOffer() {
-    if (this.vapor?.portOffer) {
-      this.sendWave('reject-port-offer', this.vapor.portOffer.for);
+  rejectPortOffer(portOffer) {
+    if (portOffer) {
+      this.sendWave('reject-port-offer', portOffer.for);
     }
   }
 
@@ -180,29 +185,32 @@ export function _washMist(grit) {
   });
 }
 
-// returns an object of functions which
-// return false if goal is rejected
-// otherwise, returns a pair of [goal, grit]
-// or, more commonly, a single goal/grit
+// These simulate the filters on the ship
+// returns either
+// Array<grit>
+//   or
+// {
+//   roars: Array<roar>, // side-effects
+//   grits: Array<grit>, // what grits does this translate to?
+//   goals: Array<goal>, // what sub-goals does this trigger?
+// }
 function filters(mistPool) {
   return {
     'add-thing-from-closet': (mist, goal) => {
       const formId = goal.arg;
       const form = mistPool.closet?.[formId];
-      const husk = {
-        ...generateHusk(formId),
-        form,
-      }
       if (!form) {
-        return false;
+        return [];
       } else {
+        const husk = {
+          ...generateHusk(formId),
+          form,
+        };
         return [
-          goal,
-          {
-            type: 'add-thing',
-            arg: husk,
-          }
-        ]
+        {
+          type: 'add-thing',
+          arg: husk,
+        }];
       }
     }
   };

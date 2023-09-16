@@ -4,9 +4,10 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
   clampToTurf, isInTurf, getCollision, getEffectsByHusk,
-  generateHusk, jabBySpaces, delShade, delPortal
+  generateHusk, jabBySpaces, delShade, delPortal,
+  getThingsAtPos, getEffectsByThing,
 } from 'lib/turf';
-import { vec2, vecToStr, jClone } from 'lib/utils';
+import { vec2, vecToStr, jClone, turfIdToPath } from 'lib/utils';
 import { getPool } from 'lib/pool';
 
 function getTurfGrid(turf) {
@@ -39,8 +40,16 @@ export class Pond { // we use a class so we can put it inside a store without ge
       ...options,
       onNew: () => $isNew(true),
       onNewGrits: (grits) => {
-        grits.forEach((grit) => window.dispatchEvent(new PondGritEvent(grit)));
+        grits.forEach((grit) => window.dispatchEvent(new PondEvent('grit', grit, id)));
       },
+      onNewFakeGrits: (grits) => {
+        grits.forEach((grit) => window.dispatchEvent(new PondEvent('fakeGrit', grit, id)));
+      },
+      onNewRoars: (roars) => {
+        roars.forEach((roar) => window.dispatchEvent(new PondEvent('roar', roar, id)));
+      },
+      preFilters,
+      filters,
     };
     const wash = (update, grits) => {
       update((turf) => {
@@ -56,7 +65,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     const apiSendWave = (...args) => {
       return api.sendPondWave(id, ...args);
     };
-    this._ = getPool(wash, hydrate, apiSendWave, filters, options);
+    this._ = getPool(wash, hydrate, apiSendWave, options);
     this.$ = this._.$;
 
     this._grid = createMemo(() => {
@@ -347,17 +356,19 @@ export function _washTurf(grit) {
   }
 }
 
-export class PondGritEvent extends Event {
-  constructor(grit, options = {}) {
-    super('pond-' + grit.type, options);
-    this.grit = grit;
+export class PondEvent extends Event {
+  constructor(name, event, id, options = {}) {
+    super(`pond-${name}-` + event.type, options);
+    this[name] = event;
+    this.turfId = id;
   }
 }
 
+// These pre-filter goals which the ship might allow
+// but which we don't want to send
 // returns false if goal is rejected
-// otherwise, returns a pair of [goal, grit]
-// or, more commonly, a single goal/grit
-const filters = {
+// otherwise, returns the goal (possibly modified)
+const preFilters = {
   'add-husk': (turf, goal) => {
     const { pos, formId } = goal.arg;
     if (!isInTurf(turf, pos)) return false;
@@ -371,36 +382,162 @@ const filters = {
     }
     return false;
   },
+};
+
+// These simulate the filters on the ship
+// returns either
+// Array<grit>
+//   or
+// {
+//   roars: Array<roar>, // side-effects
+//   grits: Array<grit>, // what grits does this translate to?
+//   goals: Array<goal>, // what sub-goals does this trigger?
+// }
+const filters = {
+  'create-bridge': (turf, goal) => {
+    const { shade, trigger, portal } = goal.arg;
+    const shadeExists = typeof shade !== 'object';
+    const portalExists = typeof portal !== 'object';
+    let shadeId, portalId;
+    let goals = [];
+    shadeId = Number(shadeExists ? shade : turf.stuffCounter);
+    if (portalExists) {
+      portalId = Number(portal);
+    } else {
+      portalId = Number(turf.stuffCounter);
+      if (!shadeExists) portalId++;
+    }
+    if (!shadeExists) {
+      goals.push({
+        type: 'add-husk',
+        arg: shade,
+      });
+    }
+    if (!shadeExists) {
+      goals.push({
+        type: 'add-portal',
+        arg: {
+          for: portal,
+          at: null,
+        },
+      });
+    }
+    goals = [
+      ...goals,
+      {
+        type: 'set-shade-effect',
+        arg: {
+          shadeId,
+          trigger,
+          effect: {
+            type: 'port',
+            arg: portalId,
+          },
+        },
+      },
+      { // TODO: don't add this here, but in a filter on 'set-shade-effect'
+        type: 'add-shade-to-portal',
+        arg: {
+          from: portalId,
+          shadeId,
+        },
+      },
+    ];
+    return {
+      roars: [],
+      grits: [],
+      goals,
+    };
+  },
+  'send-chat': (turf, goal) => {
+    return [{
+      type: 'chat',
+      arg: {
+        from: goal.arg.from,
+        at: Date.now(),
+        text: goal.arg.text,
+      }
+    }];
+  },
   'move': (turf, goal) => {
     const { ship, pos } = goal.arg;
     const player = turf.players[ship];
-    if (!player) return false;
+    if (!player) return [];
     const newPos = clampToTurf(turf, pos);
     const playerColliding = getCollision(turf, player.pos);
     const willBeColliding = getCollision(turf, newPos);
-    if (willBeColliding && !playerColliding) return false;
-    if (newPos.equals(player.pos)) return false;
+    if (willBeColliding && !playerColliding) return [];
+    if (newPos.equals(player.pos)) return [];
     goal.arg.pos = newPos;
-    return goal;
+    const leave = pullTrigger(turf, ship, 'leave', player.pos);
+    const step = pullTrigger(turf, ship, 'step', newPos);
+    return {
+      roars: [...leave.roars, ...step.roars],
+      grits: [goal],
+      goals: [...leave.goals, ...step.goals],
+    };
   },
-  'send-chat': (turf, goal) => {
-    return [
-      goal,
-      {
-        type: 'chat',
+  'add-port-offer': (turf, goal) => {
+    const { ship, from } = goal.arg;
+    const portal = turf.portals?.[from];
+    if (!portal || !portal.at) return [];
+    return {
+      roars: [{
+        type: 'port-offer',
         arg: {
-          from: goal.arg.from,
-          at: Date.now(),
-          text: goal.arg.text,
+          ship,
+          from,
+          for: turfIdToPath(portal.for),
+          at: portal.at,
         }
-      },
-    ]
+      }],
+      grits: [goal],
+      goals: [],
+    };
   },
-  'create-bridge': (turf, goal) => {
-    // debugger;
-    return goal;
-  }
 };
+
+function pullTrigger(turf, ship, trigger, pos) {
+  const things = getThingsAtPos(turf, pos);
+  const effectsMap = things.map(getEffectsByThing);
+  let roars = [], goals = [];
+  effectsMap.forEach((effects) => {
+    const effect = effects.fullFx[trigger];
+    if (effect && effect.type) {
+      const res = applyEffect(turf, ship, effect);
+      roars = [...roars, ...res.roars];
+      goals = [...goals, ...res.goals];
+    }
+  });
+  return {
+    roars,
+    goals,
+  };
+}
+
+function applyEffect(turf, ship, effect) {
+  switch (effect.type) {
+    case 'port':
+      const portal = turf.portals[effect.arg];
+      if (!portal || !portal.at) return { roars: [], goals: [] };
+      return {
+        roars: [],
+        goals: [{
+          type: 'add-port-offer',
+          arg: { ship, from: effect.arg },
+        }],
+      };
+    case 'jump':
+      return {
+        roars: [],
+        goals: [{
+          type: 'move',
+          arg: { ship, pos: effect.arg },
+        }],
+      };
+    default:
+  }
+}
 
 // We mutate everything I guess!
 const js = {

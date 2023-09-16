@@ -330,16 +330,25 @@ export function startPhaser(_owner, _container) {
         gritController.abort();
         gritController = new AbortController();
 
-        addGritListener('pond-ping-player', (e) => {
+        addGritListener('pond-grit-ping-player', (e) => {
           if (e.grit.arg.ship === our) {
             if (!this.sound.locked && state.soundOn) ping.play();
             state.notify(e.grit.arg.by + ' has pinged you!');
           }
         });
-        const moveQueuer = (e) => { if (players[e.grit.arg.ship]) players[e.grit.arg.ship].actionQueue.push(e.grit); };
-        addGritListener('pond-move', moveQueuer);
-        addGritListener('pond-face', moveQueuer);
-        addGritListener('pond-chat', (e) => {
+        const themMoveQueuer = (e) => {
+          const ship = e.grit.arg.ship;
+          if (ship !== our && players[ship]) players[ship].actionQueue.push(e.grit);
+        };
+        addGritListener('pond-grit-move', themMoveQueuer);
+        addGritListener('pond-grit-face', themMoveQueuer);
+        const usMoveQueuer = (e) => {
+          const ship = e.fakeGrit.arg.ship;
+          if (ship === our && players[ship]) players[ship].actionQueue.push(e.fakeGrit);
+        };
+        addGritListener('pond-fakeGrit-move', usMoveQueuer);
+        addGritListener('pond-fakeGrit-face', usMoveQueuer);
+        addGritListener('pond-grit-chat', (e) => {
           if (state.soundOn) {
             var msg = new SpeechSynthesisUtterance();
             msg.text = e.grit.arg.text;
