@@ -4,7 +4,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
   clampToTurf, isInTurf, getCollision, getEffectsByHusk,
-  generateHusk, jabBySpaces, delShade, delPortal,
+  generateHusk, jabBySpaces, delShade, delShadeFromSpace, delPortal,
   getThingsAtPos, getEffectsByThing,
 } from 'lib/turf';
 import { vec2, vecToStr, jClone, turfIdToPath } from 'lib/utils';
@@ -183,6 +183,16 @@ const pondGrits = {
   },
   'del-shade': (turf, arg) => {
     delShade(turf, arg.shadeId);
+  },
+  'move-shade': (turf, arg) => {
+    const { shadeId, pos } = arg;
+    const shade = turf.cave[shadeId];
+    if (shade) {
+      const oldPos = shade.pos;
+      shade.pos = pos;
+      delShadeFromSpace(turf, shadeId, oldPos);
+      jabBySpaces(turf, pos, space => space.shades.unshift(shadeId));
+    }
   },
   'cycle-shade': (turf, arg) => {
     const { shadeId, amount } = arg;

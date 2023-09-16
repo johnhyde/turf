@@ -20,6 +20,7 @@ function initEditorState() {
     selectedShadeId: null,
     selectedTool: null,
     portalToPlace: null,
+    movingShadeId: null,
   };
 }
 
@@ -52,6 +53,9 @@ export function getState() {
         ERASER: 'eraser',
         CYCLER: 'cycler',
         RESIZER: 'resizer',
+      },
+      get pointer() {
+        return this.selectedTool === null;
       },
       get brush() {
         return this.selectedTool === this.tools.BRUSH;
@@ -286,6 +290,12 @@ export function getState() {
         shadeId: Number.parseInt(shadeId),
       });
     },
+    moveShade(shadeId, pos) {
+      this.sendPondWave('move-shade', {
+        shadeId: Number.parseInt(shadeId),
+        pos: vec2(pos),
+      });
+    },
     cycleShade(shadeId, amount = 1) {
       this.sendPondWave('cycle-shade', {
         shadeId: Number.parseInt(shadeId),
@@ -413,6 +423,9 @@ export function getState() {
     },
     startPlacingPortal(portalId) {
       $state('editor', 'portalToPlace', portalId);
+    },
+    setMovingShadeId(shadeId) {
+      $state('editor', 'movingShadeId', shadeId);
     },
     toggleSound() {
       $state('soundOn', (muted) => !muted);

@@ -107,6 +107,7 @@ async function loadImageUnsafe(id, url, config = {}) {
   });
 }
 
+let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
   const { formId } = shade;
@@ -177,8 +178,9 @@ function createShade(shade, id, turf) {
   }
   function onClick(pointer) {
     console.log('got click on shade', id, formId);
+    lastClickedShadeId = id;
     if (state.editor.editing) {
-      if (!state.editor.selectedTool) {
+      if (state.editor.pointer) {
         state.selectShade(id);
       }
     } else {
@@ -310,12 +312,24 @@ export function startPhaser(_owner, _container) {
             mapEdit(pointer);
         });
 
-        this.input.on('pointerup', () => {
+        this.input.on('pointerup', (pointer) => {
+          if (state.editor.editing && state.editor.pointer && state.editor.movingShadeId) {
+            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+            state.moveShade(state.editor.movingShadeId, pos);
+            state.setMovingShadeId(null);
+          }
         });
 
         this.input.on('pointermove', (pointer) => {
           if (pointer.isDown) {
             mapEdit(pointer);
+            const pastMoveThreshold = pointer.getDistance() > 20/window.devicePixelRatio;
+            if (state.editor.editing && state.editor.pointer && !state.editor.movingShadeId) {
+              if (lastClickedShadeId && pastMoveThreshold) {
+                state.setMovingShadeId(lastClickedShadeId);
+              }
+            }
+            if (pastMoveThreshold) lastClickedShadeId = null;
           }
           if (preview) {
             preview.updatePointer(pointer);
@@ -566,8 +580,9 @@ export function startPhaser(_owner, _container) {
         } else {
           if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
             shadeObject.setTexture(sprite);
-            // console.log('updated shade at', shadeData.pos)
           }
+          const pos = vec2(shadeData.pos).scale(tileFactor);
+          shadeObject.setPosition(pos.x, pos.y);
         }
       });
     }

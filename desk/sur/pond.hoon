@@ -25,6 +25,7 @@
       del-form-grit
       add-husk-grit
       del-shade-grit
+      move-shade-grit
       cycle-shade-grit
       set-shade-var-grit
       set-shade-effect-grit
@@ -56,6 +57,7 @@
 +$  del-form-grit  [%del-form =form-id]
 +$  add-husk-grit  [%add-husk husk-spec]
 +$  del-shade-grit  [%del-shade =shade-id]
++$  move-shade-grit  [%move-shade =shade-id pos=svec2]
 +$  cycle-shade-grit  [%cycle-shade =shade-id amt=@ud]
 +$  set-shade-var-grit  [%set-shade-var =shade-id variation=@ud]
 +$  set-shade-effect-grit
@@ -186,6 +188,7 @@
     %del-form  (del-form turf form-id.grit)
     %add-husk  (add-husk turf +.grit)
     %del-shade  (del-shade turf +.grit)
+    %move-shade  (move-shade turf +.grit)
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)

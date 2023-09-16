@@ -425,6 +425,8 @@
           (husk-spec +.grit)
             %del-shade
           (frond 'shadeId' (numb +.grit))
+            %move-shade
+          (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
             %cycle-shade
           (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
             %set-shade-var
@@ -943,6 +945,7 @@
           del-form+(ot ~['formId'^pa])
           add-husk+husk-spec
           del-shade+(ot ~['shadeId'^ni])
+          move-shade+(ot ~['shadeId'^ni pos+svec2])
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
           set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])

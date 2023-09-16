@@ -531,6 +531,20 @@
   |=  =space
   space(shades (skip shades.space |=(sid=@ =(sid id))))
 ::
+++  move-shade
+  |=  [=turf id=shade-id pos=svec2]
+  ^-  ^turf
+  =/  shade  (~(gut by cave.plot.turf) id ~)
+  ?~  shade  turf
+  =/  old-pos  pos.shade
+  =.  cave.plot.turf
+    %+  ~(put by cave.plot.turf)  id
+    shade(pos pos)
+  =.  turf  (del-shade-from-space turf id old-pos)
+  %^  jab-by-spaces  turf  pos
+  |=  =space  ^-  _space
+  space(shades [id shades.space])
+::
 ++  cycle-shade
   |=  [=turf id=shade-id amt=@ud]
   ^-  ^turf
