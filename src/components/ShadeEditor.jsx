@@ -1,10 +1,11 @@
 import { batch, createMemo, createSelector, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile } from "solid-js/store";
-import { vec2, bind, input } from 'lib/utils';
+import { vec2, bind, input, jClone } from 'lib/utils';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
+import FormInfo from '@/FormInfo';
 
 export default function ShadeEditor(props) {
   const state = useState();
@@ -46,31 +47,41 @@ export default function ShadeEditor(props) {
     clearNewEffects();
   }
 
+  const [newForm, $newForm] = createStore({});
+  function importForm() {
+    if (props.shade.formId && props.shade.form) $newForm(jClone({
+      formId: props.shade.formId,
+      form: props.shade.form,
+    }));
+  }
+
   return (
     <Show when={props.shade}>
-      <div class="m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
-        <Heading>{props.shade.form.name}</Heading>
+      <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
+        <FormInfo formId={props.shade.formId} />
         <p class="text-center">
           Position: {props.shade.pos.x}x{props.shade.pos.y}
         </p>
         <Show when={Object.entries(effects()).length > 0}>
           Effects:
-          <For each={Object.entries(effects())} >
-            {([trigger, effect]) => {
+          <Index each={Object.entries(effects())} >
+            {(item) => {
+              const trigger = () => item()[0];
+              const effect = () => item()[1];
               return (
                 <div class="mb-2">
                   <div class="flex items-center mb-1">
-                    on {trigger}: {effect.type}
+                    on {trigger()}: {effect().type}
                   </div>
                   <ArgInput
                     shade={props.shade}
-                    type={effect.type} arg={effect.arg}
-                    setArg={(arg) => setArg(trigger, effect.type, arg)}
+                    type={effect().type} arg={effect().arg}
+                    setArg={(arg) => setArg(trigger(), effect().type, arg)}
                   />
                 </div>
               );
             }}
-          </For>
+          </Index>
           <Show when={Object.keys(newEffects).length}>
             <div class="flex justify-center space-x-2">
               <SmallButton onClick={save}>
@@ -93,6 +104,7 @@ function ArgInput(props) {
   function defaultArg() {
     switch (props.type) {
       case 'port':
+      case 'read':
         return '';
       case 'jump':
         return vec2(state.e.offset);
@@ -125,11 +137,21 @@ function ArgInput(props) {
               ]} />
             <SmallButton onClick={[props.setArg, null]} >x</SmallButton>
           </Match>
+          <Match when={props.type === 'read'}>
+            <textarea
+              class="rounded-input max-w-[160px]"
+              use:input
+              use:bind={[
+                () => props.arg,
+                (s) => props.setArg(s || ''),
+              ]} />
+            <SmallButton onClick={[props.setArg, null]} >x</SmallButton>
+          </Match>
           <Match when={props.type === 'jump'}>
             <span>to x:</span>
             <input type="number"
               min={state.e.offset.x}
-              max={state.e.offset.x + state.e.size.x - 1} 
+              max={state.e.offset.x + state.e.size.x - 1}
               use:input
               use:bind={[
                 () => props.arg.x,
@@ -138,7 +160,7 @@ function ArgInput(props) {
             <span>y:</span>
             <input type="number"
               min={state.e.offset.y}
-              max={state.e.offset.y + state.e.size.y - 1} 
+              max={state.e.offset.y + state.e.size.y - 1}
               use:input
               use:bind={[
                 () => props.arg.y,

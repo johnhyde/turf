@@ -2,13 +2,30 @@ import { createSignal, createContext, createEffect, createMemo, getOwner, runWit
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
-import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf';
+import { getWallsAtPos, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { Pond } from 'lib/pond';
 import { Mist } from 'lib/mist';
 
 export const StateContext = createContext();
 
+export const lsKeys = {
+  get SOUND_ON () {
+    return our + '/turf/soundOn';
+  },
+};
+
+function initEditorState() {
+  return {
+    selectedFormId: null,
+    selectedShadeId: null,
+    selectedTool: null,
+    portalToPlace: null,
+    movingShadeId: null,
+  };
+}
+
 export function getState() {
+  let portals;
   const [state, $state] = createStore({
     ponds: {},
     mist: new Mist('/mist'),
@@ -31,14 +48,14 @@ export function getState() {
       get editing() {
         return selectedTab() === 'editor';
       },
-      selectedFormId: null,
-      selectedShadeId: null,
-      selectedTool: null,
       tools: {
         BRUSH: 'brush',
         ERASER: 'eraser',
         CYCLER: 'cycler',
         RESIZER: 'resizer',
+      },
+      get pointer() {
+        return this.selectedTool === null;
       },
       get brush() {
         return this.selectedTool === this.tools.BRUSH;
@@ -52,18 +69,24 @@ export function getState() {
       get resizer() {
         return this.selectedTool === this.tools.RESIZER;
       },
+      ...initEditorState(),
+    },
+    get portalToPlace() {
+      return this.editor.portalToPlace;
     },
     lab:  {
       get editing() {
         return selectedTab() === 'lab';
       },
     },
-    portalToPlace: null,
     scaleLog: 0,
     get scale() {
       return Math.pow(2, Math.round(this.scaleLog));
     },
     notifications: [],
+    text: null,
+    soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
+    portOffer: null,
     get current() {
       const parent = this;
       const current = {
@@ -114,6 +137,42 @@ export function getState() {
     get v() {
       return this.c.vapor;
     },
+    get portals() {
+      return portals;
+    },
+  });
+
+  portals = createMemo(() => {
+    const sort = (p1, p2) => { return p1.id - p2.id; };
+    const portalsDraft = [];
+    const portalsTo = [];
+    const portalsFrom = [];
+    const portalsWith = [];
+    Object.entries(state.e?.portals || {}).forEach(([portalId, portal]) => {
+      const portalObj = {
+        id: Number.parseInt(portalId),
+        ...portal
+      };
+      if (portal.shadeId !== null) {
+        if (portal.at !== null) {
+          portalsWith.push(portalObj);
+        } else {
+          portalsTo.push(portalObj);
+        }
+      } else {
+        if (portal.at !== null) {
+          portalsFrom.push(portalObj);
+        } else {
+          portalsDraft.push(portalObj);
+        }
+      }
+    });
+    return {
+      draft: portalsDraft.sort(sort),
+      to: portalsTo.sort(sort),
+      from: portalsFrom.sort(sort),
+      with: portalsWith.sort(sort),
+    };
   });
 
   const selectedTab = () => state.selectedTab;
@@ -157,11 +216,22 @@ export function getState() {
         return pond.sendWave(type, arg, id);
       }
     },
+    sendOurPondWave(type, arg, id) {
+      const pond = this.ponds[ourPond];
+      if (pond) {
+        return pond.sendWave(type, arg, id);
+      } else {
+        return api.sendPondWave(ourPond, [{ type, arg, }]);
+      }
+    },
     sendMistWave(type, arg, id) {
       id = id || '/mist';
       if (this.mist) {
         return this.mist.sendWave(type, arg, id);
       }
+    },
+    setPortOffer(portOffer) {
+      $state('portOffer', portOffer);
     },
     sendChat(message) {
       this.sendPondWave('send-chat', {
@@ -187,12 +257,26 @@ export function getState() {
         by: our,
       });
     },
+    resetEditor() {
+      $state('editor', initEditorState());
+    },
     resizeTurf(offset, size) {
       if (size.x <= 0 && size.y <= 0) return false;
       this.sendPondWave('size-turf', {
         offset,
         size,
       });
+    },
+    addForm(form) {
+      return this.sendPondWave('add-form', form);
+    },
+    delForm(formId) {
+      return this.sendPondWave('del-form', {
+        formId,
+      });
+    },
+    importForm(form) {
+      return this.sendOurPondWave('add-form', form);
     },
     addHusk(pos, formId, variation = 0) {
       return this.sendPondWave('add-husk', {
@@ -204,6 +288,12 @@ export function getState() {
     delShade(shadeId) {
       this.sendPondWave('del-shade', {
         shadeId: Number.parseInt(shadeId),
+      });
+    },
+    moveShade(shadeId, pos) {
+      this.sendPondWave('move-shade', {
+        shadeId: Number.parseInt(shadeId),
+        pos: vec2(pos),
       });
     },
     cycleShade(shadeId, amount = 1) {
@@ -258,6 +348,17 @@ export function getState() {
       ];
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
+    huskInteract(husk) {
+      if (this.e && husk) {
+        const effects = getEffectsByHusk(this.e, husk).fullFx;
+        if (effects.interact?.type === 'read') {
+          this.displayText(effects.interact.arg);
+        }
+      }
+    },
+    displayText(text) {
+      $state('text', text);
+    },
     createBridge(shade, portal, trigger='step') {
       this.sendPondWave('create-bridge', { shade, trigger, portal });
     },
@@ -286,7 +387,7 @@ export function getState() {
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);
     },
-    selectForm(id, _) {
+    selectForm(id) {
       $state('editor', 'selectedFormId', id);
       if (id) this.selectTool(this.editor.tools.BRUSH);
     },
@@ -308,7 +409,7 @@ export function getState() {
     selectTab(tab) {
       batch(() => {
         $state('selectedTab', tab);
-        $state('portalToPlace', null);
+        $state('editor', 'portalToPlace', null);
         this.selectShade(null);
         if (tab === state.tabs.LAB) {
           this.setScaleLog(Math.min(this.scaleLog, -2));
@@ -321,7 +422,13 @@ export function getState() {
       });
     },
     startPlacingPortal(portalId) {
-      $state('portalToPlace', portalId);
+      $state('editor', 'portalToPlace', portalId);
+    },
+    setMovingShadeId(shadeId) {
+      $state('editor', 'movingShadeId', shadeId);
+    },
+    toggleSound() {
+      $state('soundOn', (muted) => !muted);
     },
     notify(msg) {
       const notification = {
@@ -349,8 +456,26 @@ export function getState() {
       batch(() => {
         _state.subToTurf(_state.c.id);
         _state.clearTurfs(_state.c.id);
+        _state.resetEditor();
       })
     }
+  });
+
+  createEffect(() => {
+    localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
+  });
+
+  window.addEventListener('pond-roar-port-offer', ({ roar, turfId }) => {
+    const { ship, from, for: forId, at } = roar.arg;
+    if (ship !== our) return;
+    setTimeout(() => {
+      _state.setPortOffer({
+        for: forId,
+        of: turfId,
+        from,
+        at,
+      });
+    }, 200);
   });
 
   return _state;

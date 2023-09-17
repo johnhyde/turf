@@ -2,8 +2,8 @@ import { createSignal, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { stripPathPrefix, autofocus } from 'lib/utils';
-import Button from '@/Button';
-import cycle from 'assets/icons/cycle.png';
+import Modal from '@/Modal';
+import MediumButton from './MediumButton';
 
 export default function Modals() {
   const state = useState();
@@ -21,49 +21,44 @@ export default function Modals() {
     state.mist.goHome();
   }
 
-  // document.addEventListener('keydown', (e) => {
-  //   if (!e.defaultPrevented && !isTextInputFocused()) {
-  //     if (e.code === 'Escape') {
-  //         selectTab(null);
-  //         e.preventDefault();
-  //       }
-  //     }
-  //     switch (e.key) {
-  //       case 'p':
-  //         toggleTab(state.tabs.LAB);
-  //         openSidebar();
-  //       break;
-  //       default:
-  //     }
-  //   }
-  // });
-
   return (
     <>
-      <Show when={state.v?.portOffer} keyed>
-        <Modal class="bg-teal-700 text-slate-100 w-96">
-          <p class="text-xl mb-4 text-center">
-            {state.v.portOffer.of ?
-              "You've activated a portal!"
-            :
-              "You've been summoned!"
-            }
-          </p>
-          <p class="mb-2">
-            Would you like to travel to:
-          </p>
-          <p class="text-center text-lg">
-            <span class="font-bold">{stripPathPrefix(state.v.portOffer.for)}</span>?
-          </p>
-          <div class="flex w-full justify-center mt-4 space-x-4">
-            <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.acceptPortOffer.bind(state.mist)}>
-              Yes
-            </button>
-            <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={state.mist.rejectPortOffer.bind(state.mist)}>
-              No
-            </button>
-          </div>
-        </Modal>
+      <Show when={state.portOffer || state.v?.portOffer} keyed>
+        {(portOffer) => {
+          function accept() {
+            state.mist.acceptPortOffer(portOffer);
+            state.setPortOffer(null);
+          }
+          function reject() {
+            state.mist.rejectPortOffer(portOffer);
+            state.setPortOffer(null);
+          }
+
+          return (
+          <Modal class="bg-teal-700 text-slate-100 w-96">
+            <p class="text-xl mb-4 text-center">
+              {portOffer.of ?
+                "You've activated a portal!"
+              :
+                "You've been summoned!"
+              }
+            </p>
+            <p class="mb-2">
+              Would you like to travel to:
+            </p>
+            <p class="text-center text-lg">
+              <span class="font-bold">{stripPathPrefix(portOffer.for)}</span>?
+            </p>
+            <div class="flex w-full justify-center mt-4 space-x-4">
+              <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={accept}>
+                Yes
+              </button>
+              <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={reject}>
+                No
+              </button>
+            </div>
+          </Modal>);
+        }}
       </Show>
       <Show when={state.m && (!state.e || !state.player)} keyed>
         <Modal class="bg-teal-700 text-slate-100 w-96">
@@ -113,22 +108,18 @@ export default function Modals() {
           </p>
         </Modal>
       </Show>
+      <Show when={state.text}>
+        <Modal class="border-yellow-950 border-4 rounded-md bg-yellow-700" onClose={() => state.displayText(null)}>
+          <p class="text-xl mb-4 text-center whitespace-pre">
+            {state.text}
+          </p>
+          <div class="mt-4 text-center">
+            <MediumButton onClick={() => state.displayText(null)}>
+              Close
+            </MediumButton>
+          </div>
+        </Modal>
+      </Show>
     </>
   );
-}
-
-function Modal(props) {
-  onMount(() => {
-    game.input.keyboard.enabled = false;
-  })
-  onCleanup(() => {
-    game.input.keyboard.enabled = true;
-  })
-  return (
-    <div class="absolute w-full h-full flex z-20">
-      <div class={"m-auto max-w-md max-h-md p-4 rounded-2xl " + (props.class || '')}>
-        {props.children}
-      </div>
-    </div>
-  )
 }

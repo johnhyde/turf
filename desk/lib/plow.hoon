@@ -417,10 +417,16 @@
           (turf turf.grit)
             %size-turf
           (pairs ~[offset+(svec2 offset.grit) size+(vec2 size.grit)])
+            %add-form
+          (form-spec +.grit)
+            %del-form
+          (frond 'formId' (path form-id.grit))
             %add-husk
           (husk-spec +.grit)
             %del-shade
           (frond 'shadeId' (numb +.grit))
+            %move-shade
+          (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
             %cycle-shade
           (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
             %set-shade-var
@@ -656,9 +662,9 @@
     ^-  json
     %-  pairs
     %+  turn  ~(tap by skye)
-    |=  [=form-id =form]
+    |=  [=form-id frm=^form]
     :-  (spat form-id)
-    (pairs (form-pairs form))
+    (form frm)
   ++  port-offer
     |=  po=^port-offer
     ^-  json
@@ -772,17 +778,28 @@
     ^-  (list [@t json])
     :-  pos+(svec2 pos.shade)
     (husk-pairs +.shade)
+  ++  form
+    |=  =^form
+    ^-  json
+    (pairs (form-pairs form))
   ++  form-pairs
-    |=  =form
+    |=  =^form
     ^-  (list [@t json])
     =,  form
     :~  name+s+name
         type+s+type
-        variations+a+(turn variations look)
+        variations+a+(turn variations luuk)
         offset+(svec2 offset)
         collidable+b+collidable
         effects+(pairs (turn ~(tap by effects) effect))
         seeds+(pairs (turn ~(tap by seeds) effect-type))
+    ==
+  ++  form-spec
+    |=  spec=^form-spec
+    ^-  json
+    %-  pairs
+    :~  'formId'^(path form-id.spec)
+        form+(form form.spec)
     ==
   ++  husk-spec
     |=  =^husk-spec
@@ -793,13 +810,13 @@
         'formId'^(path form-id)
         variation+(numb variation)
     ==
-  ++  look
-    |=  =^look
+  ++  luuk
+    |=  =^luuk
     ^-  json
-    ?~  look  ~
+    ?~  luuk  ~
     %-  pairs
-    :~  deep+s+deep.u.look
-        sprite+(sprite sprite.u.look)
+    :~  deep+s+deep.u.luuk
+        sprite+(sprite sprite.u.luuk)
     ==
   ++  sprite
     |=  =^sprite
@@ -924,8 +941,11 @@
       %+  goal  goal:pond
       :: todo: set-turf?
       :~  size-turf+(ot ~[offset+svec2 size+vec2])
+          add-form+form-spec
+          del-form+(ot ~['formId'^pa])
           add-husk+husk-spec
           del-shade+(ot ~['shadeId'^ni])
+          move-shade+(ot ~['shadeId'^ni pos+svec2])
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
           set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
@@ -966,6 +986,34 @@
           export-self+port-offer
       ==
     ::
+    ++  form-spec
+      |=  jon=json
+      ^-  ^form-spec
+      %.  jon
+      (ot ~['formId'^pa form+form])
+    ++  form
+      |=  jon=json
+      ^-  ^form
+      %.  jon
+      %-  ot
+      :~  name+so
+          type+(cork so form-type)
+          variations+(ar luuk)
+          offset+svec2
+          collidable+bo
+          effects+|=(json *fx)
+          seeds+|=(json *sfx)
+      ==
+    ++  luuk
+      |=  jon=json
+      ^-  ^luuk
+      ?~  jon  ~
+      `((ot ~[deep+(cork so deep) sprite+sprite]) jon)
+    ++  sprite
+      |=  jon=json
+      ^-  ^sprite
+      ?:  ?=([%s *] jon)  (so jon)
+      *anim
     ++  husk-spec
       |=  jon=json
       ^-  ^husk-spec

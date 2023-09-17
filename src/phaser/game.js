@@ -1,8 +1,8 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useState } from 'stores/state';
-import { vec2, minV, flattenGrid, near, pixelsToTiles, dirs, swapAxes, getDirFromVec } from 'lib/utils';
-import { isInTurf, getShadeWithForm, getWallVariationAtPos } from 'lib/turf';
+import { vec2, near, pixelsToTiles, swapAxes, truncateString, sleep, tintImage } from 'lib/utils';
+import { isInTurf, getShadeWithForm, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
 import { Shade } from "./shade";
@@ -12,7 +12,7 @@ import { Resizer } from "./resizer";
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
-let pinger, moveQueuer, faceQueuer;
+let gritController = new AbortController();
 var game, scene, cam, cursors, keys = {}, player, tiles, preview;
 var formIndexMap, players = {}, shades = {};
 const factor = 8;
@@ -22,9 +22,28 @@ window.factor = factor;
 window.tileSize = tileSize;
 window.tileFactor = tileFactor;
 
-async function loadImage(id, url, isWall = false, config = {}) {
+function addGritListener(eventName, handler) {
+  window.addEventListener(eventName, handler, { signal: gritController.signal });
+}
+
+async function loadImage(id, url, ...args) {
+  try {
+    return await loadImageUnsafe(id, url, ...args);
+  } catch (e) {
+    return loadImageUnsafe(id, voidUrl, ...args);
+  }
+}
+
+async function loadImageUnsafe(id, url, config = {}) {
   // console.log("trying to load image: " + id)
-  if (game.textures.exists(id)) return;
+  const changeColor = config.color !== undefined && game.renderer.type === Phaser.CANVAS;
+  if (game.textures.exists(id)) {
+    if (changeColor) {
+      game.textures.removeKey(id);
+    } else {
+      return;
+    }
+  }
   return new Promise(async (resolve, reject) => {
     const onError = (key) => {
       console.error('could not load image', key);
@@ -32,88 +51,70 @@ async function loadImage(id, url, isWall = false, config = {}) {
         reject('could not load image: ' + key);
       }
     };
-    // game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, (texture) => {
-    //   // console.log('loaded image', id);
-    //   resolve();
-    // });
-    game.textures.addListener(Phaser.Textures.Events.LOAD, (key, texture) => {
-      if (id === key) {
-        // console.log('loaded image', id, texture.source?.[0]?.image?.complete);
-        if (texture.source?.[0]?.image && !texture.source[0].image.complete) {
-          console.log('wtf', id);
-          const oldOnLoad = texture.source[0].image.onload;
-          texture.source[0].image.onload = () => {
-            console.log('image finally loaded', id);
-            resolve();
-            oldOnLoad();
-          }
-        } else {
-          // console.log('loaded!');
-          resolve();
-        }
-      }
-    });
+    game.textures.addListener(Phaser.Textures.Events.ADD_KEY+id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
     try {
-      if (isWall) {
+      // if (config.isWall) {
+      //   const img = new Image();
+      //   img.onload = () => game.textures.addSpriteSheet(id, img, {
+      //     frameWidth: 32,
+      //     frameHeight: 64,
+      //     ...config,
+      //   });
+      //   img.onabort = () => onError(id);
+      //   img.onerror = () => onError(id);
+      //   img.src = url;
+      // } else {
+      if (!Array.isArray(url)) url = [url];
+      let images = [], promises = [];
+      images = await Promise.all(url.map((u) => {
         const img = new Image();
-        img.onload = () => game.textures.addSpriteSheet(id, img, {
-          frameWidth: 32,
-          frameHeight: 64,
-          ...config,
+        return new Promise((resolve, reject) => {
+          const onError = (e) => {
+            console.error('could not load image: ' + u, e);
+            reject(e);
+          }
+          img.onload = () => resolve(img);
+          img.onerror = onError;
+          img.onabort = onError;
+          img.src = u;
         });
-        img.onabort = () => {
-          console.log('aborted');
-          onError(id);
-        }
-        img.onerror = () => onError(id);
-        img.src = url;
-      } else {
-        if (!Array.isArray(url)) url = [url]
-        if (Array.isArray(url)) {
-          const images = [], promises = [];
-          url.forEach((u) => {
-            const img = new Image();
-            promises.push(new Promise((resolve, reject) => {
-              const onError = (e) => {
-                console.error('could not load image: ' + u, e);
-                reject(e);
-              }
-              img.onload = resolve;
-              img.onerror = onError;
-              img.onabort = onError;
-            }));
-            img.src = u;
-            images.push(img);
-          });
-          await Promise.all(promises);
-          while (!images.every(i => i.complete)) {
-            console.log('waiting for images to load for some reason');
-            await sleep(10);
-          }
-          const texture = game.textures.create(id, images, images[0].width, images[0].height);
-          if (!texture) reject('could not create texture for: ' + url[0]);
-          images.forEach((img, i) => {
-            texture.add(i, i, 0, 0, img.width, img.height);
-          })
-          if (images.length === 1) {
-            const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
-            frame.setTrim(frame.width, frame.height, 0, 1, frame.width, frame.height)
-          }
-          resolve();
-        } else {
-          game.textures.addBase64(id, url);
+      }));
+      if (changeColor) {
+        images = await Promise.all(images.map(img => tintImage(img, config.color)));
+        if (game.textures.exists(id)) {
+          game.textures.removeKey(id);
         }
       }
+      if (game.textures.exists(id)) return;
+      const texture = game.textures.create(id, images, images[0].width, images[0].height);
+      if (!texture) reject('could not create texture for: ' + url[0]);
+      images.forEach((img, i) => {
+        texture.add(i, i, 0, 0, img.width, img.height);
+        if (i === 0) {
+          texture.add('__BASE', i, 0, 0, img.width, img.height);
+        }
+      })
+      if (images.length === 1) {
+        const frame = texture.add(1, 0, 0, 0, images[0].width, images[0].height);
+        frame.setTrim(frame.width, frame.height, 0, 1, frame.width, frame.height)
+      }
+      resolve();
+      // }
     } catch (e) {
       if (!game.textures.exists(id)) reject(e);
     }
   });
 }
 
+let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
   const { formId } = shade;
+  if (!sprite) {
+    console.error('Could not create shade', formId);
+    return;
+  }
   sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
   if (shade.formId === '/portal') {
     const state = useState();
@@ -135,6 +136,28 @@ function createShade(shade, id, turf) {
       }
     })
   }
+  let textObj;
+  function addText(text, limit = 21) {
+    text = truncateString(text, limit);
+    if (!textObj) {
+      textObj = scene.make.text({ text, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    '--webkit-font-smoothing': 'none' }});
+      textObj.x = sprite.x;
+      textObj.y = sprite.y;
+      textObj.setDepth(sprite.depth);
+      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 - sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
+      scene.add.existing(textObj);
+    } else {
+      textObj.setText(text);
+    }
+  }
+
+  function removeText() {
+    if (textObj) {
+      textObj.destroy();
+      textObj = null;
+    }
+  }
 
   // here "touch" means that the shade was touched by the cursor
   // as it passed through or clicked
@@ -155,13 +178,27 @@ function createShade(shade, id, turf) {
   }
   function onClick(pointer) {
     console.log('got click on shade', id, formId);
+    lastClickedShadeId = id;
     if (state.editor.editing) {
-      if (!state.editor.selectedTool) {
+      if (state.editor.pointer) {
         state.selectShade(id);
       }
+    } else {
+      state.huskInteract(shade);
     }
   }
   sprite.on('pointermove', (pointer) => {
+    if (state.e && shade) {
+      const effects = getEffectsByHusk(state.e, shade).fullFx;
+      if (effects.interact?.type === 'read') {
+          addText(effects.interact.arg);
+      } else if (effects.step?.type === 'port') {
+        const portal = state.e.portals[effects.step.arg];
+        if (portal) {
+          addText(portal.for.ship);
+        }
+      }
+    }
     if (pointer.isDown) {
       onTouch(pointer);
     }
@@ -170,11 +207,14 @@ function createShade(shade, id, turf) {
     onTouch(pointer);
     onClick(pointer);
   });
+  sprite.on('pointerout', (pointer) => {
+    removeText();
+  });
   return sprite;
 }
 
 function setGameSize() {
-  console.log('resized')
+  // console.log('resized')
   const el = game.scale.isFullscreen ? game.canvas.parentElement : container;
   const width = ~~(window.devicePixelRatio * el.clientWidth);
   const height = ~~(window.devicePixelRatio * el.clientHeight);
@@ -185,7 +225,7 @@ function setGameSize() {
   }
   if (cam) {
     const oldZoom = cam.zoom;
-    const newZoom = 1/state.scale;
+    const newZoom = (8/factor)*(window.devicePixelRatio/state.scale)/2;
     if (oldZoom !== newZoom) {
       cam.setZoom(newZoom);
       if (setBounds) setBounds();
@@ -202,13 +242,13 @@ export function startPhaser(_owner, _container) {
       console.log('container', container.clientWidth, container.clientHeight);
       var config = {
         type: Phaser.AUTO,
+        // type: Phaser.CANVAS,
         parent: container,
         width: ~~container.clientWidth || 500,
         height: ~~container.clientHeight || 500,
         pixelArt: true,
         roundPixels: true,
         backgroundColor: '#a6e4e8',
-        // zoom: 0.25,
         scene: {
           init,
           preload: preload,
@@ -226,7 +266,6 @@ export function startPhaser(_owner, _container) {
       window.game = game = new Phaser.Game(config);
 
       function init() {
-        // window.scene = scene = game.scene.scenes[0];
         window.scene = scene = this;
         window.cam = cam = scene.cameras.main;
         $loaded(true);
@@ -235,13 +274,12 @@ export function startPhaser(_owner, _container) {
       function preload() {
         console.log('preload');
         this.load.audio('ping', ['audio/ping.mp3']);
+        // this.load.image('speech-bubble', 'sprites/speech-bubble.png');
       }
 
       let updateTime;
       function create() {
         updateTime = Date.now();
-        // cursors = this.input.keyboard.createCursorKeys();
-        // keys = this.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
         keys = {
           f: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']),
         };
@@ -272,17 +310,27 @@ export function startPhaser(_owner, _container) {
           }
         }
         this.input.on('pointerdown', (pointer) => {
-            // draw = true;
             mapEdit(pointer);
         });
 
-        this.input.on('pointerup', () => {
-            // draw = false;
+        this.input.on('pointerup', (pointer) => {
+          if (state.editor.editing && state.editor.pointer && state.editor.movingShadeId) {
+            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+            state.moveShade(state.editor.movingShadeId, pos);
+            state.setMovingShadeId(null);
+          }
         });
 
         this.input.on('pointermove', (pointer) => {
           if (pointer.isDown) {
             mapEdit(pointer);
+            const pastMoveThreshold = pointer.getDistance() > 20/window.devicePixelRatio;
+            if (state.editor.editing && state.editor.pointer && !state.editor.movingShadeId) {
+              if (lastClickedShadeId && pastMoveThreshold) {
+                state.setMovingShadeId(lastClickedShadeId);
+              }
+            }
+            if (pastMoveThreshold) lastClickedShadeId = null;
           }
           if (preview) {
             preview.updatePointer(pointer);
@@ -294,23 +342,36 @@ export function startPhaser(_owner, _container) {
         });
         const ping = this.sound.add('ping');
         this.sound.pauseOnBlur = false;
-        if (pinger) window.removeEventListener('pond-ping-player', pinger);
-        pinger = (e) => {
+
+        gritController.abort();
+        gritController = new AbortController();
+
+        addGritListener('pond-grit-ping-player', (e) => {
           if (e.grit.arg.ship === our) {
-            if (!this.sound.locked) ping.play();
+            if (!this.sound.locked && state.soundOn) ping.play();
             state.notify(e.grit.arg.by + ' has pinged you!');
           }
+        });
+        const themMoveQueuer = (e) => {
+          const ship = e.grit.arg.ship;
+          if (ship !== our && players[ship]) players[ship].actionQueue.push(e.grit);
         };
-        window.addEventListener('pond-ping-player', pinger);
-
-        // todo combine queuers
-        if (moveQueuer) window.removeEventListener('pond-move', moveQueuer);
-        moveQueuer = (e) => { if (players[e.grit.arg.ship]) players[e.grit.arg.ship].actionQueue.push(e.grit); };
-        window.addEventListener('pond-move', moveQueuer);
-
-        if (faceQueuer) window.removeEventListener('pond-face', faceQueuer);
-        faceQueuer = (e) => { if (players[e.grit.arg.ship]) players[e.grit.arg.ship].actionQueue.push(e.grit); };
-        window.addEventListener('pond-face', faceQueuer);
+        addGritListener('pond-grit-move', themMoveQueuer);
+        addGritListener('pond-grit-face', themMoveQueuer);
+        const usMoveQueuer = (e) => {
+          const ship = e.fakeGrit.arg.ship;
+          if (ship === our && players[ship]) players[ship].actionQueue.push(e.fakeGrit);
+        };
+        addGritListener('pond-fakeGrit-move', usMoveQueuer);
+        addGritListener('pond-fakeGrit-face', usMoveQueuer);
+        addGritListener('pond-grit-chat', (e) => {
+          players[e.grit.arg.from].speakBubble(e.grit.arg.text); //do the visual speech bubble part
+          if (state.soundOn) { //do the speech synthesis part
+            var msg = new SpeechSynthesisUtterance();
+            msg.text = e.grit.arg.text;
+            window.speechSynthesis.speak(msg);
+          }
+        });
       }
 
       function update() {
@@ -331,16 +392,28 @@ export function startPhaser(_owner, _container) {
       const state = useState();
       window.state = state;
 
-      // window.addEventListener('resize', setGameSize, false);
       new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
       game.scale.addListener(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => setTimeout(setGameSize, 100));
       setGameSize();
       const [loader, { mutate, refetch }] = createResource(
-        () => state.e,
-        async (turf) => {
+        () => {
+          if (!state.e) return {};
+          return {
+            ...extractPlayerSprites(state.e.players),
+            ...extractSkyeSprites(state.e.skye),
+            void: {
+              sprite: voidUrl,
+            },
+            'speech-bubble': {
+              sprite: 'sprites/speech-bubble.png',
+            },
+          };
+        },
+        async (sprites) => {
           try {
-            await loadSprites(turf)
+            const promise = loadSprites(sprites);
+            await promise;
           } catch (e) {
             console.error('Error in loading sprites', e);
             throw e;
@@ -398,28 +471,16 @@ export function startPhaser(_owner, _container) {
     });
   });
 
-  async function loadSprites(turf) {
-    console.log('loading sprites');
-    // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
-    return Promise.all([loadSkyeSprites(turf), loadPlayerSprites(turf)]);
-  }
-
-  async function loadSkyeSprites(turf) {
-    const sprites = extractSkyeSprites(turf.skye);
-    const promises = Object.entries(sprites).map(([id, sprite]) => {
-      return loadImage(id, sprite);
+  async function loadSprites(sprites) {
+    const promises = Object.entries(sprites).map(([id, { sprite, config }]) => {
+      return loadImage(id, sprite, config);
     });
-    promises.push(loadImage('void', voidUrl));
-    // promises.push(loadImage('wall-stone', 'sprites/wall-stone.png', true));
     return Promise.all(promises);
   }
 
   async function loadPlayerSprites(turf) {
     const sprites = extractPlayerSprites(turf.players);
-    const promises = Object.entries(sprites).map(([id, sprite]) => {
-      return loadImage(id, sprite);
-    });
-    return Promise.all(promises);
+    return loadSprites(sprites);
   }
   
   function destroyCurrentTurf() {
@@ -427,10 +488,15 @@ export function startPhaser(_owner, _container) {
     window.players = players = {};
     shades = {};
     preview = null;
-    (scene.add.displayList.list || []).map(e => e).forEach(e => e.destroy());
-    (scene.add.updateList.list || []).map(e => e).forEach(e => e.destroy());
+    // I think we don't need these, as of 09/12/23
+    // TODO: Delete by Nov 2023 if not needed
+    // (scene.add.displayList.list || []).forEach((e) => {
+    //   if (e) e.destroy();
+    // });
+    // (scene.add.updateList.list || []).forEach((e) => {
+    //   if (e) e.destroy();
+    // });
     game.scene.start(scene);
-    // if (player) player.destroy();
   }
   window.destroyTurf = destroyCurrentTurf;
   async function initTurf(turf, grid, _player) {
@@ -441,10 +507,6 @@ export function startPhaser(_owner, _container) {
       h: turf.size.y * turf.tileSize.y * factor,
     };
     setBounds = () => {
-      // const width = ~~container.clientWidth;
-      // const height = ~~container.clientHeight;
-      // const width = ~~game.scale.width;
-      // const height = ~~game.scale.height;
       const width = ~~cam.displayWidth;
       const height = ~~cam.displayHeight;
       // adjust the viewport bounds if level is smaller
@@ -466,13 +528,6 @@ export function startPhaser(_owner, _container) {
     createEffect(() => {
       setGameSize();
     });
-    // window.removeEventListener('resize', setBounds);
-    // createEffect(on(() => state.scale, () => {
-    //   setBounds();
-    // }))
-    // _setBounds();
-    // setBounds = _setBounds;
-    // window.addEventListener('resize', setBounds);
     console.log("init turf tile layer", turf);
     
     const [level, tilesetData] = generateMap(turf, grid);
@@ -484,15 +539,7 @@ export function startPhaser(_owner, _container) {
     layer.setDepth(turf.offset.y - 10);
     layer.setScale(factor);
     window.tiles = tiles = layer;
-    // window.players = Object.entries(turf.players).map(([patp, p]) => {
-    //   const thisPlayer = new Player(scene, turf.id, patp, loadPlayerSprites);
-    //   if (patp === our) {
-    //     window.player = player = thisPlayer;
-    //   }
-    //   return thisPlayer;
-    // });
     window.resizer = new Resizer(scene, turf.id);
-    // cam.startFollow(player);
     game.input.keyboard.preventDefault = false;
   }
 
@@ -538,8 +585,9 @@ export function startPhaser(_owner, _container) {
         } else {
           if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
             shadeObject.setTexture(sprite);
-            console.log('updated shade at', shadeData.pos)
           }
+          const pos = vec2(shadeData.pos).scale(tileFactor);
+          shadeObject.setPosition(pos.x, pos.y);
         }
       });
     }

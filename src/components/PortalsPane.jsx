@@ -13,7 +13,7 @@ export default function PortalsPane() {
   const state = useState();
   const placingPortal = createSelector(() => state.portalToPlace);
   const [toShipValid, $toShipValid] = createSignal(null);
-  const validBorder = () => {
+  const validBg = () => {
     if (toShipValid()) {
       return 'bg-green-100';
     } else if (toShipValid() === false) {
@@ -22,38 +22,6 @@ export default function PortalsPane() {
       return '';
     }
   }
-  const portals = createMemo(() => {
-    const sort = (p1, p2) => { return p1.id - p2.id; };
-    const portalsDraft = [];
-    const portalsTo = [];
-    const portalsFrom = [];
-    const portalsWith = [];
-    Object.entries(state.e?.portals || {}).forEach(([portalId, portal]) => {
-      const portalObj = {
-        id: Number.parseInt(portalId),
-        ...portal
-      };
-      if (portal.shadeId !== null) {
-        if (portal.at !== null) {
-          portalsWith.push(portalObj);
-        } else {
-          portalsTo.push(portalObj);
-        }
-      } else {
-        if (portal.at !== null) {
-          portalsFrom.push(portalObj);
-        } else {
-          portalsDraft.push(portalObj);
-        }
-      }
-    });
-    return {
-      draft: portalsDraft.sort(sort),
-      to: portalsTo.sort(sort),
-      from: portalsFrom.sort(sort),
-      with: portalsWith.sort(sort),
-    };
-  });
 
   const [toShip, $toShip] = createSignal('');
   function goHome() {
@@ -96,9 +64,9 @@ export default function PortalsPane() {
     }
   }
 
-  document.addEventListener('keydown', onKeyDown);
+  document.body.addEventListener('keydown', onKeyDown);
   onCleanup(() => {
-    document.removeEventListener('keydown', onKeyDown);
+    document.body.removeEventListener('keydown', onKeyDown);
   });
 
   function shipKeyDown(e) {
@@ -121,7 +89,7 @@ export default function PortalsPane() {
         </Heading>
         <div class="flex justify-center items-center space-x-2">
           <input
-              class={"rounded-md max-w-[175px] " + validBorder()}
+              class={"rounded-input max-w-[175px] " + validBg()}
               use:input
               autofocus
               use:bind={[
@@ -136,48 +104,48 @@ export default function PortalsPane() {
             <SmallButton onClick={placeNewPortal}>+</SmallButton>
           }
         </div>
-        <Show when={portals().draft.length > 0}>
+        <Show when={state.portals().draft.length > 0}>
           <div class="my-2">
             <Heading>
               Portal Drafts
             </Heading>
-            <For each={portals().draft} >
+            <For each={state.portals().draft} >
               {(portal) => {
                 return <Portal icon={portalTo} label="DRAFT TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}
             </For>
           </div>
         </Show>
-        <Show when={portals().from.length > 0}>
+        <Show when={state.portals().from.length > 0}>
           <div class="my-2">
             <Heading>
               Incoming Portal Requests
             </Heading>
-            <For each={portals().from} >
+            <For each={state.portals().from} >
               {(portal) => {
                 return <Portal icon={portalFrom} label="FROM" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}
             </For>
           </div>
         </Show>
-        <Show when={portals().to.length > 0}>
+        <Show when={state.portals().to.length > 0}>
           <div class="my-2">
             <Heading>
               Outgoing Portal Requests
             </Heading>
-            <For each={portals().to} >
+            <For each={state.portals().to} >
               {(portal) => {
                 return <Portal icon={portalTo} label="TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}
             </For>
           </div>
         </Show>
-        <Show when={portals().with.length > 0}>
+        <Show when={state.portals().with.length > 0}>
           <div class="my-2">
             <Heading>
               Active Portals
             </Heading>
-            <For each={portals().with} >
+            <For each={state.portals().with} >
               {(portal) => {
                 return <Portal icon={portalWith} label="WITH" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}

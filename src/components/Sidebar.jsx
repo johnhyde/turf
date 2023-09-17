@@ -15,6 +15,8 @@ import lab from 'assets/icons/lab.png';
 import shovel from 'assets/icons/shovel.png';
 import help from 'assets/icons/help.png';
 import portal from 'assets/icons/portal.png';
+import muted from 'assets/icons/muted.png';
+import unmuted from 'assets/icons/unmuted.png';
 
 function Sidebar() {
   const state = useState();
@@ -41,10 +43,7 @@ function Sidebar() {
   document.addEventListener('keydown', (e) => {
     if (!e.defaultPrevented && !isTextInputFocused()) {
       if (e.code === 'Escape') {
-        if (state.portalToPlace || (state.editor.editing && (state.editor.selectedTool || state.editor.selectedShadeId))) {
-          // let EditPane or PortalsPane handle this
-          // TODO: find a way to avoid replicating the above expression here and in other files
-        } else if (state.selectedTab) {
+        if (state.selectedTab) {
           selectTab(null);
         } else {
           if (open()) {
@@ -52,8 +51,8 @@ function Sidebar() {
           } else {
             openSidebar();
           }
-          e.preventDefault();
         }
+        e.preventDefault();
       }
       switch (e.key) {
         case '?':
@@ -73,6 +72,9 @@ function Sidebar() {
           toggleTab(state.tabs.PORTALS);
           openSidebar();
           break;
+        case 'm':
+          state.toggleSound();
+          break;
         default:
       }
     }
@@ -80,46 +82,63 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
+      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] pointer-events-none z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show when={open()} fallback={(
         <div class="flex-grow">
-          <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
+          <div class="pointer-events-auto inline-block relative">
+            <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
+            {state.portals()?.from.length > 0 &&
+            <div
+              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+            />}
+          </div>
         </div>
       )}>
-        <div class={state.selectedTab ? 'pb-1 border-b border-yellow-950' : ''}>
-            <Button
-              onClick={closeSidebar}
-              src={leftCaret}
-              tooltip='Escape'
-            />
-            <Button
-              onClick={[toggleTab, state.tabs.HELP]}
-              src={help}
-              selected={isSelected(state.tabs.HELP)}
-              tooltip='H or ?'
-            />
-            <Button
-              onClick={[toggleTab, state.tabs.LAB]}
-              src={lab}
-              selected={isSelected(state.tabs.LAB)}
-              tooltip='P'
-            />
-            <Button
-              onClick={[toggleTab, state.tabs.EDITOR]}
-              src={shovel}
-              selected={isSelected(state.tabs.EDITOR)}
-              tooltip='E'
-            />
+        <div class={'pointer-events-auto ' + (state.selectedTab ? 'pb-1 border-b border-yellow-950' : '')}>
+          <Button
+            onClick={closeSidebar}
+            src={leftCaret}
+            tooltip='Escape'
+          />
+          <Button
+            onClick={[toggleTab, state.tabs.HELP]}
+            src={help}
+            selected={isSelected(state.tabs.HELP)}
+            tooltip='H or ?'
+          />
+          <Button
+            onClick={[toggleTab, state.tabs.LAB]}
+            src={lab}
+            selected={isSelected(state.tabs.LAB)}
+            tooltip='P'
+          />
+          <Button
+            onClick={[toggleTab, state.tabs.EDITOR]}
+            src={shovel}
+            selected={isSelected(state.tabs.EDITOR)}
+            tooltip='E'
+          />
+          <div class="inline-block relative">
             <Button
               onClick={[toggleTab, state.tabs.PORTALS]}
               src={portal}
               selected={isSelected(state.tabs.PORTALS)}
               tooltip='G'
             />
+            {state.portals()?.from.length > 0 &&
+            <div
+              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+            />}
+          </div>
+          <Button
+            onClick={state.toggleSound.bind(state)}
+            src={state.soundOn ? unmuted : muted}
+            tooltip='M'
+          />
         </div>
         <Show when={state.selectedTab}>
-          <div class="overflow-y-auto">
+          <div class="overflow-y-auto pointer-events-auto">
             <div class="my-1">
               {state.selectedTab === state.tabs.PORTALS && <PortalsPane/>}
               {state.editor.editing && <EditPane/>}
@@ -130,7 +149,9 @@ function Sidebar() {
         </Show>
         <ChatLog chats={state.e?.chats || []} context={state.selectedTab} />
       </Show>
-      <ChatBar />
+      <div class="pointer-events-auto">
+        <ChatBar />
+      </div>
     </div>
   );
 }

@@ -77,7 +77,14 @@ export function getTileWithForm(turf, pos) {
 export function getShadesAtPos(turf, pos) {
   const shades = getSpace(turf, pos)?.shades;
   if (!shades) return [];
-  return shades.map(sid => getShadeWithForm(turf, sid));
+  return shades.map(sid => getShadeWithForm(turf, sid)).filter(shade => shade);
+}
+
+export function getThingsAtPos(turf, pos) {
+  const tile = getTileWithForm(turf, pos);
+  const shades = getShadesAtPos(turf, pos);
+  if (tile) return [tile, ...shades];
+  return shades;
 }
 
 export function getShadesAtPosByType(turf, pos, type) {
@@ -113,18 +120,25 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
-export function getEffectsByShade(turf, shade) {
+export function getEffectsByHusk(turf, shade) {
   const form = turf.skye[shade.formId];
-  if (!form) return {
-    fullFx: shade.effects,
-    huskFx: shade.effects,
+  return getEffectsByThing({
+    ...shade,
+    form,
+  });
+}
+
+export function getEffectsByThing(thing) {
+  if (!thing.form) return {
+    fullFx: thing.effects,
+    huskFx: thing.effects,
     formFx: {},
   };
-  const formFx = Object.assign({}, form.seeds, form.effects);
-  const fullFx = Object.assign({}, formFx, shade.effects);
+  const formFx = Object.assign({}, thing.form.seeds, thing.form.effects);
+  const fullFx = Object.assign({}, formFx, thing.effects);
   return {
     fullFx,
-    huskFx: shade.effects,
+    huskFx: thing.effects,
     formFx,
   };
 }
@@ -132,11 +146,15 @@ export function getEffectsByShade(turf, shade) {
 export function delShade(turf, shadeId) {
   const shade = turf.cave[shadeId];
   if (shade) {
-    jabBySpaces(turf, shade.pos, (space) => {
-      space.shades = space.shades.filter((shadeId) => shadeId !== shadeId);
-    });
+    delShadeFromSpace(turf, shadeId, shade.pos)
     delete turf.cave[shadeId];
   }
+}
+
+export function delShadeFromSpace(turf, shadeId, pos) {
+  jabBySpaces(turf, pos, (space) => {
+    space.shades = space.shades.filter((id) => id !== Number(shadeId));
+  });
 }
 
 export function delPortal(turf, portalId) {
@@ -169,27 +187,27 @@ export function extractSkyeTileSprites(skye) {
   return sprites;
 }
 
-function addFormSprites(sprites, form, formId, patp) {
+function addFormSprites(sprites, form, formId, patp, config = {}) {
   form.variations.forEach((variation, i) => {
     if (variation) {
       const name = spriteName(formId, i, patp);
       if (typeof variation.sprite === 'string') {
-        sprites[name] = variation.sprite;
+        sprites[name] = { sprite: variation.sprite, config };
       } else {
-        sprites[name] = variation.sprite.frames.slice();
+        sprites[name] = { sprite: variation.sprite.frames.slice(), config };
       }
     }
   });
 }
 
-function addThingSprites(sprites, thing, patp) {
-  addFormSprites(sprites, thing.form, thing.formId, patp)
+function addThingSprites(sprites, thing, patp, config = {}) {
+  addFormSprites(sprites, thing.form, thing.formId, patp, config)
 }
 
 export function extractPlayerSprites(players) {
   const sprites = {};
   Object.entries(players).forEach(([patp, player]) => {
-    addThingSprites(sprites, player.avatar.body.thing, patp);
+    addThingSprites(sprites, player.avatar.body.thing, patp, { color: player.avatar.body.color });
     player.avatar.things.forEach((thing) => {
       addThingSprites(sprites, thing, patp);
     });

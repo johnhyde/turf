@@ -1,6 +1,6 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
-import { vec2, dirs, sleep } from 'lib/utils';
+import { vec2, roundV, dirs, sleep, intToHex } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -15,13 +15,17 @@ export class Player extends Phaser.GameObjects.Container {
     this.turf = turf;
     this.player = player;
     this.actionQueue = [];
+    this.speechBubbleText = ""; //This variable is probably redundant, and could be removed, assigning directly to speechBubbleTextContainer.text instead. However, when I tried this once, it mysteriously broke.
+    this.speechBubbleMillisecondsElapsed = 0;
     this.tilePos = vec2(player().pos);
     this.oldTilePos = vec2(player().pos);
     this.patp = patp;
     this.isUs = patp === our;
     if (this.isUs) {
-      this.cursors = scene.input.keyboard.createCursorKeys();
-      this.keys = scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
+      this.keys = {
+        ...scene.input.keyboard.createCursorKeys(),
+        ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
+      };
       scene.cameras.main.startFollow(this);
     }
     this.loadPlayerSprites = load;
@@ -42,7 +46,6 @@ export class Player extends Phaser.GameObjects.Container {
     this.on('pointermove', this.onHover.bind(this));
     this.on('pointerout', this.onLeave.bind(this));
     this.setupEffects();
-    this.addToUpdateList();
     this.scene.add.existing(this);
   }
 
@@ -66,14 +69,18 @@ export class Player extends Phaser.GameObjects.Container {
         if (pos) {
           // make sure to use x and y so solid knows to track them
           // we aren't tracking player, so that's no help
-          console.log('new player pos', pos.x, pos.y)
+          // console.log('new player pos', pos.x, pos.y)
           this.tilePos = vec2(pos.x, pos.y)
         }
       });
       createEffect((lastColor) => {
         const color = this.p?.avatar.body.color;
         if (this.bodyImage && color && lastColor !== color) {
-          this.bodyImage.setTint(color);
+          if (game.renderer.type === Phaser.CANVAS) {
+            this.recreateAvatar();
+          } else {
+            this.bodyImage.setTint(color);
+          }
         }
         return color;
       });
@@ -109,7 +116,6 @@ export class Player extends Phaser.GameObjects.Container {
     const frameRate = 7;
     const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
     this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
-    this.bodyImage.setTint(avatar.body.color);
     this.bodyImage.thing = avatar.body.thing;
     if (avatar.body.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
@@ -125,6 +131,8 @@ export class Player extends Phaser.GameObjects.Container {
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
     this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
     this.bodyImage.setScale(factor);
+    this.bodyImage.preDestroy = preDestroy;
+    this.bodyImage.setTint(avatar.body.color);
     this.things = avatar.things.map((thing) => {
       const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
@@ -132,13 +140,14 @@ export class Player extends Phaser.GameObjects.Container {
       const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });
       if (!spriteDirs[dirs[this.dir]]) sprite.setVisible(false);
       sprite.thing = thing;
+      sprite.preDestroy = preDestroy;
       if (thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
         sprite.setFlipX(true);
       }
       spriteDirs.forEach((key, i) => {
         if (!key) return;
         let frameKeys = Object.keys(game.textures.get(key).frames);
-        const frames = frameKeys.map((frame) => { return { key, frame }});
+        const frames = frameKeys.map((frame) => { return { key, frame }}).filter(({ frame }) => frame !== '__BASE');
         sprite.anims.create({
           key: dirs[i],
           frames,
@@ -159,6 +168,21 @@ export class Player extends Phaser.GameObjects.Container {
     '--webkit-font-smoothing': 'none' }});
     this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height + this.ping.height);
     this.ping.setVisible(false);
+    /* Make speech bubble */
+    this.speechBubble = scene.add.image(0, 0, "speech-bubble").setScale(factor);
+    const bubblePos = roundV(vec2(this.bodyImage.width*1.3, -this.bodyImage.height/2)).scale(factor);
+    this.speechBubbleContainer = new Phaser.GameObjects.Container(scene, bubblePos.x, bubblePos.y);
+    this.speechBubbleContainer.add(this.speechBubble);
+    this.speechBubbleContainer.setDepth(100);
+    this.add(this.speechBubbleContainer);
+    this.speechBubble.setVisible(true);
+    this.speechBubbleTextDisplay = scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
+    this.speechBubbleTextDisplay.setMaxLines(4)
+    this.speechBubbleTextDisplay.setOrigin(0.5, 0.5);
+    this.speechBubbleTextDisplay.setVisible(true);
+    this.speechBubbleTextDisplay.setDepth(this.speechBubble.depth+1);
+    this.speechBubbleContainer.add(this.speechBubbleTextDisplay);
+    /* Scaling and dimensions of camera stuff */
     const dims = vec2(this.bodyImage.width, this.bodyImage.height).scale(factor);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(vec2(playerOffset).scale(factor));
     scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
@@ -177,21 +201,23 @@ export class Player extends Phaser.GameObjects.Container {
             }
             if (this.walking()) {
               if (sprite.anims && !sprite.anims.isPlaying) {
-                sprite.anims.resume(sprite.anims.currentAnim?.getFrameAt(1));
+                sprite.anims.resume(newAnim?.getFrameAt(1));
               }
             } else {
               if (sprite.anims.isPlaying) {
-              sprite.anims.pause(sprite.anims.currentAnim?.getFrameAt(0));
+                sprite.anims.pause(newAnim?.getFrameAt(0));
               }
             }
           } else {
             sprite.setVisible(false);
           }
         }
-        if (sprite.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
-          sprite.setFlipX(true);
-        } else {
-          sprite.setFlipX(false);
+        if (sprite.setFlipX){
+          if (sprite.thing?.form.variations.length < 4 && this.dir === dirs.LEFT) {
+            sprite.setFlipX(true);
+          } else {
+            sprite.setFlipX(false);
+          }
         }
       });
     }
@@ -209,18 +235,19 @@ export class Player extends Phaser.GameObjects.Container {
     }
   }
 
+  speakBubble(textToSpeak) {
+    this.speechBubbleText = textToSpeak;
+    this.speechBubbleMillisecondsElapsed = 0;
+  }
+
   preUpdate(time, dt) {
-    //Action queue retirement here. The objects in the action queue are just grits.
-    //The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. 
-    //So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
+    if (!game.input.keyboard.enabled && this.keys) {
+      Object.values(this.keys).forEach(k => k.reset());
+    }
+    //Action queue retirement here. The objects in the action queue are just grits. The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
     if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
       this.actionQueue = [];
       console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
-    }
-    while(this.actionQueue[0]?.arg.ship === our) {
-      //Filter out actions we originated. Actually, it's not clear this is robust; maybe other things can `move` or `face` our player? Environmental hazards or whatever?
-      //This code could be refactored so the aforementioned event handlers (or, eventually, possibly, the event-firing code) are responsible for filtering out events that we originated, so that we only get foreign events and this while loop becomes unnecessary.
-      this.actionQueue.shift();
     }
     while(this.actionQueue[0]?.type === "face") {
       this.$apparentDir(this.actionQueue[0].arg.dir);
@@ -231,16 +258,18 @@ export class Player extends Phaser.GameObjects.Container {
     }
     const speed = 170*factor;
     let justMoved = false;
-    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
+    let targetPos = () => vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
-    if (this.dPos.equals(targetPos)) {
+    if (this.dPos.equals(targetPos())) {
       this.actionQueue.shift(); //Remove the item from the action queue
-    } else { //just move like regular
-      const dif = vec2(targetPos).subtract(this.dPos);
+    }
+    if (!this.dPos.equals(targetPos())) {
+      //just move like regular
+      const dif = vec2(targetPos()).subtract(this.dPos);
       let step = speed * dt / 1000;
       if (step > dif.length()) {
-        this.dPos = vec2(targetPos);
-        this.setPosition(targetPos.x, targetPos.y);
+        this.dPos = vec2(targetPos());
+        this.setPosition(targetPos().x, targetPos().y);
       } else {
         const change = vec2(dif).normalize().scale(step);
         this.dPos.add(change);
@@ -252,20 +281,20 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.isUs) {
       const newTilePos = vec2(this.tilePos);
       let newDir;
-      if (this.dPos.equals(targetPos)) {
-        if (this.cursors.left.isDown || this.keys.a.isDown) {
+      if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
+        if (this.keys.left.isDown || this.keys.a.isDown) {
           newDir = dirs.LEFT;
           newTilePos.x--;
         }
-        if (this.cursors.right.isDown || this.keys.d.isDown) {
+        if (this.keys.right.isDown || this.keys.d.isDown) {
           newDir = dirs.RIGHT;
           newTilePos.x++;
         }
-        if (this.cursors.up.isDown || this.keys.w.isDown) {
+        if (this.keys.up.isDown || this.keys.w.isDown) {
           newDir = dirs.UP;
           newTilePos.y--;
         }
-        if (this.cursors.down.isDown || this.keys.s.isDown) {
+        if (this.keys.down.isDown || this.keys.s.isDown) {
           newDir = dirs.DOWN;
           newTilePos.y++;
         }
@@ -281,6 +310,7 @@ export class Player extends Phaser.GameObjects.Container {
         }
         if (tilePosChanged && (!this.turning || justMoved)) {
           this.s.setPos(newTilePos);
+          justMoved = true;
         }
       }
     }
@@ -289,6 +319,12 @@ export class Player extends Phaser.GameObjects.Container {
     } else {
       this.stand();
     }
+
+    this.speechBubbleMillisecondsElapsed += dt;
+    this.speechBubbleTextDisplay.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
+    const messageTime = Math.min(10000, 1000 + (this.speechBubbleText.length * 250));
+    const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
+    this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
   }
 
   onClick(pointer) {
@@ -301,7 +337,6 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   onHover(pointer) {
-    console.log('hovered over', this.patp)
     if (!this.isUs && !this.list.includes(this.ping)) {
       this.add(this.ping);
       this.ping.setVisible(true);
@@ -309,16 +344,17 @@ export class Player extends Phaser.GameObjects.Container {
   }
   
   onLeave(pointer) {
-    console.log('left', this.patp)
-    this.ping.setVisible(false);
-    this.remove(this.ping);
-    this.ping.setText('(ping)');
-    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+    if (!this.isUs) {
+      this.ping.setVisible(false);
+      this.remove(this.ping);
+      this.ping.setText('(ping)');
+      this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+    }
   }
 
-  destroy(fromScene) {
+  preDestroy(fromScene) {
     if (this.dispose) this.dispose();
-    super.destroy(fromScene);
+    super.preDestroy(fromScene);
   }
 }
 
@@ -359,4 +395,10 @@ function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
   }
 
   return pixelPerfectHitTest
+}
+
+function preDestroy() {
+  this.anims.destroy();
+  this.anims = undefined;
+  this.ignoreDestroy = true;
 }

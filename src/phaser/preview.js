@@ -28,14 +28,20 @@ export class Preview extends Phaser.GameObjects.Container {
       this.dispose = dispose;
       createEffect(() => {
         const editor = this.s.editor;
+        const portaling = !!this.s.portalToPlace;
+        const brushing = !!(editor.editing && editor.brush && editor.selectedFormId);
+        const pointing = !!(editor.editing && editor.pointer && editor.movingShadeId);
+        const movingShade = pointing ? this.turf().cave[editor.movingShadeId] : null;
         this.removeAll(true)
-        if ((editor.editing && editor.brush && editor.selectedFormId) || this.s.portalToPlace) {
+        if (this.turf() && (portaling || brushing || pointing)) {
           const shadeDef = {
-            formId: this.s.portalToPlace ? '/portal' : editor.selectedFormId,
-            variation: 0,
+            formId: portaling ? '/portal' : (brushing ? editor.selectedFormId : movingShade.formId),
+            variation: pointing ? (movingShade?.variation || 0) : 0,
             pos: vec2(),
-          }
-          this.shade = new Shade(this.scene, shadeDef, this.turf(), true);
+          };
+          if (!shadeDef.formId) return;
+          this.shade = new Shade(this.scene, shadeDef, this.turf(), false);
+          if (!this.shade) return;
           this.shade.setAlpha(0.8);
           this.add([this.shade]);
         } else {
@@ -46,6 +52,7 @@ export class Preview extends Phaser.GameObjects.Container {
   }
 
   updatePointer(pointer) {
+    if (!this.turf()) return;
     const tileSize = this.turf().tileSize.x;
     const tilePos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY), tileSize);
     const pos = vec2(tilePos).scale(tileFactor);

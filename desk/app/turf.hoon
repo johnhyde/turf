@@ -15,17 +15,30 @@
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
 =/  sub-mist-init  (mk-subs mist-lake mist-path)
 =/  pub-mist-init  (mk-pubs mist-lake mist-path)
+=|  dtid=turf-id
 |%
 +$  versioned-state
   $%  state-0
+      state-1
   ==
 +$  state-0
   $:  %0
-      reset=_58
+      =reset
       closet=$~(default-closet:gen skye)
       dtid=turf-id
-      :: usage=(map turf-id (jug @daa ship))
-      sub-pond=$~(sub-pond-init _sub-pond-init)
+      lakes
+  ==
++$  state-1
+  $:  %1
+      =reset
+      skye-reset=_1
+      closet=$~(default-closet:gen skye)
+      lakes
+  ==
++$  current-state  state-1
++$  reset  _58
++$  lakes
+  $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
       sub-mist=$~(sub-mist-init _sub-mist-init)
       pub-mist=$~(pub-mist-init _pub-mist-init)
@@ -33,7 +46,6 @@
       dppath=$~([%pond ~] pond-path)
       dmpath=$~([%mist ~] mist-path)
   ==
-+$  current-state  state-0
 ::
 +$  card  $+(card card:agent:gall)
 --
@@ -84,26 +96,31 @@
       ?.  =(old-reset reset)  ~&('reseting %turf state' old=state)
       old=!<(versioned-state old-state)
   =*  quolp  -
-  :: =?  quolp  ?=(%0 -.old)
-  ::   (state-0-to-1 cards-0 old)
+  =?  quolp  ?=(%0 -.old)
+    (state-0-to-1 cards-0 old)
   :: =/  old  *current-state
-  ?>  =(-:*current-state -.old)
+  ?>  ?=(_-:*current-state -.old)
   =.  state  old
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
-  :: =^  cards-2  state  (del-player:hc ~hiddev-midlev-mindyr)
-  :: =^  cards-2  state  (add-player:hc ~hiddev-midlev-mindyr)
-  :: =^  cards-2  state  (del-player:hc ~mordev-naltuc-ravteb)
-  :: =^  cards-2  state  (add-player:hc ~mordev-naltuc-ravteb)
-  :: =^  cards-2  state  (del-player:hc ~zod)
-  :: =^  cards-2  state  (add-player:hc ~zod)
-  =/  cards-2  `(list card)`~
+  =^  cards-2  state
+    ?:  =(skye-reset:*current-state skye-reset)
+      `state
+    (update-skye:hc default-skye:gen)
+  :: =/  cards-2  `(list card)`~
   :: ~&  ~(wyt by +.pub-pond)
   :: todo: use ;<???
-  =.  cards-0  :*
-    cards-0
-  ==
+  =.  cards-0  
+    :*
+        cards-0
+    ==
   :(weld cards-0 cards-1 cards-2)^this
+  ++  state-0-to-1
+    |=  [cards=(list card) =state-0]
+    ^-  (quip card state-1)
+    :-  ~
+    =|  s=state-1
+    s(skye-reset +(skye-reset.s), |4 |4.state-0)
   --
 ::
 ::  The SSS skye will give your agent pokes with the following marks:
@@ -278,7 +295,7 @@
     ?-    msg
         [pond-path *]
       ~?  stale.msg  "turf from {<from.msg>} on {<src.msg>} is stale"
-      ~?  ?=(^ turf.rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.turf.rock.msg>}"
+      :: ~?  ?=(^ turf.rock.msg)  "last turf from {<from.msg>} on {<src.msg>} is of size: {<size.plot.u.turf.rock.msg>}"
       =/  this-turf-id=turf-id  [src.msg ;;(path +.path.msg)]
       =/  this-turf-path=path  (turf-id-to-path this-turf-id)
       =/  =stirred:pond
@@ -789,4 +806,16 @@
   |=  =ship
   ^-  (quip card _state)
   (give-pond-goal dtid del-player+ship)
+++  update-skye
+  |=  =skye
+  ^-  (quip card _state)
+  =/  rock  (default-turf)
+  ?~  rock  `state
+  ?~  turf.u.rock  `state
+  =*  turf  u.turf.u.rock
+  %+  give-pond-goal   dtid
+  :-  %set-turf
+  %=  turf
+    skye.plot  (~(uni by skye.plot.turf) default-skye:gen)
+  ==
 --  --

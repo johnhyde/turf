@@ -31,5 +31,3 @@ render(() => {
   initApi();
   return <App />;
 }, root);
-// initEngine();
-// initEngine(null, game);

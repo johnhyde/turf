@@ -2,7 +2,7 @@ import { onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { isValidPatp } from 'urbit-ob';
 import { sendDM } from 'lib/api';
-import { input, normalizeId } from 'lib/utils';
+import { input, normalizeId, isTextInputFocused } from 'lib/utils';
 
 export default function ChatBar() {
   const state = useState();
@@ -35,10 +35,12 @@ export default function ChatBar() {
       chatbox.value = '';
       chatbox.blur();
       e.preventDefault();
+      e.stopPropagation();
     }
     if (e.code === 'Escape') {
       chatbox.blur();
       e.preventDefault();
+      e.stopPropagation();
       return false;
     }
   }
@@ -50,7 +52,7 @@ export default function ChatBar() {
     chatbox.scroll(0, newHeight);
   }
   const globalKeyHandler = (e) => {
-    if (document.activeElement !== chatbox) {
+    if (document.activeElement !== chatbox && !isTextInputFocused()) {
       if (e.code === 'Space' || e.key === '/') {
         chatbox.focus();
         e.preventDefault();
@@ -65,10 +67,11 @@ export default function ChatBar() {
 
   return (
     <div class="mt-1 text-sm overflow-y-hidden">
-      <textarea class="w-full max-h-full px-2 py-1 resize-none rounded-md border border-yellow-950"
-        ref={onChatBoxLoad} onKeyDown={onKeyDown}
+      <textarea class="rounded-input w-full max-h-full resize-none border border-yellow-950"
+        ref={onChatBoxLoad} on:keydown={onKeyDown}
         onInput={onInput}
         use:input={{ onFocus: onInput, onBlur: onInput}}
+        placeholder='Press Space to chat'
       ></textarea>
     </div>
   );

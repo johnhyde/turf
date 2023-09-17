@@ -32,7 +32,6 @@ export default function FormSelect(props) {
             };
           }
           return (
-            //{/* <div class="relative inline-block scale-[2] origin-top-left"> */}
             <div>
               <div class={'rounded-lg p-[5px] ' + (isSelected(id) ? 'bg-yellow-600' : '')}>
                 <div class="relative" style={{ width: width() + 'px' }}>
@@ -43,9 +42,6 @@ export default function FormSelect(props) {
                       class="absolute top-0 left-0 scale-[2] origin-top-left"
                       style={{
                         'image-rendering': 'pixelated',
-                        // position: 'absolute',
-                        // top: 0,
-                        // 'margin-bottom': '-100%',
                       }}
                     />
                   </Show>
@@ -57,21 +53,17 @@ export default function FormSelect(props) {
                   />
                   <button
                     class="absolute top-0 left-0 scale-[2] origin-top-left" 
-                    onClick={() => props.select(id, i)}
+                    onClick={() => isSelected(id) ? props.select(null) : props.select(id)}
                   >
                     <img
                       src={previewForm(form)}
                       draggable={false}
                       class=""
                       style={{
-                        // border: isSelected(id) ? '4px dashed green' : 'none',
                         'image-rendering': 'pixelated',
                       }}
                     />
                   </button>
-                  {/* <p>
-                    {form.name}
-                  </p> */}
                 </div>
               </div>
             </div>
