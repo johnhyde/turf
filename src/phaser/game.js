@@ -225,7 +225,7 @@ function setGameSize() {
   }
   if (cam) {
     const oldZoom = cam.zoom;
-    const newZoom = (window.devicePixelRatio/state.scale)/2;
+    const newZoom = (8/factor)*(window.devicePixelRatio/state.scale)/2;
     if (oldZoom !== newZoom) {
       cam.setZoom(newZoom);
       if (setBounds) setBounds();
@@ -274,6 +274,7 @@ export function startPhaser(_owner, _container) {
       function preload() {
         console.log('preload');
         this.load.audio('ping', ['audio/ping.mp3']);
+        // this.load.image('speech-bubble', 'sprites/speech-bubble.png');
       }
 
       let updateTime;
@@ -364,7 +365,8 @@ export function startPhaser(_owner, _container) {
         addGritListener('pond-fakeGrit-move', usMoveQueuer);
         addGritListener('pond-fakeGrit-face', usMoveQueuer);
         addGritListener('pond-grit-chat', (e) => {
-          if (state.soundOn) {
+          players[e.grit.arg.from].speakBubble(e.grit.arg.text); //do the visual speech bubble part
+          if (state.soundOn) { //do the speech synthesis part
             var msg = new SpeechSynthesisUtterance();
             msg.text = e.grit.arg.text;
             window.speechSynthesis.speak(msg);
@@ -402,6 +404,9 @@ export function startPhaser(_owner, _container) {
             ...extractSkyeSprites(state.e.skye),
             void: {
               sprite: voidUrl,
+            },
+            'speech-bubble': {
+              sprite: 'sprites/speech-bubble.png',
             },
           };
         },
