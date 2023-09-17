@@ -1,6 +1,6 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
-import { vec2, dirs, sleep, intToHex } from 'lib/utils';
+import { vec2, roundV, dirs, sleep, intToHex } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -178,6 +178,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.speechBubble.setVisible(true);
     this.speechBubbleTextDisplay = scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
     this.speechBubbleTextDisplay.setMaxLines(4)
+    // this.speechBubbleTextDisplay.maxHeight = 4*factor;
     this.speechBubbleTextDisplay.setOrigin(0.5, 0.5);
     this.speechBubbleTextDisplay.setVisible(true);
     this.speechBubbleTextDisplay.setDepth(this.speechBubble.depth+1);
@@ -319,6 +320,15 @@ export class Player extends Phaser.GameObjects.Container {
     } else {
       this.stand();
     }
+
+    // const bub = this.speechBubbleTextDisplay;
+    // this.speechBubbleMillisecondsElapsed += dt;
+    // bub.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
+    // bub.setCrop(0, 0, bub.width, bub.maxHeight);
+    // const messageTime = Math.min(10000, 3000 + (this.speechBubbleText.length * 500));
+    // const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
+    // // this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
+    // this.speechBubbleContainer.setVisible(true);
 
     this.speechBubbleMillisecondsElapsed += dt;
     this.speechBubbleTextDisplay.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
