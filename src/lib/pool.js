@@ -9,7 +9,7 @@ export function gritsTypeStr(grits) {
   return `batch: [${grits.map(w => w?.type || 'no-op').join(', ')}]`;
 }
 
-export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
+export function getPool(wash, hydrate, apiSendWave, options = {}) {
   const [pool, $pool] = createStore({
     real: null, // the state as confirmed by the server
     fake: null, // the state as predicted by our pulses/charges
@@ -20,6 +20,9 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
   if (!hydrate) {
     hydrate = (arg) => arg;
   }
+  let filters = options.filters ?? {};
+  let preFilters = options.preFilters ?? {};
+
   let firstChargeTimer = null;
   let lastChargeTimer = null;
 
@@ -42,7 +45,7 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
       } else {
         const {goals, grits} = charge;
         const uuid = uuidv4();
-        console.log('sending grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
+        console.log('sending goals', gritsTypeStr(goals), ', predicting grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
         this.addPulse({
           id: uuid,
           grits,
@@ -219,7 +222,7 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
           grits = [...grits, ...c.grits]
         });
         const uuid = uuidv4();
-        console.log('sending grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
+        console.log('sending goals', gritsTypeStr(goals), ', predicting grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
         this.$('charges', []);
         this.addPulse({
           id: uuid,
@@ -260,37 +263,81 @@ export function getPool(wash, hydrate, apiSendWave, filters, options = {}) {
       });
     },
 
-    // returns false if wave is rejected
+    // returns false if goal is rejected
     // otherwise, returns {goals, grits}
     filterGoals(rock, goals) {
       const [temp, $temp] = createStore(hydrate(cloneDeep(rock)));
-      const newGoals = [], grits = [];
+      goals = goals.map(g => this.preFilterGoal(temp, g)).filter(g => g);
+      let newGoals = [], grits = [], roars = [];
       goals.forEach((goal) => {
-        const filtered = this.filterGoal(temp, goal);
-        if (filtered) {
-          newGoals.push(filtered.goal);
-          grits.push(filtered.grit);
-          wash($temp, [filtered.grit]);
+        const res = this.fGoals(temp, $temp, [goal]);
+        if (res.grits.length || res.roars.length) {
+          newGoals.push(goal);
+          grits = [...grits, ...res.grits];
+          roars = [...roars, ...res.roars];
         }
       });
-
-      if (!grits.length) return false;
+      if (options.onNewRoars) options.onNewRoars(roars);
+      if (options.onNewFakeGrits) options.onNewFakeGrits(grits);
+      if (!newGoals.length) return false;
       return {
         goals: newGoals,
         grits,
       };
     },
 
-    filterGoal(rock, goal) {
-      if (filters[goal.type]) {
-        const goalGrit = filters[goal.type](rock, goal);
-        if (!goalGrit) return false;
-        if (goalGrit instanceof Array) {
-          return { goal: goalGrit[0], grit: goalGrit[1] };
-        }
-        return { goal: goalGrit, grit: goalGrit };
+    fGoals(rock, $rock, goals, distToTop = 0, depth = 0) {
+      let roars = [], grits = [];
+      function ret() {
+        return {
+          roars,
+          grits,
+        };
       }
-      return { goal: goal, grit: goal };
+      if (goals.length === 0) return ret();
+      const top = distToTop === 0;
+      if (top) depth = 0;
+      if (depth > 20) return ret();
+      const goal = goals[0];
+      const filtered = this.filterGoal(rock, goal, top);
+      wash($rock, filtered.grits);
+      const restGoals = [...filtered.goals, ...goals.slice(1)];
+      depth += filtered.goals.length;
+      distToTop = Math.max(0, distToTop - 1) + filtered.goals.length;
+      const rest = this.fGoals(rock, $rock, restGoals, distToTop, depth);
+      roars = [...filtered.roars, ...rest.roars];
+      grits = [...filtered.grits, ...rest.grits];
+      return ret()
+    },
+
+    preFilterGoal(rock, goal) {
+      if (preFilters[goal.type]) {
+        return preFilters[goal.type](rock, goal);
+      }
+      return goal;
+    },
+
+    filterGoal(rock, goal, top = true) {
+      if (filters[goal.type]) {
+        const res = filters[goal.type](rock, goal, top);
+        if (res instanceof Array) {
+          return {
+            roars: [],
+            grits: res,
+            goals: [],
+          };
+        }
+        return {
+          roars: res.roars,
+          grits: res.grits,
+          goals: res.goals,
+        };
+      }
+      return {
+        roars: [],
+        grits: [goal],
+        goals: [],
+      };
     },
   });
 }

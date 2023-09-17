@@ -20,6 +20,7 @@ function initEditorState() {
     selectedShadeId: null,
     selectedTool: null,
     portalToPlace: null,
+    movingShadeId: null,
   };
 }
 
@@ -53,6 +54,9 @@ export function getState() {
         CYCLER: 'cycler',
         RESIZER: 'resizer',
       },
+      get pointer() {
+        return this.selectedTool === null;
+      },
       get brush() {
         return this.selectedTool === this.tools.BRUSH;
       },
@@ -82,6 +86,7 @@ export function getState() {
     notifications: [],
     text: null,
     soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
+    portOffer: null,
     get current() {
       const parent = this;
       const current = {
@@ -225,6 +230,9 @@ export function getState() {
         return this.mist.sendWave(type, arg, id);
       }
     },
+    setPortOffer(portOffer) {
+      $state('portOffer', portOffer);
+    },
     sendChat(message) {
       this.sendPondWave('send-chat', {
         from: our,
@@ -280,6 +288,12 @@ export function getState() {
     delShade(shadeId) {
       this.sendPondWave('del-shade', {
         shadeId: Number.parseInt(shadeId),
+      });
+    },
+    moveShade(shadeId, pos) {
+      this.sendPondWave('move-shade', {
+        shadeId: Number.parseInt(shadeId),
+        pos: vec2(pos),
       });
     },
     cycleShade(shadeId, amount = 1) {
@@ -410,6 +424,9 @@ export function getState() {
     startPlacingPortal(portalId) {
       $state('editor', 'portalToPlace', portalId);
     },
+    setMovingShadeId(shadeId) {
+      $state('editor', 'movingShadeId', shadeId);
+    },
     toggleSound() {
       $state('soundOn', (muted) => !muted);
     },
@@ -446,6 +463,19 @@ export function getState() {
 
   createEffect(() => {
     localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
+  });
+
+  window.addEventListener('pond-roar-port-offer', ({ roar, turfId }) => {
+    const { ship, from, for: forId, at } = roar.arg;
+    if (ship !== our) return;
+    setTimeout(() => {
+      _state.setPortOffer({
+        for: forId,
+        of: turfId,
+        from,
+        at,
+      });
+    }, 200);
   });
 
   return _state;

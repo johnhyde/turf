@@ -20,8 +20,10 @@ export class Player extends Phaser.GameObjects.Container {
     this.patp = patp;
     this.isUs = patp === our;
     if (this.isUs) {
-      this.cursors = scene.input.keyboard.createCursorKeys();
-      this.keys = scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' });
+      this.keys = {
+        ...scene.input.keyboard.createCursorKeys(),
+        ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
+      };
       scene.cameras.main.startFollow(this);
     }
     this.loadPlayerSprites = load;
@@ -65,7 +67,7 @@ export class Player extends Phaser.GameObjects.Container {
         if (pos) {
           // make sure to use x and y so solid knows to track them
           // we aren't tracking player, so that's no help
-          console.log('new player pos', pos.x, pos.y)
+          // console.log('new player pos', pos.x, pos.y)
           this.tilePos = vec2(pos.x, pos.y)
         }
       });
@@ -143,7 +145,7 @@ export class Player extends Phaser.GameObjects.Container {
       spriteDirs.forEach((key, i) => {
         if (!key) return;
         let frameKeys = Object.keys(game.textures.get(key).frames);
-        const frames = frameKeys.map((frame) => { return { key, frame }});
+        const frames = frameKeys.map((frame) => { return { key, frame }}).filter(({ frame }) => frame !== '__BASE');
         sprite.anims.create({
           key: dirs[i],
           frames,
@@ -182,11 +184,11 @@ export class Player extends Phaser.GameObjects.Container {
             }
             if (this.walking()) {
               if (sprite.anims && !sprite.anims.isPlaying) {
-                sprite.anims.resume(sprite.anims.currentAnim?.getFrameAt(1));
+                sprite.anims.resume(newAnim?.getFrameAt(1));
               }
             } else {
               if (sprite.anims.isPlaying) {
-              sprite.anims.pause(sprite.anims.currentAnim?.getFrameAt(0));
+                sprite.anims.pause(newAnim?.getFrameAt(0));
               }
             }
           } else {
@@ -215,17 +217,15 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   preUpdate(time, dt) {
+    if (!game.input.keyboard.enabled && this.keys) {
+      Object.values(this.keys).forEach(k => k.reset());
+    }
     //Action queue retirement here. The objects in the action queue are just grits.
     //The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. 
     //So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
     if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
       this.actionQueue = [];
       console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
-    }
-    while(this.actionQueue[0]?.arg.ship === our) {
-      //Filter out actions we originated. Actually, it's not clear this is robust; maybe other things can `move` or `face` our player? Environmental hazards or whatever?
-      //This code could be refactored so the aforementioned event handlers (or, eventually, possibly, the event-firing code) are responsible for filtering out events that we originated, so that we only get foreign events and this while loop becomes unnecessary.
-      this.actionQueue.shift();
     }
     while(this.actionQueue[0]?.type === "face") {
       this.$apparentDir(this.actionQueue[0].arg.dir);
@@ -236,16 +236,18 @@ export class Player extends Phaser.GameObjects.Container {
     }
     const speed = 170*factor;
     let justMoved = false;
-    let targetPos = vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
+    let targetPos = () => vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
     this.dPos = this.dPos || vec2(this.x, this.y);
-    if (this.dPos.equals(targetPos)) {
+    if (this.dPos.equals(targetPos())) {
       this.actionQueue.shift(); //Remove the item from the action queue
-    } else { //just move like regular
-      const dif = vec2(targetPos).subtract(this.dPos);
+    }
+    if (!this.dPos.equals(targetPos())) {
+      //just move like regular
+      const dif = vec2(targetPos()).subtract(this.dPos);
       let step = speed * dt / 1000;
       if (step > dif.length()) {
-        this.dPos = vec2(targetPos);
-        this.setPosition(targetPos.x, targetPos.y);
+        this.dPos = vec2(targetPos());
+        this.setPosition(targetPos().x, targetPos().y);
       } else {
         const change = vec2(dif).normalize().scale(step);
         this.dPos.add(change);
@@ -257,20 +259,20 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.isUs) {
       const newTilePos = vec2(this.tilePos);
       let newDir;
-      if (this.dPos.equals(targetPos)) {
-        if (this.cursors.left.isDown || this.keys.a.isDown) {
+      if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
+        if (this.keys.left.isDown || this.keys.a.isDown) {
           newDir = dirs.LEFT;
           newTilePos.x--;
         }
-        if (this.cursors.right.isDown || this.keys.d.isDown) {
+        if (this.keys.right.isDown || this.keys.d.isDown) {
           newDir = dirs.RIGHT;
           newTilePos.x++;
         }
-        if (this.cursors.up.isDown || this.keys.w.isDown) {
+        if (this.keys.up.isDown || this.keys.w.isDown) {
           newDir = dirs.UP;
           newTilePos.y--;
         }
-        if (this.cursors.down.isDown || this.keys.s.isDown) {
+        if (this.keys.down.isDown || this.keys.s.isDown) {
           newDir = dirs.DOWN;
           newTilePos.y++;
         }
@@ -286,6 +288,7 @@ export class Player extends Phaser.GameObjects.Container {
         }
         if (tilePosChanged && (!this.turning || justMoved)) {
           this.s.setPos(newTilePos);
+          justMoved = true;
         }
       }
     }

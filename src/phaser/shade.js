@@ -18,4 +18,9 @@ export class Shade extends Phaser.GameObjects.Image {
       }
     }
   }
+
+  setPosition(...args) {
+    super.setPosition(...args);
+    this.setDepth(this.y/tileFactor);
+  }
 }

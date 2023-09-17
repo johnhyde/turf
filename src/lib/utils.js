@@ -166,6 +166,10 @@ export function stripPathPrefix(path) {
   return path.replace(/\/[^/]+\//, '');
 }
 
+export function turfIdToPath(turfId) {
+  return '/pond/' + turfId.ship + (turfId.path !== '/' ? turfId.path : '');
+}
+
 export function truncateString(str, maxLength) {
   if (str.length > maxLength) {
     const truncated = str.slice(0, maxLength - 3);

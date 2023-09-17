@@ -80,6 +80,13 @@ export function getShadesAtPos(turf, pos) {
   return shades.map(sid => getShadeWithForm(turf, sid)).filter(shade => shade);
 }
 
+export function getThingsAtPos(turf, pos) {
+  const tile = getTileWithForm(turf, pos);
+  const shades = getShadesAtPos(turf, pos);
+  if (tile) return [tile, ...shades];
+  return shades;
+}
+
 export function getShadesAtPosByType(turf, pos, type) {
   return getShadesAtPos(turf, pos).filter(shade => shade.form.type === type);
 }
@@ -115,16 +122,23 @@ export function getCollision(turf, pos) {
 
 export function getEffectsByHusk(turf, shade) {
   const form = turf.skye[shade.formId];
-  if (!form) return {
-    fullFx: shade.effects,
-    huskFx: shade.effects,
+  return getEffectsByThing({
+    ...shade,
+    form,
+  });
+}
+
+export function getEffectsByThing(thing) {
+  if (!thing.form) return {
+    fullFx: thing.effects,
+    huskFx: thing.effects,
     formFx: {},
   };
-  const formFx = Object.assign({}, form.seeds, form.effects);
-  const fullFx = Object.assign({}, formFx, shade.effects);
+  const formFx = Object.assign({}, thing.form.seeds, thing.form.effects);
+  const fullFx = Object.assign({}, formFx, thing.effects);
   return {
     fullFx,
-    huskFx: shade.effects,
+    huskFx: thing.effects,
     formFx,
   };
 }
