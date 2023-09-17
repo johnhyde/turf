@@ -48,11 +48,11 @@
 ::
 +$  card  $+(card card:agent:gall)
 --
-%-  agent:dbug
 =/  vita-config=config:vita-client
   [| ~pandux]
   :: [| ~nec]
 %-  (agent:vita-client vita-config)
+%-  agent:dbug
 =|  current-state
 =*  state  -
 :: %+  verb  &
@@ -226,6 +226,10 @@
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
+      %kick-subs
+    :_  this
+    :: [%give %kick ~[;;(path dmpath) (ship-ppath-to-path our.bowl dppath)] ~]~
+    [%give %kick ~[;;(path dmpath) /pond/~mordev-naltuc-ravteb (ship-ppath-to-path our.bowl dppath)] ~]~
   :: Sub Pokes
   ::
       %surf-turf
@@ -428,7 +432,14 @@
 ++  on-leave
   |=  =path
   ^-  (quip card _this)
-  `this
+  =/  online
+    %-  ~(any by sup.bowl)
+    |=  [=ship pat=^path]
+    |(=(/mist pat) ?=([%pond *] path))
+  ~&  ['is there a client subbed to a mist or turf?' path online]
+  ?:  online  `this
+  =^  cards  state  (give-mist:hc dmpath set-ctid+~)
+  cards^this
 ::
 ++  on-peek
   |=  =path
@@ -635,16 +646,17 @@
         :: if we have been invited somewhere
         :: or invited ourselves home,
         :: delete ourselves from current turf
-        ?@  via.roar
-          ?~  old-tid  ~
-          ?:  =(old-tid (ctid))  ~
-          :_  ~
-          %^    pond-stir-card
-              (weld /pond-stir (drop id.stir))
-            u.old-tid
-          [%del-player our.bowl]
+        :: ?~  via.roar
+        ::   ?~  old-tid  ~
+        ::   ?:  =(old-tid (ctid))  ~
+        ::   :_  ~
+        ::   %^    pond-stir-card
+        ::       (weld /pond-stir (drop id.stir))
+        ::     u.old-tid
+        ::   [%del-player our.bowl]
         :: otherwise accept the port offer
         :: which will allow us to travel
+        ?~  via.roar  ~
         :_  ~
         %^    pond-stir-card
             /port-offer-accept
@@ -665,7 +677,13 @@
           %turf-exit
         =.  sub-pond
           (quit:da-pond (turf-id-to-sub-key turf-id.roar))
-        `state
+        :-  ?~  old-tid  ~
+            :_  ~
+            %^    pond-stir-card
+                (weld /pond-stir (drop id.stir))
+              u.old-tid
+            [%del-player our.bowl]
+        state
       ==
     (weld cards new-cards)^state
   =^  pond-cards=(list card)  state  (sync-avatar)

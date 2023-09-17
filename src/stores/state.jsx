@@ -576,6 +576,11 @@ export function getState() {
     }, 200);
   });
 
+  window.addEventListener('beforeunload', (e) => {
+    _state.clearTurfs();
+    _state.mist.destroy();
+  });
+
   return _state;
 }
 

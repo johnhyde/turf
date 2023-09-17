@@ -535,6 +535,9 @@
   |=  id=turf-id
   ^-  path
   [%pond (scot %p ship.id) path.id]
+++  ship-ppath-to-path
+  |=  [=ship ppath=pond-path]
+  (turf-id-to-path ship ;;(path +.ppath))
 ::
 ++  enjs
   =,  enjs:format
