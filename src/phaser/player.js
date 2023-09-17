@@ -1,6 +1,6 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
-import { vec2, dirs, sleep, intToHex } from 'lib/utils';
+import { vec2, roundV, dirs, sleep, intToHex } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
