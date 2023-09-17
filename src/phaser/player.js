@@ -15,6 +15,8 @@ export class Player extends Phaser.GameObjects.Container {
     this.turf = turf;
     this.player = player;
     this.actionQueue = [];
+    this.speechBubbleText = ""; //This variable is probably redundant, and could be removed, assigning directly to speechBubbleTextContainer.text instead. However, when I tried this once, it mysteriously broke.
+    this.speechBubbleMillisecondsElapsed = 0;
     this.tilePos = vec2(player().pos);
     this.oldTilePos = vec2(player().pos);
     this.patp = patp;
@@ -166,6 +168,20 @@ export class Player extends Phaser.GameObjects.Container {
     '--webkit-font-smoothing': 'none' }});
     this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height + this.ping.height);
     this.ping.setVisible(false);
+    /* Make speech bubble */
+    this.speechBubble = scene.add.image(0, 0, "speech-bubble").setScale(factor);
+    this.speechBubbleContainer = new Phaser.GameObjects.Container(scene, this.bodyImage.width*factor*1.3, -this.bodyImage.height*factor/2);
+    this.speechBubbleContainer.add(this.speechBubble);
+    this.speechBubbleContainer.setDepth(100); //It seems contigent on other things whether the speech bubble renders in front of or behind other things. Perhaps it should always render in front, but it's not clear to me at this time how to achieve that effect.
+    this.avatar.add(this.speechBubbleContainer);
+    this.speechBubble.setVisible(true);
+    this.speechBubbleTextDisplay = scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
+    this.speechBubbleTextDisplay.setMaxLines(4)
+    this.speechBubbleTextDisplay.setOrigin(0.5, 0.5);
+    this.speechBubbleTextDisplay.setVisible(true);
+    this.speechBubbleTextDisplay.setDepth(this.speechBubble.depth+1);
+    this.speechBubbleContainer.add(this.speechBubbleTextDisplay);
+    /* Scaling and dimensions of camera stuff */
     const dims = vec2(this.bodyImage.width, this.bodyImage.height).scale(factor);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(vec2(playerOffset).scale(factor));
     scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
@@ -195,10 +211,12 @@ export class Player extends Phaser.GameObjects.Container {
             sprite.setVisible(false);
           }
         }
-        if (sprite.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
-          sprite.setFlipX(true);
-        } else {
-          sprite.setFlipX(false);
+        if (sprite.setFlipX){
+          if (sprite.thing?.form.variations.length < 4 && this.dir === dirs.LEFT) {
+            sprite.setFlipX(true);
+          } else {
+            sprite.setFlipX(false);
+          }
         }
       });
     }
@@ -216,13 +234,16 @@ export class Player extends Phaser.GameObjects.Container {
     }
   }
 
+  speakBubble(textToSpeak) {
+    this.speechBubbleText = textToSpeak;
+    this.speechBubbleMillisecondsElapsed = 0;
+  }
+
   preUpdate(time, dt) {
     if (!game.input.keyboard.enabled && this.keys) {
       Object.values(this.keys).forEach(k => k.reset());
     }
-    //Action queue retirement here. The objects in the action queue are just grits.
-    //The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. 
-    //So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
+    //Action queue retirement here. The objects in the action queue are just grits. The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
     if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
       this.actionQueue = [];
       console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
@@ -297,6 +318,12 @@ export class Player extends Phaser.GameObjects.Container {
     } else {
       this.stand();
     }
+
+    this.speechBubbleMillisecondsElapsed += dt;
+    this.speechBubbleTextDisplay.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
+    const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < (this.speechBubbleText.length * 1000));
+    this.speechBubble.setVisible(showSpeechBubbleNow);
+    this.speechBubbleTextDisplay.setVisible(showSpeechBubbleNow);
   }
 
   onClick(pointer) {
