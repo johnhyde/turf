@@ -170,10 +170,11 @@ export class Player extends Phaser.GameObjects.Container {
     this.ping.setVisible(false);
     /* Make speech bubble */
     this.speechBubble = scene.add.image(0, 0, "speech-bubble").setScale(factor);
-    this.speechBubbleContainer = new Phaser.GameObjects.Container(scene, this.bodyImage.width*factor*1.3, -this.bodyImage.height*factor/2);
+    const bubblePos = roundV(vec2(this.bodyImage.width*1.3, -this.bodyImage.height/2)).scale(factor);
+    this.speechBubbleContainer = new Phaser.GameObjects.Container(scene, bubblePos.x, bubblePos.y);
     this.speechBubbleContainer.add(this.speechBubble);
-    this.speechBubbleContainer.setDepth(100); //It seems contigent on other things whether the speech bubble renders in front of or behind other things. Perhaps it should always render in front, but it's not clear to me at this time how to achieve that effect.
-    this.avatar.add(this.speechBubbleContainer);
+    this.speechBubbleContainer.setDepth(100);
+    this.add(this.speechBubbleContainer);
     this.speechBubble.setVisible(true);
     this.speechBubbleTextDisplay = scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
     this.speechBubbleTextDisplay.setMaxLines(4)
@@ -321,9 +322,9 @@ export class Player extends Phaser.GameObjects.Container {
 
     this.speechBubbleMillisecondsElapsed += dt;
     this.speechBubbleTextDisplay.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
-    const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < (this.speechBubbleText.length * 1000));
-    this.speechBubble.setVisible(showSpeechBubbleNow);
-    this.speechBubbleTextDisplay.setVisible(showSpeechBubbleNow);
+    const messageTime = Math.min(10000, 1000 + (this.speechBubbleText.length * 250));
+    const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
+    this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
   }
 
   onClick(pointer) {

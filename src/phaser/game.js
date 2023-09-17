@@ -225,7 +225,7 @@ function setGameSize() {
   }
   if (cam) {
     const oldZoom = cam.zoom;
-    const newZoom = (window.devicePixelRatio/state.scale)/2;
+    const newZoom = (8/factor)*(window.devicePixelRatio/state.scale)/2;
     if (oldZoom !== newZoom) {
       cam.setZoom(newZoom);
       if (setBounds) setBounds();
@@ -274,7 +274,7 @@ export function startPhaser(_owner, _container) {
       function preload() {
         console.log('preload');
         this.load.audio('ping', ['audio/ping.mp3']);
-        this.load.image('speech-bubble', 'sprites/speech-bubble.png');
+        // this.load.image('speech-bubble', 'sprites/speech-bubble.png');
       }
 
       let updateTime;
@@ -404,6 +404,9 @@ export function startPhaser(_owner, _container) {
             ...extractSkyeSprites(state.e.skye),
             void: {
               sprite: voidUrl,
+            },
+            'speech-bubble': {
+              sprite: 'sprites/speech-bubble.png',
             },
           };
         },
