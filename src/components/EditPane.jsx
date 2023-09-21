@@ -108,8 +108,8 @@ export default function EditPane() {
   }
 
   return (
-    <div class="flex flex-col">
-      <div>
+    <div class="flex flex-col h-full">
+      <div class="flex flex-wrap justify-evenly content-evenly">
         <Button
           onClick={[selectTool, null]}
           src={point}
@@ -159,13 +159,13 @@ export default function EditPane() {
       <Show when={selectedShade()} keyed>
         {(shade) => <ShadeEditor shade={shade} />}
       </Show>
-      <div>
+      <div class="h-full overflow-y-auto">
         <For each={types}>
           {(type) => (
 
             <FormSelect
               forms={formsByType(type)}
-              select={selectForm}
+              select={(formId) => state.editor.selectedFormId === formId ? selectForm(null) : selectForm(formId)}
               selectedId={state.editor.selectedFormId}
             />
           )}

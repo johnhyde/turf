@@ -30,6 +30,7 @@ async function loadImage(id, url, ...args) {
   try {
     return await loadImageUnsafe(id, url, ...args);
   } catch (e) {
+    console.log(`failed to load ${id}`, e);
     return loadImageUnsafe(id, voidUrl, ...args);
   }
 }
@@ -86,7 +87,10 @@ async function loadImageUnsafe(id, url, config = {}) {
           game.textures.removeKey(id);
         }
       }
-      if (game.textures.exists(id)) return;
+      if (game.textures.exists(id)) {
+        resolve();
+        return;
+      }
       const texture = game.textures.create(id, images, images[0].width, images[0].height);
       if (!texture) reject('could not create texture for: ' + url[0]);
       images.forEach((img, i) => {

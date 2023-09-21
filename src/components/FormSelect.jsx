@@ -1,10 +1,10 @@
-import { createSignal, createSelector } from 'solid-js';
+import { createSignal, createSelector, createMemo } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 
 export default function FormSelect(props) {
   const state = useState();
   const isSelected = createSelector(() => props.selectedId);
-  const forms = () => {
+  const forms = createMemo(() => {
     let forms = (props.forms || []).map((f, i) => [i, f])
     if (props.sort) {
       forms.sort((a, b) => {
@@ -12,9 +12,9 @@ export default function FormSelect(props) {
       });
     }
     return forms;
-  };
+  });
   function previewForm(form) {
-    const sprite = form.variations[0].sprite;
+    let sprite = form.variations[0].sprite;
     if (sprite.frames) {
       return sprite.frames[0];
     }
@@ -22,18 +22,22 @@ export default function FormSelect(props) {
   }
   return (
     <div class="flex flex-wrap justify-center">
-      <For each={forms()} fallback={props.fallback || <div>Loading...</div>}>
-        {([i, [id, form]]) => {
+      <Index each={forms()} fallback={props.fallback || <div>Loading...</div>}>
+        {(item) => {
+          const i = () => item()[0];
+          const j = () => item()[1];
+          const id = () => j()[0];
+          const form = () => j()[1];
           const [width, $width] = createSignal();
           window.width = width;
           function onImg(el) {
             el.onload = () => {
-              $width(el.clientWidth*2)
+              $width(el.naturalWidth*2)
             };
           }
           return (
             <div>
-              <div class={'rounded-lg p-[5px] ' + (isSelected(id) ? 'bg-yellow-600' : '')}>
+              <div class={'rounded-lg p-[5px] ' + (isSelected(id()) ? 'bg-yellow-600' : '')}>
                 <div class="relative" style={{ width: width() + 'px' }}>
                   <Show when={props.background}>
                     <img
@@ -47,16 +51,16 @@ export default function FormSelect(props) {
                   </Show>
                   <img
                     ref={onImg}
-                    src={previewForm(form)}
+                    src={previewForm(form())}
                     draggable={false}
                     class="invisible w-full"
                   />
                   <button
                     class="absolute top-0 left-0 scale-[2] origin-top-left" 
-                    onClick={() => isSelected(id) ? props.select(null) : props.select(id)}
+                    onClick={() => props.select(id(), i())}
                   >
                     <img
-                      src={previewForm(form)}
+                      src={previewForm(form())}
                       draggable={false}
                       class=""
                       style={{
@@ -69,7 +73,7 @@ export default function FormSelect(props) {
             </div>
           );
         }}
-      </For>
+      </Index>
     </div>
   );
 }

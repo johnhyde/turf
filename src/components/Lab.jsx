@@ -35,7 +35,7 @@ export default function Lab() {
 
   const pClass = 'bg-yellow-950 text-yellow-50 rounded-md px-2 py-0.5 my-1 mx-auto w-fit';
   return (
-    <div class="text-black text-center space-y-2">
+    <div class="text-black text-center space-y-2 h-full overflow-y-auto">
       <div class="flex items-center justify-center">
         <Heading class="ml-0 mr-1">
           Skin Color

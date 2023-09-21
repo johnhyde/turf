@@ -79,7 +79,7 @@ export default function PortalsPane() {
   }
 
   return (
-    <div class="flex flex-col">
+    <div class="flex flex-col h-full overflow-y-auto">
       <Show when={state.c.id !== ourPond}>
         <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
       </Show>
