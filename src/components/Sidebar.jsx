@@ -82,7 +82,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-[233px] min-w-[233px] pointer-events-none z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
+      class={'p-1 flex flex-col h-full w-[245px] min-w-[245px] pointer-events-none z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show when={open()} fallback={(
         <div class="flex-grow">
@@ -95,7 +95,7 @@ function Sidebar() {
           </div>
         </div>
       )}>
-        <div class={'pointer-events-auto ' + (state.selectedTab ? 'pb-1 border-b border-yellow-950' : '')}>
+        <div class={'pointer-events-auto flex flex-wrap justify-evenly content-evenly ' + (state.selectedTab ? 'pb-1 border-b border-yellow-950' : '')}>
           <Button
             onClick={closeSidebar}
             src={leftCaret}
@@ -119,6 +119,17 @@ function Sidebar() {
             selected={isSelected(state.tabs.EDITOR)}
             tooltip='E'
           />
+          {/* these next two buttons are just spacers */}
+          <Button
+            src={shovel}
+            disabled
+            class="opacity-0"
+          />
+          <Button
+            src={shovel}
+            disabled
+            class="opacity-0"
+          />
           <div class="inline-block relative">
             <Button
               onClick={[toggleTab, state.tabs.PORTALS]}
@@ -138,8 +149,8 @@ function Sidebar() {
           />
         </div>
         <Show when={state.selectedTab}>
-          <div class="overflow-y-auto pointer-events-auto">
-            <div class="my-1">
+          <div class="overflow-y-hidden shrink min-w-xl pointer-events-auto">
+            <div class="my-1 h-full">
               {state.selectedTab === state.tabs.PORTALS && <PortalsPane/>}
               {state.editor.editing && <EditPane/>}
               {state.lab.editing && <Lab/>}

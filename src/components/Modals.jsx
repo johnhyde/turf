@@ -110,7 +110,7 @@ export default function Modals() {
       </Show>
       <Show when={state.text}>
         <Modal class="border-yellow-950 border-4 rounded-md bg-yellow-700" onClose={() => state.displayText(null)}>
-          <p class="text-xl mb-4 text-center whitespace-pre">
+          <p class="text-xl mb-4 text-center whitespace-pre-wrap">
             {state.text}
           </p>
           <div class="mt-4 text-center">

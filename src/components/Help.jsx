@@ -4,7 +4,7 @@ import StateSummary from "@/StateSummary";
 export default function Help() {
   const state = useState();
 
-  return (
+  return (<div class="h-full overflow-y-auto">
     <div class="m-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50">
       {dev && <StateSummary />}
       <p>
@@ -124,5 +124,5 @@ export default function Help() {
         {/* </a> */}
       </p>
     </div>
-  );
+  </div>);
 }

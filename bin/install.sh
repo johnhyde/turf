@@ -53,8 +53,6 @@ done
 
 if [ -z "$WATCH_MODE" ]; then
     echo "Installing %turf to ${DESK_DIR}"
-    rm -r $DESK_DIR/*
-    sync
 
     # Now, issue commands to the ship.
     # First, we must ensure the ship is on.
@@ -69,8 +67,10 @@ if [ -z "$WATCH_MODE" ]; then
     # Now, the commands themselves:
     lensa 'hood' "+hood/new-desk %$DESK"
     lensa 'hood' "+hood/mount %$DESK"
+
+    rm -r $DESK_DIR/*
+    sync
     lensa 'hood' "+hood/commit %$DESK"
-    lensa 'hood' "+hood/install our %$DESK"
 
     if [ "$GLOBBER" ]; then
         lensd '-garden!make-glob %globber /turf'
@@ -83,6 +83,8 @@ if [ -z "$WATCH_MODE" ]; then
         HASH="${GLOB//glob-/}"
         HASH="${HASH//.glob/}"
         echo $HASH
+    else
+        lensa 'hood' "+hood/install our %$DESK"
     fi
 else
     echo "Watching for changes to copy to ${DESK_DIR}..."

@@ -1,6 +1,7 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
-import { vec2, roundV, dirs, sleep, intToHex } from 'lib/utils';
+import isEqual from 'lodash/isEqual';
+import { vec2, roundV, dirs, sleep, intToHex, jClone } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -35,8 +36,6 @@ export class Player extends Phaser.GameObjects.Container {
     this.walking = walking, this.$walking = $walking;
     const [apparentDir, $apparentDir] = createSignal(null);
     this.apparentDir = apparentDir, this.$apparentDir = $apparentDir;
-    this.recreateAvatar();
-    this.updateAnims();
     this.setInteractive({
       cursor: 'pointer',
       hitArea: new Phaser.Geom.Rectangle(),
@@ -45,8 +44,11 @@ export class Player extends Phaser.GameObjects.Container {
     this.on('pointerdown', this.onClick.bind(this));
     this.on('pointermove', this.onHover.bind(this));
     this.on('pointerout', this.onLeave.bind(this));
-    this.setupEffects();
-    this.scene.add.existing(this);
+    this.recreateAvatar().then(() => {
+      this.updateAnims();
+      this.setupEffects();
+      this.scene.add.existing(this);
+    });
   }
 
   get t() {
@@ -95,11 +97,10 @@ export class Player extends Phaser.GameObjects.Container {
       }));
       createEffect(on(() => {
         if (!this.p) return null;
-        return JSON.stringify([this.p.avatar.body.thing, this.p.avatar.things]);
-      }, async () => {
-        if (this.p?.avatar) {
-          this.recreateAvatar();
-          await sleep(0);
+        return jClone([this.p.avatar.body.thing, this.p.avatar.things]);
+      }, async (input, prevInput) => {
+        if (this.p?.avatar && !isEqual(input, prevInput)) {
+          await this.recreateAvatar();
           this.updateAnims();
         }
       }, { defer: true }));
@@ -109,10 +110,10 @@ export class Player extends Phaser.GameObjects.Container {
   async recreateAvatar() {
     if (!(this.p && this.t)) return;
     const avatar = this.p.avatar;
-    this.avatar.removeAll(true);
     
     await this.loadPlayerSprites(this.t);
     if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
+    this.avatar.removeAll(true);
     const frameRate = 7;
     const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
     this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
@@ -320,11 +321,13 @@ export class Player extends Phaser.GameObjects.Container {
       this.stand();
     }
 
-    this.speechBubbleMillisecondsElapsed += dt;
-    this.speechBubbleTextDisplay.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
-    const messageTime = Math.min(10000, 1000 + (this.speechBubbleText.length * 250));
-    const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
-    this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
+    if (this.speechBubbleTextDisplay) {
+      this.speechBubbleMillisecondsElapsed += dt;
+      this.speechBubbleTextDisplay.text = this.speechBubbleText; //this copy is hopefully optimized out, since maybe these are the same pointer behind the scenes
+      const messageTime = Math.min(10000, 1000 + (this.speechBubbleText.length * 250));
+      const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
+      this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
+    }
   }
 
   onClick(pointer) {
