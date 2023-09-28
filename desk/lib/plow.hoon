@@ -142,7 +142,12 @@
       ``~
     `~[goal]~
       %approve-dink
-    :-  [%portal-confirm from.goal for.portal u.at.portal]~
+    ?.  (portal-is-dink turf portal-id.goal)  ``~
+    =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
+    ?:  ?|(?=(~ portal) ?=(~ at.portal))
+      ``[%del-dink portal-id.goal]~
+    :-  [%portal-confirm from=portal-id.goal for.portal u.at.portal]~
+    `[%set-dink portal-id.goal %.y]~
     ::
       %create-bridge
     :: $:  %create-bridge
