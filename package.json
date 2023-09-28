@@ -6,6 +6,7 @@
     "init": "cp .env .env.local",
     "start": "vite",
     "start2": "SHIP_URL='http://127.0.0.1:8081' npm run dev -- --port 3001",
+    "start3": "SHIP_URL='http://127.0.0.1:8082' npm run dev -- --port 3002",
     "tmux": "bin/use_tmux.sh",
     "dev": "vite",
     "build": "vite build",

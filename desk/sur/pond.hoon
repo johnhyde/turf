@@ -11,88 +11,66 @@
 --
 |%
 +$  rock
-  $:  stir-ids=(map ship @t)
-      core
+  $%  rock-0
   ==
-+$  core  turf=(unit turf)
+:: :: +$  rock-old
+:: ::   $:  stir-ids=(map ship @t)
+:: ::       core-old
+::   ==
+:: +$  core-old  turf=(unit turf:turf-old)
++$  rock-0
+  $:  %0
+      stir-ids=(map ship @t)
+      core-0
+  ==
++$  core-0  turf=(unit turf)
 +$  grits  (list grit)
 +$  grit
   $+  pond-grit
   $@  ?(%del-turf %inc-counter %noop)
-  $%  set-turf-grit
-      size-turf-grit
-      add-form-grit
-      del-form-grit
-      add-husk-grit
-      del-shade-grit
-      move-shade-grit
-      cycle-shade-grit
-      set-shade-var-grit
-      set-shade-effect-grit
-      add-portal-grit
-      del-portal-grit
-      add-shade-to-portal-grit
-      del-shade-from-portal-grit
-      del-portal-from-shade-grit
+  $%  [%set-turf =turf]
+      [%size-turf off-size]
+      [%add-form form-spec]
+      [%del-form =form-id]
+      [%add-husk husk-spec]
+      [%del-shade =shade-id]
+      [%move-shade =shade-id pos=svec2]
+      [%cycle-shade =shade-id amt=@ud]
+      [%set-shade-var =shade-id variation=@ud]
+      [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
+      [%set-lunk lunk=(unit lunk)]
+      [%set-dink =portal-id approved=?]
+      [%del-dink =portal-id]
+      [%add-portal for=turf-id at=(unit portal-id)]
+      [%del-portal from=portal-id loud=?]
+      ::  secret waves
+      [%add-shade-to-portal from=portal-id =shade-id]
+      [%del-shade-from-portal from=portal-id =shade-id]
+      [%del-portal-from-shade =shade-id =portal-id]
       portal-confirmed-grit
-      chat-grit
-      move-grit
-      face-grit
+      [%chat =chat]
+      [%move =ship pos=svec2]
+      [%face =ship =dir]
       [%ping-player =ship by=ship]
-      set-avatar-grit
-      add-port-offer-grit
-      del-port-offer-grit
-      add-port-req-grit
-      del-port-req-grit
-      add-port-rec-grit
-      del-port-rec-grit
-      del-port-recs-grit
-      add-player-grit
-      del-player-grit
+      [%set-avatar =ship =avatar]
+      [%add-port-offer =ship from=portal-id]
+      [%del-port-offer =ship]
+      [%add-port-req =ship from=(unit portal-id) =avatar]
+      [%del-port-req =ship]
+      [%add-port-rec from=portal-id =ship]
+      [%del-port-rec from=portal-id =ship]
+      [%del-port-recs from=portal-id]
+      [%add-player =ship =player]
+      [%del-player =ship]
   ==
-::
-+$  set-turf-grit  [%set-turf =turf]
-+$  size-turf-grit  [%size-turf off-size]
-+$  add-form-grit  [%add-form form-spec]
-+$  del-form-grit  [%del-form =form-id]
-+$  add-husk-grit  [%add-husk husk-spec]
-+$  del-shade-grit  [%del-shade =shade-id]
-+$  move-shade-grit  [%move-shade =shade-id pos=svec2]
-+$  cycle-shade-grit  [%cycle-shade =shade-id amt=@ud]
-+$  set-shade-var-grit  [%set-shade-var =shade-id variation=@ud]
-+$  set-shade-effect-grit
-  $:  %set-shade-effect
-      =shade-id
-      =trigger
-      effect=(unit possible-effect)
-  ==
-::  we are managing our portals
-+$  add-portal-grit  [%add-portal for=turf-id at=(unit portal-id)]
-+$  del-portal-grit  [%del-portal from=portal-id loud=?]
-::  secret waves
-+$  add-shade-to-portal-grit  [%add-shade-to-portal from=portal-id =shade-id]
-+$  del-shade-from-portal-grit  [%del-shade-from-portal from=portal-id =shade-id]
-+$  del-portal-from-shade-grit  [%del-portal-from-shade =shade-id =portal-id]
 ::  we are receiving updates about a peer's portal
-::  these are produced by set-shade-effect and create-bridge as roars
-+$  portal-requested-goal  [%portal-requested for=turf-id at=portal-id]
+::  these are produced from roars of various goals
++$  portal-requested-goal  [%portal-requested for=turf-id at=portal-id is-link=?]
 +$  portal-retracted-goal  [%portal-retracted for=turf-id at=portal-id]
 +$  portal-discarded-goal  [%portal-discarded from=portal-id]
 +$  portal-confirmed-grit  [%portal-confirmed from=portal-id at=portal-id]
 ::
-+$  chat-grit  [%chat =chat]
-+$  move-grit  [%move =ship pos=svec2]
-+$  face-grit  [%face =ship =dir]
-+$  set-avatar-grit  [%set-avatar =ship =avatar]
-+$  add-port-offer-grit  [%add-port-offer =ship from=portal-id]
-+$  del-port-offer-grit  [%del-port-offer =ship]
-+$  add-port-req-grit  [%add-port-req =ship from=(unit portal-id) =avatar]
-+$  del-port-req-grit  [%del-port-req =ship]
-+$  add-port-rec-grit  [%add-port-rec from=portal-id =ship]
-+$  del-port-rec-grit  [%del-port-rec from=portal-id =ship]
-+$  del-port-recs-grit  [%del-port-recs from=portal-id]
-+$  add-player-grit  [%add-player =ship =player]
-+$  del-player-grit  [%del-player =ship]
+::
 ::
 +$  stir
   $+  pond-stir
@@ -106,13 +84,15 @@
   $%  grit
       [%send-chat from=ship text=cord]
       [%join-player =ship =avatar]
+      [%add-lunk husk-spec]
+      [%approve-dink =portal-id]
       create-bridge-goal
       portal-requested-goal
       portal-retracted-goal
       portal-discarded-goal
-      port-offer-accepted-goal
-      port-offer-rejected-goal
-      import-player-goal
+      [%port-offer-accepted =ship from=portal-id]
+      [%port-offer-rejected =ship from=portal-id]
+      [%import-player =ship from=(unit portal-id) =avatar]
   ==
 ::  let's us create a shade and/or portal
 ::  and link them in one transaction
@@ -121,10 +101,8 @@
       shade=?(shade-id husk-spec) 
       =trigger
       portal=?(portal-id turf-id)
+      :: link=(unit ?(%lunk %dink))
   ==
-+$  port-offer-accepted-goal  [%port-offer-accepted =ship from=portal-id]
-+$  port-offer-rejected-goal  [%port-offer-rejected =ship from=portal-id]
-+$  import-player-goal  [%import-player =ship from=(unit portal-id) =avatar]
 +$  stirred
     $%  [what=%rock =rock]
         [what=%wave id=stir-id =grits]
@@ -134,11 +112,11 @@
 :: which update state and produce cards
 +$  portal-event  ?(%requested %retracted %confirmed %rejected %discarded)
 +$  roar
-  $%  [%portal-request from=portal-id for=turf-id]
+  $%  [%portal-request from=portal-id for=turf-id is-link=?]
       [%portal-retract from=portal-id for=turf-id]
       [%portal-confirm from=portal-id for=turf-id at=portal-id]
       [%portal-discard for=turf-id at=portal-id]
-      [%portal-hark event=portal-event from=portal-id for=turf-id]
+      [%portal-hark event=portal-event is-link=? from=portal-id for=turf-id]
       [%port =ship for=turf-id at=portal-id]
       [%port-offer =ship from=portal-id for=turf-id at=portal-id]
       [%player-add =ship]
@@ -152,8 +130,9 @@
   ^-  ^rock
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))
+  :-  -.rock
   :-  stir-ids.rock
-  ^-  core
+  ^-  core-0
   =/  uturf  turf.rock
   ?~  uturf
     ?@  grit  ~  :: %del-turf or %inc-counter
@@ -193,6 +172,15 @@
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)
     ::
+    %set-lunk  turf(lunk.deed lunk.grit)
+      %set-dink
+    =.  dinks.deed.turf
+      (~(put by dinks.deed.turf) portal-id.grit approved.grit)
+    turf
+      %del-dink
+    =.  dinks.deed.turf
+      (~(del by dinks.deed.turf) portal-id.grit)
+    turf
     %add-portal  (add-portal turf for.grit at.grit)
     %del-portal  (del-portal turf from.grit)
       %add-shade-to-portal

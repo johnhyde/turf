@@ -15,6 +15,7 @@ import lab from 'assets/icons/lab.png';
 import shovel from 'assets/icons/shovel.png';
 import help from 'assets/icons/help.png';
 import portal from 'assets/icons/portal.png';
+import town from 'assets/icons/town.png';
 import muted from 'assets/icons/muted.png';
 import unmuted from 'assets/icons/unmuted.png';
 
@@ -125,11 +126,18 @@ function Sidebar() {
             disabled
             class="opacity-0"
           />
-          <Button
-            src={shovel}
-            disabled
-            class="opacity-0"
-          />
+          <div class="inline-block relative">
+            <Button
+              onClick={[toggleTab, state.tabs.PORTALS]}
+              src={town}
+              selected={isSelected(state.tabs.PORTALS)}
+              tooltip='T'
+            />
+            {state.portals()?.from.length > 0 &&
+            <div
+              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+            />}
+          </div>
           <div class="inline-block relative">
             <Button
               onClick={[toggleTab, state.tabs.PORTALS]}

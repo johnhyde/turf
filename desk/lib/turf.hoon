@@ -259,6 +259,12 @@
   |=  =vec2
   ^-  svec2
   [(sun:si x.vec2) (sun:si y.vec2)]
+++  div-vec2
+  |=  [v=vec2 s=$@(@ud vec2)]
+  ^-  vec2
+  =/  d=vec2  ?@(s [s s] s)
+  :-  ?~  x.d  x.v  (div x.v x.d)
+  ?~  y.d  y.v  (div y.v y.d)
 ++  merge-svec2
   |=  fun=$-([@sd @sd] @sd)
   |=  [a=svec2 b=svec2]
@@ -342,6 +348,48 @@
     (~(jab by portals) portal-id fun)
   turf
 ::
+++  shade-is-lunk
+  |=  [=turf =shade-id]
+  ^-  ?
+  =*  lunk  lunk.deed.turf
+  ?~  lunk  %.n
+  =(shade-id.u.lunk shade-id)
+++  portal-is-lunk
+  |=  [=turf p=$@(portal-id portal)]
+  ^-  ?
+  =/  portal
+    ?^  p  p
+    (~(gut by portals.deed.turf) p ~)
+  ?~  portal  %.n
+  ?~  shade-id.portal  %.n
+  (shade-is-lunk turf u.shade-id.portal)
+++  lunk-is-approved
+  |=  =turf
+  ^-  ?
+  =*  lunk  lunk.deed.turf
+  ?~  lunk  %.n
+  approved.u.lunk
+++  portal-is-dink
+  |=  [=turf =portal-id]
+  ^-  ?
+  (~(has by dinks.deed.turf) portal-id)
+++  dink-is-approved
+  |=  [=turf =portal-id]
+  (~(gut by dinks.deed.turf) portal-id %.n)
+++  get-lunk-pos
+  |=  =turf
+  ^-  (unit svec2)
+  =*  lunk  lunk.deed.turf
+  ?~  lunk  ~
+  =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk ~)
+  ?~  shade  ~
+  `pos.shade
+++  get-entry-pos
+  |=  =turf
+  ^-  svec2
+  %+  fall  (get-lunk-pos turf)
+  %+  sum-svec2  offset.plot.turf
+  (sign-vec2 (div-vec2 size.plot.turf 2))
 ++  is-husk-collidable
   |=  [=turf =husk]
   ^-  ?
@@ -353,24 +401,26 @@
 ::
 ++  get-shades
   |=  [=turf pos=svec2]
-  ^-  (list shade)
+  ^-  (list [shade-id shade])
   =/  space  (get-space spaces.plot.turf pos)
   =/  shades  shades.space
   %+  murn  shades
   |=  id=shade-id
-  (~(get by cave.plot.turf) id)
+  =/  shade  (~(get by cave.plot.turf) id)
+  ?~  shade  ~
+  `[id u.shade]
 ++  get-things
   |=  [=turf pos=svec2]
-  ^-  (list thing)
+  ^-  (list [husk-id thing])
   =/  space  (get-space spaces.plot.turf pos)
-  =/  husks=(list husk)
-    (turn (get-shades turf pos) |=(=shade +.shade))
-  =.  husks  ?~(tile.space husks [u.tile.space husks])
+  =/  husks=(list [husk-id husk])
+    (turn (get-shades turf pos) |=([id=shade-id =shade] [id +.shade]))
+  =.  husks  ?~(tile.space husks [[pos u.tile.space] husks])
   %+  murn  husks
-  |=  =husk
+  |=  [=husk-id =husk]
   =/  form  (get-form turf form-id.husk)
   ?~  form  ~
-  `[husk u.form]
+  `[husk-id husk u.form]
 ::
 ++  get-collidable
   |=  [=turf pos=svec2]

@@ -15,7 +15,6 @@
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
 =/  sub-mist-init  (mk-subs mist-lake mist-path)
 =/  pub-mist-init  (mk-pubs mist-lake mist-path)
-=|  dtid=turf-id
 |%
 +$  versioned-state
   $%  state-0
@@ -36,7 +35,7 @@
       lakes
   ==
 +$  current-state  state-1
-+$  reset  _58
++$  reset  _60
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
@@ -157,7 +156,7 @@
   :: Pub Pokes
   ::
       %rock-turf
-    =^  cards  state  (give-pond-rock:hc dtid %.n)
+    =^  cards  state  (give-pond-rock:hc dtid:hc %.n)
     cards^this
   ::
       %init-avatar
@@ -174,27 +173,27 @@
   ::
       %set-turf
     =+  !<([size=vec2 offset=svec2] vase)
-    =^  cards  state  (give-pond-goal:hc dtid set-turf+(default-turf:gen our.bowl size offset ~))
+    =^  cards  state  (give-pond-goal:hc dtid:hc set-turf+(default-turf:gen our.bowl size offset ~))
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %inc
-    =^  cards  state  (give-pond-goal:hc dtid %inc-counter)
+    =^  cards  state  (give-pond-goal:hc dtid:hc %inc-counter)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %add-husk
-    =^  cards  state  (give-pond-goal:hc dtid add-husk+!<(husk-spec vase))
+    =^  cards  state  (give-pond-goal:hc dtid:hc add-husk+!<(husk-spec vase))
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %chat
-    =^  cards  state  (give-pond-goal:hc dtid chat+[our.bowl now.bowl !<(@t vase)])
+    =^  cards  state  (give-pond-goal:hc dtid:hc chat+[our.bowl now.bowl !<(@t vase)])
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %del-turf
-    =^  cards  state  (give-pond-goal:hc dtid %del-turf)
+    =^  cards  state  (give-pond-goal:hc dtid:hc %del-turf)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -261,6 +260,15 @@
     :-  vita-card
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
+      %pond-wave
+  ?>  =(our src):bowl
+  =/  goal  !<(goal:pond vase)
+  =/  stir  [dtid:hc ~ [goal]~]
+  ~&  dtid:hc
+  =^  cards  state  (stir-pond:hc `src.bowl stir)
+  cards^this
+  ::
+
       %join-turf  !!
     :: ?>  =(our src):bowl
     :: =/  tid  !<((unit turf-id) vase)
@@ -385,7 +393,7 @@
     =/  id=turf-id
       %+  fall
         (path-to-turf-id path)
-      (fall (ctid:hc) dtid)
+      (fall (ctid:hc) dtid:hc)
     ?>  =(our src):bowl
     =/  sub-key  (turf-id-to-sub-key id)
     :: ~&  ['sub key' sub-key]
@@ -415,6 +423,7 @@
   ?+     path  (on-peek:def path)
       [%x %local ~]
     ``local+!>(local:hc)
+      :: [%x %dbug %state]
       :: *  ``noun+!<(~)
   ==
 ++  on-agent
@@ -492,6 +501,7 @@
 ++  default-mist
   |.
   ((lift |=([* =rock:mist] rock)) (~(get by read:du-mist) dmpath))
+++  dtid  [our.bowl /]
 ++  ctid
   |.
   ^-  (unit turf-id)
@@ -518,7 +528,6 @@
   |.
   ^-  (quip card _state)
   :: ~&  "trying to init defaults. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  =.  dtid  [our.bowl ~]
   =^  cards  state
     :: ~&  dppath
     :: ~&  (default-turf-exists)
@@ -677,7 +686,7 @@
         %^    pond-stir-card
             [%portal-request (scot %ud from.roar) path.turf-id.stir]
           for.roar
-        [%portal-requested for=turf-id.stir at=from.roar]
+        [%portal-requested for=turf-id.stir at=from.roar is-link.roar]
           %portal-retract
         :_  state
         :_  ~
@@ -708,6 +717,17 @@
         =/  wer=path  :(weld turf-path /portal [(crip (a-co:co from.roar))]~)
         =/  =rope:hark  [~ ~ %turf wer]
         =/  msg=content:hark
+          ?:  is-link.roar
+            ?-  event.roar
+              %requested  ' would like to live in your neighborhood'
+              %retracted  ' no longer wants to live in your neighborhood'
+              %confirmed  ' has accepted you into their neighborhood'
+              %rejected   ' has rejected you from their neighborhood'
+                %discarded
+              ?:  (gth our.bowl ship.for.roar)
+                ' has left your neighborhood'
+              ' has removed you from their neighborhood'
+            ==
           ?-  event.roar
             %requested  ' would like to make a portal to your turf'
             %retracted  ' no longer wants to make a portal to your turf'

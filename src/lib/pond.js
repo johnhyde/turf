@@ -221,6 +221,17 @@ const pondGrits = {
       shade.effects[trigger] = effect;
     }
   },
+  'set-lunk': (turf, arg) => {
+    turf.lunk = arg;
+  },
+  'set-dink': (turf, arg) => {
+    const { portalId, approved } = arg;
+    turf.dinks[portalId] = approved;
+  },
+  'del-dink': (turf, arg) => {
+    const { portalId } = arg;
+    delete turf.dinks[portalId];
+  },
   'add-portal': (turf, arg) => {
     turf.portals[turf.stuffCounter] = {
       shadeId: null,
