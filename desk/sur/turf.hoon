@@ -158,6 +158,7 @@
 ::
 +$  form-spec  [=form-id =form]
 +$  husk-spec  [pos=svec2 =form-id variation=@ud]
++$  add-husk-spec  [is-lunk=? husk-spec]
 ::
 +$  pond-path  [%pond *]
 +$  mist-path  [%mist *]

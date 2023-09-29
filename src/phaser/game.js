@@ -149,7 +149,7 @@ function createShade(shade, id, turf) {
       textObj.x = sprite.x;
       textObj.y = sprite.y;
       textObj.setDepth(sprite.depth);
-      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 - sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
+      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 + sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
       scene.add.existing(textObj);
     } else {
       textObj.setText(text);
@@ -299,10 +299,9 @@ export function startPhaser(_owner, _container) {
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
             if (state.portalToPlace) {
               state.createBridge({
+                ...state.portalToPlace.shade,
                 pos,
-                formId: '/portal',
-                variation: 0,
-              }, state.portalToPlace);
+              }, state.portalToPlace.portal);
               state.startPlacingPortal(null);
             } else if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(state.e, pos);
@@ -318,7 +317,7 @@ export function startPhaser(_owner, _container) {
         });
 
         this.input.on('pointerup', (pointer) => {
-          if (state.editor.editing && state.editor.pointer && state.editor.movingShadeId) {
+          if (state.editor.movingShadeId !== null) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             state.moveShade(state.editor.movingShadeId, pos);
             state.setMovingShadeId(null);
@@ -329,8 +328,11 @@ export function startPhaser(_owner, _container) {
           if (pointer.isDown) {
             mapEdit(pointer);
             const pastMoveThreshold = pointer.getDistance() > 20/window.devicePixelRatio;
-            if (state.editor.editing && state.editor.pointer && !state.editor.movingShadeId) {
-              if (lastClickedShadeId && pastMoveThreshold) {
+            if (lastClickedShadeId !== null && pastMoveThreshold) {
+              const pointerMode = state.editor.editing && state.editor.pointer;
+              const clickedOnGate = lastClickedShadeId == state.e?.lunk?.shadeId;
+              const shouldMoveGate = state.selectedTab === state.tabs.TOWN && clickedOnGate;
+              if ((pointerMode || shouldMoveGate) && !state.editor.movingShadeId) {
                 state.setMovingShadeId(lastClickedShadeId);
               }
             }

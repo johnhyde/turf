@@ -32,7 +32,7 @@
       [%size-turf off-size]
       [%add-form form-spec]
       [%del-form =form-id]
-      [%add-husk husk-spec]
+      [%add-husk add-husk-spec]
       [%del-shade =shade-id]
       [%move-shade =shade-id pos=svec2]
       [%cycle-shade =shade-id amt=@ud]
@@ -84,7 +84,6 @@
   $%  grit
       [%send-chat from=ship text=cord]
       [%join-player =ship =avatar]
-      [%add-lunk husk-spec]
       [%approve-dink =portal-id]
       create-bridge-goal
       portal-requested-goal
@@ -98,7 +97,7 @@
 ::  and link them in one transaction
 +$  create-bridge-goal
   $:  %create-bridge
-      shade=?(shade-id husk-spec) 
+      shade=?(shade-id add-husk-spec) 
       =trigger
       portal=?(portal-id turf-id)
       :: link=(unit ?(%lunk %dink))
@@ -165,7 +164,7 @@
     ::
     %add-form  (add-form turf +.grit)
     %del-form  (del-form turf form-id.grit)
-    %add-husk  (add-husk turf +.grit)
+    %add-husk  (add-husk turf +>.grit)
     %del-shade  (del-shade turf +.grit)
     %move-shade  (move-shade turf +.grit)
     %cycle-shade  (cycle-shade turf +.grit)

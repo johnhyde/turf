@@ -68,7 +68,7 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
+  ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   =-  [(weld pre-roars roars) grits goals]
   ^-  [=roars =grits:pond =goals:pond]
   =/  uturf  turf.rock
@@ -83,6 +83,11 @@
   ?@  goal
     `~[goal]~
   ?+    -.goal  `~[goal]~
+      %add-husk
+    :-  ~
+    :-  [goal]~
+    ?.  is-lunk.goal  ~
+    [%set-lunk `[stuff-counter.plot.turf %.n]]~
       %del-shade
     =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
     ?~  shade-fx  ``~
@@ -130,17 +135,34 @@
       [%del-shade-from-portal u.del-portal-id shade-id.goal]~
     [~ [goal]~ goals]
     ::
-      %add-lunk
-    ?:  &(top !=(our src):bowl)  ``~
-    :-  ~
-    :-  ~
-    :~  [%add-husk +.goal]
-        [%set-lunk `[stuff-counter.plot.turf %.n]]
-    ==
+    ::   %add-lunk
+    :: ?:  &(top !=(our src):bowl)  ``~
+    :: :-  ~
+    :: :-  ~
+    :: :~  [%add-husk +.goal]
+    ::     [%set-lunk `[stuff-counter.plot.turf %.n]]
+    :: ==
       %set-lunk
     ?:  =(+.goal lunk.deed.turf)
       ``~
-    `~[goal]~
+    =/  =goals:pond
+      ?~  lunk.goal
+        ?~  lunk.deed.turf  ~  :: vain
+        =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk.deed.turf ~)
+        ?~  shade  ~
+        ?.  =(1 variation.shade)  ~
+        :: active lunk is being 
+        [%set-shade-var shade-id.u.lunk.deed.turf 0]~
+      =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk.goal ~)
+      ?~  shade  ~  :: todo cancel goal in this case
+      ?.  =(/gate (scag 1 form-id.shade))  ~
+      ::  This is kinda goofy, but since %.y=0 and %.n=1
+      ::  We set the variation to be !approved
+      ::  Because variation 0 is for unapproved
+      ::  and variation 1 is for an approved lunk
+      ?.  =(approved.u.lunk.goal variation.shade)  ~
+      [%set-shade-var shade-id.u.lunk.goal `@`!approved.u.lunk.goal]~
+    [~ [goal]~ goals]
       %approve-dink
     ?.  (portal-is-dink turf portal-id.goal)  ``~
     =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
@@ -151,11 +173,17 @@
     ::
       %create-bridge
     :: $:  %create-bridge
-    ::     shade=?(shade-id husk-spec) 
+    ::     shade=?(shade-id add-add-husk-spec) 
     ::     =trigger
     ::     portal=?(portal-id turf-id)
     :: ==
-    ?:  &(top !=(our src):bowl)  ``~
+    =/  is-approved-dink
+      ?^  portal.goal  %.n
+      ?.  (dink-is-approved turf portal.goal)  %.n
+      =/  portal  (~(gut by portals.deed.turf) portal.goal ~)
+      ?~  portal  %.n
+      =(src.bowl ship.for.portal)
+    ?:  &(top !=(our src):bowl !is-approved-dink)  ``~
     =/  shade-id
       ?@  shade.goal  shade.goal
       stuff-counter.plot.turf
@@ -227,14 +255,13 @@
       [%set-lunk `[shade-id.goal %.n]]
     [~ [goal]~ goals]
     ::
-      %del-portal-from-shade  
+      %del-portal-from-shade
     =/  shade  (~(gut by cave.plot.turf) shade-id.goal ~)
     ?~  shade  ``~
-    ?.  =(/portal (scag 3 form-id.shade))
-      `~[goal]~
-    =/  shade-fx  (get-effects-by-shade turf shade)
-    =/  portal-counts  (count-portal-effects full-fx.shade-fx)
     =/  =goals:pond
+      ?.  =(/portal (scag 1 form-id.shade))  ~
+      =/  shade-fx  (get-effects-by-shade turf shade)
+      =/  portal-counts  (count-portal-effects full-fx.shade-fx)
       ?.  (~(has by portal-counts) portal-id.goal)
         ~
       ?.  =(~(wyt by portal-counts) 1)
@@ -498,7 +525,7 @@
             %del-form
           (frond 'formId' (path form-id.grit))
             %add-husk
-          (husk-spec +.grit)
+          (add-husk-spec +.grit)
             %del-shade
           (frond 'shadeId' (numb +.grit))
             %move-shade
@@ -904,12 +931,13 @@
     :~  'formId'^(path form-id.spec)
         form+(form form.spec)
     ==
-  ++  husk-spec
-    |=  =^husk-spec
-    =,  husk-spec
+  ++  add-husk-spec
+    |=  =^add-husk-spec
+    =,  add-husk-spec
     ^-  json
     %-  pairs
-    :~  pos+(svec2 pos)
+    :~  'isLunk'^b+is-lunk
+        pos+(svec2 pos)
         'formId'^(path form-id)
         variation+(numb variation)
     ==
@@ -1046,15 +1074,16 @@
       :~  size-turf+(ot ~[offset+svec2 size+vec2])
           add-form+form-spec
           del-form+(ot ~['formId'^pa])
-          add-husk+husk-spec
+          add-husk+add-husk-spec
           del-shade+(ot ~['shadeId'^ni])
           move-shade+(ot ~['shadeId'^ni pos+svec2])
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
           set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
+          approve-dink+(ot ~['portalId'^ni])
           :-  %create-bridge
           %-  ot
-          :~  shade+(maybe-ni husk-spec)
+          :~  shade+(maybe-ni add-husk-spec)
               trigger+(cork so trigger)
               portal+(maybe-ni ot-turf-id)
           ==
@@ -1117,11 +1146,11 @@
       ^-  ^sprite
       ?:  ?=([%s *] jon)  (so jon)
       *anim
-    ++  husk-spec
+    ++  add-husk-spec
       |=  jon=json
-      ^-  ^husk-spec
+      ^-  ^add-husk-spec
       %.  jon
-      (ot ~[pos+svec2 'formId'^pa variation+ni])
+      (ot ~['isLunk'^bo pos+svec2 'formId'^pa variation+ni])
     ++  maybe-possible-effect
       |=  jon=json
       ^-  (unit possible-effect)

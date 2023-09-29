@@ -30,12 +30,12 @@
 +$  state-1
   $:  %1
       =reset
-      skye-reset=_1
+      skye-reset=_4
       closet=$~(default-closet:gen skye)
       lakes
   ==
 +$  current-state  state-1
-+$  reset  _60
++$  reset  _62
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
@@ -103,8 +103,11 @@
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
-    ?:  =(skye-reset:*current-state skye-reset)
+    =/  cur-skye-reset  skye-reset:*current-state
+    :: ~&  ["skye reset default and current" cur-skye-reset skye-reset]
+    ?:  =(cur-skye-reset skye-reset)
       `state
+    =.  skye-reset  cur-skye-reset
     (update-skye:hc default-skye:gen)
   :: =/  cards-2  `(list card)`~
   :: ~&  ~(wyt by +.pub-pond)
@@ -183,7 +186,7 @@
     cards^this
   ::
       %add-husk
-    =^  cards  state  (give-pond-goal:hc dtid:hc add-husk+!<(husk-spec vase))
+    =^  cards  state  (give-pond-goal:hc dtid:hc add-husk+!<(add-husk-spec vase))
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -260,7 +263,7 @@
     :-  vita-card
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
-      %pond-wave
+      %pond-goal
   ?>  =(our src):bowl
   =/  goal  !<(goal:pond vase)
   =/  stir  [dtid:hc ~ [goal]~]
@@ -523,7 +526,7 @@
   |.
   ?=(^ (default-turf))
 ++  init-turf
-  (give-pond-goal dtid set-turf+(default-turf:gen our.bowl [15 12] [--0 --0] ~))
+  (give-pond-goal dtid set-turf+(default-turf:gen our.bowl [15 13] [--0 --0] ~))
 ++  init-defaults
   |.
   ^-  (quip card _state)
@@ -719,14 +722,14 @@
         =/  msg=content:hark
           ?:  is-link.roar
             ?-  event.roar
-              %requested  ' would like to live in your neighborhood'
-              %retracted  ' no longer wants to live in your neighborhood'
-              %confirmed  ' has accepted you into their neighborhood'
-              %rejected   ' has rejected you from their neighborhood'
+              %requested  ' would like to live in your town'
+              %retracted  ' no longer wants to live in your town'
+              %confirmed  ' has accepted you into their town'
+              %rejected   ' has rejected you from their town'
                 %discarded
               ?:  (gth our.bowl ship.for.roar)
-                ' has left your neighborhood'
-              ' has removed you from their neighborhood'
+                ' has left your town'
+              ' has removed you from their town'
             ==
           ?-  event.roar
             %requested  ' would like to make a portal to your turf'

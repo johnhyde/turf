@@ -9,17 +9,17 @@
     |=  [our=ship size=vec2 offset=svec2 av=(unit avatar)]
     ^-  turf
     =|  =turf
+    =.  turf  turf(size.plot size, offset.plot offset)
+    =/  mid-pos  (get-entry-pos turf)
     =.  turf
       %=  turf
-        size.plot           size
         skye.plot           default-skye
-        spaces.plot         (fill-space size offset /grass)
-        offset.plot         offset
+        spaces.plot         (fill-space size mid-pos /grass)
         players.ephemera    (~(put by players.ephemera.turf) our (new-player offset av))
+        lunk.deed      `[0 %.n]
       ==
-    =/  mid-size  ((merge-svec2 fra:si) (sign-vec2 size) [--2 --2])
-    =/  tree-pos  (sum-svec2 offset mid-size)
-    (add-husk turf [tree-pos /tree 0])
+    =.  turf  (add-husk turf [mid-pos /gate 0])
+    turf
   ++  default-skye
     ^-  skye
     %-  malt
@@ -90,6 +90,20 @@
         =/  portal  (new-form %item 'Portal' portal)
         %=  portal
           seeds  (malt [%step %port]~)
+        ==
+      ::
+        :-  /gate
+        =/  gate  (new-form-variations %item 'Gate' gate)
+        %=  gate
+          seeds   (malt [%step %port]~)
+          offset  [--16 --32]
+        ==
+      ::
+        :-  /portal/house
+        =/  house  (new-form %item 'House Portal' house)
+        %=  house
+          seeds  (malt [%step %port]~)
+          offset  [--12 --32]
         ==
       ::
         :-  /tunnel

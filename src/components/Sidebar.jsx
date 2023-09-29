@@ -3,6 +3,7 @@ import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
 import { vec2, isTextInputFocused } from 'lib/utils';
 import Button from '@/Button';
+import TownPane from '@/TownPane';
 import PortalsPane from '@/PortalsPane';
 import EditPane from '@/EditPane';
 import Lab from '@/Lab';
@@ -69,6 +70,10 @@ function Sidebar() {
           toggleTab(state.tabs.EDITOR);
           openSidebar();
           break;
+        case 't':
+          toggleTab(state.tabs.TOWN);
+          openSidebar();
+          break;
         case 'g':
           toggleTab(state.tabs.PORTALS);
           openSidebar();
@@ -89,7 +94,7 @@ function Sidebar() {
         <div class="flex-grow">
           <div class="pointer-events-auto inline-block relative">
             <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
-            {state.portals()?.from.length > 0 &&
+            {state.portals?.from.length > 0 &&
             <div
               class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
             />}
@@ -128,12 +133,12 @@ function Sidebar() {
           />
           <div class="inline-block relative">
             <Button
-              onClick={[toggleTab, state.tabs.PORTALS]}
+              onClick={[toggleTab, state.tabs.TOWN]}
               src={town}
-              selected={isSelected(state.tabs.PORTALS)}
+              selected={isSelected(state.tabs.TOWN)}
               tooltip='T'
             />
-            {state.portals()?.from.length > 0 &&
+            {state.portals?.dinks.pending.length > 0 && state.thisIsUs &&
             <div
               class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
             />}
@@ -145,7 +150,7 @@ function Sidebar() {
               selected={isSelected(state.tabs.PORTALS)}
               tooltip='G'
             />
-            {state.portals()?.from.length > 0 &&
+            {state.portals?.from.length > 0 && state.thisIsUs &&
             <div
               class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
             />}
@@ -159,6 +164,7 @@ function Sidebar() {
         <Show when={state.selectedTab}>
           <div class="overflow-y-hidden shrink min-w-xl pointer-events-auto">
             <div class="my-1 h-full">
+              {state.selectedTab === state.tabs.TOWN && <TownPane/>}
               {state.selectedTab === state.tabs.PORTALS && <PortalsPane/>}
               {state.editor.editing && <EditPane/>}
               {state.lab.editing && <Lab/>}

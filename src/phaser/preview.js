@@ -30,13 +30,17 @@ export class Preview extends Phaser.GameObjects.Container {
         const editor = this.s.editor;
         const portaling = !!this.s.portalToPlace;
         const brushing = !!(editor.editing && editor.brush && editor.selectedFormId);
-        const pointing = !!(editor.editing && editor.pointer && editor.movingShadeId);
-        const movingShade = pointing ? this.turf().cave[editor.movingShadeId] : null;
+        const moving = editor.movingShadeId !== null;
+        const movingShade = moving ? this.turf().cave[editor.movingShadeId] : null;
         this.removeAll(true)
-        if (this.turf() && (portaling || brushing || pointing)) {
+        if (this.turf() && (portaling || brushing || moving)) {
+          const formId = portaling ?
+            this.s.portalToPlace?.shade?.formId || '/portal'
+          :
+            (brushing ? editor.selectedFormId : movingShade.formId);
           const shadeDef = {
-            formId: portaling ? '/portal' : (brushing ? editor.selectedFormId : movingShade.formId),
-            variation: pointing ? (movingShade?.variation || 0) : 0,
+            formId,
+            variation: moving ? (movingShade?.variation || 0) : 0,
             pos: vec2(),
           };
           if (!shadeDef.formId) return;

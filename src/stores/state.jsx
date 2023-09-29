@@ -42,6 +42,7 @@ export function getState() {
       HELP: 'help',
       LAB: 'lab',
       EDITOR: 'editor',
+      TOWN: 'town',
       PORTALS: 'portals',
     },
     editor: {
@@ -79,7 +80,7 @@ export function getState() {
         return selectedTab() === 'lab';
       },
     },
-    scaleLog: 0,
+    scaleLog: 1,
     get scale() {
       return Math.pow(2, Math.round(this.scaleLog));
     },
@@ -138,7 +139,10 @@ export function getState() {
       return this.c.vapor;
     },
     get portals() {
-      return portals;
+      return portals();
+    },
+    get thisIsUs() {
+      return this.c.id === ourPond;
     },
   });
 
@@ -148,30 +152,59 @@ export function getState() {
     const portalsTo = [];
     const portalsFrom = [];
     const portalsWith = [];
+    const dinksPending = [];
+    const dinksApproved = [];
+    const dinksConfirmed = [];
+    let lunk = null;
     Object.entries(state.e?.portals || {}).forEach(([portalId, portal]) => {
       const portalObj = {
         id: Number.parseInt(portalId),
         ...portal
       };
-      if (portal.shadeId !== null) {
-        if (portal.at !== null) {
-          portalsWith.push(portalObj);
+      if (portal.shadeId !== undefined && state.e.lunk?.shadeId === portal.shadeId) {
+        lunk = portalObj;
+        return;
+      }
+      const dinkApproved = state.e.dinks[portalId];
+      const isDink = dinkApproved !== undefined;
+      let dest;
+      if (isDink) {
+        if (portal.at === null) {
+          console.error(`Portal #${portalId} is supposedly a dink, but has null "at"`);
         } else {
-          portalsTo.push(portalObj);
-        }
-      } else {
-        if (portal.at !== null) {
-          portalsFrom.push(portalObj);
-        } else {
-          portalsDraft.push(portalObj);
+          portalObj.approved = dinkApproved;
         }
       }
+      if (portal.shadeId !== null) {
+        if (portal.at === null) {
+          dest = portalsTo;
+        } else {
+          dest = isDink ? dinksConfirmed : portalsWith;
+        }
+      } else {
+        if (portal.at === null) {
+          dest = portalsDraft;
+        } else {
+          if (isDink) {
+            dest = dinkApproved ? dinksApproved : dinksPending;
+          } else {
+            dest = portalsFrom;
+          }
+        }
+      }
+      dest.push(portalObj);
     });
     return {
       draft: portalsDraft.sort(sort),
       to: portalsTo.sort(sort),
       from: portalsFrom.sort(sort),
       with: portalsWith.sort(sort),
+      dinks: {
+        pending: dinksPending.sort(sort),
+        approved: dinksApproved.sort(sort),
+        confirmed: dinksConfirmed.sort(sort),
+      },
+      lunk,
     };
   });
 
@@ -280,6 +313,7 @@ export function getState() {
     },
     addHusk(pos, formId, variation = 0) {
       return this.sendPondWave('add-husk', {
+        isLunk: false,
         pos,
         formId,
         variation: Number.parseInt(variation)
@@ -359,8 +393,24 @@ export function getState() {
     displayText(text) {
       $state('text', text);
     },
+    approveDink(portalId) {
+      this.sendPondWave('approve-dink', {
+        portalId: Number(portalId),
+      });
+    },
     createBridge(shade, portal, trigger='step') {
-      this.sendPondWave('create-bridge', { shade, trigger, portal });
+      if (typeof shade === 'object') {
+        shade = {
+          isLunk: false,
+          ...shade,
+        };
+      } else {
+        shade = Number(shade);
+      }
+      this.sendPondWave('create-bridge', {
+        shade,
+        trigger, portal,
+      });
     },
     createPortal(ship, path) {
       this.sendPondWave('add-portal', {
@@ -403,6 +453,9 @@ export function getState() {
         if (tool === this.editor.tools.RESIZER) {
           this.setScaleLog(Math.max(this.scaleLog, 1));
         }
+        if (tool !== this.editor.tools.POINTER) {
+          $state('editor', 'movingShadeId', null);
+        }
         this.selectShade(null);
       });
     },
@@ -410,6 +463,7 @@ export function getState() {
       batch(() => {
         $state('selectedTab', tab);
         $state('editor', 'portalToPlace', null);
+        $state('editor', 'movingShadeId', null);
         this.selectShade(null);
         if (tab === state.tabs.LAB) {
           this.setScaleLog(Math.min(this.scaleLog, -2));
@@ -421,8 +475,20 @@ export function getState() {
         }
       });
     },
-    startPlacingPortal(portalId) {
-      $state('editor', 'portalToPlace', portalId);
+    startPlacingPortal(portalIdOrTurfId, shade = {}) {
+      if (portalIdOrTurfId === null) {
+        $state('editor', 'portalToPlace', null);
+      } else {
+        $state('editor', 'portalToPlace', {
+          shade: {
+            pos: vec2(state.e.offset),
+            formId: '/portal',
+            variation: 0,
+            ...shade,
+          },
+          portal: portalIdOrTurfId,
+        });
+      }
     },
     setMovingShadeId(shadeId) {
       $state('editor', 'movingShadeId', shadeId);

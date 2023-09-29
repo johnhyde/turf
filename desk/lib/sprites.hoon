@@ -36,7 +36,12 @@
 ++  cobble-red  'sprites/cobble-red.png'
 ++  gen-walls
   |=  prefix=@t
-  %+  turn  (gulf 0 15)
+  (gen-variations prefix 16)
+++  gen-variations
+  |=  [prefix=@t var-count=@ud]
+  ^-  (list png)
+  ?:  =(0 var-count)  ~
+  %+  turn  (gulf 0 (dec var-count))
   |=  a=@
   ;:  welk
       prefix
@@ -53,6 +58,8 @@
 ++  sign  'sprites/sign.png'
 ++  tree  'sprites/tree.png'
 ++  portal  'sprites/portal.png'
+++  gate  (gen-variations 'sprites/gate-' 2)
+++  house  'sprites/house.png'
 ++  tunnel  'sprites/tunnel.png'
 ++  tunnel-big  'sprites/tunnel-big.png'
 ++  flowers-red  'sprites/flowers-red.png'
