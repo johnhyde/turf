@@ -11,7 +11,7 @@ import resize from 'assets/icons/resize.png';
 
 export default function PortalsPane() {
   const state = useState();
-  const placingPortal = createSelector(() => state.portalToPlace?.portal);
+  const placingPortal = createSelector(() => state.huskToPlace?.portal);
   function goHome() {
     state.mist.goHome();
   }
@@ -20,14 +20,14 @@ export default function PortalsPane() {
   }
   function placePortal(portalId) {
     if (portalId === null) {
-      state.startPlacingPortal(null);
+      state.clearHuskToPlace();
     } else {
-      state.startPlacingPortal(Number.parseInt(portalId))
+      state.setPortalToPlace(portalId);
     }
   }
   const onKeyDown = (e) => {
-    if (e.key === 'Escape' && state.portalToPlace) {
-      placePortal(null);
+    if (e.key === 'Escape' && state.huskToPlace) {
+      state.clearHuskToPlace();
       e.preventDefault();
     }
   }
@@ -46,7 +46,7 @@ export default function PortalsPane() {
         <Heading>
           Create a Portal to:
         </Heading>
-        <BridgeBuilder/>
+        <BridgeBuilder blockHigher blockLower />
         <Show when={state.portals.draft.length > 0}>
           <div class="my-2">
             <Heading>

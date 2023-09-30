@@ -19,8 +19,7 @@ function initEditorState() {
     selectedFormId: null,
     selectedShadeId: null,
     selectedTool: null,
-    portalToPlace: null,
-    movingShadeId: null,
+    huskToPlace: null,
   };
 }
 
@@ -72,8 +71,8 @@ export function getState() {
       },
       ...initEditorState(),
     },
-    get portalToPlace() {
-      return this.editor.portalToPlace;
+    get huskToPlace() {
+      return this.editor.huskToPlace;
     },
     lab:  {
       get editing() {
@@ -311,9 +310,9 @@ export function getState() {
     importForm(form) {
       return this.sendOurPondWave('add-form', form);
     },
-    addHusk(pos, formId, variation = 0) {
+    addHusk(pos, formId, variation = 0, isLunk = false) {
       return this.sendPondWave('add-husk', {
-        isLunk: false,
+        isLunk,
         pos,
         formId,
         variation: Number.parseInt(variation)
@@ -454,7 +453,7 @@ export function getState() {
           this.setScaleLog(Math.max(this.scaleLog, 1));
         }
         if (tool !== this.editor.tools.POINTER) {
-          $state('editor', 'movingShadeId', null);
+          $state('editor', 'huskToPlace', null);
         }
         this.selectShade(null);
       });
@@ -462,8 +461,7 @@ export function getState() {
     selectTab(tab) {
       batch(() => {
         $state('selectedTab', tab);
-        $state('editor', 'portalToPlace', null);
-        $state('editor', 'movingShadeId', null);
+        $state('editor', 'huskToPlace', null);
         this.selectShade(null);
         if (tab === state.tabs.LAB) {
           this.setScaleLog(Math.min(this.scaleLog, -2));
@@ -475,23 +473,28 @@ export function getState() {
         }
       });
     },
-    startPlacingPortal(portalIdOrTurfId, shade = {}) {
-      if (portalIdOrTurfId === null) {
-        $state('editor', 'portalToPlace', null);
-      } else {
-        $state('editor', 'portalToPlace', {
-          shade: {
-            pos: vec2(state.e.offset),
-            formId: '/portal',
-            variation: 0,
-            ...shade,
-          },
-          portal: portalIdOrTurfId,
-        });
-      }
+    setPortalToPlace(portal, shade = {}) {
+      this.setHuskToPlace(shade, portal);
     },
-    setMovingShadeId(shadeId) {
-      $state('editor', 'movingShadeId', shadeId);
+    setHuskToPlace(shade, portal) {
+      if (typeof shade === 'object') {
+        shade = {
+          pos: vec2(state.e.offset),
+          formId: '/portal',
+          variation: 0,
+          isLunk: false,
+          ...shade,
+        };
+      } else {
+        shade = Number(shade);
+      }
+      if (typeof portal !== 'object') {
+        portal = Number(portal);
+      }
+      $state('editor', 'huskToPlace', { shade, portal });
+    },
+    clearHuskToPlace() {
+      $state('editor', 'huskToPlace', null);
     },
     toggleSound() {
       $state('soundOn', (muted) => !muted);

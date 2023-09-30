@@ -28,19 +28,22 @@ export class Preview extends Phaser.GameObjects.Container {
       this.dispose = dispose;
       createEffect(() => {
         const editor = this.s.editor;
-        const portaling = !!this.s.portalToPlace;
-        const brushing = !!(editor.editing && editor.brush && editor.selectedFormId);
-        const moving = editor.movingShadeId !== null;
-        const movingShade = moving ? this.turf().cave[editor.movingShadeId] : null;
+        const brushing = !!(editor.editing && editor.brush && editor.selectedFormId !== null);
+        const placing = !!(editor.huskToPlace);
+        let placingShade = null;
+        if (placing) {
+          if (typeof editor.huskToPlace.shade === 'object') {
+            placingShade = editor.huskToPlace.shade;
+          } else {
+            placingShade = this.turf().cave[editor.huskToPlace.shade];
+          }
+        } 
         this.removeAll(true)
-        if (this.turf() && (portaling || brushing || moving)) {
-          const formId = portaling ?
-            this.s.portalToPlace?.shade?.formId || '/portal'
-          :
-            (brushing ? editor.selectedFormId : movingShade.formId);
+        if (this.turf() && (brushing || placing)) {
+          const formId = placing ? placingShade?.formId || '/portal' : editor.selectedFormId;
           const shadeDef = {
             formId,
-            variation: moving ? (movingShade?.variation || 0) : 0,
+            variation: placing ? (placingShade?.variation || 0) : 0,
             pos: vec2(),
           };
           if (!shadeDef.formId) return;

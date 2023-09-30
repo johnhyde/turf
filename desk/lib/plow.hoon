@@ -191,6 +191,16 @@
       ?@  portal.goal  portal.goal
       ?^  shade.goal  +(shade-id)
       stuff-counter.plot.turf
+    =/  is-lunk
+      ?^  shade.goal  is-lunk.shade.goal
+      (shade-is-lunk turf shade.goal)
+    =/  dest=(unit ship)
+      ?^  portal.goal  `ship.portal.goal
+      =/  portal  (~(gut by portals.deed.turf) portal.goal ~)
+      ?~  portal  ~
+      `ship.for.portal
+    ?~  dest  ``~
+    ?.  |(is-lunk is-approved-dink =((is-host our.bowl) (is-host u.dest)))  ``~
     =/  goals=goals:pond
       %+  murn
         ^-  (list (unit grit:pond))
@@ -206,7 +216,12 @@
     `~[goal]~
     ::
       %del-portal
-    ?:  &(top !=(our src):bowl)  ``~
+    =/  is-dink
+      ?.  (portal-is-dink turf from.goal)  %.n
+      =/  portal  (~(gut by portals.deed.turf) from.goal ~)
+      ?~  portal  %.n
+      =(src.bowl ship.for.portal)
+    ?:  &(top !=(our src):bowl !is-dink)  ``~
     =/  portal  (~(get by portals.deed.turf) from.goal)
     ?~  portal  ``~
     =/  roars
@@ -274,12 +289,18 @@
     ::
       %portal-requested
     ?.  =(src.bowl ship.for.goal)  ``~
-    :-  [%portal-hark %requested is-link.goal stuff-counter.plot.turf for.goal]~
+    ?.  |(is-link.goal =((is-host our.bowl) (is-host src.bowl)))
+      :_  `~
+      [%portal-discard for.goal at.goal]~
+    =/  dink-id  stuff-counter.plot.turf
+    :-  [%portal-hark %requested is-link.goal dink-id for.goal]~
     :-  ~
     ^-  goals:pond
     :-  [%add-portal for.goal `at.goal]
     ?.  is-link.goal  ~
-    [%set-dink stuff-counter.plot.turf %.n]~
+    :-  [%set-dink dink-id %.n]
+    ?.  =(our.bowl ~pandux)  ~
+    [%approve-dink dink-id]~
     ::
       %portal-retracted
     ?.  =(src.bowl ship.for.goal)  ``~

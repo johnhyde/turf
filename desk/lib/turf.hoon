@@ -14,8 +14,8 @@
     =.  turf
       %=  turf
         skye.plot           default-skye
-        spaces.plot         (fill-space size mid-pos /grass)
-        players.ephemera    (~(put by players.ephemera.turf) our (new-player offset av))
+        spaces.plot         (fill-space size offset /grass)
+        players.ephemera    (~(put by players.ephemera.turf) our (new-player mid-pos av))
         lunk.deed      `[0 %.n]
       ==
     =.  turf  (add-husk turf [mid-pos /gate 0])
@@ -310,6 +310,9 @@
   %-  malt
   %+  murn  ~(tap by a)
   b
+++  is-host
+  |=  =ship
+  ?=(?(%czar %king) (clan:title ship))
 ::
 ++  get-space
   |=  [=spaces pos=svec2]

@@ -25,13 +25,7 @@ export default function TownPane() {
   }));
   const ourHomeTown = () => !!ourDink();
   const ourConfirmedHomeTown = () => !!ourDink()?.shadeId;
-  const movingGate = () => state.editor.movingShadeId === state.e?.lunk?.shadeId && state.e?.lunk?.shadeId !== undefined;
-  // const ourHomeTown = createMemo(() => [...dinks().approved, ...dinks().confirmed].some((dink) => {
-  //   return dink.for.ship === our;
-  // }));
-  // const ourConfirmedHomeTown = createMemo(() => dinks().confirmed.some((dink) => {
-  //   return dink.for.ship === our;
-  // }));
+  const movingGate = () => state.huskToPlace?.shade === state.e?.lunk?.shadeId && state.e?.lunk?.shadeId !== undefined;
 
   const summary = () => {
     const isUs = state.thisIsUs;
@@ -58,12 +52,10 @@ export default function TownPane() {
     return a + ' ' + b;
   }
 
-  const detail = () => {
+  const isHomeTownText = () => {
     if (weAreHost) return null;
     if (thisIsTown()) {
       return `This is${ourHomeTown() ? ' ' : ' not '}your home Town.`
-    } else if (state.thisIsUs) {
-      return `Pick a star to request admission to its Town.`;
     } else {
       return null;
     }
@@ -80,78 +72,52 @@ export default function TownPane() {
   function placeGate() {
     const gateId = state.e?.lunk?.shadeId;
     if (gateId === undefined) {
-
+      state.setHuskToPlace({
+        formId: '/gate',
+        isLunk: true,
+      });
     } else {
-      state.setMovingShadeId(gateId);
-      // state.startPlacingPortal(Number.parseInt(id), { formId: '/portal/house' });
+      state.setHuskToPlace(gateId);
     }
   }
 
   function placeHouse() {
     const id = ourDink()?.id;
     if (id === undefined) return;
-    state.startPlacingPortal(Number.parseInt(id), { formId: '/portal/house' });
+    state.setPortalToPlace(id, { formId: '/portal/house' });
   }
+
+  const pClass = 'm-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50';
 
   return (
     <div class="flex flex-col h-full overflow-y-auto">
       <Show when={state.thisIsUs}>
-        <p>
+        <p class={pClass}>
           Your Gate is where you enter your turf. {!weAreHost && 'It is also how you travel to your home Town.'}
         </p>
         <MediumButton onClick={placeGate} enabled={!movingGate()}>
             {state.e?.lunk ? (movingGate() ? 'Moving' : 'Move') : 'Place'} Gate
           </MediumButton>
       </Show>
-      <p>
+      <Show when={isHomeTownText()}>
+        <p class={pClass}>
+        {isHomeTownText()}
+        </p>
+      </Show>
+      <p class={pClass}>
         {summary()}
       </p>
-      <Show when={detail()}>
-        {detail()}
-      </Show>
       <Show when={ourHomeTown() && !ourConfirmedHomeTown()}>
         <MediumButton onClick={placeHouse}>
           Place House
         </MediumButton>
       </Show>
       <Show when={state.thisIsUs && !weAreHost}>
-        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId}/>
+        <p class={pClass}>
+          Pick a star to request admission to its Town.
+        </p>
+        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId} blockLower />
       </Show>
-      {/* <Show when={state.c.id !== ourPond}>
-        <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
-      </Show> */}
-        {/* <Heading>
-          Create a Portal to:
-        </Heading> */}
-        {/* <div class="flex justify-center items-center space-x-2">
-          <input
-              class={"rounded-input max-w-[175px] " + validBg()}
-              use:input
-              autofocus
-              use:bind={[
-                toShip,
-                updateToShip,
-              ]}
-              onKeyDown={shipKeyDown}
-          />
-          {state.portalToPlace?.portal?.ship === toShip() ?
-            <SmallButton onClick={[placePortal, null]}>–</SmallButton>
-          :
-            <SmallButton onClick={placeNewPortal}>+</SmallButton>
-          }
-        </div> */}
-        {/* <Show when={state.portals.draft.length > 0}>
-          <div class="my-2">
-            <Heading>
-              Portal Drafts
-            </Heading>
-            <For each={state.portals.draft} >
-              {(portal) => {
-                return <Portal icon={portalTo} label="DRAFT TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
-              }}
-            </For>
-          </div>
-        </Show> */}
       <Show when={state.thisIsUs}>
           <Show when={state.portals.dinks.pending.length > 0}>
             <div class="my-2">
@@ -195,27 +161,23 @@ export default function TownPane() {
 }
 
 function Dink(props) {
+  const state = useState();
   return (
     <div class="flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700">
       <div class="flex flex-wrap space-x-2 items-center flex-grow">
-        <img class="" src={props.icon} draggable={false} style={{ 'image-rendering': 'pixelated' }} />
-        <span class="font-bold text-xs">
-          {/* [{props.portal.id}] {props.label} */}
-          {props.label}
-        </span>
         <span class="font-bold text-sm font-mono">
           {props.portal.for.ship}
         </span>
       </div>
       <Switch fallback="✓">
         <Match when={!props.portal.approved}>
-          <SmallButton onClick={[props.approve, props.portal.id]}>✓</SmallButton>
+          {state.thisIsUs && <SmallButton onClick={[props.approve, props.portal.id]}>✓</SmallButton>}
         </Match>
         <Match when={props.portal.shadeId === null}>
           ...
         </Match>
       </Switch>
-      <SmallButton onClick={[props.discard, props.portal.id]}>x</SmallButton>
+      {(state.thisIsUs || props.portal.for.ship === our) && <SmallButton onClick={[props.discard, props.portal.id]}>x</SmallButton>}
     </div>
   );
 }

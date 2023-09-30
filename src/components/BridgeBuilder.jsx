@@ -25,7 +25,7 @@ export default function BridgeBuilder(props) {
   function updateToShip(ship) {
     let patp = normalizeId(ship);
     $toShip(patp);
-    if (isValidPatp(patp)) {
+    if (isValidInput(patp)) {
       $toShipValid(true);
     } else {
       $toShipValid(null);
@@ -33,7 +33,7 @@ export default function BridgeBuilder(props) {
   }
   function submit() {
     const patp = toShip();
-    if (isValidPatp(patp)) {
+    if (isValidInput(patp)) {
       const portal = {
         ship: toShip(),
         path: '/',
@@ -41,8 +41,8 @@ export default function BridgeBuilder(props) {
       if (props.shadeId !== undefined) {
         state.createBridge(props.shadeId, portal);
       } else {
-        state.startPlacingPortal(portal, {
-          formId: props.formId,
+        state.setPortalToPlace(portal, {
+          formId: props.formId || '/portal',
           isLunk: props.isLunk === true,
         });
       }
@@ -51,13 +51,20 @@ export default function BridgeBuilder(props) {
     }
   }
 
-  function cancel() {
-    state.startPlacingPortal(null);
+  function isValidInput(patp) {
+    if (!isValidPatp(patp)) return false;
+    const weAreHost = our.length <= 7;
+    const theyAreHost = patp.length <= 7;
+    if (props.blockHigher && !weAreHost && theyAreHost) return false;
+    if (props.blockLower && weAreHost && !theyAreHost) return false;
+    if (props.blockSame && weAreHost == theyAreHost) return false;
+    return true;
   }
 
-  function bridge() {
-    state.createBridge()
+  function cancel() {
+    state.clearHuskToPlace();
   }
+
 
   function shipKeyDown(e) {
     if (e.key === 'Enter') {
@@ -80,7 +87,7 @@ export default function BridgeBuilder(props) {
           ]}
           onKeyDown={shipKeyDown}
       />
-      {state.portalToPlace?.portal?.ship === toShip() ?
+      {state.huskToPlace?.portal?.ship === toShip() ?
         <SmallButton onClick={cancel}>–</SmallButton>
       :
         <SmallButton onClick={submit}>

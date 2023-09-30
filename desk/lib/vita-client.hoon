@@ -26,6 +26,17 @@
       %vita-client
       !>([%set-enabled enabled])
   ==
+++  set-config
+  |=  [=bowl:gall cfg=config]
+  ^-  card:agent:gall
+  :*  %pass
+      /
+      %agent
+      [our.bowl dap.bowl]
+      %poke
+      %vita-client
+      !>([%config cfg])
+  ==
 ++  active
   |=  [=bowl:gall]
   ^-  card:agent:gall

@@ -35,7 +35,7 @@
       lakes
   ==
 +$  current-state  state-1
-+$  reset  _62
++$  reset  _63
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
@@ -50,7 +50,7 @@
 --
 %-  agent:dbug
 =/  vita-config=config:vita-client
-  [| ~dister-midlev-mindyr]
+  [| ~pandux]
   :: [| ~nec]
 %-  (agent:vita-client vita-config)
 =|  current-state
@@ -116,7 +116,11 @@
     :*
         cards-0
     ==
-  :(weld cards-0 cards-1 cards-2)^this
+  =/  cfg  config:hc
+  =/  vita-cards
+    ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
+    [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
+  :(weld cards-0 cards-1 cards-2 vita-cards)^this
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -772,8 +776,7 @@
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  :: [:(weld sss-cards roar-cards cards) state]
-  [:(weld ssio-cards roar-cards cards) state]
+  [:(weld ssio-cards cards roar-cards) state] :: cards before roar-cards in case we poke ourselves
 ++  give-pond
   |=  [=turf-id =goals:pond]
   ^-  (quip card _state)

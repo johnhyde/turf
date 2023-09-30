@@ -294,16 +294,10 @@ export function startPhaser(_owner, _container) {
         const alpha = 1;
         let draw = false;
         function mapEdit(pointer) {
-          if (state.c.selectedForm || state.portalToPlace) {
+          if (state.c.selectedForm) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
-            if (state.portalToPlace) {
-              state.createBridge({
-                ...state.portalToPlace.shade,
-                pos,
-              }, state.portalToPlace.portal);
-              state.startPlacingPortal(null);
-            } else if (state.c.selectedForm.type === 'wall') {
+            if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(state.e, pos);
               const added = state.addHusk(pos, state.editor.selectedFormId, variation);
               if (added) state.updateWallsAroundPos(pos, true);
@@ -317,10 +311,22 @@ export function startPhaser(_owner, _container) {
         });
 
         this.input.on('pointerup', (pointer) => {
-          if (state.editor.movingShadeId !== null) {
-            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
-            state.moveShade(state.editor.movingShadeId, pos);
-            state.setMovingShadeId(null);
+          const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+          if (state.editor.huskToPlace) {
+            if (typeof state.huskToPlace.shade === 'object') {
+              const shade = state.huskToPlace.shade;
+              if (state.huskToPlace.portal !== undefined) {
+                state.createBridge({
+                  ...shade,
+                  pos,
+                }, state.huskToPlace.portal);
+              } else {
+                state.addHusk(pos, shade.formId, shade.variation, shade.isLunk);
+              }
+            } else {
+              state.moveShade(state.huskToPlace.shade, pos);
+            }
+            state.clearHuskToPlace();
           }
         });
 
@@ -332,8 +338,8 @@ export function startPhaser(_owner, _container) {
               const pointerMode = state.editor.editing && state.editor.pointer;
               const clickedOnGate = lastClickedShadeId == state.e?.lunk?.shadeId;
               const shouldMoveGate = state.selectedTab === state.tabs.TOWN && clickedOnGate;
-              if ((pointerMode || shouldMoveGate) && !state.editor.movingShadeId) {
-                state.setMovingShadeId(lastClickedShadeId);
+              if ((pointerMode || shouldMoveGate) && !state.huskToPlace) {
+                state.setHuskToPlace(lastClickedShadeId);
               }
             }
             if (pastMoveThreshold) lastClickedShadeId = null;
