@@ -26,23 +26,15 @@
   $+  mist-grit
   :: ?(%del-av %inc-counter)
   $@  %clear-port-offer
-  $%  set-ctid-grit
-      set-avatar-grit
-      set-color-grit
-      add-thing-grit
-      del-thing-grit
-      port-offered-grit
-      accept-port-offer-grit
-      reject-port-offer-grit
+  $%  [%set-ctid turf-id=(unit turf-id)]
+      [%set-avatar =avatar]
+      [%set-color color=@ux]
+      [%add-thing =thing]
+      [%del-thing index=@ud]
+      [%port-offered port-offer]
+      [%accept-port-offer for=turf-id]
+      [%reject-port-offer for=turf-id]
   ==
-+$  set-ctid-grit  [%set-ctid turf-id=(unit turf-id)]
-+$  set-avatar-grit  [%set-avatar =avatar]
-+$  set-color-grit  [%set-color color=@ux]
-+$  add-thing-grit  [%add-thing =thing]
-+$  del-thing-grit  [%del-thing index=@ud]
-+$  port-offered-grit  [%port-offered port-offer]
-+$  accept-port-offer-grit  [%accept-port-offer for=turf-id]
-+$  reject-port-offer-grit  [%reject-port-offer for=turf-id]
 ::
 +$  goals  (list goal)
 +$  goal

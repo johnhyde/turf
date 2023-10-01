@@ -21,7 +21,7 @@ export default function ShadeEditor(props) {
   return (
     <Show when={props.formId && form()}>
         <Heading>{form().name}</Heading>
-        {state.c.id !== ourPond && 
+        {!state.thisIsUs && 
           <>
             <SmallButton onClick={importForm} class="mx-auto">
               Import Item

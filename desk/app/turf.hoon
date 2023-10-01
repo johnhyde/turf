@@ -15,7 +15,6 @@
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
 =/  sub-mist-init  (mk-subs mist-lake mist-path)
 =/  pub-mist-init  (mk-pubs mist-lake mist-path)
-=|  dtid=turf-id
 |%
 +$  versioned-state
   $%  state-0
@@ -31,12 +30,12 @@
 +$  state-1
   $:  %1
       =reset
-      skye-reset=_1
+      skye-reset=_4
       closet=$~(default-closet:gen skye)
       lakes
   ==
 +$  current-state  state-1
-+$  reset  _58
++$  reset  _63
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
@@ -51,7 +50,7 @@
 --
 %-  agent:dbug
 =/  vita-config=config:vita-client
-  [| ~dister-midlev-mindyr]
+  [| ~pandux]
   :: [| ~nec]
 %-  (agent:vita-client vita-config)
 =|  current-state
@@ -104,8 +103,11 @@
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
-    ?:  =(skye-reset:*current-state skye-reset)
+    =/  cur-skye-reset  skye-reset:*current-state
+    :: ~&  ["skye reset default and current" cur-skye-reset skye-reset]
+    ?:  =(cur-skye-reset skye-reset)
       `state
+    =.  skye-reset  cur-skye-reset
     (update-skye:hc default-skye:gen)
   :: =/  cards-2  `(list card)`~
   :: ~&  ~(wyt by +.pub-pond)
@@ -114,7 +116,11 @@
     :*
         cards-0
     ==
-  :(weld cards-0 cards-1 cards-2)^this
+  =/  cfg  config:hc
+  =/  vita-cards
+    ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
+    [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
+  :(weld cards-0 cards-1 cards-2 vita-cards)^this
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -157,7 +163,7 @@
   :: Pub Pokes
   ::
       %rock-turf
-    =^  cards  state  (give-pond-rock:hc dtid %.n)
+    =^  cards  state  (give-pond-rock:hc dtid:hc %.n)
     cards^this
   ::
       %init-avatar
@@ -174,27 +180,27 @@
   ::
       %set-turf
     =+  !<([size=vec2 offset=svec2] vase)
-    =^  cards  state  (give-pond-goal:hc dtid set-turf+(default-turf:gen our.bowl size offset ~))
+    =^  cards  state  (give-pond-goal:hc dtid:hc set-turf+(default-turf:gen our.bowl size offset ~))
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %inc
-    =^  cards  state  (give-pond-goal:hc dtid %inc-counter)
+    =^  cards  state  (give-pond-goal:hc dtid:hc %inc-counter)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %add-husk
-    =^  cards  state  (give-pond-goal:hc dtid add-husk+!<(husk-spec vase))
+    =^  cards  state  (give-pond-goal:hc dtid:hc add-husk+!<(add-husk-spec vase))
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %chat
-    =^  cards  state  (give-pond-goal:hc dtid chat+[our.bowl now.bowl !<(@t vase)])
+    =^  cards  state  (give-pond-goal:hc dtid:hc chat+[our.bowl now.bowl !<(@t vase)])
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %del-turf
-    =^  cards  state  (give-pond-goal:hc dtid %del-turf)
+    =^  cards  state  (give-pond-goal:hc dtid:hc %del-turf)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -261,6 +267,14 @@
     :-  vita-card
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
+      %pond-goal
+  ?>  =(our src):bowl
+  =/  goal  !<(goal:pond vase)
+  =/  stir  [dtid:hc ~ [goal]~]
+  =^  cards  state  (stir-pond:hc `src.bowl stir)
+  cards^this
+  ::
+
       %join-turf  !!
     :: ?>  =(our src):bowl
     :: =/  tid  !<((unit turf-id) vase)
@@ -385,7 +399,7 @@
     =/  id=turf-id
       %+  fall
         (path-to-turf-id path)
-      (fall (ctid:hc) dtid)
+      (fall (ctid:hc) dtid:hc)
     ?>  =(our src):bowl
     =/  sub-key  (turf-id-to-sub-key id)
     :: ~&  ['sub key' sub-key]
@@ -415,6 +429,7 @@
   ?+     path  (on-peek:def path)
       [%x %local ~]
     ``local+!>(local:hc)
+      :: [%x %dbug %state]
       :: *  ``noun+!<(~)
   ==
 ++  on-agent
@@ -492,6 +507,7 @@
 ++  default-mist
   |.
   ((lift |=([* =rock:mist] rock)) (~(get by read:du-mist) dmpath))
+++  dtid  [our.bowl /]
 ++  ctid
   |.
   ^-  (unit turf-id)
@@ -513,12 +529,11 @@
   |.
   ?=(^ (default-turf))
 ++  init-turf
-  (give-pond-goal dtid set-turf+(default-turf:gen our.bowl [15 12] [--0 --0] ~))
+  (give-pond-goal dtid set-turf+(default-turf:gen our.bowl [15 13] [--0 --0] ~))
 ++  init-defaults
   |.
   ^-  (quip card _state)
   :: ~&  "trying to init defaults. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  =.  dtid  [our.bowl ~]
   =^  cards  state
     :: ~&  dppath
     :: ~&  (default-turf-exists)
@@ -677,7 +692,7 @@
         %^    pond-stir-card
             [%portal-request (scot %ud from.roar) path.turf-id.stir]
           for.roar
-        [%portal-requested for=turf-id.stir at=from.roar]
+        [%portal-requested for=turf-id.stir at=from.roar is-link.roar]
           %portal-retract
         :_  state
         :_  ~
@@ -708,6 +723,17 @@
         =/  wer=path  :(weld turf-path /portal [(crip (a-co:co from.roar))]~)
         =/  =rope:hark  [~ ~ %turf wer]
         =/  msg=content:hark
+          ?:  is-link.roar
+            ?-  event.roar
+              %requested  ' would like to live in your town'
+              %retracted  ' no longer wants to live in your town'
+              %confirmed  ' has accepted you into their town'
+              %rejected   ' has rejected you from their town'
+                %discarded
+              ?:  (gth our.bowl ship.for.roar)
+                ' has left your town'
+              ' has removed you from their town'
+            ==
           ?-  event.roar
             %requested  ' would like to make a portal to your turf'
             %retracted  ' no longer wants to make a portal to your turf'
@@ -749,8 +775,7 @@
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  :: [:(weld sss-cards roar-cards cards) state]
-  [:(weld ssio-cards roar-cards cards) state]
+  [:(weld ssio-cards cards roar-cards) state] :: cards before roar-cards in case we poke ourselves
 ++  give-pond
   |=  [=turf-id =goals:pond]
   ^-  (quip card _state)

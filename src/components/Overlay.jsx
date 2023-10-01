@@ -20,7 +20,7 @@ export default function Overlay() {
     }
   }
   return (
-    <div class="absolute w-full flex flex-col">
+    <div class="absolute top-[64px] sm:top-0 w-full flex flex-col">
       <div class="flex">
         <div class="flex-grow"></div>
         <Show when={state.c.id}>
