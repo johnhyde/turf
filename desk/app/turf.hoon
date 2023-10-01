@@ -271,7 +271,6 @@
   ?>  =(our src):bowl
   =/  goal  !<(goal:pond vase)
   =/  stir  [dtid:hc ~ [goal]~]
-  ~&  dtid:hc
   =^  cards  state  (stir-pond:hc `src.bowl stir)
   cards^this
   ::

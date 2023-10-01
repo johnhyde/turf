@@ -88,7 +88,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-[245px] min-w-[245px] pointer-events-none z-10 ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
+      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[245px] sm:min-w-[245px] ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show when={open()} fallback={(
         <div class="flex-grow">
@@ -129,7 +129,7 @@ function Sidebar() {
           <Button
             src={shovel}
             disabled
-            class="opacity-0"
+            class="invisible hidden sm:block"
           />
           <div class="inline-block relative">
             <Button

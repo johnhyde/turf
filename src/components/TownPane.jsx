@@ -14,11 +14,9 @@ import resize from 'assets/icons/resize.png';
 
 export default function TownPane() {
   const state = useState();
-  const weAreHost = our.length <= 7;
+  const weAreHost = our.lenjgth <= 7;
   const thisIsTown = () => state.c.name.length <= 7;
   const thisHost = createMemo(() => state.portals.lunk?.for?.ship);
-  // const thisHost = createMemo(() => getTownHost(state.e));
-  const ourHost = createMemo(() => state.thisIsUs ? thisHost() : null);
   const dinks = () => state.portals.dinks;
   const ourDink = createMemo(() => [...dinks().approved, ...dinks().confirmed].find((dink) => {
     return dink.for.ship === our;
@@ -58,6 +56,12 @@ export default function TownPane() {
       return `This is${ourHomeTown() ? ' ' : ' not '}your home Town.`
     } else {
       return null;
+    }
+  }
+
+  function leaveHost() {
+    if (thisHost()) {
+      state.discardPortal(state.portals.lunk.id);
     }
   }
 
@@ -113,10 +117,19 @@ export default function TownPane() {
         </MediumButton>
       </Show>
       <Show when={state.thisIsUs && !weAreHost}>
-        <p class={pClass}>
-          Pick a star to request admission to its Town.
+        {thisHost() &&
+          <MediumButton onClick={leaveHost}>
+            Leave {thisHost()}
+          </MediumButton>
+        }
+        <p class={'mb-2 ' + pClass}>
+          Pick a {thisHost() ? 'new' : ''} star to request admission to its Town.
+          <br/>
+          (try ~pandux, it's open)
         </p>
-        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId} blockLower />
+        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId} blockLower
+          placeholder="~pandux"
+        />
       </Show>
       <Show when={state.thisIsUs}>
           <Show when={state.portals.dinks.pending.length > 0}>

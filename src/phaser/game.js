@@ -312,6 +312,9 @@ export function startPhaser(_owner, _container) {
 
         this.input.on('pointerup', (pointer) => {
           const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+          if (![state.tabs.EDITOR, state.tabs.TOWN, state.tabs.PORTALS].includes(state.selectedTab)) {
+            player?.moveTo?.(pos);
+          }
           if (state.editor.huskToPlace) {
             if (typeof state.huskToPlace.shade === 'object') {
               const shade = state.huskToPlace.shade;

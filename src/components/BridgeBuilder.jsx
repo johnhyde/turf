@@ -40,6 +40,7 @@ export default function BridgeBuilder(props) {
       };
       if (props.shadeId !== undefined) {
         state.createBridge(props.shadeId, portal);
+        updateToShip('');
       } else {
         state.setPortalToPlace(portal, {
           formId: props.formId || '/portal',
@@ -86,6 +87,7 @@ export default function BridgeBuilder(props) {
             updateToShip,
           ]}
           onKeyDown={shipKeyDown}
+          placeholder={props.placeholder || ''}
       />
       {state.huskToPlace?.portal?.ship === toShip() ?
         <SmallButton onClick={cancel}>–</SmallButton>
