@@ -109,6 +109,24 @@ export function getWallVariationAtPos(turf, pos, orFlags = 0, andFlags = 15) {
   return [0, 1, 2, 7, 3, 5, 8, 11, 4, 10, 6, 14, 9, 13, 12, 15][flags];
 }
 
+export function getPortalByShadeId(turf, shadeId) {
+  if (shadeId === undefined) return null;
+  return Object.values(turf.portals).find((portal) => {
+    if (portal.shadeId == shadeId) return true;
+  });
+}
+
+export function getTownHost(turf) {
+  const shadeId = turf.lunk?.shadeId;
+  if (shadeId === undefined) return null;
+  const portal = getPortalByShadeId(turf, shadeId);
+  return portal?.for?.ship || null;
+}
+
+export function isLunkApproved(turf) {
+  return turf.lunk?.approved === true;
+}
+
 export function isHuskCollidable(husk) {
   return !!(husk.collidable || husk.form.collidable);
 }

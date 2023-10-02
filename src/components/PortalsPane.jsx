@@ -1,9 +1,9 @@
 import { createSignal, createMemo, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused, input, normalizeId } from 'lib/utils';
-import { isValidPatp } from 'urbit-ob';
 import SmallButton from '@/SmallButton';
 import Heading from '@/Heading';
+import BridgeBuilder from '@/BridgeBuilder';
 import portalFrom from 'assets/icons/portal-from.png';
 import portalTo from 'assets/icons/portal-to.png';
 import portalWith from 'assets/icons/portal-with.png';
@@ -11,55 +11,23 @@ import resize from 'assets/icons/resize.png';
 
 export default function PortalsPane() {
   const state = useState();
-  const placingPortal = createSelector(() => state.portalToPlace);
-  const [toShipValid, $toShipValid] = createSignal(null);
-  const validBg = () => {
-    if (toShipValid()) {
-      return 'bg-green-100';
-    } else if (toShipValid() === false) {
-      return 'bg-red-200';
-    } else {
-      return '';
-    }
-  }
-
-  const [toShip, $toShip] = createSignal('');
+  const placingPortal = createSelector(() => state.huskToPlace?.portal);
   function goHome() {
     state.mist.goHome();
-  }
-  function updateToShip(ship) {
-    let patp = normalizeId(ship);
-    $toShip(patp);
-    if (isValidPatp(patp)) {
-      $toShipValid(true);
-    } else {
-      $toShipValid(null);
-    }
-  }
-  function placeNewPortal() {
-    const patp = toShip();
-    if (isValidPatp(patp)) {
-      state.startPlacingPortal({
-        ship: toShip(),
-        path: '/',
-      });
-    } else {
-      $toShipValid(false);
-    }
   }
   function discardPortal(portalId) {
     state.discardPortal(Number.parseInt(portalId));
   }
   function placePortal(portalId) {
     if (portalId === null) {
-      state.startPlacingPortal(null);
+      state.clearHuskToPlace();
     } else {
-      state.startPlacingPortal(Number.parseInt(portalId))
+      state.setPortalToPlace(portalId);
     }
   }
   const onKeyDown = (e) => {
-    if (e.key === 'Escape' && state.portalToPlace) {
-      placePortal(null);
+    if (e.key === 'Escape' && state.huskToPlace) {
+      state.clearHuskToPlace();
       e.preventDefault();
     }
   }
@@ -69,83 +37,58 @@ export default function PortalsPane() {
     document.body.removeEventListener('keydown', onKeyDown);
   });
 
-  function shipKeyDown(e) {
-    if (e.key === 'Enter') {
-      placeNewPortal();
-    }
-    if (e.key === 'Escape') {
-      e.target.blur();
-    }
-  }
-
   return (
     <div class="flex flex-col h-full overflow-y-auto">
-      <Show when={state.c.id !== ourPond}>
+      <Show when={!state.thisIsUs}>
         <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
       </Show>
-      <Show when={state.c.id === ourPond}>
+      <Show when={state.thisIsUs}>
         <Heading>
           Create a Portal to:
         </Heading>
-        <div class="flex justify-center items-center space-x-2">
-          <input
-              class={"rounded-input max-w-[175px] " + validBg()}
-              use:input
-              autofocus
-              use:bind={[
-                toShip,
-                updateToShip,
-              ]}
-              onKeyDown={shipKeyDown}
-          />
-          {state.portalToPlace?.ship === toShip() ?
-            <SmallButton onClick={[placePortal, null]}>–</SmallButton>
-          :
-            <SmallButton onClick={placeNewPortal}>+</SmallButton>
-          }
-        </div>
-        <Show when={state.portals().draft.length > 0}>
+        <BridgeBuilder blockHigher blockLower />
+        <Show when={state.portals.draft.length > 0}>
           <div class="my-2">
             <Heading>
               Portal Drafts
             </Heading>
-            <For each={state.portals().draft} >
+            <For each={state.portals.draft} >
               {(portal) => {
                 return <Portal icon={portalTo} label="DRAFT TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}
             </For>
           </div>
         </Show>
-        <Show when={state.portals().from.length > 0}>
+        <Show when={state.portals.from.length > 0}>
           <div class="my-2">
             <Heading>
               Incoming Portal Requests
             </Heading>
-            <For each={state.portals().from} >
+            <For each={state.portals.from} >
               {(portal) => {
                 return <Portal icon={portalFrom} label="FROM" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}
             </For>
           </div>
         </Show>
-        <Show when={state.portals().to.length > 0}>
+        <Show when={state.portals.to.length > 0}>
           <div class="my-2">
             <Heading>
               Outgoing Portal Requests
             </Heading>
-            <For each={state.portals().to} >
+            <For each={state.portals.to} >
               {(portal) => {
                 return <Portal icon={portalTo} label="TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}
             </For>
           </div>
         </Show>
-        <Show when={state.portals().with.length > 0}>
+        <Show when={state.portals.with.length > 0}>
           <div class="my-2">
             <Heading>
               Active Portals
             </Heading>
-            <For each={state.portals().with} >
+            <For each={state.portals.with} >
               {(portal) => {
                 return <Portal icon={portalWith} label="WITH" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
               }}

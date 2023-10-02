@@ -81,7 +81,7 @@ export default function Modals() {
           </div>
         </Modal>
       </Show>
-      <Show when={state.p?.id === ourPond && state.p?.new && state.mist.config?.enabled !== undefined && !state.mist.config.enabled} keyed>
+      <Show when={state.thisIsUs && state.p?.new && state.mist.config?.enabled !== undefined && !state.mist.config.enabled} keyed>
         <Modal class="bg-teal-700 text-slate-100">
           <p class="text-xl mb-4 text-center">
             You Are Opted Out of Usage Tracking

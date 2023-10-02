@@ -149,7 +149,7 @@ function createShade(shade, id, turf) {
       textObj.x = sprite.x;
       textObj.y = sprite.y;
       textObj.setDepth(sprite.depth);
-      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 - sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
+      textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 + sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
       scene.add.existing(textObj);
     } else {
       textObj.setText(text);
@@ -294,17 +294,10 @@ export function startPhaser(_owner, _container) {
         const alpha = 1;
         let draw = false;
         function mapEdit(pointer) {
-          if (state.c.selectedForm || state.portalToPlace) {
+          if (state.c.selectedForm) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
-            if (state.portalToPlace) {
-              state.createBridge({
-                pos,
-                formId: '/portal',
-                variation: 0,
-              }, state.portalToPlace);
-              state.startPlacingPortal(null);
-            } else if (state.c.selectedForm.type === 'wall') {
+            if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(state.e, pos);
               const added = state.addHusk(pos, state.editor.selectedFormId, variation);
               if (added) state.updateWallsAroundPos(pos, true);
@@ -318,10 +311,25 @@ export function startPhaser(_owner, _container) {
         });
 
         this.input.on('pointerup', (pointer) => {
-          if (state.editor.editing && state.editor.pointer && state.editor.movingShadeId) {
-            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
-            state.moveShade(state.editor.movingShadeId, pos);
-            state.setMovingShadeId(null);
+          const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+          if (![state.tabs.EDITOR, state.tabs.TOWN, state.tabs.PORTALS].includes(state.selectedTab)) {
+            player?.moveTo?.(pos);
+          }
+          if (state.editor.huskToPlace) {
+            if (typeof state.huskToPlace.shade === 'object') {
+              const shade = state.huskToPlace.shade;
+              if (state.huskToPlace.portal !== undefined) {
+                state.createBridge({
+                  ...shade,
+                  pos,
+                }, state.huskToPlace.portal);
+              } else {
+                state.addHusk(pos, shade.formId, shade.variation, shade.isLunk);
+              }
+            } else {
+              state.moveShade(state.huskToPlace.shade, pos);
+            }
+            state.clearHuskToPlace();
           }
         });
 
@@ -329,9 +337,12 @@ export function startPhaser(_owner, _container) {
           if (pointer.isDown) {
             mapEdit(pointer);
             const pastMoveThreshold = pointer.getDistance() > 20/window.devicePixelRatio;
-            if (state.editor.editing && state.editor.pointer && !state.editor.movingShadeId) {
-              if (lastClickedShadeId && pastMoveThreshold) {
-                state.setMovingShadeId(lastClickedShadeId);
+            if (lastClickedShadeId !== null && pastMoveThreshold) {
+              const pointerMode = state.editor.editing && state.editor.pointer;
+              const clickedOnGate = lastClickedShadeId == state.e?.lunk?.shadeId;
+              const shouldMoveGate = state.selectedTab === state.tabs.TOWN && clickedOnGate;
+              if ((pointerMode || shouldMoveGate) && !state.huskToPlace) {
+                state.setHuskToPlace(lastClickedShadeId);
               }
             }
             if (pastMoveThreshold) lastClickedShadeId = null;

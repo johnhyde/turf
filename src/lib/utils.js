@@ -148,7 +148,9 @@ export function normalizeIdAndDesig(patp) {
 
 export function unpadPatp(patp) {
   try {
-    return hex2patp(patp2hex(patp));
+    const newPatp = hex2patp(patp2hex(patp));
+    if (patp.startsWith('~doz') && newPatp.length < patp.length) return patp;
+    return newPatp;
   } catch {
     return patp;
   }

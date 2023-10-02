@@ -330,6 +330,39 @@ export class Player extends Phaser.GameObjects.Container {
     }
   }
 
+  moveTo(pos) {
+    if (this.isUs) {
+      let targetPos = () => vec2( this.actionQueue.length? this.actionQueue[0].arg.pos : this.tilePos ).scale(tileFactor);
+      this.dPos = this.dPos || vec2(this.x, this.y);
+      if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
+        const newTilePos = vec2(this.tilePos);
+        let newDir;
+        if (pos.x < this.tilePos.x) {
+          newDir = dirs.LEFT;
+          newTilePos.x--;
+        }
+        if (pos.x > this.tilePos.x) {
+          newDir = dirs.RIGHT;
+          newTilePos.x++;
+        }
+        if (pos.y < this.tilePos.y) {
+          newDir = dirs.UP;
+          newTilePos.y--;
+        }
+        if (pos.y > this.tilePos.y) {
+          newDir = dirs.DOWN;
+          newTilePos.y++;
+        }
+        if (!newTilePos.equals(this.tilePos)) {
+          if (newDir && newDir !== this.dir) {
+            this.s.setDir(newDir);
+          }
+          this.s.setPos(newTilePos);
+        }
+      }
+    }
+  }
+
   onClick(pointer) {
     console.log('clicked on', this.patp);
     if (this.ping && this.p && !this.isUs) {

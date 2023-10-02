@@ -35,8 +35,9 @@ export default function EditPane() {
   }
   const entries = () => Object.entries(state.e?.skye || {});
   const formsByType = (type) => {
+    const specialFormIds = ['/portal', '/portal/house', '/gate'];
     return entries()
-      .filter(([id, form]) => form.type === type && id !== '/portal')
+      .filter(([id, form]) => form.type === type && !specialFormIds.includes(id))
       .sort(([a, formA], [b, formB]) => {
         return a > b ? 1 : (a < b ? -1 : 0);
       });

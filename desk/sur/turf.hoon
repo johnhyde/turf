@@ -1,8 +1,10 @@
+:: /-  *turf-old
 /+  vita-client
 |%
 +$  turf-id  [=ship =path]
 +$  form-id  path
 +$  shade-id  @ud
++$  husk-id  $@(shade-id svec2)
 +$  dest  [for=turf-id at=portal-id]
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
@@ -47,7 +49,15 @@
       =port-reqs
       =port-recs
       =port-offers
+      lunk=(unit lunk)
+      =dinks
   ==
++$  perms
+  $+  perms
+  $:  default=$~(%in perm)  :: the perm that applies to most
+      except=(map ship perm) :: the people with different perms
+  ==
++$  perm  ?(%admin %take %add %in %n)
 +$  portals  (map portal-id portal)
 +$  portal-id  shade-id
 +$  portal
@@ -59,12 +69,11 @@
 +$  port-recs  (jug portal-id ship)
 +$  port-offers  (map ship portal-id)
 +$  port-offer  [for=turf-id via=(unit [of=turf-id from=portal-id at=portal-id])]
-+$  perms
-  $+  perms
-  $:  default=$~(%in perm)
-      except=(map ship perm)
-  ==
-+$  perm  ?(%admin %take %add %in %n)
+:: links between planets and stars
+:: lunk = uplink
+:: dink = downlink
++$  lunk  [=shade-id approved=?]
++$  dinks  (map portal-id ?)
 ::
 +$  plot
   $:  size=$~((vec2 16 8) vec2)
@@ -149,6 +158,7 @@
 ::
 +$  form-spec  [=form-id =form]
 +$  husk-spec  [pos=svec2 =form-id variation=@ud]
++$  add-husk-spec  [is-lunk=? husk-spec]
 ::
 +$  pond-path  [%pond *]
 +$  mist-path  [%mist *]
