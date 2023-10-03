@@ -731,8 +731,8 @@
               %rejected   ' has rejected you from their town'
                 %discarded
               ?:  (gth our.bowl ship.for.roar)
-                ' has left your town'
-              ' has removed you from their town'
+                ' has removed you from their town'
+              ' has left your town'
             ==
           ?-  event.roar
             %requested  ' would like to make a portal to your turf'

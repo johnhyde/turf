@@ -14,7 +14,7 @@ import resize from 'assets/icons/resize.png';
 
 export default function TownPane() {
   const state = useState();
-  const weAreHost = our.lenjgth <= 7;
+  const weAreHost = our.length <= 7;
   const thisIsTown = () => state.c.name.length <= 7;
   const thisHost = createMemo(() => state.portals.lunk?.for?.ship);
   const dinks = () => state.portals.dinks;
