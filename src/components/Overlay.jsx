@@ -20,11 +20,11 @@ export default function Overlay() {
     }
   }
   return (
-    <div class="absolute top-[64px] sm:top-0 w-full flex flex-col">
+    <div class="absolute top-[64px] sm:top-0 w-full flex flex-col pointer-events-none">
       <div class="flex">
         <div class="flex-grow"></div>
         <Show when={state.c.id}>
-          <Heading class="text-xl mt-3 flex items-center">
+          <Heading class="text-xl mt-3 flex items-center pointer-events-auto">
             {state.c.name}
             <div
               class={'ml-2 mr-1 w-2 h-2 rounded-full ' + dotColor()}
@@ -42,7 +42,7 @@ export default function Overlay() {
           </Heading> */}
         </div>
       </div>
-      <div class="flex flex-col items-center space-y-2 mt-2">
+      <div class="flex flex-col items-center space-y-2 mt-2 pointer-events-auto">
         <For each={state.notifications}>
           {(notif, index) =>
             <SmallButton class="font-normal !px-3 !py-1.5 !bg-yellow-600 transition" onClick={() => state.unnotify(index())}>

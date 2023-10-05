@@ -367,25 +367,34 @@ export function startPhaser(_owner, _container) {
             state.notify(e.grit.arg.by + ' has pinged you!');
           }
         });
+
         const themMoveQueuer = (e) => {
           const ship = e.grit.arg.ship;
           if (ship !== our && players[ship]) players[ship].actionQueue.push(e.grit);
         };
         addGritListener('pond-grit-move', themMoveQueuer);
         addGritListener('pond-grit-face', themMoveQueuer);
+
         const usMoveQueuer = (e) => {
           const ship = e.fakeGrit.arg.ship;
           if (ship === our && players[ship]) players[ship].actionQueue.push(e.fakeGrit);
         };
         addGritListener('pond-fakeGrit-move', usMoveQueuer);
         addGritListener('pond-fakeGrit-face', usMoveQueuer);
-        addGritListener('pond-grit-chat', (e) => {
-          players[e.grit.arg.from].speakBubble(e.grit.arg.text); //do the visual speech bubble part
+
+        function chat({ from, text }) {
+          players[from]?.speakBubble?.(text); //do the visual speech bubble part
           if (state.soundOn) { //do the speech synthesis part
             var msg = new SpeechSynthesisUtterance();
-            msg.text = e.grit.arg.text;
+            msg.text = text;
             window.speechSynthesis.speak(msg);
           }
+        }
+        addGritListener('pond-grit-chat', (e) => {
+          if (e.grit.arg.from !== our) chat(e.grit.arg);
+        });
+        addGritListener('pond-fakeGrit-chat', (e) => {
+          if (e.fakeGrit.arg.from === our) chat(e.fakeGrit.arg);
         });
       }
 

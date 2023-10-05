@@ -143,7 +143,7 @@ export default function EditPane() {
       {state.editor.selectedFormId ?
         <>
           <MediumButton onClick={delSelectedForm}>
-            Delete Item
+            Delete from Library
           </MediumButton>
         </>
       :
