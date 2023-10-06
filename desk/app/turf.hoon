@@ -30,7 +30,7 @@
 +$  state-1
   $:  %1
       =reset
-      skye-reset=_4
+      skye-reset=_7
       closet=$~(default-closet:gen skye)
       lakes
   ==

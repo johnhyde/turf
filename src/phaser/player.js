@@ -22,7 +22,9 @@ export class Player extends Phaser.GameObjects.Container {
     this.oldTilePos = vec2(player().pos);
     this.patp = patp;
     this.isUs = patp === our;
+    this.depthMod = 0.5;
     if (this.isUs) {
+      this.depthMod = 0.55;
       this.keys = {
         ...scene.input.keyboard.createCursorKeys(),
         ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
@@ -41,13 +43,13 @@ export class Player extends Phaser.GameObjects.Container {
       hitArea: new Phaser.Geom.Rectangle(),
       hitAreaCallback: CreatePixelPerfectHandler(game.textures, 255),
     });
+    this.addToUpdateList();
     this.on('pointerdown', this.onClick.bind(this));
     this.on('pointermove', this.onHover.bind(this));
     this.on('pointerout', this.onLeave.bind(this));
     this.recreateAvatar().then(() => {
       this.updateAnims();
       this.setupEffects();
-      this.scene.add.existing(this);
     });
   }
 
@@ -254,8 +256,9 @@ export class Player extends Phaser.GameObjects.Container {
       this.$apparentDir(this.actionQueue[0].arg.dir);
       this.actionQueue.shift();
     }
-    if (this.depth !== this.tilePos.y) {
-      this.setDepth(this.tilePos.y + 0.5);
+    if (this.depth !== this.tilePos.y + this.depthMod) {
+      this.setDepth(this.tilePos.y + this.depthMod);
+      this.parentContainer.sort('depth');
     }
     const speed = 170*factor;
     let justMoved = false;

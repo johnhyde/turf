@@ -86,6 +86,10 @@
         =/  fence-wood  (new-form-variations %wall 'Wood Fence' fence-wood)
         fence-wood(collidable %.y, offset [--0 --8])
       ::
+        :-  /road/paved
+        =/  paved-road  (new-form-variations [%wall %flat] 'Paved Road' paved-road)
+        paved-road(collidable %.n, offset [--0 --0])
+      ::
         :-  /portal
         =/  portal  (new-form %item 'Portal' portal)
         %=  portal
@@ -205,11 +209,14 @@
         +:*form-bits
     ==
   ++  new-form-variations
-    |=  [=form-type name=@t pngs=(list png)]
+    |=  [t=$@(form-type [form-type deep]) name=@t pngs=(list png)]
     ^-  form
+    =/  [=form-type =deep]
+      ?^  t  t
+      [t %back]
     :*  name
         type=form-type
-        variations=(turn pngs |=(=png `back+png))
+        variations=(turn pngs |=(=png `[deep png]))
         *form-bits
     ==
   ++  new-player
