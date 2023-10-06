@@ -36,10 +36,14 @@ async function loadImage(id, url, ...args) {
 }
 
 async function loadImageUnsafe(id, url, config = {}) {
+  if (!Array.isArray(url)) url = [url];
   // console.log("trying to load image: " + id)
   const changeColor = config.color !== undefined && game.renderer.type === Phaser.CANVAS;
   if (game.textures.exists(id)) {
-    if (changeColor) {
+    const oldUrl = game.textures.get(id).source[0].source.src;
+    const newUrl = new URL(url[0], window.location).href
+    const urlChanged = oldUrl !== newUrl;
+    if (urlChanged || changeColor) {
       game.textures.removeKey(id);
     } else {
       return;
@@ -66,8 +70,7 @@ async function loadImageUnsafe(id, url, config = {}) {
       //   img.onerror = () => onError(id);
       //   img.src = url;
       // } else {
-      if (!Array.isArray(url)) url = [url];
-      let images = [], promises = [];
+      let images = [];
       images = await Promise.all(url.map((u) => {
         const img = new Image();
         return new Promise((resolve, reject) => {
@@ -115,7 +118,7 @@ let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
   let sprite = new Shade(scene, shade, turf, true);
   const { formId } = shade;
-  if (!sprite) {
+  if (!sprite.active) {
     console.error('Could not create shade', formId);
     return;
   }
@@ -367,25 +370,34 @@ export function startPhaser(_owner, _container) {
             state.notify(e.grit.arg.by + ' has pinged you!');
           }
         });
+
         const themMoveQueuer = (e) => {
           const ship = e.grit.arg.ship;
           if (ship !== our && players[ship]) players[ship].actionQueue.push(e.grit);
         };
         addGritListener('pond-grit-move', themMoveQueuer);
         addGritListener('pond-grit-face', themMoveQueuer);
+
         const usMoveQueuer = (e) => {
           const ship = e.fakeGrit.arg.ship;
           if (ship === our && players[ship]) players[ship].actionQueue.push(e.fakeGrit);
         };
         addGritListener('pond-fakeGrit-move', usMoveQueuer);
         addGritListener('pond-fakeGrit-face', usMoveQueuer);
-        addGritListener('pond-grit-chat', (e) => {
-          players[e.grit.arg.from].speakBubble(e.grit.arg.text); //do the visual speech bubble part
+
+        function chat({ from, text }) {
+          players[from]?.speakBubble?.(text); //do the visual speech bubble part
           if (state.soundOn) { //do the speech synthesis part
             var msg = new SpeechSynthesisUtterance();
-            msg.text = e.grit.arg.text;
+            msg.text = text;
             window.speechSynthesis.speak(msg);
           }
+        }
+        addGritListener('pond-grit-chat', (e) => {
+          if (e.grit.arg.from !== our) chat(e.grit.arg);
+        });
+        addGritListener('pond-fakeGrit-chat', (e) => {
+          if (e.fakeGrit.arg.from === our) chat(e.fakeGrit.arg);
         });
       }
 
@@ -415,8 +427,8 @@ export function startPhaser(_owner, _container) {
         () => {
           if (!state.e) return {};
           return {
-            ...extractPlayerSprites(state.e.players),
-            ...extractSkyeSprites(state.e.skye),
+            ...extractPlayerSprites(state.e.id, state.e.players),
+            ...extractSkyeSprites(state.e.id, state.e.skye),
             void: {
               sprite: voidUrl,
             },
@@ -456,7 +468,6 @@ export function startPhaser(_owner, _container) {
       createEffect(on(() => JSON.stringify(state.p?.grid), (_, lastGrid) => {
         lastGrid = JSON.parse(lastGrid || '[]');
         // console.log('running tile effect');
-        const turf = state.e;
         if (readyToRender()) {
           console.log('updating tiles');
           state.p.grid.map((col, i) => {
@@ -465,7 +476,7 @@ export function startPhaser(_owner, _container) {
               if (space.tile && space.tile.formId !== lastTileFormId) {
                 const pos = vec2(i, j);
                 // console.log('updating tile ', pos);
-                const gid = formIndexMap[spriteName(space.tile.formId, 0)];
+                const gid = formIndexMap[spriteName(state.p.id, space.tile.formId, 0)];
                 tiles.putTileAt(gid, pos.x, pos.y);
               }
             });
@@ -494,7 +505,7 @@ export function startPhaser(_owner, _container) {
   }
 
   async function loadPlayerSprites(turf) {
-    const sprites = extractPlayerSprites(turf.players);
+    const sprites = extractPlayerSprites(turf.id, turf.players);
     return loadSprites(sprites);
   }
   
@@ -598,7 +609,7 @@ export function startPhaser(_owner, _container) {
           shades[id].destroy();
           delete shades[id];
         } else {
-          if (shadeObject.texture.key !== (sprite = spriteName(shadeData.formId, shadeData.variation))) {
+          if (shadeObject.texture.key !== (sprite = spriteName(turf.id, shadeData.formId, shadeData.variation))) {
             shadeObject.setTexture(sprite);
           }
           const pos = vec2(shadeData.pos).scale(tileFactor);
@@ -617,13 +628,13 @@ const coreTiles = ['void'];
 
 function generateMap(turf, grid) {
   formIndexMap = {};
-  const tiles = Object.entries(extractSkyeTileSprites(turf.skye)).map(([id, _], i) => {
+  const tiles = Object.entries(extractSkyeTileSprites(turf.id, turf.skye)).map(([id, _], i) => {
     formIndexMap[id] = i + coreTiles.length + 1;
     return id;
   });
   const data = swapAxes(grid).map((row) => row.map((space) => {
     if (!space.tile) return 1;
-    const sprite = spriteName(space.tile.formId, space.tile.variation);
+    const sprite = spriteName(turf.id, space.tile.formId, space.tile.variation);
     if (!formIndexMap[sprite]) return 1;
     return formIndexMap[sprite];
   }));

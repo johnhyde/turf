@@ -2,7 +2,7 @@ import { createMemo, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused } from 'lib/utils';
-import { getShadeWithForm } from 'lib/turf';
+import { getShadeWithForm, isSpecialFormId } from 'lib/turf';
 import Button from '@/Button';
 import FormEditor from '@/FormEditor';
 import ShadeEditor from '@/ShadeEditor';
@@ -37,7 +37,7 @@ export default function EditPane() {
   const formsByType = (type) => {
     const specialFormIds = ['/portal', '/portal/house', '/gate'];
     return entries()
-      .filter(([id, form]) => form.type === type && !specialFormIds.includes(id))
+      .filter(([id, form]) => form.type === type && !isSpecialFormId(id))
       .sort(([a, formA], [b, formB]) => {
         return a > b ? 1 : (a < b ? -1 : 0);
       });
@@ -103,11 +103,6 @@ export default function EditPane() {
     });
   }
 
-  function delSelectedForm() {
-    state.delForm(state.editor.selectedFormId)
-    selectTool(null);
-  }
-
   return (
     <div class="flex flex-col h-full">
       <div class="flex flex-wrap justify-evenly content-evenly">
@@ -140,19 +135,11 @@ export default function EditPane() {
           ref={buttons.resize}
         />
       </div>
-      {state.editor.selectedFormId ?
-        <>
-          <MediumButton onClick={delSelectedForm}>
-            Delete Item
-          </MediumButton>
-        </>
-      :
-        <MediumButton onClick={initNewForm}>
-          Create Item
-        </MediumButton>
-      }
+      <MediumButton onClick={initNewForm}>
+        Create Item
+      </MediumButton>
       <FormEditor form={newForm} $form={$newForm} skye={state.e?.skye} />
-      <Show when={state.editor.selectedFormId}>
+      <Show when={state.c.selectedForm}>
         <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
           <FormInfo formId={state.editor.selectedFormId} />
         </div>

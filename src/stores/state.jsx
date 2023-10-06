@@ -113,8 +113,8 @@ export function getState() {
         },
         get selectedForm() {
           if (!parent.editor.editing) return null;
-          if (!this.turf) return null;
-          return this.turf.skye[parent.editor.selectedFormId];
+          if (!this.ether) return null;
+          return this.ether.skye[parent.editor.selectedFormId] || null;
         },
       };
       return current;
@@ -299,16 +299,18 @@ export function getState() {
         size,
       });
     },
-    addForm(form) {
-      return this.sendPondWave('add-form', form);
+    async addForm(form, delFormId) {
+      if (delFormId) await this.delForm(delFormId);
+      if (form) await this.sendPondWave('add-form', form);
     },
     delForm(formId) {
       return this.sendPondWave('del-form', {
         formId,
       });
     },
-    importForm(form) {
-      return this.sendOurPondWave('add-form', form);
+    async importForm(form, delFormId) {
+      if (delFormId) await this.sendOurPondWave({ formId: delFormId });
+      if (form) await this.sendOurPondWave('add-form', form);
     },
     addHusk(pos, formId, variation = 0, isLunk = false) {
       return this.sendPondWave('add-husk', {
@@ -460,11 +462,15 @@ export function getState() {
     },
     selectTab(tab) {
       batch(() => {
+        if (state.selectedTab === state.tabs.LAB &&
+          state.selectedTab !== tab) {
+          this.setScaleLog(1);
+        }
         $state('selectedTab', tab);
         $state('editor', 'huskToPlace', null);
         this.selectShade(null);
         if (tab === state.tabs.LAB) {
-          this.setScaleLog(Math.min(this.scaleLog, -2));
+          this.setScaleLog(-1);
         }
         if (tab === state.tabs.EDITOR) {
           this.selectTool(this.editor.selectedTool);
@@ -518,6 +524,13 @@ export function getState() {
         return notifs.filter(n => n !== notification);
       });
     },
+  });
+
+  createEffect(() => {
+    if (state.editor.selectedFormId && !state.c.selectedForm) {
+      _state.selectForm(null);
+      _state.selectTool(null);
+    }
   });
 
   createEffect(() => {

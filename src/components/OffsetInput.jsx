@@ -1,10 +1,12 @@
-import { createEffect, onMount, onCleanup, on } from 'solid-js';
-import { vec2, minV, maxV } from 'lib/utils';
+import { createEffect, createSignal, onMount, onCleanup, on } from 'solid-js';
+import { vec2, minV, maxV, roundV, equalsV } from 'lib/utils';
 
 export default function OffsetInput(props) {
   let canvas;
   const minOffset = () => vec2(-tileSize);
   const maxOffset = () => vec2(props.bitmap?.width || 0, props.bitmap?.height || 0);
+  let scale = 1;
+  let offset = vec2();
 
   createEffect(on(
     () => props.bitmap,
@@ -12,6 +14,7 @@ export default function OffsetInput(props) {
       if (bitmap && canvas) {
         canvas.width = props.bitmap.width + tileSize;
         canvas.height = props.bitmap.height + tileSize;
+        scale = canvas.width/128;
         drawStuff(bitmap)
       }
     }
@@ -26,8 +29,8 @@ export default function OffsetInput(props) {
       ctx.drawImage(props.bitmap, tileSize/2, tileSize/2);
       ctx.imageSmoothingEnabled = false;
       ctx.strokeStyle = "red";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 2]);
+      ctx.lineWidth = Math.max(1, Math.round(2*scale));
+      ctx.setLineDash([Math.max(3, 6*scale), Math.max(2, 2*scale)]);
       ctx.strokeRect(
         offset.x + tileSize/2 - ctx.lineWidth/2,
         offset.y + tileSize/2 - ctx.lineWidth/2,
@@ -37,7 +40,13 @@ export default function OffsetInput(props) {
     }
   }
 
-  createEffect(on(() => vec2(props.offset), (offset) => drawStuff(null, offset)));
+  createEffect(on(() => vec2(props.offset), (propsOffset) => {
+    drawStuff(null, propsOffset);
+    if (!equalsV(roundV(offset), propsOffset)) {
+      console.log('resetting offset', offset, propsOffset);
+      offset = vec2(propsOffset);
+    }
+  }));
 
   onMount(() => {
     document.addEventListener('mouseup', stopDrag);
@@ -51,21 +60,20 @@ export default function OffsetInput(props) {
 
   function startDrag(e) {
     isDragging = true;
-    lastX = e.offsetX;
-    lastY = e.offsetY;
+    lastX = e.offsetX*scale;
+    lastY = e.offsetY*scale;
   }
 
   function drag(e) {
     if (isDragging) {
       console.log('mouse moved in canvas', e);
-      const deltaX = e.offsetX - lastX;
-      const deltaY = e.offsetY - lastY;
-      const offset = vec2(props.offset);
+      const deltaX = e.offsetX*scale - lastX;
+      const deltaY = e.offsetY*scale - lastY;
       offset.x = offset.x + deltaX;
       offset.y = offset.y + deltaY;
-      props.$offset(minV(maxV(offset, minOffset()), maxOffset()));
-      lastX = e.offsetX;
-      lastY = e.offsetY;
+      props.$offset(minV(maxV(roundV(offset), minOffset()), maxOffset()));
+      lastX += deltaX;
+      lastY += deltaY;
     }
   }
 

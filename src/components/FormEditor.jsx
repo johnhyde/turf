@@ -1,6 +1,7 @@
-import { batch, createMemo, createSignal, createEffect, onCleanup } from 'solid-js';
+import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile } from "solid-js/store";
 import { vec2, bind, input, autofocus, makeImage, isValidPath, jClone } from 'lib/utils';
+import { isSpecialFormId } from 'lib/turf';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
@@ -10,22 +11,33 @@ import OffsetInput from '@/OffsetInput';
 
 export default function FormEditor(props) {
   const state = useState();
-  const formId = () => props.form?.formId;
-  const form = () => props.form?.form;
+  const [newForm, $newForm] = createStore({});
+  createEffect(() => {
+    $newForm(reconcile(jClone(props.form)));
+  });
+  const formDef = mergeProps(props.form, newForm);
+  const formId = () => formDef.formId;
+  const form = () => formDef.form;
   const offset = () => form().offset;
   const sprite = () => form()?.variations?.[0]?.sprite || '';
   const [file, $file] = createSignal(null);
   const [idValid, $idValid] = createSignal(null);
   const [spriteBmp, $spriteBmp] = createSignal(null);
   const [bmpError, $bmpError] = createSignal(false);
+  const idChanged = () => props.editing && formId() !== props.form?.formId;
+  const idClash = () => {
+    if (props.editing && !idChanged()) return false;
+    return !!(props.skye && formId() && props.skye[formId()]);
+  }
   const idInputColor = () => {
     if (form() && !idValid()) return 'bg-red-200';
     return idClash() ? 'bg-orange-200' : '';
   }
   const readyToSave = () => idValid() && sprite();
+  const addFn = () => props.addFn ?? state.addForm.bind(state);
 
   function isValidFormId(id) {
-    if (id === '/portal') return false;
+    if (isSpecialFormId(id)) return false;
     return isValidPath(id);
   }
 
@@ -35,8 +47,11 @@ export default function FormEditor(props) {
 
   function save() {
     if (readyToSave()) {
-      props.$form('form', 'offset', (offset) => vec2(offset));
-      (props.addFn ?? state.addForm.bind(state))(jClone(props.form));
+      $newForm('form', 'offset', (offset) => vec2(offset));
+      addFn()(
+        jClone(formDef),
+        idChanged() ? props.form?.formId : undefined
+      );
       cancel();
     }
   }
@@ -46,10 +61,18 @@ export default function FormEditor(props) {
     props.$form(reconcile({}));
   }
 
+  function deleteForm() {
+    addFn()(
+      undefined,
+      props.form?.formId
+    );
+    cancel();
+  }
+
   function setFormId(id) {
     id = id.trim();
     if (isValidFormId(id)) {
-      props.$form('formId', id);
+      $newForm('formId', id);
       $idValid(true);
     } else {
       $idValid(false);
@@ -57,18 +80,18 @@ export default function FormEditor(props) {
   }
 
   function setType(type) {
-    props.$form('form', 'type', type);
+    $newForm('form', 'type', type);
   }
   
   function setOffset(offset) {
     batch(() => {
-      props.$form('form', 'offset', 'x', offset.x);
-      props.$form('form', 'offset', 'y', offset.y);
+      $newForm('form', 'offset', 'x', offset.x);
+      $newForm('form', 'offset', 'y', offset.y);
     });
   }
 
   function setSprite(url) {
-    props.$form('form', 'variations', 0, 'sprite', url);
+    $newForm('form', 'variations', 0, 'sprite', url);
   }
 
   function loadSprite() {
@@ -139,11 +162,10 @@ export default function FormEditor(props) {
     root.removeEventListener('keydown', onKeyDown);
   });
 
-  const idClash = () => !!(props.skye && formId() && props.skye[formId()]);
 
   let urlInput, uploader;
   return (
-    <Show when={form()} keyed>
+    <Show when={props.form?.form} keyed>
       <Modal
         class="top-0 left-0 flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700"
         onClose={cancel}
@@ -155,7 +177,7 @@ export default function FormEditor(props) {
           <input
             use:bind={[
               () => form()?.name,
-              (s) => props.$form('form', 'name', s)
+              (s) => $newForm('form', 'name', s)
             ]}
             use:autofocus
             class="rounded-input"
@@ -176,20 +198,25 @@ export default function FormEditor(props) {
               ID in use: {props.skye[formId()].name}
             </p>
           }
+          {idChanged() && props.form?.formId &&
+            <p>
+              ID will be changed from {props.form.formId}
+            </p>
+          }
         </div>
         <div class="flex space-x-2">
           <span class="font-semibold">Type</span>
           <div>
             <label for="tile" class="mr-1">Tile</label>
             <input type="radio" name="type" value="tile" id="tile"
-              checked={props.form?.form?.type === 'tile'}
+              checked={form()?.type === 'tile'}
               onInput={(e) => e.currentTarget.checked && setType('tile')}
             />
           </div>
           <div>
             <label for="tile" class="mr-1">Item</label>
             <input type="radio" name="type" value="item" id="item"
-              checked={props.form?.form?.type === 'item'}
+              checked={form()?.type === 'item'}
               onInput={(e) => e.currentTarget.checked && setType('item')}
             />
           </div>
@@ -204,7 +231,7 @@ export default function FormEditor(props) {
               max={spriteBmp()?.width || 0}
               use:bind={[
                 () => form()?.offset?.x,
-                (s) => props.$form('form', 'offset', 'x', s),
+                (s) => $newForm('form', 'offset', 'x', s),
               ]} />
           </div>
           <div>
@@ -215,7 +242,7 @@ export default function FormEditor(props) {
               max={spriteBmp()?.height || 0}
               use:bind={[
                 () => form()?.offset?.y,
-                (s) => props.$form('form', 'offset', 'y', s),
+                (s) => $newForm('form', 'offset', 'y', s),
               ]} />
           </div>
         </div>
@@ -225,12 +252,15 @@ export default function FormEditor(props) {
           </label>
           <input type="checkbox" id="collidable"
             checked={form()?.collidable}
-            onInput={(e) => props.$form('form', 'collidable', e.currentTarget.checked)}
+            onInput={(e) => $newForm('form', 'collidable', e.currentTarget.checked)}
           />
         </div>
         <div>
           <p class="font-semibold">Image</p>
           <div class="flex flex-col space-y-2">
+            <p>
+              Tiles are 32x32 pixels.
+            </p>
             {!file() &&
               <div class="flex items-center space-x-2">
                 <input
@@ -261,12 +291,22 @@ export default function FormEditor(props) {
               <input type="file" onInput={uploadFile} ref={uploader} class="hidden"/>
             </div>
             {bmpError() && <p>Could not load the image</p>}
+            {/* {(form()?.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)) &&
+              <p>
+                This image is bigger than 32x32 pixels.
+              </p>
+            } */}
             {spriteBmp() &&
-              <OffsetInput
-                bitmap={spriteBmp()}
-                offset={offset()}
-                $offset={setOffset}
-              />
+              <>
+                <p class={'text-center rounded-md ' + (form()?.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32) ? 'bg-red-200' : '')}>
+                  {spriteBmp().width}x{spriteBmp().height}
+                </p>
+                <OffsetInput
+                  bitmap={spriteBmp()}
+                  offset={offset()}
+                  $offset={setOffset}
+                />
+              </>
             }
           </div>
         </div>
