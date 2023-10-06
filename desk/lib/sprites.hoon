@@ -52,6 +52,7 @@
 ++  wall-stone-small  (gen-walls 'sprites/walls/wall-stone-small/wall-stone-small-' 0)
 ++  fence-wood  (gen-walls 'sprites/walls/fence-wood/fence-wood-' 0)
 ++  paved-road  (gen-walls 'sprites/walls/paved-road/paved-road-' 1)
+++  grassy-path  (gen-walls 'sprites/walls/grassy-path/grassy-path-' 1)
 ++  table  'sprites/table.png'
 ++  stool  'sprites/stool.png'
 ++  barrel  'sprites/barrel.png'

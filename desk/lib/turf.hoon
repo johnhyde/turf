@@ -87,8 +87,10 @@
         fence-wood(collidable %.y, offset [--0 --8])
       ::
         :-  /road/paved
-        =/  paved-road  (new-form-variations [%wall %flat] 'Paved Road' paved-road)
-        paved-road(collidable %.n, offset [--0 --0])
+       (new-form-variations [%wall %flat] 'Paved Road' paved-road)
+      ::
+        :-  /path/grassy
+        (new-form-variations [%wall %flat] 'Grassy Path' grassy-path)
       ::
         :-  /portal
         =/  portal  (new-form %item 'Portal' portal)
