@@ -115,7 +115,7 @@ export class Player extends Phaser.GameObjects.Container {
     if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
     this.avatar.removeAll(true);
     const frameRate = 7;
-    const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
+    const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(this.t.id, avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
     this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
     this.bodyImage.thing = avatar.body.thing;
     if (avatar.body.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
@@ -135,7 +135,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.bodyImage.preDestroy = preDestroy;
     this.bodyImage.setTint(avatar.body.color);
     this.things = avatar.things.map((thing) => {
-      const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(thing.formId, thing.form, dirs[dir], this.patp));
+      const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(this.t.id, thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
       const defaultDir = spriteDirs.filter(key => key)[0];
       const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });

@@ -37,6 +37,11 @@ export function roundV(v) {
   return vec2(Math.round(v.x), Math.round(v.y));
 }
 
+export function equalsV(a, b) {
+  a = vec2(a); b = vec2(b);
+  return a.x === b.x && a.y === b.y;
+}
+
 export function swapAxes(array2d) {
   if (!array2d || array2d.length === 0) return [];
   return array2d[0].map((_, colIndex) => array2d.map(row => row[colIndex]));

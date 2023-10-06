@@ -47,52 +47,54 @@ export default function ShadeEditor(props) {
     clearNewEffects();
   }
 
-  const [newForm, $newForm] = createStore({});
-  function importForm() {
-    if (props.shade.formId && props.shade.form) $newForm(jClone({
-      formId: props.shade.formId,
-      form: props.shade.form,
-    }));
+  function deleteItem() {
+    state.delShade(props.shade.id);
   }
 
   return (
     <Show when={props.shade}>
       <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
         <FormInfo formId={props.shade.formId} />
-        <p class="text-center">
-          Position: {props.shade.pos.x}x{props.shade.pos.y}
-        </p>
-        <Show when={Object.entries(effects()).length > 0}>
-          Effects:
-          <Index each={Object.entries(effects())} >
-            {(item) => {
-              const trigger = () => item()[0];
-              const effect = () => item()[1];
-              return (
-                <div class="mb-2">
-                  <div class="flex items-center mb-1">
-                    on {trigger()}: {effect().type}
+        <div class="my-2 border-t border-yellow-950"></div>
+        <div class="mx-1">
+          <p class="text-center">
+            Position: {props.shade.pos.x}x{props.shade.pos.y}
+          </p>
+          <Show when={Object.entries(effects()).length > 0}>
+            Effects:
+            <Index each={Object.entries(effects())} >
+              {(item) => {
+                const trigger = () => item()[0];
+                const effect = () => item()[1];
+                return (
+                  <div class="mb-2">
+                    <div class="flex items-center mb-1">
+                      on {trigger()}: {effect().type}
+                    </div>
+                    <ArgInput
+                      shade={props.shade}
+                      type={effect().type} arg={effect().arg}
+                      setArg={(arg) => setArg(trigger(), effect().type, arg)}
+                    />
                   </div>
-                  <ArgInput
-                    shade={props.shade}
-                    type={effect().type} arg={effect().arg}
-                    setArg={(arg) => setArg(trigger(), effect().type, arg)}
-                  />
-                </div>
-              );
-            }}
-          </Index>
-          <Show when={Object.keys(newEffects).length}>
-            <div class="flex justify-center space-x-2">
+                );
+              }}
+            </Index>
+          </Show>
+          <div class="my-1 flex justify-center space-x-2">
+            <Show when={Object.keys(newEffects).length}>
               <SmallButton onClick={save}>
                 Save
               </SmallButton>
               <SmallButton onClick={cancel}>
                 Cancel
               </SmallButton>
-            </div>
-          </Show>
-        </Show>
+            </Show>
+            <SmallButton onClick={deleteItem}>
+              Delete
+            </SmallButton>
+          </div>
+        </div>
       </div>
     </Show>
   );

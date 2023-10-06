@@ -187,28 +187,28 @@ export function burnBridge(turf, portalId) {
   delPortal(turf, portalId);
 }
 
-export function extractSkyeSprites(skye) {
+export function extractSkyeSprites(turfId, skye) {
   const sprites = {};
   Object.entries(skye).forEach(([formId, form]) => {
-      addFormSprites(sprites, form, formId);
+      addFormSprites(turfId, sprites, form, formId);
   });
   return sprites;
 }
 
-export function extractSkyeTileSprites(skye) {
+export function extractSkyeTileSprites(turfId, skye) {
   const sprites = {};
   Object.entries(skye).forEach(([formId, form]) => {
     if (form.type === 'tile') {
-      addFormSprites(sprites, form, formId);
+      addFormSprites(turfId, sprites, form, formId);
     }
   });
   return sprites;
 }
 
-function addFormSprites(sprites, form, formId, patp, config = {}) {
+function addFormSprites(turfId, sprites, form, formId, patp, config = {}) {
   form.variations.forEach((variation, i) => {
     if (variation) {
-      const name = spriteName(formId, i, patp);
+      const name = spriteName(turfId, formId, i, patp);
       if (typeof variation.sprite === 'string') {
         sprites[name] = { sprite: variation.sprite, config };
       } else {
@@ -218,26 +218,27 @@ function addFormSprites(sprites, form, formId, patp, config = {}) {
   });
 }
 
-function addThingSprites(sprites, thing, patp, config = {}) {
-  addFormSprites(sprites, thing.form, thing.formId, patp, config)
+function addThingSprites(turfId, sprites, thing, patp, config = {}) {
+  addFormSprites(turfId, sprites, thing.form, thing.formId, patp, config)
 }
 
-export function extractPlayerSprites(players) {
+export function extractPlayerSprites(turfId, players) {
   const sprites = {};
   Object.entries(players).forEach(([patp, player]) => {
-    addThingSprites(sprites, player.avatar.body.thing, patp, { color: player.avatar.body.color });
+    addThingSprites(turfId, sprites, player.avatar.body.thing, patp, { color: player.avatar.body.color });
     player.avatar.things.forEach((thing) => {
-      addThingSprites(sprites, thing, patp);
+      addThingSprites(turfId, sprites, thing, patp);
     });
   });
   return sprites;
 }
 
-export function spriteName(id, variation, patp='') {
-  return patp + id.replace(/\//g, '-') + '_' + (variation || '0');
+export function spriteName(turfId, id, variation, patp='') {
+  // return turfId.replace(/\/(pond\/)?/g, '-') + patp + id.replace(/\//g, '-') + '_' + (variation || '0');
+  return turfId.replace(/\//g, '-') + patp + id.replace(/\//g, '-') + '_' + (variation || '0');
 }
 
-export function spriteNameWithDir(id, form, dir = dir.DOWN, patp='') {
+export function spriteNameWithDir(turfId, id, form, dir = dir.DOWN, patp='') {
   let variation = dirs[dir];
   const len = form.variations.length;
   if (len === 3) {
@@ -246,5 +247,10 @@ export function spriteNameWithDir(id, form, dir = dir.DOWN, patp='') {
     if (variation === 2) return null; // don't display
   }
   variation = variation % form.variations.length;
-  return spriteName(id, variation, patp);
+  return spriteName(turfId, id, variation, patp);
+}
+
+export const specialFormIds = ['/portal', '/portal/house', '/gate'];
+export function isSpecialFormId(formId) {
+    return specialFormIds.includes(formId);
 }
