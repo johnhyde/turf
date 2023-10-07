@@ -1,7 +1,7 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
 import isEqual from 'lodash/isEqual';
-import { vec2, roundV, dirs, sleep, intToHex, jClone } from 'lib/utils';
+import { vec2, roundV, dirs, sleep, intToHex, cite, jClone } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -163,7 +163,7 @@ export class Player extends Phaser.GameObjects.Container {
       return sprite;
     }).filter(thing => !!thing);
     this.avatar.add([this.bodyImage, ...this.things]);
-    this.name = scene.make.text({ text: this.patp, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    this.name = scene.make.text({ text: cite(this.patp), style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
     this.add(this.name);

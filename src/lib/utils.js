@@ -161,6 +161,28 @@ export function unpadPatp(patp) {
   }
 }
 
+// Adapted from cite() in urbit/pkg/npm/api/lib/lib.ts
+// to handle those rare comets which start with dozzod
+export function cite(ship) {
+  let patp = ship,
+    shortened = '';
+  if (patp === null || patp === '') {
+    return null;
+  }
+  patp = desig(patp);
+  // comet
+  if (patp.length >= 35) {
+    shortened = '~' + patp.slice(0, 6) + '_' + patp.slice(-6);
+    return shortened;
+  }
+  // moon
+  if (patp.length >= 20) {
+    shortened = '~' + patp.slice(-13, -7) + '^' + patp.slice(-6);
+    return shortened;
+  }
+  return `~${patp}`;
+}
+
 export function isValidPath(path) {
   return /^(\/[-~._0-9a-z]*)+$/.test(path);
 }
