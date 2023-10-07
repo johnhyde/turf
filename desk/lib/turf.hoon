@@ -78,7 +78,7 @@
           offset      [--0 --32]
         ==
       ::
-        :-  /wall/stone/small
+        :-  /fence/stone
         =/  wall-stone-small  (new-form-variations %wall 'Smal Stone Wall' wall-stone-small)
         wall-stone-small(collidable %.y, offset [--0 --8])
       ::
@@ -86,7 +86,7 @@
         =/  fence-wood  (new-form-variations %wall 'Wood Fence' fence-wood)
         fence-wood(collidable %.y, offset [--0 --8])
       ::
-        :-  /road/paved
+        :-  /path/road/paved
        (new-form-variations [%wall %flat] 'Paved Road' paved-road)
       ::
         :-  /path/grassy

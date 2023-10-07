@@ -201,7 +201,7 @@ function createShade(shade, id, turf) {
         const shade = getShadeWithForm(state.e, id);
         state.delShade(id);
         if (shade && shade.form.type === 'wall') {
-          state.updateWallsAroundPos(shade.pos, false);
+          state.updateWallsAroundPos(shade.pos, false, [id]);
         }
         console.log('try to remove shade');
       } else if (state.editor.cycler) {
@@ -329,7 +329,7 @@ export function startPhaser(_owner, _container) {
             if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(state.e, pos);
               const added = state.addHusk(pos, state.editor.selectedFormId, variation);
-              if (added) state.updateWallsAroundPos(pos, true);
+              if (added) state.updateWallsAroundPos(pos, false);
             } else {
               state.addHusk(pos, state.editor.selectedFormId);
             }
@@ -356,7 +356,10 @@ export function startPhaser(_owner, _container) {
                 state.addHusk(pos, shade.formId, shade.variation, shade.isLunk);
               }
             } else {
+              const oldPos = state.e?.cave?.[state.huskToPlace.shade]?.pos;
               state.moveShade(state.huskToPlace.shade, pos);
+              if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
+              state.updateWallsAroundPos(pos, true);
             }
             state.clearHuskToPlace();
           }

@@ -279,9 +279,8 @@ const pondGrits = {
   'move': (turf, arg) => {
     const player = turf.players[arg.ship];
     if (player) {
-      const newPos = clampToTurf(turf, arg.pos);
-      player.pos.x = newPos.x;
-      player.pos.y = newPos.y;
+      player.pos.x = arg.pos.x;
+      player.pos.y = arg.pos.y;
     }
   },
   'face': (turf, arg) => {
@@ -415,6 +414,10 @@ const preFilters = {
 //   goals: Array<goal>, // what sub-goals does this trigger?
 // }
 const filters = {
+  'move-shade': (turf, goal) => {
+    goal.arg.pos = clampToTurf(turf, goal.arg.pos);
+    return [goal];
+  },
   'create-bridge': (turf, goal) => {
     const { shade, trigger, portal } = goal.arg;
     const shadeExists = typeof shade !== 'object';

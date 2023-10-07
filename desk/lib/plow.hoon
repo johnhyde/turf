@@ -102,6 +102,9 @@
         goals
       [[%set-lunk ~] goals]
     [~ [goal]~ goals]
+      %move-shade
+    =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
+    `~[goal(pos pos)]~
       %set-shade-effect
     =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
     ?~  shade-fx  ``~
