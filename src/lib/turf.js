@@ -42,6 +42,27 @@ export function isInTurf(turf, pos) {
   );
 }
 
+export function fillEmptySpace(turf, formId) {
+  const form = turf?.skye?.[formId];
+  if (!form) return;
+  if (form.type !== 'tile') return;
+
+  for (let x = 0; x < turf.size.x; x++) {
+    for (let y = 0; y < turf.size.y; y++) {
+      const tile = generateHusk(formId, 0);
+      const pos = vecToStr(vec2(x, y).add(vec2(turf.offset)));
+      if (!turf.spaces[pos]) {
+        turf.spaces[pos] = {
+          tile,
+          shades: [],
+        }
+      } else if (!turf.spaces[pos].tile) {
+        turf.spaces[pos].tile = tile;
+      }
+    }
+  }
+}
+
 export function getShadeWithForm(turf, shadeId) {
   const shade = turf.cave[shadeId];
   if (!shade) return null;

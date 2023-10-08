@@ -360,6 +360,20 @@
     ?:  &(will-be-colliding !player-colliding)
       :: todo: get bump effects
       ``~
+    ::  todo merge with identical code in %tele
+    ?:  =(pos pos.u.player)  ``~
+    =/  leave=[roars goals:pond]  (pull-trigger turf ship.goal %leave pos.u.player)
+    =/  step=[roars goals:pond]  (pull-trigger turf ship.goal %step pos)
+    :-  (weld -.leave -.step)
+    :-  [goal(pos pos)]~
+    (weld +.leave +.step)
+      %tele
+    ?:  &(top !=(our src):bowl)  ``~
+    =*  players  players.ephemera.turf
+    =/  player  (~(get by players) ship.goal)
+    ?~  player  ``~
+    =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
+    ::  todo merge with identical code in %move
     ?:  =(pos pos.u.player)  ``~
     =/  leave=[roars goals:pond]  (pull-trigger turf ship.goal %leave pos.u.player)
     =/  step=[roars goals:pond]  (pull-trigger turf ship.goal %step pos)
@@ -486,7 +500,7 @@
     ?~  at.portal  ~
     [%add-port-offer ship portal-id.effect]~
       %jump
-    `[%move ship to.effect]~
+    `[%tele ship to.effect]~
   ==
 ++  path-to-turf-id
   |=  =path
@@ -605,6 +619,8 @@
             %chat
           (chat chat.grit)
             %move
+          (move +.grit)
+            %tele
           (move +.grit)
             %face
           (face +.grit)

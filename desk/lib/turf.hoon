@@ -253,6 +253,32 @@
     count  +(count)
     spaces  [[pos space] spaces]
   ==
+++  fill-empty-space
+  |=  [=turf id=form-id]
+  ?~  form=(~(gut by skye.plot.turf) id ~)  turf
+  ?.  =(%tile type.form)  turf
+  =*  spaces  spaces.plot.turf
+  =+  total=(mul size.plot.turf)
+  =|  count=@ud
+  =.  spaces.plot.turf
+    |-  ^-  _spaces
+    ?:  =(total count)
+      spaces
+    =/  pos=svec2
+      :-  (sun:si (mod count x.size.plot.turf))
+      (sun:si (div count x.size.plot.turf))
+    =.  pos  (sum-svec2 pos offset.plot.turf)
+    =/  space  (~(gut by spaces) pos ~)
+    =/  tile=husk  [id 0 *husk-bits]
+    =.  spaces
+      ?~  space  (~(put by spaces) pos [`tile ~])
+      ?^  tile.space  spaces
+      (~(put by spaces) pos space(tile `tile))
+    %=  $
+      count  +(count)
+      spaces  spaces
+    ==
+  turf
 ++  spaces-to-grid  :: not used anymore
   |=  [=spaces os=off-size]
   ^-  grid

@@ -29,7 +29,7 @@ export class Player extends Phaser.GameObjects.Container {
         ...scene.input.keyboard.createCursorKeys(),
         ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
       };
-      scene.cameras.main.startFollow(this);
+      scene.cameras.main.startFollow(this, true, 0.2, 0.2);
     }
     this.loadPlayerSprites = load;
     this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
@@ -63,6 +63,10 @@ export class Player extends Phaser.GameObjects.Container {
 
   get dir() {
     return this.apparentDir() ?? this.p?.dir;
+  }
+
+  get properDepth() {
+    return (vec2(this.dPos).scale(1/tileFactor) || this.tilePos).y + this.depthMod;
   }
 
   setupEffects() {
@@ -228,12 +232,14 @@ export class Player extends Phaser.GameObjects.Container {
 
   stand() {
     if (this.walking()) {
+      // console.log('standing');
       this.$walking(false);
     }
   }
-
+  
   walk() {
     if (!this.walking()) {
+      // console.log('walking');
       this.$walking(true);
     }
   }
@@ -252,13 +258,16 @@ export class Player extends Phaser.GameObjects.Container {
       this.actionQueue = [];
       console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
     }
-    while(this.actionQueue[0]?.type === "face") {
-      this.$apparentDir(this.actionQueue[0].arg.dir);
+    while(this.actionQueue[0] && this.actionQueue[0].type !== "move") {
+      const action = this.actionQueue[0];
+      if (action.type === "face") {
+        this.$apparentDir(action.arg.dir);
+      } else if (action.type === "tele") {
+        this.tilePos = vec2(action.arg.pos);
+        this.dPos = vec2(this.tilePos).scale(tileFactor);
+        this.setPosition(this.dPos.x, this.dPos.y);
+      }
       this.actionQueue.shift();
-    }
-    if (this.depth !== this.tilePos.y + this.depthMod) {
-      this.setDepth(this.tilePos.y + this.depthMod);
-      this.parentContainer.sort('depth');
     }
     const speed = 170*factor;
     let justMoved = false;
@@ -330,6 +339,11 @@ export class Player extends Phaser.GameObjects.Container {
       const messageTime = Math.min(10000, 1000 + (this.speechBubbleText.length * 250));
       const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
       this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
+    }
+
+    if (this.depth !== this.properDepth) {
+      this.setDepth(this.properDepth);
+      this.parentContainer.sort('depth');
     }
   }
 

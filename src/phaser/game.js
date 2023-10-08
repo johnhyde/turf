@@ -405,6 +405,7 @@ export function startPhaser(_owner, _container) {
           if (ship !== our && players[ship]) players[ship].actionQueue.push(e.grit);
         };
         addGritListener('pond-grit-move', themMoveQueuer);
+        addGritListener('pond-grit-tele', themMoveQueuer);
         addGritListener('pond-grit-face', themMoveQueuer);
 
         const usMoveQueuer = (e) => {
@@ -412,6 +413,7 @@ export function startPhaser(_owner, _container) {
           if (ship === our && players[ship]) players[ship].actionQueue.push(e.fakeGrit);
         };
         addGritListener('pond-fakeGrit-move', usMoveQueuer);
+        addGritListener('pond-fakeGrit-tele', usMoveQueuer);
         addGritListener('pond-fakeGrit-face', usMoveQueuer);
 
         function chat({ from, text }) {
