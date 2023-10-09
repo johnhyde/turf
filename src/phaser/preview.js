@@ -47,9 +47,9 @@ export class Preview extends Phaser.GameObjects.Container {
             pos: vec2(),
           };
           if (!shadeDef.formId) return;
-          this.shade = new Shade(this.scene, shadeDef, this.turf(), false);
+          this.shade = new Shade(this.scene, shadeDef, this.turf());
           if (!this.shade.active) return;
-          this.shade.setAlpha(0.8);
+          this.shade.setAlpha(0.7);
           this.add([this.shade]);
         } else {
           this.shade = null;

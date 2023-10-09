@@ -3,7 +3,7 @@ import { produce } from "solid-js/store";
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
-  clampToTurf, isInTurf, getCollision, getEffectsByHusk,
+  clampToTurf, isInTurf, fillEmptySpace, getCollision, getEffectsByHusk,
   generateHusk, jabBySpaces, delShade, delShadeFromSpace, delPortal,
   getThingsAtPos, getEffectsByThing,
 } from 'lib/turf';
@@ -144,6 +144,7 @@ const pondGrits = {
       player.pos.x = newPos.x;
       player.pos.y = newPos.y;
     });
+    fillEmptySpace(turf, '/grass');
   },
   'add-form': (turf, arg) => {
     const { formId, form } = arg;
@@ -279,9 +280,15 @@ const pondGrits = {
   'move': (turf, arg) => {
     const player = turf.players[arg.ship];
     if (player) {
-      const newPos = clampToTurf(turf, arg.pos);
-      player.pos.x = newPos.x;
-      player.pos.y = newPos.y;
+      player.pos.x = arg.pos.x;
+      player.pos.y = arg.pos.y;
+    }
+  },
+  'tele': (turf, arg) => {
+    const player = turf.players[arg.ship];
+    if (player) {
+      player.pos.x = arg.pos.x;
+      player.pos.y = arg.pos.y;
     }
   },
   'face': (turf, arg) => {
@@ -415,6 +422,10 @@ const preFilters = {
 //   goals: Array<goal>, // what sub-goals does this trigger?
 // }
 const filters = {
+  'move-shade': (turf, goal) => {
+    goal.arg.pos = clampToTurf(turf, goal.arg.pos);
+    return [goal];
+  },
   'create-bridge': (turf, goal) => {
     const { shade, trigger, portal } = goal.arg;
     const shadeExists = typeof shade !== 'object';
@@ -498,6 +509,21 @@ const filters = {
       goals: [...leave.goals, ...step.goals],
     };
   },
+  'tele': (turf, goal) => {
+    const { ship, pos } = goal.arg;
+    const player = turf.players[ship];
+    if (!player) return [];
+    const newPos = clampToTurf(turf, pos);
+    if (newPos.equals(player.pos)) return [];
+    goal.arg.pos = newPos;
+    const leave = pullTrigger(turf, ship, 'leave', player.pos);
+    const step = pullTrigger(turf, ship, 'step', newPos);
+    return {
+      roars: [...leave.roars, ...step.roars],
+      grits: [goal],
+      goals: [...leave.goals, ...step.goals],
+    };
+  },
   'add-port-offer': (turf, goal) => {
     const { ship, from } = goal.arg;
     const portal = turf.portals?.[from];
@@ -552,7 +578,7 @@ function applyEffect(turf, ship, effect) {
       return {
         roars: [],
         goals: [{
-          type: 'move',
+          type: 'tele',
           arg: { ship, pos: effect.arg },
         }],
       };

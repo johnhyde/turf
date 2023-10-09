@@ -299,9 +299,9 @@ export function getState() {
         size,
       });
     },
-    async addForm(form, delFormId) {
-      if (delFormId) await this.delForm(delFormId);
-      if (form) await this.sendPondWave('add-form', form);
+    addForm(form, delFormId) {
+      if (delFormId) this.delForm(delFormId);
+      if (form) return this.sendPondWave('add-form', form);
     },
     delForm(formId) {
       return this.sendPondWave('del-form', {
@@ -310,7 +310,7 @@ export function getState() {
     },
     async importForm(form, delFormId) {
       if (delFormId) await this.sendOurPondWave({ formId: delFormId });
-      if (form) await this.sendOurPondWave('add-form', form);
+      if (form) return await this.sendOurPondWave('add-form', form);
     },
     addHusk(pos, formId, variation = 0, isLunk = false) {
       return this.sendPondWave('add-husk', {
@@ -372,15 +372,20 @@ export function getState() {
         }
       });
     },
-    updateWallsAroundPos(pos, center) {
-      const y = center === true;
-      const n = center === false;
+    updateWallsAroundPos(pos, updateCenter = false, ignoredWalls = []) {
+      ignoredWalls = ignoredWalls.map(id => Number(id));
+      const walls = getWallsAtPos(this.e, pos).filter(w => !ignoredWalls.includes(Number(w.id)));
+      const y = !!walls.length;
+      const n = !y;
       const poses = [
-        [vec2(pos).add(vec2(1, 0)), y ? 8 : 0, n ? 7 : 15],
-        [vec2(pos).add(vec2(-1, 0)), y ? 2 : 0, n ? 13 : 15],
-        [vec2(pos).add(vec2(0, 1)), y ? 4 : 0, n ? 11 : 15],
-        [vec2(pos).add(vec2(0, -1)), y ? 1 : 0, n ? 14 : 15],
+        [vec2(pos).add(vec2( 1,  0)), y ? 8 : 0, n ?  7 : 15],
+        [vec2(pos).add(vec2(-1,  0)), y ? 2 : 0, n ? 13 : 15],
+        [vec2(pos).add(vec2( 0,  1)), y ? 4 : 0, n ? 11 : 15],
+        [vec2(pos).add(vec2( 0, -1)), y ? 1 : 0, n ? 14 : 15],
       ];
+      if (y && updateCenter) {
+        poses.push([vec2(pos)]);
+      }
       poses.forEach((p) => this.updateWallsAtPos(...p));
     },
     huskInteract(husk) {
@@ -496,6 +501,7 @@ export function getState() {
       }
       if (typeof portal !== 'object') {
         portal = Number(portal);
+        if (isNaN(portal)) portal = undefined;
       }
       $state('editor', 'huskToPlace', { shade, portal });
     },

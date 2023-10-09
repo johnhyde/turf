@@ -78,13 +78,19 @@
           offset      [--0 --32]
         ==
       ::
-        :-  /wall/stone/small
+        :-  /fence/stone
         =/  wall-stone-small  (new-form-variations %wall 'Smal Stone Wall' wall-stone-small)
         wall-stone-small(collidable %.y, offset [--0 --8])
       ::
         :-  /fence/wood
         =/  fence-wood  (new-form-variations %wall 'Wood Fence' fence-wood)
         fence-wood(collidable %.y, offset [--0 --8])
+      ::
+        :-  /path/road/paved
+       (new-form-variations [%wall %flat] 'Paved Road' paved-road)
+      ::
+        :-  /path/grassy
+        (new-form-variations [%wall %flat] 'Grassy Path' grassy-path)
       ::
         :-  /portal
         =/  portal  (new-form %item 'Portal' portal)
@@ -205,11 +211,14 @@
         +:*form-bits
     ==
   ++  new-form-variations
-    |=  [=form-type name=@t pngs=(list png)]
+    |=  [t=$@(form-type [form-type deep]) name=@t pngs=(list png)]
     ^-  form
+    =/  [=form-type =deep]
+      ?^  t  t
+      [t %back]
     :*  name
         type=form-type
-        variations=(turn pngs |=(=png `back+png))
+        variations=(turn pngs |=(=png `[deep png]))
         *form-bits
     ==
   ++  new-player
@@ -244,6 +253,32 @@
     count  +(count)
     spaces  [[pos space] spaces]
   ==
+++  fill-empty-space
+  |=  [=turf id=form-id]
+  ?~  form=(~(gut by skye.plot.turf) id ~)  turf
+  ?.  =(%tile type.form)  turf
+  =*  spaces  spaces.plot.turf
+  =+  total=(mul size.plot.turf)
+  =|  count=@ud
+  =.  spaces.plot.turf
+    |-  ^-  _spaces
+    ?:  =(total count)
+      spaces
+    =/  pos=svec2
+      :-  (sun:si (mod count x.size.plot.turf))
+      (sun:si (div count x.size.plot.turf))
+    =.  pos  (sum-svec2 pos offset.plot.turf)
+    =/  space  (~(gut by spaces) pos ~)
+    =/  tile=husk  [id 0 *husk-bits]
+    =.  spaces
+      ?~  space  (~(put by spaces) pos [`tile ~])
+      ?^  tile.space  spaces
+      (~(put by spaces) pos space(tile `tile))
+    %=  $
+      count  +(count)
+      spaces  spaces
+    ==
+  turf
 ++  spaces-to-grid  :: not used anymore
   |=  [=spaces os=off-size]
   ^-  grid

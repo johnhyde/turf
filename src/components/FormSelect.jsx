@@ -15,6 +15,9 @@ export default function FormSelect(props) {
   });
   function previewForm(form) {
     let sprite = form.variations[0].sprite;
+    if (form.type === 'wall' && form.variations.length >= 7) {
+      sprite = form.variations[6].sprite;
+    }
     if (sprite.frames) {
       return sprite.frames[0];
     }

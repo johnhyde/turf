@@ -50,6 +50,7 @@
       portal-confirmed-grit
       [%chat =chat]
       [%move =ship pos=svec2]
+      [%tele =ship pos=svec2]
       [%face =ship =dir]
       [%ping-player =ship by=ship]
       [%set-avatar =ship =avatar]
@@ -152,7 +153,7 @@
     %set-turf  turf.grit
     ::
       %size-turf
-    %=  turf
+    =.  turf  %=  turf
       offset.plot  offset.grit
       size.plot  size.grit
       ::
@@ -161,6 +162,7 @@
       |=  =player
       player(pos (clamp-pos pos.player offset.grit size.grit))
     ==
+    (fill-empty-space turf /grass)
     ::
     %add-form  (add-form turf +.grit)
     %del-form  (del-form turf form-id.grit)
@@ -220,7 +222,7 @@
     ::
       %chat
     turf(chats.ephemera [chat.grit (scag 19 chats.ephemera.turf)])
-      %move
+      ?(%move %tele)
     %^  jab-by-players  turf  ship.grit
     |=  =player
     player(pos pos.grit)

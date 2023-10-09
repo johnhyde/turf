@@ -134,7 +134,7 @@
       :: todo: tint=(unit color)
       =sprite
   ==
-+$  deep  ?(%back %fore)
++$  deep  ?(%flat %back %fore)
 +$  sprite
   $@  png  anim
 +$  png  @t  :: base64 encoded from js frontend or relative path to sprite image

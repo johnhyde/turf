@@ -1,7 +1,7 @@
 import { createRoot, createEffect, createSignal, on } from "solid-js";
 import { useState } from 'stores/state';
 import isEqual from 'lodash/isEqual';
-import { vec2, roundV, dirs, sleep, intToHex, jClone } from 'lib/utils';
+import { vec2, roundV, dirs, sleep, intToHex, cite, jClone } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -22,12 +22,14 @@ export class Player extends Phaser.GameObjects.Container {
     this.oldTilePos = vec2(player().pos);
     this.patp = patp;
     this.isUs = patp === our;
+    this.depthMod = 0.5;
     if (this.isUs) {
+      this.depthMod = 0.55;
       this.keys = {
         ...scene.input.keyboard.createCursorKeys(),
         ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
       };
-      scene.cameras.main.startFollow(this);
+      scene.cameras.main.startFollow(this, true, 0.2, 0.2);
     }
     this.loadPlayerSprites = load;
     this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
@@ -41,13 +43,13 @@ export class Player extends Phaser.GameObjects.Container {
       hitArea: new Phaser.Geom.Rectangle(),
       hitAreaCallback: CreatePixelPerfectHandler(game.textures, 255),
     });
+    this.addToUpdateList();
     this.on('pointerdown', this.onClick.bind(this));
     this.on('pointermove', this.onHover.bind(this));
     this.on('pointerout', this.onLeave.bind(this));
     this.recreateAvatar().then(() => {
       this.updateAnims();
       this.setupEffects();
-      this.scene.add.existing(this);
     });
   }
 
@@ -61,6 +63,10 @@ export class Player extends Phaser.GameObjects.Container {
 
   get dir() {
     return this.apparentDir() ?? this.p?.dir;
+  }
+
+  get properDepth() {
+    return (vec2(this.dPos).scale(1/tileFactor) || this.tilePos).y + this.depthMod;
   }
 
   setupEffects() {
@@ -161,7 +167,7 @@ export class Player extends Phaser.GameObjects.Container {
       return sprite;
     }).filter(thing => !!thing);
     this.avatar.add([this.bodyImage, ...this.things]);
-    this.name = scene.make.text({ text: this.patp, style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    this.name = scene.make.text({ text: cite(this.patp), style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
     this.add(this.name);
@@ -226,12 +232,14 @@ export class Player extends Phaser.GameObjects.Container {
 
   stand() {
     if (this.walking()) {
+      // console.log('standing');
       this.$walking(false);
     }
   }
-
+  
   walk() {
     if (!this.walking()) {
+      // console.log('walking');
       this.$walking(true);
     }
   }
@@ -250,12 +258,16 @@ export class Player extends Phaser.GameObjects.Container {
       this.actionQueue = [];
       console.log(this.patp, this.player, "has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.");
     }
-    while(this.actionQueue[0]?.type === "face") {
-      this.$apparentDir(this.actionQueue[0].arg.dir);
+    while(this.actionQueue[0] && this.actionQueue[0].type !== "move") {
+      const action = this.actionQueue[0];
+      if (action.type === "face") {
+        this.$apparentDir(action.arg.dir);
+      } else if (action.type === "tele") {
+        this.tilePos = vec2(action.arg.pos);
+        this.dPos = vec2(this.tilePos).scale(tileFactor);
+        this.setPosition(this.dPos.x, this.dPos.y);
+      }
       this.actionQueue.shift();
-    }
-    if (this.depth !== this.tilePos.y) {
-      this.setDepth(this.tilePos.y + 0.5);
     }
     const speed = 170*factor;
     let justMoved = false;
@@ -327,6 +339,11 @@ export class Player extends Phaser.GameObjects.Container {
       const messageTime = Math.min(10000, 1000 + (this.speechBubbleText.length * 250));
       const showSpeechBubbleNow = (this.speechBubbleText != "" && this.speechBubbleMillisecondsElapsed < messageTime);
       this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
+    }
+
+    if (this.depth !== this.properDepth) {
+      this.setDepth(this.properDepth);
+      this.parentContainer.sort('depth');
     }
   }
 

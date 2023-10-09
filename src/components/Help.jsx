@@ -1,6 +1,7 @@
 import { createSignal, createMemo, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import StateSummary from "@/StateSummary";
+import Radio from "@/Radio";
 
 export default function Help() {
   const state = useState();
@@ -20,13 +21,13 @@ export default function Help() {
         Click on a player to get their attention
       </p>
       <div class="-m-2 p-2 rounded-md border border-yellow-700">
-      <div class="mb-1 flex flex-wrap items-justify gap-2 text-black">
-        <button class={'px-1 rounded-sm ' + (tab() === 'tabs' ? 'bg-yellow-600' : 'bg-yellow-700')} onClick={[$tab, 'tabs']}>Tabs</button>
-        <button class={'px-1 rounded-sm ' + (tab() === 'chat' ? 'bg-yellow-600' : 'bg-yellow-700')} onClick={[$tab, 'chat']}>Chat</button>
-        <button class={'px-1 rounded-sm ' + (tab() === 'editor' ? 'bg-yellow-600' : 'bg-yellow-700')} onClick={[$tab, 'editor']}>Editor</button>
-        <button class={'px-1 rounded-sm ' + (tab() === 'town' ? 'bg-yellow-600' : 'bg-yellow-700')} onClick={[$tab, 'town']}>Town</button>
-        <button class={'px-1 rounded-sm ' + (tab() === 'portals' ? 'bg-yellow-600' : 'bg-yellow-700')} onClick={[$tab, 'portals']}>Portals</button>
-      </div>
+        <Radio value={tab()} $value={$tab} items={[
+          ['tabs', 'Tabs'],
+          ['chat', 'Chat'],
+          ['editor', 'Editor'],
+          ['town', 'Town'],
+          ['portals', 'Portals'],
+        ]} />
         <Switch>
           <Match when={tab() === 'tabs'}>
             <div>

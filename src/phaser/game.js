@@ -1,8 +1,9 @@
 import { createSignal, createEffect, createRoot, createResource, runWithOwner, mapArray, indexArray, on } from "solid-js";
 import { unwrap } from "solid-js/store";
+import uniq from 'lodash/uniq';
 import { useState } from 'stores/state';
 import { vec2, near, pixelsToTiles, swapAxes, truncateString, sleep, tintImage } from 'lib/utils';
-import { isInTurf, getShadeWithForm, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
+import { isInTurf, getShadeWithForm, getSpace, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
 import { Player } from "./player";
 import { Shade } from "./shade";
@@ -13,8 +14,9 @@ import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
 let gritController = new AbortController();
-var game, scene, cam, cursors, keys = {}, player, tiles, preview;
+var game, scene, cam, cursors, keys = {}, player, tiles, flats, stand, preview;
 var formIndexMap, players = {}, shades = {};
+window.shades = shades;
 const factor = 8;
 const tileSize = 32;
 const tileFactor = factor * tileSize;
@@ -116,12 +118,36 @@ async function loadImageUnsafe(id, url, config = {}) {
 
 let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
-  let sprite = new Shade(scene, shade, turf, true);
+  const siblings = getSpace(turf, shade.pos)?.shades || [];
+  const i = Math.min(siblings.length - 1, siblings.findIndex(s => Number(s) === Number(id)));
+  const index = siblings.length - i - 1; // reverse since bottom/first is most recent
+  const indexDepthMod = index/1000;
+  let sprite = new Shade(scene, shade, turf, indexDepthMod);
   const { formId } = shade;
   if (!sprite.active) {
     console.error('Could not create shade', formId);
     return;
   }
+  createEffect(() => {
+    shade = state.e?.cave?.[id];
+    if (shade) {
+      const form = state.e.skye[shade.formId];
+      let variation = form?.variations?.[shade.variation];
+      sprite.depthMod = 0;
+      if (variation?.deep == 'flat') {
+        flats.add(sprite);
+        sprite.updateDepth();
+        flats.sort('depth');
+      } else {
+        stand.add(sprite);
+        if (variation?.deep == 'fore') {
+          sprite.depthMod += 0.6;
+        }
+        sprite.updateDepth();
+        stand.sort('depth');
+      }
+    }
+  });
   sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
   if (shade.formId === '/portal') {
     const state = useState();
@@ -175,7 +201,7 @@ function createShade(shade, id, turf) {
         const shade = getShadeWithForm(state.e, id);
         state.delShade(id);
         if (shade && shade.form.type === 'wall') {
-          state.updateWallsAroundPos(shade.pos, false);
+          state.updateWallsAroundPos(shade.pos, false, [id]);
         }
         console.log('try to remove shade');
       } else if (state.editor.cycler) {
@@ -303,7 +329,7 @@ export function startPhaser(_owner, _container) {
             if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(state.e, pos);
               const added = state.addHusk(pos, state.editor.selectedFormId, variation);
-              if (added) state.updateWallsAroundPos(pos, true);
+              if (added) state.updateWallsAroundPos(pos, false);
             } else {
               state.addHusk(pos, state.editor.selectedFormId);
             }
@@ -330,7 +356,10 @@ export function startPhaser(_owner, _container) {
                 state.addHusk(pos, shade.formId, shade.variation, shade.isLunk);
               }
             } else {
+              const oldPos = state.e?.cave?.[state.huskToPlace.shade]?.pos;
               state.moveShade(state.huskToPlace.shade, pos);
+              if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
+              state.updateWallsAroundPos(pos, true);
             }
             state.clearHuskToPlace();
           }
@@ -376,6 +405,7 @@ export function startPhaser(_owner, _container) {
           if (ship !== our && players[ship]) players[ship].actionQueue.push(e.grit);
         };
         addGritListener('pond-grit-move', themMoveQueuer);
+        addGritListener('pond-grit-tele', themMoveQueuer);
         addGritListener('pond-grit-face', themMoveQueuer);
 
         const usMoveQueuer = (e) => {
@@ -383,6 +413,7 @@ export function startPhaser(_owner, _container) {
           if (ship === our && players[ship]) players[ship].actionQueue.push(e.fakeGrit);
         };
         addGritListener('pond-fakeGrit-move', usMoveQueuer);
+        addGritListener('pond-fakeGrit-tele', usMoveQueuer);
         addGritListener('pond-fakeGrit-face', usMoveQueuer);
 
         function chat({ from, text }) {
@@ -479,8 +510,21 @@ export function startPhaser(_owner, _container) {
                 const gid = formIndexMap[spriteName(state.p.id, space.tile.formId, 0)];
                 tiles.putTileAt(gid, pos.x, pos.y);
               }
+              space.shades.forEach((shadeId, i) => {
+                const sprite = shades[shadeId];
+                if (!sprite) return;
+                const index = space.shades.length - i - 1; // reverse since bottom/first is most recent
+                const mod = index/1000;
+                if (sprite.indexDepthMod !== mod) {
+                  sprite.indexDepthMod = mod;
+                  sprite.updateDepth();
+                }
+
+              });
             });
           });
+          flats.sort('depth');
+          stand.sort('depth');
         }
         return [];
       }, { defer: false }));
@@ -512,7 +556,8 @@ export function startPhaser(_owner, _container) {
   function destroyCurrentTurf() {
     window.player = player = null;
     window.players = players = {};
-    shades = {};
+    window.shades = shades = {};
+    tiles = flats = stand = null;
     preview = null;
     // I think we don't need these, as of 09/12/23
     // TODO: Delete by Nov 2023 if not needed
@@ -562,9 +607,10 @@ export function startPhaser(_owner, _container) {
       return map.addTilesetImage(image, undefined, undefined, undefined, undefined, undefined, i + 1);
     });
     const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
-    layer.setDepth(turf.offset.y - 10);
     layer.setScale(factor);
     window.tiles = tiles = layer;
+    window.flats = flats = scene.add.container();
+    window.stand = stand = scene.add.container();
     window.resizer = new Resizer(scene, turf.id);
     game.input.keyboard.preventDefault = false;
   }
@@ -578,6 +624,7 @@ export function startPhaser(_owner, _container) {
         const playerData = turf.players[id];
         if (!playerObject) {
           const thisPlayer = new Player(scene, turf.id, id, loadPlayerSprites);
+          stand.add(thisPlayer);
           if (id === our) {
             window.player = player = thisPlayer;
           }
@@ -596,14 +643,14 @@ export function startPhaser(_owner, _container) {
   function initShades(turf) {
     console.log('init shades');
     if (turf) {
-      const ids = [...Object.keys(shades), ...Object.keys(turf.cave)];
+      const ids = uniq([...Object.keys(shades), ...Object.keys(turf.cave)]);
       ids.forEach((id) => {
         let sprite;
         const shadeObject = shades[id];
         const shadeData = turf.cave[id];
         if (!shadeObject) {
           if (isInTurf(turf, shadeData.pos)) {
-            shades[id] = createShade(shadeData, id, turf);
+            shades[id] = createShade(shadeData, id, turf, stand);
           }
         } else if (!shadeData) {
           shades[id].destroy();
@@ -617,6 +664,8 @@ export function startPhaser(_owner, _container) {
         }
       });
     }
+    flats.sort('depth');
+    stand.sort('depth');
   }
 
   function initShadePreview(turf) {

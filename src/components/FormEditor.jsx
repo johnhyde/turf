@@ -6,6 +6,7 @@ import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
+import Radio from '@/Radio';
 import Modal from '@/Modal';
 import OffsetInput from '@/OffsetInput';
 
@@ -92,6 +93,10 @@ export default function FormEditor(props) {
 
   function setSprite(url) {
     $newForm('form', 'variations', 0, 'sprite', url);
+  }
+  
+  function setDeep(deep) {
+    $newForm('form', 'variations', 0, 'deep', deep);
   }
 
   function loadSprite() {
@@ -206,20 +211,7 @@ export default function FormEditor(props) {
         </div>
         <div class="flex space-x-2">
           <span class="font-semibold">Type</span>
-          <div>
-            <label for="tile" class="mr-1">Tile</label>
-            <input type="radio" name="type" value="tile" id="tile"
-              checked={form()?.type === 'tile'}
-              onInput={(e) => e.currentTarget.checked && setType('tile')}
-            />
-          </div>
-          <div>
-            <label for="tile" class="mr-1">Item</label>
-            <input type="radio" name="type" value="item" id="item"
-              checked={form()?.type === 'item'}
-              onInput={(e) => e.currentTarget.checked && setType('item')}
-            />
-          </div>
+          <Radio value={form()?.type} $value={setType} items={[['tile', 'Tile'], ['item', 'Item']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
         </div>
         <div class="flex space-x-2">
           <span class="font-semibold">Offset</span>
@@ -309,6 +301,10 @@ export default function FormEditor(props) {
               </>
             }
           </div>
+        </div>
+        <div>
+          <p class="font-semibold">Relative to Player</p>
+          <Radio value={form()?.variations?.[0]?.deep} $value={setDeep} items={[['flat', 'Under'], ['back', 'Behind'], ['fore', 'In Front']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
         </div>
         <div class="flex justify-center space-x-2">
           <SmallButton onClick={save} disabled={!readyToSave()}>

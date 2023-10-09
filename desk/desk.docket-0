@@ -3,9 +3,9 @@
     color+0x1f.843c
 ::    image+'https://raw.githubusercontent.com/johnhyde/turf/main/public/android-chrome-192x192.png'
     image+'https://raw.githubusercontent.com/johnhyde/turf/main/public/logo-big.png'
-    glob-http+['https://s3.us-east-2.amazonaws.com/warkgnall.com/urbit/turf/globs/glob-0v7.vtn5m.7j4ld.umi3i.diq67.u610d.glob' 0v7.vtn5m.7j4ld.umi3i.diq67.u610d]
+    glob-http+['https://s3.us-east-2.amazonaws.com/warkgnall.com/urbit/turf/globs/glob-0v2.lokum.k354c.uqo00.m2cfd.gnj0o.glob' 0v2.lokum.k354c.uqo00.m2cfd.gnj0o]
     base+'turf'
-    version+[0 2 3]
+    version+[0 2 4]
     website+'https://github.com/johnhyde/turf'
     license+'MIT'
 ==
