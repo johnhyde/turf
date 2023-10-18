@@ -24,7 +24,6 @@
 +$  grits  (list grit)
 +$  grit
   $+  mist-grit
-  :: ?(%del-av %inc-counter)
   $@  %clear-port-offer
   $%  [%set-ctid turf-id=(unit turf-id)]
       [%set-avatar =avatar]

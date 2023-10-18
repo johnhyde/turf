@@ -1,17 +1,18 @@
-/-  *turf
+/-  *turf, turf-0, turf-1=turf
 /+  *turf
 =<
 |%
 ++  name  %pond
 +$  rock  ^rock
 +$  goal  ^goal
-+$  foam  ^foam  :: from lib/turf
++$  foam  ^foam  :: from sur/turf
 +$  grit  ^grit
 ++  wash  wash-grit
 --
 |%
 +$  rock
   $%  rock-0
+      rock-1
   ==
 :: :: +$  rock-old
 :: ::   $:  stir-ids=(map ship @t)
@@ -23,12 +24,25 @@
       stir-ids=(map ship @t)
       core-0
   ==
-+$  core-0  turf=(unit turf)
-+$  grits  (list grit)
-+$  grit
-  $+  pond-grit
-  $@  ?(%del-turf %inc-counter %noop)
-  $%  [%set-turf =turf]
++$  rock-1
+  $:  %1
+      stir-ids=(map ship @t)
+      core-1
+  ==
++$  current-rock  rock-1
++$  current-rock-v  _-:*current-rock
++$  core-0  turf=(unit turf:turf-0)
++$  core-1  turf=(unit turf)
++$  grit-0
+  $+  pond-grit-0
+  $@(grit-0-atom grit-0-cell)
++$  grit-0-atom  ?(%del-turf %inc-counter %noop)
+++  grit-0-cell
+  =,  turf-0
+  $%  [%noop ~]
+      [%upgrade ~]
+      [%set-turf =turf]
+      [%del-turf ~]
       [%size-turf off-size]
       [%add-form form-spec]
       [%del-form =form-id]
@@ -43,7 +57,7 @@
       [%del-dink =portal-id]
       [%add-portal for=turf-id at=(unit portal-id)]
       [%del-portal from=portal-id loud=?]
-      ::  secret waves
+      ::  secret grits
       [%add-shade-to-portal from=portal-id =shade-id]
       [%del-shade-from-portal from=portal-id =shade-id]
       [%del-portal-from-shade =shade-id =portal-id]
@@ -70,6 +84,23 @@
 +$  portal-retracted-goal  [%portal-retracted for=turf-id at=portal-id]
 +$  portal-discarded-goal  [%portal-discarded from=portal-id]
 +$  portal-confirmed-grit  [%portal-confirmed from=portal-id at=portal-id]
+++  grit-1
+  =,  turf-1
+  $%  [%set-turf =turf]  :: should be included when turf and grit versions change together
+      [%add-invite id=@t =invite]
+      [%del-invite id=@t]
+      $<  %set-turf  :: properly override previous definition
+      grit-0-cell 
+  ==
++$  cur-grit  grit-1
++$  grit
+  $+  pond-grit
+  $@  grit-0
+  $%  grit-0
+      [%1 grit-1]
+  ==
++$  grits  (list grit)
++$  cur-grits  (list cur-grit)
 ::
 ::
 ::
@@ -79,11 +110,13 @@
       id=stir-id
       =goals
   ==
-+$  goals  (list goal)
-+$  goal
-  $+  pond-goal
-  $%  grit
-      [%send-chat from=ship text=cord]
++$  goal-0
+  $+  pond-goal-0
+  $@(grit-0-atom goal-0-cell)
+++  goal-0-cell  $%(grit-0-cell goal-0-only)
+++  goal-0-only
+  =,  turf-0
+  $%  [%send-chat from=ship text=cord]
       [%join-player =ship =avatar]
       [%approve-dink =portal-id]
       create-bridge-goal
@@ -103,6 +136,20 @@
       portal=?(portal-id turf-id)
       :: link=(unit ?(%lunk %dink))
   ==
++$  goal-1
+  $%  grit-1
+      goal-0-only
+  ==
++$  cur-goal  goal-1
++$  goal
+  $+  pond-goal
+  $@  grit-0-atom
+  $%  goal-0-cell
+      [%1 goal-1]
+  ==
++$  goals  (list goal)
++$  cur-goals  (list cur-goal)
+::
 +$  stirred
     $%  [what=%rock =rock]
         [what=%wave id=stir-id =grits]
@@ -124,33 +171,45 @@
   ==
 +$  roars  (list roar)
 ::
-::
 ++  wash-grit
   |=  [=rock [id=stir-id src=(unit ship)] =grit]
   ^-  ^rock
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))
+  ?:  ?=(?([%upgrade ~] [* %upgrade ~]) grit)
+    (fully-upgrade-rock rock)
+  (wash-grit-v rock grit)
+++  wash-grit-v
+  |*  [=rock =grit]
+  ^-  _rock
+  ?-    grit
+      [%1 *]
+    ?.  ?=(%1 -.rock)
+      rock
+    (wash-grit-1 rock +.grit)
+    ::
+      *
+    ?.  ?=(%0 -.rock)
+      rock
+    (wash-grit-0 rock grit)
+  ==
+::
+++  wash-grit-1
+  |=  [rock=rock-1 grit=grit-1]
+  ^-  rock-1
+  ?:  =(%upgrade grit)  rock  :: upgrade should have been handled by +wash-grit
   :-  -.rock
   :-  stir-ids.rock
-  ^-  core-0
-  =/  uturf  turf.rock
-  ?~  uturf
-    ?@  grit  ~  :: %del-turf or %inc-counter
-    ?+  -.grit  ~
-      %set-turf  `turf.grit
-    ==
-  =*  turf  u.uturf
-  =*  players  players.ephemera.turf
-  ?@  grit
-    ?-  grit
-      %noop  uturf
-      %del-turf  ~
-        %inc-counter
-      uturf(stuff-counter.plot.u +(stuff-counter.plot.turf))
-    ==
+  ?:  ?=([%set-turf *] grit)  `turf.grit
+  :: only %set-turf can change a null turf
+  ?:  ?=([%del-turf *] grit)  ~
+  ?~  turf.rock  ~
   :-  ~
-  ?-  -.grit
-    %set-turf  turf.grit
+  =*  turf  u.turf.rock
+  =*  players  players.ephemera.turf
+  ?-    -.grit
+    %noop  turf
+    %upgrade  turf
     ::
       %size-turf
     =.  turf  %=  turf
@@ -273,5 +332,79 @@
     =.  players
       (~(del by players) ship.grit)
     turf
+      %add-invite
+    =.  invites.deed.turf
+      (~(put by invites.deed.turf) id.grit invite.grit)
+    turf
+      %del-invite
+    =.  invites.deed.turf
+      (~(del by invites.deed.turf) id.grit)
+    turf
   ==
+++  wash-grit-0
+  |=  [rock=rock-0 grit=grit-0]
+  ^-  rock-0
+  :-  -.rock
+  :-  stir-ids.rock
+  ?:  ?=([%set-turf *] grit)  `turf.grit
+  :: only %set-turf can change a null turf
+  ?~  turf.rock  ~
+  =*  turf  u.turf.rock
+  =*  players  players.ephemera.turf
+  ?@  grit
+    ?-  grit
+      %noop  turf.rock
+      %del-turf  ~
+        %inc-counter
+      `turf(stuff-counter.plot +(stuff-counter.plot.turf))
+    ==
+  ?-  -.grit
+      *
+    turf:%+(wash-newer `rock-0`rock grit) :: would be 0+grit if everything was versioned properly
+  ==
+++  wash-newer
+  |*  [=rock =grit]
+  ^+  rock
+  (downgrade-rock (wash-grit-v (upgrade-rock rock) grit))
+++  fully-upgrade-rock
+  |=  =rock
+  ^-  current-rock
+  =?  rock  ?=(%0 -.rock)
+    (rock-0-to-1 rock)
+  ?>  ?=(current-rock-v -.rock)
+  rock
+++  upgrade-rock
+  |*  [=rock]
+  ?-  -.rock
+    %0  (rock-0-to-1 rock)
+    %1  rock
+  ==
+++  downgrade-rock
+  |*  =rock
+  ?-  -.rock
+    %0  rock
+    %1  (rock-1-to-0 rock)
+  ==
+++  rock-0-to-1
+  |=  rock=rock-0
+  ^-  rock-1
+  :-  %1
+  :-  stir-ids.rock
+  ?~  turf.rock  ~
+  :-  ~
+  =*  turf  u.turf.rock
+  =/  =deed:turf-1
+    :-  *invites:turf-1
+    deed.turf
+  [ephemera.turf deed plot.turf]
+++  rock-1-to-0
+  |=  rock=rock-1
+  ^-  rock-0
+  :-  %0
+  :-  stir-ids.rock
+  ?~  turf.rock  ~
+  :-  ~
+  =*  turf  u.turf.rock
+  =/  =deed:turf-0  +.deed.turf
+  [ephemera.turf deed plot.turf]
 --
