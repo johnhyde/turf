@@ -12,6 +12,7 @@
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
 +$  rock
+  $+  mist-rock
   $:  =stir-ids
       core
   ==

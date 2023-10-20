@@ -273,8 +273,8 @@
   ::
       %pond-goal
   ?>  =(our src):bowl
-  =/  goal  !<(goal:pond vase)
-  =/  stir  [dtid:hc ~ [goal]~]
+  =/  goal  !<(goal-1:pond vase)
+  =/  stir  [dtid:hc ~ [%1 goal]~]
   =^  cards  state  (stir-pond:hc `src.bowl stir)
   cards^this
   ::
@@ -625,11 +625,11 @@
         :-  %^    pond-stir-card
                 /port-request
               for.roar
-            [%add-port-req our.bowl from=?~(via.roar ~ `at.u.via.roar) avatar:(need (default-mist:hc))]
+            [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
         :: if we have been invited somewhere
         :: or invited ourselves home,
         :: delete ourselves from current turf
-        ?~  via.roar
+        ?@  via.roar
           ?~  old-tid  ~
           ?:  =(old-tid (ctid))  ~
           :_  ~

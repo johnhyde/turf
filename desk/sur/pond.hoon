@@ -11,6 +11,7 @@
 --
 |%
 +$  rock
+  $+  pond-rock
   $%  rock-0
       rock-1
   ==
@@ -70,7 +71,7 @@
       [%set-avatar =ship =avatar]
       [%add-port-offer =ship from=portal-id]
       [%del-port-offer =ship]
-      [%add-port-req =ship from=(unit portal-id) =avatar]
+      [%add-port-req =ship from=$@(?(~ invite-id) [~ u=portal-id]) =avatar]
       [%del-port-req =ship]
       [%add-port-rec from=portal-id =ship]
       [%del-port-rec from=portal-id =ship]
@@ -87,8 +88,8 @@
 ++  grit-1
   =,  turf-1
   $%  [%set-turf =turf]  :: should be included when turf and grit versions change together
-      [%add-invite id=@t =invite]
-      [%del-invite id=@t]
+      [%add-invite id=invite-id =invite]
+      [%del-invite id=invite-id]
       $<  %set-turf  :: properly override previous definition
       grit-0-cell 
   ==
@@ -125,7 +126,7 @@
       portal-discarded-goal
       [%port-offer-accepted =ship from=portal-id]
       [%port-offer-rejected =ship from=portal-id]
-      [%import-player =ship from=(unit portal-id) =avatar]
+      [%import-player =ship from=$@(?(~ invite-id) [~ u=portal-id]) =avatar]
   ==
 ::  let's us create a shade and/or portal
 ::  and link them in one transaction
@@ -304,7 +305,7 @@
       (~(del by port-offers.deed.turf) ship.grit)
     turf
       %add-port-req
-    ?~  from.grit  turf
+    ?@  from.grit  turf
     =.  port-reqs.deed.turf
       (~(put by port-reqs.deed.turf) ship.grit [u.from.grit avatar.grit])
     turf

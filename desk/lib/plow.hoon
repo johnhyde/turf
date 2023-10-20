@@ -29,7 +29,7 @@
     u.form
       %port-offered
     :-  ~
-    ?.  ?~  via.goal
+    ?.  ?@  via.goal
           =(src.bowl ship.for.goal)
         =(src.bowl ship.of.u.via.goal)
       `~
@@ -44,7 +44,7 @@
     `[%export-self u.port-offer.rock]~
       %reject-port-offer
     :-  ?~  off=port-offer.rock  ~
-        ?~  via.u.off  ~
+        ?@  via.u.off  ~
         [%port-offer-reject of.u.via.u.off from.u.via.u.off]~
     ~[goal]~
       %export-self
@@ -409,12 +409,11 @@
     ``[%del-port-offer ship.goal]~
     ::
       %import-player
+    ?:  &(top !=(our src):bowl)  ``~
     :-  ~
     :-  ~
     =/  pos=(unit svec2)
-      ?~  from.goal
-        ?.  =(our.bowl ship.goal)  ~
-        `(get-entry-pos turf)
+      ?@  from.goal  `(get-entry-pos turf)
       =/  portal  (~(gut by portals.deed.turf) u.from.goal ~)
       ?~  portal  ~
       ?~  shade-id.portal
@@ -432,7 +431,7 @@
       ^-  (list (unit cur-goal:pond))
       :~  `[%add-player ship.goal player]
         ::
-          ?~  from.goal  ~
+          ?@  from.goal  ~
           ?.  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
             ~
           `[%del-port-rec u.from.goal ship.goal]
@@ -454,8 +453,12 @@
     ~[goal]~
       %add-port-req
     ?.  =(ship.goal src.bowl)  ``~
-    ?~  from.goal
-      ?.  =(ship.goal our.bowl)  ``~
+    ?@  from.goal
+      ?:  =(ship.goal our.bowl)
+        ``[%import-player +.goal]~
+      =/  invite  (~(gut by invites.deed.turf) `@t`from.goal ~)
+      ?~  invite  ``~
+      ?:  (gth now.bowl till.invite)  ``~
       ``[%import-player +.goal]~
     ?.  (~(has by portals.deed.turf) u.from.goal)  ``~
     ?:  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
@@ -656,7 +659,7 @@
             %add-port-req
           %-  pairs
           :~  ship+(ship-json ship.grit)
-              from+?~(from.grit ~ (numb u.from.grit))
+              from+?@(from.grit s+`@t`from.grit (numb u.from.grit))
               avatar+(avatar avatar.grit)
           ==
             %del-port-req
@@ -681,7 +684,7 @@
           %-  pairs
           :~  id+s+id.grit
               name+s+name.invite.grit
-              long+(minutes long.invite.grit)
+              till+(time till.invite.grit)
           ==
             %del-invite
           (frond id+s+id.grit)
@@ -765,6 +768,7 @@
     %-  pairs
     :~  players+(pairs (turn ~(tap by players) player-pair))
         chats+a+(turn chats chat)
+        invites+invites
         :: todo: add perms (?)
         portals+portals
         'portReqs'^port-reqs
@@ -780,6 +784,17 @@
         cave+cave
         'stuffCounter'^(numb stuff-counter)
     ==
+    ++  invites
+      ^-  json
+      %-  pairs
+      %+  turn  ~(tap by ^invites)
+      |=  [key=invite-id inv=^invite]
+      ^-  [@t json]
+      :-  key
+      %-  pairs
+      :~  name+s+name.inv
+          till+(time till.inv)
+      ==
     ++  portals
       ^-  json
       %-  pairs
@@ -846,9 +861,10 @@
     ^-  json
     %-  pairs
     :~  for+(turf-id-path for.po)
-        of+?~(via.po ~ (turf-id-path of.u.via.po))
-        from+?~(via.po ~ (numb from.u.via.po))
-        at+?~(via.po ~ (numb at.u.via.po))
+        via+?@(via.po s+`@t`via.po ~)
+        of+?@(via.po ~ (turf-id-path of.u.via.po))
+        from+?@(via.po ~ (numb from.u.via.po))
+        at+?@(via.po ~ (numb at.u.via.po))
     ==
   ++  maybe-lunk
     |=  lunk=(unit lunk)
@@ -867,10 +883,6 @@
     ^-  [@t json]
     :-  (numbt portal-id)
     b+approved
-  ++  minutes
-    |=  long=@dr
-    ^-  json
-    (numb (div long ~m1))
   ++  vec2
     |=  =^vec2
     ^-  json
@@ -1158,7 +1170,7 @@
           move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
           ping-player+(ot ~[ship+(se %p) by+(se %p)])
-          add-invite+(ot ~[id+so name+so long+minutes])
+          add-invite+(ot ~[id+so name+so till+di])
           del-invite+(ot ~[id+so])
       ==
     ::
@@ -1241,15 +1253,15 @@
     ++  port-offer
       |=  jon=json
       ^-  ^port-offer
-      :-  ((ot ~[for+pa-turf-id]) jon)
+      ((ot ~[for+pa-turf-id via+via]) jon)
+    ++  via
+      |=  jon=json
+      ^-  ^via
+      ?:  ?=([%s *] jon)
+        (so jon)
       %.  jon
       %-  ot:soft
       ~[of+pa-turf-id-soft from+ni:soft at+ni:soft]
-    ++  minutes
-      |=  jon=json
-      ^-  @dr
-      ?>  ?=([%n *] jon)
-      (mul (ni jon) ~m1)
     ++  dir
       |=  jon=json
       ^-  ^dir

@@ -53,8 +53,9 @@
       lunk=(unit lunk)
       =dinks
   ==
-+$  invites  (map @t invite)
-+$  invite  [name=@t long=@dr]
++$  invites  (map invite-id invite)
++$  invite-id  @t
++$  invite  [name=@t till=@da]
 :: +$  perms
 ::   $+  perms
 ::   $:  default=$~(%in perm)  :: the perm that applies to most
@@ -71,7 +72,11 @@
 :: +$  port-reqs  (map ship [=portal-id =avatar])
 :: +$  port-recs  (jug portal-id ship)
 :: +$  port-offers  (map ship portal-id)
-:: +$  port-offer  [for=turf-id via=(unit [of=turf-id from=portal-id at=portal-id])]
++$  port-offer  [for=turf-id =via]
+::
+:: via is weird because I wanted to pack more info into a unit
+:: but I didn't want to break interface
++$  via  $@(?(~ invite-id) [~ u=[of=turf-id from=portal-id at=portal-id]])
 :: :: links between planets and stars
 :: :: lunk = uplink
 :: :: dink = downlink

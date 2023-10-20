@@ -312,7 +312,9 @@ const pondGrits = {
   },
   'add-port-req': (turf, arg) => {
     const { ship, from, avatar } = arg;
-    turf.portReqs[ship] = { from, avatar };
+    if (typeof from === 'number') {
+      turf.portReqs[ship] = { from, avatar };
+    }
   },
   'del-port-req': (turf, ship) => {
     delete turf.portReqs[ship];
@@ -341,6 +343,13 @@ const pondGrits = {
   },
   'del-player': (turf, arg) => {
     delete turf.players[arg.ship];
+  },
+  'add-invite': (turf, arg) => {
+    const { id, name, till } = arg;
+    turf.invites[arg.id] = { name, till };
+  },
+  'del-invite': (turf, arg) => {
+    delete turf.invites[arg.id];
   },
 };
 
