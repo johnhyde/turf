@@ -21,6 +21,8 @@ Secondly, the sss uses a metaphor of stirring (requesting) up waves (updates) th
 
 Well, hopefully that's helpful!
 
+I'm pretty sure a "dink" is an uncomfirmed portal request or something. Lunks are possibly unconfirmed shades? I forget how grits fit into this metaphor, even though they obviously should, being little pieces of rock carried by a wave(?); they're basically like state updates, but a better description could perhaps be given.
+
 ## Remark
 There is probably "objectively" too much duplication of code in this project. However, much of this may be unavoidable, because of the many conversions that take place in a simple roundtrip from the front-end to the back-end (javascript values and validation to json to hoon values and validation, and then back through in reverse), not to mention hoon's native obsession with persnickety types. However, some of this may be alleviatable with metaprogramming (delete this suggestion if it turns out to be embarrassingly bad).
 
