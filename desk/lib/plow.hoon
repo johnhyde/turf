@@ -9,7 +9,7 @@
   ^-  [[roars skye] grits:mist goals:mist]
   =-  [[(weld pre-roars roars) closet] grits goals]
   ^-  [=roars =grits:mist =goals:mist]
-  :: ~&  "filtering mist goal {<?@(goal goal -.goal)>}, top: {<top>}"
+  ~&  "filtering mist goal {<?@(goal goal -.goal)>}, top: {<top>}"
   ?@  goal  `~[goal]~
   ?+    -.goal  `~[goal]~
       %set-ctid
@@ -68,7 +68,7 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
+  ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   =-  [(weld pre-roars roars) grits goals]
   ^-  [=roars =grits:pond =goals:pond]
   =/  uturf  turf.rock
@@ -383,6 +383,8 @@
       %ping-player
     ?.  =(src.bowl by.goal)  ``~
     `~[goal]~
+      %perm-player ::TODO: this should definitely be perms-checked, I'm pretty sure limited to %admin and our
+    ``~ ::not really sure what this is supposed to mean, but it's apparently the success case of ping so we also return it.
     ::
       %port-offer-accepted
     ?.  =(src.bowl ship.goal)  ``~
@@ -629,6 +631,8 @@
           :~  ship+(ship-json ship.grit)
               by+(ship-json by.grit)
           ==
+            %perm-player
+          ~&  "Reached the %perm-player dispatch in plow.hoon's ++pond-grit. Not yet sure what to do now so I guess I'll just return a sig."  ~
             %set-avatar
           (pond-set-avatar +.grit)
             %add-port-offer
@@ -1134,6 +1138,7 @@
           move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
           ping-player+(ot ~[ship+(se %p) by+(se %p)])
+          perm-player+(ot ~[ship+(se %p) perm+(se %p)]) ::TODO: seems like %p probably means patp so this is wrong right now. But maybe it's just arbitrary text to parse?
       ==
     ::
     ++  mist-stir

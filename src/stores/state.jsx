@@ -289,6 +289,12 @@ export function getState() {
         by: our,
       });
     },
+    permPlayer(patp, perm) {
+      this.sendPondWave('perm-player', {
+        ship: patp,
+        perm: perm,
+      });
+    },
     resetEditor() {
       $state('editor', initEditorState());
     },

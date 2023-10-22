@@ -53,6 +53,7 @@
       [%tele =ship pos=svec2]
       [%face =ship =dir]
       [%ping-player =ship by=ship]
+      [%perm-player =ship =perm]
       [%set-avatar =ship =avatar]
       [%add-port-offer =ship from=portal-id]
       [%del-port-offer =ship]
@@ -85,6 +86,7 @@
   $%  grit
       [%send-chat from=ship text=cord]
       [%join-player =ship =avatar]
+      [%perm-player =ship perm=@] ::TODO: this should probably really be =perm, but I'm testing something out.
       [%approve-dink =portal-id]
       create-bridge-goal
       portal-requested-goal
@@ -232,6 +234,8 @@
     player(dir dir.grit)
       %ping-player
     turf
+      %perm-player
+    ~&  "Successfully reached the wuthep dispatching %perm-player, but we're just calling turf now which presumably will crash?"  turf
       %set-avatar
     %^  jab-by-players  turf  ship.grit
     |=  =player

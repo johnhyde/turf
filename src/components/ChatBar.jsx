@@ -12,12 +12,19 @@ export default function ChatBar() {
   function sendChat(text) {
     const joinMatch = text.match(/^\/join (.*)/);
     const dmMatch = text.match(/^\/dm (~?[-a-z_]+) (.*)/);
+    const permMatch = text.match(/^\/perm (~?[-a-z_]+) (.*)/); //TODO: currently, this does not attempt to validate or normalize the form of the perm itself, which should ideally be in the form of %in or whatever. But maybe this is fine, just let the backend validate it, where it needs to be validated anyway.
     if (joinMatch) {
       alert('/join commands have been disabled.\nTry using portals instead :)');
     } else if (dmMatch) {
       const patp = normalizeId(dmMatch[1]);
       if (isValidPatp(patp)) {
         sendDM(patp, dmMatch[2]);
+      }
+    } else if (permMatch) {
+      const patp = normalizeId(permMatch[1]);
+      if (isValidPatp(patp)) {
+        alert(`You've successfully triggered a sendPerm to set ${patp}'s perm to ${permMatch[2]}. However, this feature is not yet implemented.`);
+        state.permPlayer(patp);
       }
     } else {
       state.sendChat(chatbox.value);

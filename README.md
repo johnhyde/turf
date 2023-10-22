@@ -30,7 +30,7 @@ For multiple ships, eg to test multiplayer:
 - Do the ship setup steps multiple times, setting TURF_DESK2 to your second desk, and running `npm run desks` instead of `npm run desk`. Don't worry: this is idempotent, so you can do it again even if you've already installed the first ship, no problem. (It will update the turf code in the other ship to the newest version, however.)
 - `npm start` like usual. Or, I suppose you can use `npm start&` to start it as a background process in your shell (at least in bash). (You may find background processes too annoying and cumbersome, however. Here's a hint: use fg to resume a stopped background procress.)
 - start a second ui dev server like so: `SHIP_URL="http://127.0.0.1:8081" npm run dev -- --port 3001`. This is what `npm run start2` does.
-- the command `npm run tmux` runs the four processes you'll need (including the urbit ships), in one convenient package, and lets you see all the processes in a tmux instance.
+- the command `npm run tmux` runs the four processes you'll need (including the urbit ships), in one convenient package, and lets you see all the processes in a tmux instance. Note: this script may be broken. Testing has been inconclusive, but sometimes it seems that it doesn't update properly, and may not report error messages correctly.
 
 ## Syncing Source Code To The Ships
 

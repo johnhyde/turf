@@ -121,6 +121,7 @@ function goalsToApiGoals(goals) {
 }
 
 export async function sendPondWave(id, goals, stirId) {
+  console.log('pond-stir', id, goals, stirId);
   return sendWave('pond-stir', id, goals, stirId);
 }
 
