@@ -632,7 +632,10 @@
               by+(ship-json by.grit)
           ==
             %perm-player
-          ~&  "Reached the %perm-player dispatch in plow.hoon's ++pond-grit. Not yet sure what to do now so I guess I'll just return a sig."  ~
+          ~&  "Reached the %perm-player dispatch in plow.hoon's ++pond-grit."
+          :~  ship+(ship-json ship.grit) :: I thought reusing this list constructor might solve the problem, but the problem in fact persists.
+              perm+(ship-json perm.grit)
+          ==
             %set-avatar
           (pond-set-avatar +.grit)
             %add-port-offer
