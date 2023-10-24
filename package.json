@@ -60,7 +60,8 @@
     "dotenv-cli": "^7.2.1",
     "lodash": "^4.17.21",
     "solid-js": "^1.6.10",
-    "urbit-ob": "^5.0.1"
+    "urbit-ob": "^5.0.1",
+    "phaser": "3.60.0"
   },
   "bugs": {
     "url": "https://github.com/johnhyde/turf/issues"

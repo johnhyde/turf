@@ -2,6 +2,8 @@
 import { render } from 'solid-js/web';
 import { createRoot } from "solid-js";
 
+import Phaser from "phaser";
+
 import 'css/reset.css';
 import 'css/index.css';
 import { initApi } from 'lib/api';
