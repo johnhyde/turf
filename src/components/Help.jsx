@@ -210,6 +210,9 @@ export default function Help() {
           <code>~poster-hoster-midlev-mindyr/turf</code>
         {/* </a> */}
       </p>
+      <p>
+        Sign up for the newsletter at <a href="https://jointurf.com" target="_blank" class="underline text-yellow-200">jointurf.com</a>
+      </p>
     </div>
   </div>);
 }
