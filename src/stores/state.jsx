@@ -433,6 +433,16 @@ export function getState() {
         loud: true,
       });
     },
+    addInvite(invite) {
+      this.sendPondWave('add-invite', {
+        id: invite.id,
+        name: invite.name,
+        till: Math.round(Number(invite.till)),
+      });
+    },
+    delInvite(id) {
+      this.sendPondWave('del-invite', { id });
+    },
 
 
     setScaleLog(scaleLog) {

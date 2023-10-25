@@ -89,7 +89,23 @@ export class Mist { // we use a class so we can put it inside a store without ge
   goHome() {
     this.sendWave('export-self', {
       for: ourPond,
+      via: null,
     });
+  }
+
+  acceptInvite(turfId, inviteId) {
+    this.sendWave('export-self', {
+      for: turfId,
+      via: inviteId,
+    });
+  }
+
+  acceptInviteCode(code) {
+    const lastSlash = code.lastIndexOf('/');
+    const turfId = '/pond/' + code.substring(0, lastSlash);
+    const inviteId = code.substring(lastSlash + 1);
+    console.log('accepting invite:', turfId, inviteId);
+    this.acceptInvite(turfId, inviteId);
   }
 
   acceptPortOffer(portOffer) {

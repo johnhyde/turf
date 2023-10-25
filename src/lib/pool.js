@@ -90,7 +90,9 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
 
     onRes(res) {
       batch(() => {
-        if (res.hasOwnProperty('rock')) {
+        if (!res) {
+          // TODO: cancel sub or something
+        } else if (res.hasOwnProperty('rock')) {
           const newCore = hydrate(res.rock.core);
           console.log(`new core with id ${newCore?.id} from rock`, newCore);
           console.log(`stir ids for ${newCore?.id} rock:`, res.rock.stirIds);

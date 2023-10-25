@@ -100,6 +100,7 @@
   :: =/  old  *current-state
   ?>  ?=(_-:*current-state -.old)
   =.  state  old
+  =^  upgrade-cards  state  (upgrade:hc)
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
@@ -120,7 +121,7 @@
   =/  vita-cards
     ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
     [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
-  :(weld cards-0 cards-1 cards-2 vita-cards)^this
+  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards)^this
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -167,25 +168,20 @@
     cards^this
   ::
       %init-avatar
-    =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
+    :: =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-default-mist:hc
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    (weld sss-cards cards)^this
+    cards^this
   ::
       %init-turf
-    =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
+    :: =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-turf:hc
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    (weld sss-cards cards)^this
+    cards^this
   ::
       %set-turf
     =+  !<([size=vec2 offset=svec2] vase)
     =^  cards  state  (give-pond-goal:hc dtid:hc set-turf+(default-turf:gen our.bowl size offset ~))
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
-    cards^this
-  ::
-      %inc
-    =^  cards  state  (give-pond-goal:hc dtid:hc %inc-counter)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -200,7 +196,7 @@
     cards^this
   ::
       %del-turf
-    =^  cards  state  (give-pond-goal:hc dtid:hc %del-turf)
+    =^  cards  state  (give-pond-goal:hc dtid:hc [%del-turf ~])
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
@@ -208,6 +204,14 @@
     =.  pub-pond  (wipe:du-pond dppath)
     :: ~&  >  "pub-pond is: {<read:du-pond>}"
     `this
+  ::
+      %public-turf
+    =^  cards  pub-pond  (public:du-pond [dppath]~)
+    cards^this
+  ::
+      %secret-turf
+    =^  cards  pub-pond  (public:du-pond [dppath]~)
+    cards^this
   ::
       %open-turf
     =^  cards  pub-pond  (allow:du-pond [!<(@p vase)]~ [dppath]~)
@@ -269,8 +273,8 @@
   ::
       %pond-goal
   ?>  =(our src):bowl
-  =/  goal  !<(goal:pond vase)
-  =/  stir  [dtid:hc ~ [goal]~]
+  =/  goal  !<(goal-1:pond vase)
+  =/  stir  [dtid:hc ~ [%1 goal]~]
   =^  cards  state  (stir-pond:hc `src.bowl stir)
   cards^this
   ::
@@ -386,7 +390,7 @@
   ::  The message will contain `[path ship dude]`.
       %sss-surf-fail
     =/  msg  !<($%(fail:da-pond fail:da-mist) (fled vase))
-    :: ~&  >>>  "not allowed to surf on {<msg>}!"
+    ~&  >>>  "not allowed to surf on {<msg>}!"
     `this
   ==
 ++  on-watch
@@ -543,6 +547,13 @@
     ?:  (default-mist-exists)  `state
     init-default-mist
   (weld cards more-cards)^state
+++  upgrade
+  |.
+  ^-  (quip card _state)
+  :: todo: upgrade mist and go through all turfs
+  =^  cards  state  (give-pond-goal dtid [%upgrade ~])
+  :: =.  pub-turf  (wipe:du-pond dppath)  :: todo: should we wipe? does it matter?
+  cards^state
 ::
 ++  turf-exists
   |=  id=turf-id
@@ -559,18 +570,18 @@
   ^-  ^local
   [config closet]
 ++  pond-stir-card
-  |=  [=wire =turf-id =goal:pond]
+  |=  [=wire =turf-id goal=cur-goal:pond]
   ^-  card
   =/  stir=stir:pond
     :*  turf-id
         ~
-        [goal]~
+        [%1 goal]~
     ==
   :*  %pass
       wire
       %agent
       [ship.turf-id %turf]
-      [%poke %pond-stir !>([stir])]
+      [%poke %pond-stir !>(stir)]
   ==
 ++  mist-stir-card
   |=  [=wire who=ship =goal:mist]
@@ -602,6 +613,7 @@
   =/  cards=(list card)
     =/  =stirred:mist  [%wave id.stir grits]
     [%give %fact [;;(path mpath.stir)]~ %mist-stirred !>(stirred)]~
+  :: ~&  ["mist roars" roars]
   =^  roar-cards=(list card)  state
     %+  roll  roars
     |=  [=roar:mist [cards=(list card) sub-state=_state]]
@@ -613,11 +625,11 @@
         :-  %^    pond-stir-card
                 /port-request
               for.roar
-            [%add-port-req our.bowl from=?~(via.roar ~ `at.u.via.roar) avatar:(need (default-mist:hc))]
+            [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
         :: if we have been invited somewhere
         :: or invited ourselves home,
         :: delete ourselves from current turf
-        ?~  via.roar
+        ?@  via.roar
           ?~  old-tid  ~
           ?:  =(old-tid (ctid))  ~
           :_  ~
@@ -761,6 +773,13 @@
             /port-offer
           ship.roar
         [%port-offered for.roar `[turf-id.stir from.roar at.roar]]
+          %port-reject
+        :_  state
+        :_  ~
+        %^    mist-stir-card
+            /port-reject
+          ship.roar
+        [%port-rejected turf-id.stir]
           %player-add
         =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
         =/  mist-card=card
@@ -782,8 +801,8 @@
   :: ~&  "trying to give pond. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   (stir-pond ~ turf-id ~ goals)
 ++  give-pond-goal
-  |=  [=turf-id =goal:pond]
-  (give-pond turf-id [goal]~)
+  |=  [=turf-id goal=cur-goal:pond]
+  (give-pond turf-id [%1 goal]~)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
   ^-  (quip card _state)
@@ -836,6 +855,7 @@
   ^-  (quip card _state)
   =/  rock  (default-turf)
   ?~  rock  `state
+  ?.  ?=(current-rock-v:pond -.u.rock)  `state
   ?~  turf.u.rock  `state
   =*  turf  u.turf.u.rock
   %+  give-pond-goal   dtid

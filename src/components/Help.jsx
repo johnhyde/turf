@@ -27,6 +27,7 @@ export default function Help() {
           ['editor', 'Editor'],
           ['town', 'Town'],
           ['portals', 'Portals'],
+          ['events', 'Events'],
         ]} />
         <Switch>
           <Match when={tab() === 'tabs'}>
@@ -73,6 +74,9 @@ export default function Help() {
                 </li>
                 <li>
                   Send a DM like this "/dm ~sampel-palnet Hello"
+                </li>
+                <li>
+                  Join an event like this "/join ~sampel-palnet/party-1234"
                 </li>
                 <li>
                   Press Escape to exit the chat box without sending a message
@@ -151,6 +155,30 @@ export default function Help() {
                 </li>
                 <li>
                   Step onto the portal to travel through it
+                </li>
+              </ol>
+            </div>
+          </Match>
+          <Match when={tab() === 'events'}>
+            <div>
+              <p>
+                Using the portals tab:
+              </p>
+              <ol class="list-decimal list-inside">
+                <li>
+                  Click Create Event
+                </li>
+                <li>
+                  Add a name for the event and set how long it should last (in minutes)
+                </li>
+                <li>
+                  Click Create and use the copy button to copy the chat command
+                </li>
+                <li>
+                  Send the command to your friends so they can join your event
+                </li>
+                <li>
+                  You can cancel your event in the portals tab with the X button
                 </li>
               </ol>
             </div>

@@ -165,13 +165,13 @@
     +$  result  (response:poke lake paths)
     +$  rule    $~  [`5 5]
                 [horizon=(unit @ud) frequency=@ud] ::  Retention policy
-    +$  tide
+    +$  tide  $+  tide
       $:  rok=((mop aeon rock:lake) gte)
           wav=((mop aeon wave:lake) lte)
           rul=rule
           mem=(jug ship dude)
       ==
-    +$  buoy
+    +$  buoy  $+  buoy
       $:  tid=$~(*tide $@(aeon tide))
           alo=(unit (set ship))
       ==
@@ -211,11 +211,11 @@
                 [%1 (map paths buoy)]
             ==
         |%
-        +$  buoy-0
+        +$  buoy-0  $+  buoy-0
           $:  tid=$~(*tide-0 $@(aeon tide-0))
               alo=(unit (set ship))
           ==
-        +$  tide-0
+        +$  tide-0  $+  tide-0
           $:  rok=((mop aeon rock:lake) gte)
               wav=((mop aeon wave:lake) lte)
               rul=[rocks=@ud waves=@ud]

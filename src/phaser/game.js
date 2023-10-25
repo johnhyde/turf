@@ -478,6 +478,7 @@ export function startPhaser(_owner, _container) {
           }
         });
       const readyToRender = () => !!(loader.state === 'ready' && state.e && state.player);
+      const gameInited = () => readyToRender() && !!tiles;
       createEffect(on(() => [
         loader.state,
         state.c.id,
@@ -485,8 +486,8 @@ export function startPhaser(_owner, _container) {
         JSON.stringify(state.e?.size),
         JSON.stringify(state.e?.offset),
       ], (_, __, lastTurfId) => {
+        destroyCurrentTurf();
         if (loader.state === 'ready') {
-          if (lastTurfId || state.e) destroyCurrentTurf();
           if (readyToRender()) {
             initTurf(state.e, state.p.grid, state.player);
             initShades(state.e);
@@ -499,7 +500,7 @@ export function startPhaser(_owner, _container) {
       createEffect(on(() => JSON.stringify(state.p?.grid), (_, lastGrid) => {
         lastGrid = JSON.parse(lastGrid || '[]');
         // console.log('running tile effect');
-        if (readyToRender()) {
+        if (gameInited()) {
           console.log('updating tiles');
           state.p.grid.map((col, i) => {
             col.map((space, j) => {
@@ -529,12 +530,12 @@ export function startPhaser(_owner, _container) {
         return [];
       }, { defer: false }));
       createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
-        if (readyToRender()) {
+        if (gameInited()) {
           initShades(state.e);
         }
       }, { defer: true }));
       createEffect(on(() => [loader.state, JSON.stringify(Object.keys(state.e?.players || {}))], () => {
-        if (readyToRender()) {
+        if (gameInited()) {
           initPlayers(state.e);
         }
       }, { defer: true }));

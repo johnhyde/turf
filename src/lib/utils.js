@@ -125,6 +125,10 @@ export function vecToStr(vec) {
   return vec.x + ',' + vec.y;
 }
 
+export function normalizeTermIsh(str) {
+  return str.toLocaleLowerCase().replaceAll(/[^-_.~a-z0-9]+/g, '-');
+}
+
 export function sig(str) {
   if (str[0] !== '~') {
     return '~' + str;
