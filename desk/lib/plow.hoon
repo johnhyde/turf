@@ -452,18 +452,22 @@
     :-  [%port-offer ship.goal from.goal for.portal u.at.portal]~
     ~[goal]~
       %add-port-req
-    ?.  =(ship.goal src.bowl)  ``~
-    ?@  from.goal
-      ?:  =(ship.goal our.bowl)
+    =/  rgg
+      ?.  =(ship.goal src.bowl)  ``~
+      ?@  from.goal
+        ?:  =(ship.goal our.bowl)
+          ``[%import-player +.goal]~
+        =/  invite  (~(gut by invites.deed.turf) `@t`from.goal ~)
+        ?~  invite  ``~
+        ?:  (gth now.bowl till.invite)  ``~
         ``[%import-player +.goal]~
-      =/  invite  (~(gut by invites.deed.turf) `@t`from.goal ~)
-      ?~  invite  ``~
-      ?:  (gth now.bowl till.invite)  ``~
-      ``[%import-player +.goal]~
-    ?.  (~(has by portals.deed.turf) u.from.goal)  ``~
-    ?:  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
-      ``[%import-player +.goal]~
-    `~[goal]~
+      ?.  (~(has by portals.deed.turf) u.from.goal)  ``~
+      ?:  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
+        ``[%import-player +.goal]~
+      `~[goal]~
+    ?.  =(rgg ``~)  rgg
+    :_  `~
+    [%port-reject ship.goal]~
       %add-port-rec
     =/  portal  (~(gut by portals.deed.turf) from.goal ~)
     ?~  portal  ``~

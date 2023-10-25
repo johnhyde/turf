@@ -773,6 +773,13 @@
             /port-offer
           ship.roar
         [%port-offered for.roar `[turf-id.stir from.roar at.roar]]
+          %port-reject
+        :_  state
+        :_  ~
+        %^    mist-stir-card
+            /port-reject
+          ship.roar
+        [%port-rejected turf-id.stir]
           %player-add
         =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
         =/  mist-card=card

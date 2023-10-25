@@ -19,7 +19,8 @@ export default function PortalsPane() {
   setInterval(() => $now(Date.now()), 5000);
 
   const activeInvites = createMemo(() => {
-    return Object.entries(state.e.invites)
+    if (!state.e) return [];
+    return Object.entries(state.e.invites || [])
       .map(([id, invite]) => ({ ...invite, id }))
       .filter((invite) => invite.till > now());
   });
@@ -162,8 +163,7 @@ function Portal(props) {
 
 function Invite(props) {
   const state = useState();
-
-  const code = () => props.invite.id ? our + '/' + props.invite.id : null;
+  const code = () => props.invite.id ? state.c.name + '/' + props.invite.id : null;
   const command = () => '/join ' + code();
   const [copied, $copied] = createSignal(null);
 

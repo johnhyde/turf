@@ -486,8 +486,8 @@ export function startPhaser(_owner, _container) {
         JSON.stringify(state.e?.size),
         JSON.stringify(state.e?.offset),
       ], (_, __, lastTurfId) => {
+        destroyCurrentTurf();
         if (loader.state === 'ready') {
-          if (lastTurfId || state.e) destroyCurrentTurf();
           if (readyToRender()) {
             initTurf(state.e, state.p.grid, state.player);
             initShades(state.e);

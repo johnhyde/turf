@@ -167,6 +167,7 @@
       [%portal-hark event=portal-event is-link=? from=portal-id for=turf-id]
       [%port =ship for=turf-id at=portal-id]
       [%port-offer =ship from=portal-id for=turf-id at=portal-id]
+      [%port-reject =ship]
       [%player-add =ship]
       [%player-del =ship]
   ==
