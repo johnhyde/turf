@@ -160,6 +160,9 @@
     :: ~&  -:!>(*$%(from:da-mist from:da-pond))
     :: ~&  (default-turf:gen our.bowl)
     `this
+      %turf-rock
+    ~&  >>  "pub-pond was: {<rock:(~(got by read:du-pond) dppath)>}"
+    `this
   ::
   :: Pub Pokes
   ::
@@ -528,10 +531,13 @@
   (weld cards-1 cards-2)^state
 ++  default-turf
   |.
+  ^-  (unit rock:pond)
   ((lift |=([* =rock:pond] rock)) (~(get by read:du-pond) dppath))
 ++  default-turf-exists
   |.
-  ?=(^ (default-turf))
+  =+  (default-turf)
+  ?~  -  %.n
+  ?=(^ turf.u.-)
 ++  init-turf
   (give-pond-goal dtid set-turf+(default-turf:gen our.bowl [15 13] [--0 --0] ~))
 ++  init-defaults
