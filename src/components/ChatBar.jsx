@@ -13,7 +13,7 @@ export default function ChatBar() {
     const joinMatch = text.match(/^\/join (.*)/);
     const dmMatch = text.match(/^\/dm (~?[-a-z_]+) (.*)/);
     if (joinMatch) {
-      alert('/join commands have been disabled.\nTry using portals instead :)');
+      state.mist.acceptInviteCode(joinMatch[1]);
     } else if (dmMatch) {
       const patp = normalizeId(dmMatch[1]);
       if (isValidPatp(patp)) {

@@ -58,6 +58,10 @@ export function reportBadConnection() {
 }
 
 export async function unsubscribeToPool(id) {
+  if (!api) {
+    console.error('tried to unsubscribe with no api');
+    return;
+  }
   let existingSubs = [...api.outstandingSubscriptions];
   if (id) {
     existingSubs = existingSubs.filter(([_, sub]) => {

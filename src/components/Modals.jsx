@@ -81,31 +81,61 @@ export default function Modals() {
           </div>
         </Modal>
       </Show>
-      <Show when={state.thisIsUs && state.p?.new && state.mist.config?.enabled !== undefined && !state.mist.config.enabled} keyed>
-        <Modal class="bg-teal-700 text-slate-100">
+      <Show when={state.thisIsUs && state.p?.new} keyed>
+        <Modal class="bg-teal-700 text-slate-100" onClose={optOut}>
           <p class="text-xl mb-4 text-center">
-            You Are Opted Out of Usage Tracking
+            Welcome to Turf!
           </p>
           <p class="mb-2">
-            Turf uses %vita to automatically track how many people are using Turf each day.
+            If you're ever confused about something, check the information in the ? tab in the top left.
           </p>
           <p class="mb-2">
-            When enabled, Turf sends at most one message per day to {state.mist.config.vitaParent}, saying that you used app.
+            If you're not on the mailing list, you're welcome to sign up here.
           </p>
-          <p class="italic">
-            Please consider opting in—this gives us the data we need to get funding to keep improving Turf.
-          </p>
-          <div class="flex w-full justify-center my-4 space-x-4">
-            <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={optIn}>
-              Opt In
-            </button>
-            <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={optOut}>
-              Close
-            </button>
-          </div>
-          <p class="italic">
-            You can change this setting at any time from the <span class="font-bold">?</span> tab.
-          </p>
+          <form action="https://jointurf.us17.list-manage.com/subscribe/post?u=0b6fd4dedf856064303a80d2c&amp;id=1575aff1a3&amp;f_id=006365e0f0" method="post" target="_blank" class="flex flex-col items-center space-y-3">
+            <div>
+              <label for="mce-FNAME">First Name</label>
+              <input type="text" name="FNAME" class="ml-2 px-1.5 text-black rounded-md" id="mce-FNAME" value="" />
+            </div>
+            <div>
+              <label for="mce-EMAIL">Email Address</label>
+              <input type="email" name="EMAIL" class="ml-2  px-1.5 text-black rounded-md" id="mce-EMAIL" value="" required placeholder="(required)" />
+            </div>
+            <div hidden><input type="hidden" name="tags" value="7097484" /></div>
+            <input type="submit" name="subscribe" class="px-2 py-1 border border-white rounded-md" value="Get the newsletter" />
+          </form>
+          <Show when={state.mist.config?.enabled !== undefined && !state.mist.config.enabled} keyed fallback={
+            <div class="flex w-full justify-center mt-3">
+              <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={optOut}>
+                Close
+              </button>
+            </div>
+          }>
+            <div class="w-full my-4 border-t border-white"></div>
+            <p class="text-xl mb-4 text-center">
+              You Are Opted Out of Usage Tracking
+            </p>
+            <p class="mb-2">
+              Turf uses %vita to automatically track how many people are using Turf each day.
+            </p>
+            <p class="mb-2">
+              When enabled, Turf sends at most one message per day to {state.mist.config.vitaParent}, saying that you used app.
+            </p>
+            <p class="italic">
+              Please consider opting in—this gives us the data we need to get funding to keep improving Turf.
+            </p>
+            <div class="flex w-full justify-center my-4 space-x-4">
+              <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={optIn}>
+                Opt In
+              </button>
+              <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={optOut}>
+                Close
+              </button>
+            </div>
+            <p class="italic">
+              You can change this setting at any time from the <span class="font-bold">?</span> tab.
+            </p>
+          </Show>
         </Modal>
       </Show>
       <Show when={state.text}>
