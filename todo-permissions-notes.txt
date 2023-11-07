@@ -1,0 +1,48 @@
+NOCHECKIN
+{
+good menu
+or
+slash command (probably this one for now)
+or click on person
+banning (%n) and editing (%in). I don't really remember what %take and %add are supposed to be. %admin I think is ability to give permissions, which our can give out, theoretically.
+
+filter function:
+mist, pond
+plow.hoon
+watlus in filter in plow.hoon. Before branching, check perms.
+
+refactor goals and grits to centralize them? Most defined in pond.hoon, but turf.hoon has many effects, which is unavoidable, then there's stuff in plow.hoon. But it would be nice if you could define a goal/grit & wave all in one place.
+
+Knock-on effects from allowed interactions (top-level goal) are allowed, even if they wouldn't otherwise be.
+
+Secret vases are never top-level
+}
+
+Error message on /perm ~nec %n after some fighting:
+
+api.js:72 gall: poke-as cast fail :turf [a=%json b=%pond-stir]
+[%key 'perm']
+[%key 'perm-player']
+/lib/plow/hoon:<[1.100 7].[1.100 23]>
+/lib/plow/hoon:<[1.099 7].[1.100 23]>
+/lib/plow/hoon:<[1.097 7].[1.100 23]>
+/lib/plow/hoon:<[1.096 7].[1.100 23]>
+/lib/plow/hoon:<[1.115 7].[1.142 9]>
+/lib/plow/hoon:<[1.114 7].[1.142 9]>
+[%key 'goals']
+/lib/plow/hoon:<[1.104 7].[1.111 9]>
+/lib/plow/hoon:<[1.103 7].[1.111 9]>
+/sys/vane/gall/hoon:<[811 27].[811 45]>
+
+Worryingly, this is the same error from a while ago, with slight variation.
+
+TODO elsewhere:
+some kind of error report: can't quite use grid on the airplane, in that not all the graphical elements show up (not sure what verion of grid, the latestish one I guess.):
+grid:/19
+       GET https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Code+Pro:wght@400;600&display=swap net::ERR_NAME_NOT_RESOLVED
+data:application/js…:1 Manifest: property 'src' ignored, URL is invalid.
+bootstrap.urbit.org/icon-talk.svg?v=1:1
+       GET https://bootstrap.urbit.org/icon-talk.svg?v=1 net::ERR_NAME_NOT_RESOLVED
+raw.githubusercontent.com/johnhyde/turf/main/public/logo-big.png:1
+       GET https://raw.githubusercontent.com/johnhyde/turf/main/public/logo-big.png net::ERR_NAME_NOT_RESOLVED
+       GET https://bootstrap.urbit.org/icon-groups.svg?v=1 net::ERR_NAME_NOT_RESOLVED
