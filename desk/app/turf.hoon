@@ -645,8 +645,9 @@
             [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
         :: if we have been invited somewhere
         :: or invited ourselves home,
-        :: delete ourselves from current turf
-        :: ?~  via.roar
+        :: DON'T delete ourselves from current turf
+        :: because %turf-exit will be produced hopefully
+        :: ?@  via.roar
         ::   ?~  old-tid  ~
         ::   ?:  =(old-tid (ctid))  ~
         ::   :_  ~
@@ -654,9 +655,7 @@
         ::       (weld /pond-stir (drop id.stir))
         ::     u.old-tid
         ::   [%del-player our.bowl]
-        :: otherwise accept the port offer
-        :: which will allow us to travel
-        ?~  via.roar  ~
+        ?@  via.roar  ~
         :_  ~
         %^    pond-stir-card
             /port-offer-accept
