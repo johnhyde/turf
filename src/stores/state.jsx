@@ -164,7 +164,7 @@ export function getState() {
         lunk = portalObj;
         return;
       }
-      const dinkApproved = state.e.dinks[portalId];
+      const dinkApproved = state.e.dinks?.[portalId];
       const isDink = dinkApproved !== undefined;
       let dest;
       if (isDink) {
