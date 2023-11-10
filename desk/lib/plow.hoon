@@ -55,7 +55,7 @@
     ?.  =(ship.for.goal src.bowl)  ~
     ?.  =(`for.goal ctid.rock)  ~
     [%turf-join for.goal]~
-      %port-rejected
+      ?(%port-rejected %kicked)
     :-  ~
     :-  ~
     ?.  =(ship.for.goal src.bowl)  ~
@@ -484,6 +484,7 @@
     :-  [%player-add ship.goal]~
     ~[goal]~
       %del-player
+    ?.  |(=(our src):bowl =(ship.goal src.bowl))  ``~
     :-  [%player-del ship.goal]~
     :-  [goal]~
     [%del-port-offer ship.goal]~
@@ -1177,6 +1178,7 @@
           move+(ot ~[ship+(se %p) pos+svec2])
           face+(ot ~[ship+(se %p) dir+dir])
           ping-player+(ot ~[ship+(se %p) by+(se %p)])
+          del-player+(ot ~[ship+(se %p)])
           add-invite+(ot ~[id+so name+so till+di])
           del-invite+(ot ~[id+so])
       ==

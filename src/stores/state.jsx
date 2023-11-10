@@ -433,6 +433,11 @@ export function getState() {
         loud: true,
       });
     },
+    delPlayer(ship) {
+      this.sendPondWave('del-player', {
+        ship,
+      });
+    },
     addInvite(invite) {
       this.sendPondWave('add-invite', {
         id: invite.id,

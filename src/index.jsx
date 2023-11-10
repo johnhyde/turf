@@ -2,6 +2,7 @@
 import { render } from 'solid-js/web';
 import { Router } from "@solidjs/router";
 import { createRoot } from "solid-js";
+import Phaser from "phaser";
 
 import 'css/reset.css';
 import 'css/index.css';
@@ -27,6 +28,16 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
     'Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got mispelled?',
   );
 }
+let violated = false;
+document.addEventListener("securitypolicyviolation", (e) => {
+  console.log(e.blockedURI);
+  console.log(e.violatedDirective);
+  console.log(e.originalPolicy);
+  if (!violated) {
+    violated = true;
+    alert("Turf is being blocked by a Content Security Policy. Please consider using a CSP-blocker browser extension to work around this. If that doesn't work, please DM ~midlev-mindyr.");
+  }
+});
 
 render(() => {
   initApi();

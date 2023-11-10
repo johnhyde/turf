@@ -43,6 +43,7 @@
       [%add-thing-from-closet =form-id]
       [%port-accepted for=turf-id]
       [%port-rejected for=turf-id]
+      [%kicked for=turf-id]
       [%export-self port-offer]
   ==
 :: ::

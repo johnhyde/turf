@@ -23,19 +23,21 @@
 +$  state-0
   $:  %0
       =reset
-      closet=$~(default-closet:gen skye)
+      =closet
       dtid=turf-id
       lakes
   ==
 +$  state-1
   $:  %1
       =reset
-      skye-reset=_10
-      closet=$~(default-closet:gen skye)
+      =skye-reset
+      =closet
       lakes
   ==
 +$  current-state  state-1
 +$  reset  _63
++$  skye-reset  _10
++$  closet  $~(default-closet:gen skye)
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
@@ -104,7 +106,7 @@
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
-    =/  cur-skye-reset  skye-reset:*current-state
+    =/  cur-skye-reset  *^skye-reset
     :: ~&  ["skye reset default and current" cur-skye-reset skye-reset]
     ?:  =(cur-skye-reset skye-reset)
       `state
@@ -121,7 +123,7 @@
   =/  vita-cards
     ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
     [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
-  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards)^this
+  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards kick-all-subs:hc)^this
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -229,7 +231,8 @@
       %kick-subs
     :_  this
     :: [%give %kick ~[;;(path dmpath) (ship-ppath-to-path our.bowl dppath)] ~]~
-    [%give %kick ~[;;(path dmpath) /pond/~mordev-naltuc-ravteb (ship-ppath-to-path our.bowl dppath)] ~]~
+    :: [%give %kick ~[;;(path dmpath) /pond/~mordev-naltuc-ravteb (ship-ppath-to-path our.bowl dppath)] ~]~
+    kick-all-subs:hc
   :: Sub Pokes
   ::
       %surf-turf
@@ -279,11 +282,15 @@
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
       %pond-goal
-  ?>  =(our src):bowl
-  =/  goal  !<(goal-1:pond vase)
-  =/  stir  [dtid:hc ~ [%1 goal]~]
-  =^  cards  state  (stir-pond:hc `src.bowl stir)
-  cards^this
+    ?>  =(our src):bowl
+    =/  goal  !<(goal-1:pond vase)
+    =/  stir  [dtid:hc ~ [%1 goal]~]
+    =^  cards  state  (stir-pond:hc `src.bowl stir)
+    cards^this
+  ::
+      %logout
+    =^  cards  state  (give-mist:hc dmpath set-ctid+~)
+    cards^this
   ::
 
       %join-turf  !!
@@ -422,7 +429,8 @@
       ::  no sub cards, we are already subbed and not stale
       ::  tell frontend what we have
       (give-pond-rock:hc id %.y)
-    (weld cards-1 cards-2)^this
+    =/  cards-3  [(dont-logout:hc)]~
+    :(weld cards-1 cards-2 cards-3)^this
       [%mist *]
     ?>  =(our src):bowl
     =^  cards  state
@@ -430,15 +438,15 @@
     cards^this
   ==
 ++  on-leave
-  |=  =path
+  |=  left=path
   ^-  (quip card _this)
   =/  online
     %-  ~(any by sup.bowl)
-    |=  [=ship pat=^path]
-    |(=(/mist pat) ?=([%pond *] path))
-  ~&  ['is there a client subbed to a mist or turf?' path online]
+    |=  [=ship pat=path]
+    |(=(/mist pat) ?=([%pond *] pat))
+  ~&  ['is there a client subbed to a mist or turf?' left online]
   ?:  online  `this
-  =^  cards  state  (give-mist:hc dmpath set-ctid+~)
+  =/  cards  (delay-logout:hc)
   cards^this
 ::
 ++  on-peek
@@ -813,7 +821,12 @@
         [mist-card cards]^state
           %player-del
         =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
-        `state
+        :_  state
+        :_  ~
+        %^    mist-stir-card
+            /kick
+          ship.roar
+        [%kicked turf-id.stir]
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
@@ -886,4 +899,23 @@
   %=  turf
     skye.plot  (~(uni by skye.plot.turf) default-skye:gen)
   ==
+::
+++  kick-all-subs
+  [%give %kick (turn ~(val by sup.bowl) tail) ~]~
+++  delay-logout
+  |.
+  ^-  (list card)
+  =/  tid  'turf-delayed-logout'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(~)]
+  :~
+    [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+    [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-start !>(start-args)]
+  ==
+++  dont-logout
+  |.
+  ^-  card
+  =/  tid  'turf-delayed-logout'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
 --  --
