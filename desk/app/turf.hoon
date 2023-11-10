@@ -23,19 +23,21 @@
 +$  state-0
   $:  %0
       =reset
-      closet=$~(default-closet:gen skye)
+      =closet
       dtid=turf-id
       lakes
   ==
 +$  state-1
   $:  %1
       =reset
-      skye-reset=_10
-      closet=$~(default-closet:gen skye)
+      =skye-reset
+      =closet
       lakes
   ==
 +$  current-state  state-1
 +$  reset  _63
++$  skye-reset  _10
++$  closet  $~(default-closet:gen skye)
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)
       pub-pond=$~(pub-pond-init _pub-pond-init)
@@ -48,11 +50,11 @@
 ::
 +$  card  $+(card card:agent:gall)
 --
-%-  agent:dbug
 =/  vita-config=config:vita-client
   [| ~pandux]
   :: [| ~nec]
 %-  (agent:vita-client vita-config)
+%-  agent:dbug
 =|  current-state
 =*  state  -
 :: %+  verb  &
@@ -104,7 +106,7 @@
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
-    =/  cur-skye-reset  skye-reset:*current-state
+    =/  cur-skye-reset  *^skye-reset
     :: ~&  ["skye reset default and current" cur-skye-reset skye-reset]
     ?:  =(cur-skye-reset skye-reset)
       `state
@@ -121,7 +123,7 @@
   =/  vita-cards
     ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
     [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
-  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards)^this
+  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards kick-all-subs:hc)^this
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -173,39 +175,32 @@
       %init-avatar
     :: =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-default-mist:hc
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %init-turf
     :: =^  sss-cards  pub-pond  (secret:du-pond [dppath]~)
     =^  cards  state  init-turf:hc
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %set-turf
     =+  !<([size=vec2 offset=svec2] vase)
     =^  cards  state  (give-pond-goal:hc dtid:hc set-turf+(default-turf:gen our.bowl size offset ~))
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %add-husk
     =^  cards  state  (give-pond-goal:hc dtid:hc add-husk+!<(add-husk-spec vase))
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %chat
     =^  cards  state  (give-pond-goal:hc dtid:hc chat+[our.bowl now.bowl !<(@t vase)])
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %del-turf
     =^  cards  state  (give-pond-goal:hc dtid:hc [%del-turf ~])
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %wipe-turf
     =.  pub-pond  (wipe:du-pond dppath)
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     `this
   ::
       %public-turf
@@ -218,33 +213,30 @@
   ::
       %open-turf
     =^  cards  pub-pond  (allow:du-pond [!<(@p vase)]~ [dppath]~)
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
       %kill-turf
     =^  cards  pub-pond  (kill:du-pond [dppath]~)
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     cards^this
   ::
+      %kick-subs
+    :_  this
+    kick-all-subs:hc
   :: Sub Pokes
   ::
       %surf-turf
     =^  cards  sub-pond  
       (surf:da-pond !<(@p (slot 2 vase)) %turf pond+!<(path (slot 3 vase)))
-    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       %quit-turf
     =.  sub-pond  
       (quit:da-pond !<(@p (slot 2 vase)) %turf pond+!<(path (slot 3 vase)))
-    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
     ::   %mist-stir
     :: =+  !<(stir:mist (fled vase))
     :: ?>  =(our src):bowl
-    :: :: ~&  >  "accepting mist wave from client: {<?^(wave -.wave wave)>}"
-    :: :: ~&  >  "accepting mist wave from client: {<-.wave wave>}"
     :: =/  pub  (~(get by read:du-mist) mpath)
     :: =/  fwave=(unit wave:mist)
     ::   ?~  pub  ~
@@ -275,11 +267,15 @@
     [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
   ::
       %pond-goal
-  ?>  =(our src):bowl
-  =/  goal  !<(goal-1:pond vase)
-  =/  stir  [dtid:hc ~ [%1 goal]~]
-  =^  cards  state  (stir-pond:hc `src.bowl stir)
-  cards^this
+    ?>  =(our src):bowl
+    =/  goal  !<(goal-1:pond vase)
+    =/  stir  [dtid:hc ~ [%1 goal]~]
+    =^  cards  state  (stir-pond:hc `src.bowl stir)
+    cards^this
+  ::
+      %logout
+    =^  cards  state  (give-mist:hc dmpath set-ctid+~)
+    cards^this
   ::
 
       %join-turf  !!
@@ -373,8 +369,6 @@
     ==
   ::
       %sss-pond
-    :: ~&  >  "sub-pond is: {<sub-pond>}"
-    :: ~&  >  "got sss-pond from {<src.bowl>}"
     =/  res  !<(into:da-pond (fled vase))
     =^  cards  sub-pond  (apply:da-pond res)
     :: ~&  >  "got sss-pond from {<src.bowl>}: {<res>}"
@@ -418,7 +412,8 @@
       ::  no sub cards, we are already subbed and not stale
       ::  tell frontend what we have
       (give-pond-rock:hc id %.y)
-    (weld cards-1 cards-2)^this
+    =/  cards-3  [(dont-logout:hc)]~
+    :(weld cards-1 cards-2 cards-3)^this
       [%mist *]
     ?>  =(our src):bowl
     =^  cards  state
@@ -426,9 +421,16 @@
     cards^this
   ==
 ++  on-leave
-  |=  =path
+  |=  left=path
   ^-  (quip card _this)
-  `this
+  =/  online
+    %-  ~(any by sup.bowl)
+    |=  [=ship pat=path]
+    |(=(/mist pat) ?=([%pond *] pat))
+  :: ~&  ['is there a client subbed to a mist or turf?' left online]
+  ?:  online  `this
+  =/  cards  (delay-logout:hc)
+  cards^this
 ::
 ++  on-peek
   |=  =path
@@ -452,38 +454,26 @@
   ?+    wire  (on-agent:def wire sign)
       [~ %sss %on-rock @ @ @ pond-path]
     =.  sub-pond  (chit:da-pond |3:wire sign)
-    :: ~&  >  "got pond on-rock on {<|3:wire>}"
-    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     `this
   ::
       [~ %sss %on-rock @ @ @ mist-path]
     =.  sub-mist  (chit:da-mist |3:wire sign)
-    :: ~&  >  "got mist on-rock on {<|3:wire>}"
-    :: ~&  >  "sub-mist is: {<read:da-mist>}"
     `this
   ::
       [~ %sss %scry-request @ @ @ pond-path]
     =^  cards  sub-pond  (tell:da-pond |3:wire sign)
-    :: ~&  >  "got pond scry-request on {<|3:wire>}"
-    :: ~&  >  "sub-pond is: {<read:da-pond>}"
     [cards this]
   ::
       [~ %sss %scry-request @ @ @ mist-path]
     =^  cards  sub-mist  (tell:da-mist |3:wire sign)
-    :: ~&  >  "got mist scry-request on {<|3:wire>}"
-    :: ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
   ::
       [~ %sss %scry-response @ @ @ pond-path]
     =^  cards  pub-pond  (tell:du-pond |3:wire sign)
-    :: ~&  >  "got pond scry-response on {<|3:wire>}"
-    :: ~&  >  "pub-pond is: {<read:du-pond>}"
     [cards this]
   ::
       [~ %sss %scry-response @ @ @ mist-path]
     =^  cards  pub-mist  (tell:du-mist |3:wire sign)
-    :: ~&  >  "got mist scry-response on {<|3:wire>}"
-    :: ~&  >  "pub-mist is: {<read:du-mist>}"
     [cards this]
   ==
 ++  on-arvo  on-arvo:def
@@ -491,8 +481,6 @@
 --
 ::
 :: Helper Core
-:: =/  hc
-:: ^=  hc
 |%
 ++  hc
 |_  =bowl:gall
@@ -634,17 +622,8 @@
             [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
         :: if we have been invited somewhere
         :: or invited ourselves home,
-        :: delete ourselves from current turf
-        ?@  via.roar
-          ?~  old-tid  ~
-          ?:  =(old-tid (ctid))  ~
-          :_  ~
-          %^    pond-stir-card
-              (weld /pond-stir (drop id.stir))
-            u.old-tid
-          [%del-player our.bowl]
-        :: otherwise accept the port offer
-        :: which will allow us to travel
+        :: don't accept port offer
+        ?@  via.roar  ~
         :_  ~
         %^    pond-stir-card
             /port-offer-accept
@@ -665,7 +644,13 @@
           %turf-exit
         =.  sub-pond
           (quit:da-pond (turf-id-to-sub-key turf-id.roar))
-        `state
+        :-  ?~  old-tid  ~
+            :_  ~
+            %^    pond-stir-card
+                (weld /pond-stir (drop id.stir))
+              u.old-tid
+            [%del-player our.bowl]
+        state
       ==
     (weld cards new-cards)^state
   =^  pond-cards=(list card)  state  (sync-avatar)
@@ -796,7 +781,12 @@
         [mist-card cards]^state
           %player-del
         =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
-        `state
+        :_  state
+        :_  ~
+        %^    mist-stir-card
+            /kick
+          ship.roar
+        [%kicked turf-id.stir]
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
@@ -869,4 +859,24 @@
   %=  turf
     skye.plot  (~(uni by skye.plot.turf) default-skye:gen)
   ==
+::
+++  kick-all-subs
+  ^-  (list card)
+  [%give %kick `(list path)`(turn ~(val by sup.bowl) tail) ~]~
+++  delay-logout
+  |.
+  ^-  (list card)
+  =/  tid  'turf-delayed-logout'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(~)]
+  :~
+    [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+    [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-start !>(start-args)]
+  ==
+++  dont-logout
+  |.
+  ^-  card
+  =/  tid  'turf-delayed-logout'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
 --  --

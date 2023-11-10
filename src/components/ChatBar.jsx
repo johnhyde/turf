@@ -12,12 +12,22 @@ export default function ChatBar() {
   function sendChat(text) {
     const joinMatch = text.match(/^\/join (.*)/);
     const dmMatch = text.match(/^\/dm (~?[-a-z_]+) (.*)/);
+    const kickMatch = text.match(/^\/kick (~?[-a-z_]+)/);
     if (joinMatch) {
       state.mist.acceptInviteCode(joinMatch[1]);
     } else if (dmMatch) {
       const patp = normalizeId(dmMatch[1]);
       if (isValidPatp(patp)) {
         sendDM(patp, dmMatch[2]);
+      }
+    } else if (kickMatch) {
+      if (!state.thisIsUs) {
+        alert('You can only kick people from your own turf');
+      } else {
+        const patp = normalizeId(kickMatch[1]);
+        if (isValidPatp(patp)) {
+          state.delPlayer(patp);
+        }
       }
     } else {
       state.sendChat(chatbox.value);

@@ -79,6 +79,9 @@ export default function Help() {
                   Join an event like this "/join ~sampel-palnet/party-1234"
                 </li>
                 <li>
+                  In your own turf, you can kick people out with "/kick ~sampel-palnet"
+                </li>
+                <li>
                   Press Escape to exit the chat box without sending a message
                 </li>
               </ul>
@@ -103,7 +106,7 @@ export default function Help() {
                   Press C to use the cycler tool. This lets you cycle through variations of an item (e.g. walls)
                 </li>
                 <li>
-                  Press Delete or Backspace to use the eraser tool. This lets you remove items
+                  Press Delete or Backspace to use the eraser tool. This lets you remove items or kick players
                 </li>
                 <li>
                   Click on a tile or item sprite from the library to place it in the world
