@@ -171,7 +171,7 @@ export class Player extends Phaser.GameObjects.Container {
     '--webkit-font-smoothing': 'none' }});
     this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
     this.add(this.name);
-    this.ping = scene.make.text({ text: '(ping)', style: { fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    this.ping = scene.make.text({ text: '(ping)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height + this.ping.height);
     this.ping.setVisible(false);
@@ -380,12 +380,30 @@ export class Player extends Phaser.GameObjects.Container {
     }
   }
 
+  get isKickable() {
+    return this.s.thisIsUs && !this.isUs;
+  }
+
+  get kickMode() {
+    return state.editor.editing && state.editor.eraser;
+  }
+
+  setPingOrigin() {
+    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+  }
+
   onClick(pointer) {
     console.log('clicked on', this.patp);
     if (this.ping && this.p && !this.isUs) {
-      this.s.pingPlayer(this.patp);
-      this.ping.setText('pinged!');
-      this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+      if (this.isKickable && this.kickMode) {
+        this.s.delPlayer(this.patp);
+        this.ping.setVisible(false);
+        this.remove(this.ping);
+      } else {
+        this.s.pingPlayer(this.patp);
+        this.ping.setText('pinged!');
+        this.setPingOrigin();
+      }
     }
   }
 
@@ -394,6 +412,11 @@ export class Player extends Phaser.GameObjects.Container {
       this.add(this.ping);
       this.ping.setVisible(true);
     }
+    const text = (this.isKickable && this.kickMode) ? '(kick)' : '(ping)';
+    if (this.ping.text !== text) {
+      this.ping.setText(text);
+      this.setPingOrigin();
+    }
   }
   
   onLeave(pointer) {
@@ -401,7 +424,7 @@ export class Player extends Phaser.GameObjects.Container {
       this.ping.setVisible(false);
       this.remove(this.ping);
       this.ping.setText('(ping)');
-      this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+      this.setPingOrigin();
     }
   }
 

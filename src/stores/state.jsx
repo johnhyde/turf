@@ -164,7 +164,7 @@ export function getState() {
         lunk = portalObj;
         return;
       }
-      const dinkApproved = state.e.dinks[portalId];
+      const dinkApproved = state.e.dinks?.[portalId];
       const isDink = dinkApproved !== undefined;
       let dest;
       if (isDink) {
@@ -433,6 +433,11 @@ export function getState() {
         loud: true,
       });
     },
+    delPlayer(ship) {
+      this.sendPondWave('del-player', {
+        ship,
+      });
+    },
     addInvite(invite) {
       this.sendPondWave('add-invite', {
         id: invite.id,
@@ -574,6 +579,11 @@ export function getState() {
         at,
       });
     }, 200);
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    _state.clearTurfs();
+    _state.mist.destroy();
   });
 
   return _state;
