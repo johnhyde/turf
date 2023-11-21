@@ -8,7 +8,7 @@
       ^-  ^json
       ?:  ?=(%rock what.strd)
         (pond-rock:enjs rock.strd)
-      (pond-wave:enjs id.strd grits.strd)
+      (pond-wave:enjs id.strd src.strd wen.strd grits.strd)
     --
   ++  grab
     |%

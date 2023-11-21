@@ -161,7 +161,7 @@ const mistGrits = {
   },
 };
 
-export function washMist(update, grits) {
+export function washMist(update, grits, src, wen) {
   grits.forEach((grit) => {
     update(_washMist(grit));
   });

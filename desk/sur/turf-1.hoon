@@ -1,4 +1,4 @@
-/-  *turf-1
+/-  *turf-0
 /+  vita-client
 |%
 :: +$  turf-id  [=ship =path]
@@ -15,24 +15,23 @@
 :: +$  tl-br  [tl=svec2 br=svec2]
 ::
 +$  turf
-  $+  turf
+  $+  turf-1
   $:  =ephemera
       =deed
       =plot
   ==
 ::
-+$  ephemera
-  $:  =players
-      chats=(list chat)
-  ==
-+$  players  (map ship player)
-+$  player
-  $+  player
-  $:  wake=(unit @da)
-      pos=svec2
-      =dir
-      =avatar
-  ==
+:: +$  ephemera
+::   $:  =players
+::       chats=(list chat)
+::   ==
+:: +$  players  (map ship player)
+:: +$  player
+::   $+  player
+::   $:  pos=svec2
+::       =dir
+::       =avatar
+::   ==
 :: +$  avatar
 ::   $:  =body
 ::       things=(list thing)
@@ -44,19 +43,19 @@
 ::       text=cord
 ::   ==
 :: ::
-:: +$  deed
-::   $:  =invites
-::       =perms
-::       =portals
-::       =port-reqs
-::       =port-recs
-::       =port-offers
-::       lunk=(unit lunk)
-::       =dinks
-::   ==
-:: +$  invites  (map invite-id invite)
-:: +$  invite-id  @t
-:: +$  invite  [name=@t till=@da]
++$  deed
+  $:  =invites
+      =perms
+      =portals
+      =port-reqs
+      =port-recs
+      =port-offers
+      lunk=(unit lunk)
+      =dinks
+  ==
++$  invites  (map invite-id invite)
++$  invite-id  @t
++$  invite  [name=@t till=@da]
 :: +$  perms
 ::   $+  perms
 ::   $:  default=$~(%in perm)  :: the perm that applies to most
@@ -73,11 +72,11 @@
 :: +$  port-reqs  (map ship [=portal-id =avatar])
 :: +$  port-recs  (jug portal-id ship)
 :: +$  port-offers  (map ship portal-id)
-:: +$  port-offer  [for=turf-id =via]
++$  port-offer  [for=turf-id =via]
 ::
 :: via is weird because I wanted to pack more info into a unit
 :: but I didn't want to break interface
-:: +$  via  $@(?(~ invite-id) [~ u=[of=turf-id from=portal-id at=portal-id]])
++$  via  $@(?(~ invite-id) [~ u=[of=turf-id from=portal-id at=portal-id]])
 :: :: links between planets and stars
 :: :: lunk = uplink
 :: :: dink = downlink
@@ -173,33 +172,10 @@
 :: +$  mist-path  [%mist *]
 :: +$  stir-ids  (map ship @t)
 :: +$  stir-id  (unit @t)
-+$  foam
-  $&  foam-all
-  |=  f=foam-all
-  |^  ^-  foam-1
-  ?^  -.f  (from-0-to-1 f)
-  ?~  -.f  (from-0-to-1 f)
-  f
-  ++  from-0-to-1
-    |=  f=foam-0
-    ^-  foam-1
-    [%1 id src ~]:f
-  --
-+$  foam-all
-  $^  foam-0
-  $%  foam-0
-      foam-1
-  ==
-+$  foam-1
-  $:  %1
-      id=stir-id
-      src=(unit ship)
-      wen=(unit @da)
-  ==
-+$  foam-0
-  $:  id=stir-id
-      src=(unit ship)
-  ==
+:: +$  foam
+::   $:  id=stir-id
+::       src=(unit ship)
+::   ==
 :: :: ++  stirred-rock
 :: ::
 :: +$  local

@@ -103,20 +103,20 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           this.updatePulses(false, res.rock.stirIds[our]); // always resets ether because grit is undefined
           console.log('leftover pulses: ', this.pulses.length);
         } else if (res.hasOwnProperty('wave')) {
-          const { grits, id } = res.wave;
+          const { grits, id, src, wen } = res.wave;
           console.log(`getting wave for ${this.real?.id}`, gritsTypeStr(grits), 'with id', id ? id.substring(0, 4) : id);
           const noop = !grits || grits.length === 0;
           const noPulses = this.pulses.length === 0;
           const noCharges = this.charges.length === 0;
           
           if (!noop) {
-            wash(this.updateReal.bind(this), grits);
+            wash(this.updateReal.bind(this), grits, src, wen);
             if (options.onNewGrits) options.onNewGrits(grits);
           }
           if (!noop && noPulses && noCharges) {
-            wash(this.updateFake.bind(this), grits);
+            wash(this.updateFake.bind(this), grits, src, wen);
           } else {
-            this.updatePulses(noop, id, grits);
+            this.updatePulses(noop, id, src, wen, grits);
           }
         } else {
           console.error('Pool response not a rock or wave???', res);
@@ -150,7 +150,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       this.$('pulses', []);
     },
   
-    updatePulses(noop, id, grits) {
+    updatePulses(noop, id, src, wen, grits) {
       const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
       const matches = pulseI >= 0;
       const matchesFirst = pulseI === 0;

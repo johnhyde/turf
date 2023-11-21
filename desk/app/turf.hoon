@@ -268,8 +268,8 @@
   ::
       %pond-goal
     ?>  =(our src):bowl
-    =/  goal  !<(goal-1:pond vase)
-    =/  stir  [dtid:hc ~ [%1 goal]~]
+    =/  goal  !<(cur-goal:pond vase)
+    =/  stir  [dtid:hc ~ [*cur-goal-v:pond goal]~]
     =^  cards  state  (stir-pond:hc `src.bowl stir)
     cards^this
   ::
@@ -318,7 +318,7 @@
       =/  =stirred:pond
         ?~  wave.msg
           [%rock rock.msg]
-        [%wave id.foam.u.wave.msg grits.u.wave.msg]
+        [%wave id:(foam foam.u.wave.msg) grits.u.wave.msg]
       =/  give-paths=(list path)  [this-turf-path]~
       =?  give-paths  =((ctid:hc) `this-turf-id)
         :: ???
@@ -569,7 +569,7 @@
   =/  stir=stir:pond
     :*  turf-id
         ~
-        [%1 goal]~
+        [*cur-goal-v:pond goal]~
     ==
   :*  %pass
       wire
@@ -600,7 +600,7 @@
   =^  [ssio-cards=(list card) [=roars:mist *] =grits:mist]  pub-mist
     %-  (filter:de-mist ,[roars:mist $~(closet skye)])
     :*  mpath.stir
-        `foam`[id.stir src]
+        `foam`[%1 id.stir src `now.bowl]
         goals.stir
         filter-mist-goal
     ==
@@ -676,7 +676,7 @@
   =^  [ssio-cards=(list card) =roars:pond =grits:pond]  pub-pond
     %-  (filter:de-pond roars:pond)
     :*  ppath
-        `foam`[id.stir src]
+        `foam`[%1 id.stir src `now.bowl]
         goals.stir
         filter-pond-goal
     ==
@@ -798,7 +798,7 @@
   (stir-pond ~ turf-id ~ goals)
 ++  give-pond-goal
   |=  [=turf-id goal=cur-goal:pond]
-  (give-pond turf-id [%1 goal]~)
+  (give-pond turf-id [*cur-goal-v:pond goal]~)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
   ^-  (quip card _state)

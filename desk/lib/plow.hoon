@@ -68,10 +68,10 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  =-  [(weld pre-roars roars) (turn grits (lead %1)) (turn goals (lead %1))]
+  =-  [(weld pre-roars roars) (turn grits (lead *cur-grit-v:pond)) (turn goals (lead *cur-goal-v:pond))]
   ^-  [=roars grits=cur-grits:pond goals=cur-goals:pond]
-  ?.  ?=([%1 *] vgoal)  ``~
-  =/  goal=goal-1:pond  +.vgoal
+  ?.  ?=([cur-goal-v:pond *] vgoal)  ``~
+  =/  goal=cur-goal:pond  +.vgoal
   :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   :: ~&  "filtering pond goal {<-.goal>}, top: {<top>}"
   ?:  ?=([%upgrade ~] goal)
@@ -425,6 +425,7 @@
       `pos.shade
     ?~  pos  ~
     =|  =player
+    =.  wake.player  `now.bowl
     =.  pos.player  u.pos
     =.  avatar.player  avatar.goal
     %+  murn
@@ -479,6 +480,7 @@
     ``[%import-player ship.goal `from.goal avatar.req]~
       %join-player
     =|  =player
+    =.  wake.player  `now.bowl
     ``[%add-player ship.goal player(avatar avatar.goal)]~
       %add-player
     :-  [%player-add ship.goal]~
@@ -557,18 +559,21 @@
         (turf u.turf.rock)
     ==
   ++  pond-wave
-    |=  [id=stir-id:pond =grits:pond]
+    |=  [foam:pond =grits:pond]
     ^-  json
     %+  frond  %wave
     %-  pairs
-    :_  [id+(fall (bind id |=(i=@t s+i)) ~)]~
+    :_  :~  id+?~(id ~ s+u.id)
+            src+?~(src ~ (ship-json u.src))
+            wen+?~(wen ~ (time u.wen))
+        ==
     :-  %grits
     a+(turn grits pond-grit)
   ++  pond-grit
     |=  vgrit=grit:pond
     ^-  json
-    ?.  ?=([%1 *] vgrit)  ~
-    =/  grit=grit-1:pond  +.vgrit
+    ?.  ?=([cur-grit-v:pond *] vgrit)  ~
+    =/  grit=cur-grit:pond  +.vgrit
     %-  pairs
     :~  :-  %type
         :: s+?@(grit grit -.grit)
@@ -929,10 +934,15 @@
     |=  =^player
     ^-  json
     %-  pairs
-    :~  pos+(svec2 pos.player)
+    :~  wake+(wake wake.player)
+        pos+(svec2 pos.player)
         dir+s+dir.player
         avatar+(avatar avatar.player)
     ==
+  ++  wake
+    |=  wek=(unit @da)
+    ^-  json
+    ?~(wek ~ (time u.wek))
   ++  avatar
     |=  =^avatar
     ^-  json
@@ -1151,7 +1161,7 @@
     ++  pond-goal
       |=  jon=json
       ^-  goal:pond
-      :-  %1
+      :-  *cur-goal-v:pond
       %.  jon
       %+  goal  cur-goal:pond
       :: todo: set-turf?
