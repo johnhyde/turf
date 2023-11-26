@@ -51,12 +51,12 @@ export class Pond { // we use a class so we can put it inside a store without ge
       preFilters,
       filters,
     };
-    const wash = (update, grits) => {
+    const wash = (update, grits,  ...args) => {
       update((turf) => {
         if (!turf?.id) return { ...turf, id };
         return turf;
       });
-      washTurf(update, grits);
+      washTurf(update, grits, ...args);
     }
     const hydrate = (rock) => {
       if (rock) rock.id = id;
@@ -354,6 +354,13 @@ const pondGrits = {
 };
 
 export function washTurf(update, grits, src, wen) {
+  if (src && wen) {
+    update(produce((turf) => {
+      if (turf && turf.players[src]) {
+        turf.players[src].wake = wen;
+      }
+    }));
+  }
   grits.forEach((grit) => {
     update(_washTurf(grit));
   });
@@ -601,11 +608,15 @@ const js = {
     // this.deepVec2(turf)
     if (turf) {
       turf.chats.forEach(this.chat.bind(this));
+      Object.values(turf.players).forEach(this.player.bind(this));
     }
     return turf;
   },
   chat(chat) {
     chat.at = new Date(chat.at);
+  },
+  player(player) {
+    player.wake = new Date(player.wake);
   },
   deepVec2(obj) {
     for (const key in obj) {

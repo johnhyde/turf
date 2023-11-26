@@ -1,7 +1,7 @@
 import { createSignal, createMemo } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import * as api from 'lib/api.js';
-import { vec2, bind } from 'lib/utils';
+import { vec2, bind, getDateString } from 'lib/utils';
 
 function Turf(props) {
   if (!props.turf) return null;
@@ -46,6 +46,15 @@ function StateSummary() {
 
   return (
     <div class="overflow-y-auto">
+      <ul>
+        <For each={Object.entries(state.e?.players || {})}>
+          {([patp, player]) => (
+            <li>
+              {patp}: {getDateString(player.wake)}
+            </li>
+          )}
+        </For>
+      </ul>
       <p>
         Player Pos: {pos().x}x{pos().y}
       </p>

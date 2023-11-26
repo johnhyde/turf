@@ -318,7 +318,7 @@
       =/  =stirred:pond
         ?~  wave.msg
           [%rock rock.msg]
-        [%wave id:(foam foam.u.wave.msg) grits.u.wave.msg]
+        [%wave (foam foam.u.wave.msg) grits.u.wave.msg]
       =/  give-paths=(list path)  [this-turf-path]~
       =?  give-paths  =((ctid:hc) `this-turf-id)
         :: ???
@@ -673,15 +673,16 @@
   ^-  (quip card _state)
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id.stir)
+  =/  =foam  `foam`[*cur-foam-v id.stir src `now.bowl]
   =^  [ssio-cards=(list card) =roars:pond =grits:pond]  pub-pond
     %-  (filter:de-pond roars:pond)
     :*  ppath
-        `foam`[%1 id.stir src `now.bowl]
+        foam
         goals.stir
         filter-pond-goal
     ==
   =/  cards=(list card)
-    =/  =stirred:pond  [%wave id.stir grits]
+    =/  =stirred:pond  [%wave foam grits]
     [%give %fact [(turf-id-to-path turf-id.stir)]~ %pond-stirred !>(stirred)]~
   =^  roar-cards=(list card)  state
     %+  roll  roars

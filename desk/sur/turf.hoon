@@ -185,6 +185,7 @@
     ^-  foam-1
     [%1 id src ~]:f
   --
++$  cur-foam-v  %1
 +$  foam-all
   $^  foam-0
   $%  foam-0

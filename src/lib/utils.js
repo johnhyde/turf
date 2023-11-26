@@ -1,6 +1,6 @@
 import { decToUd, udToDec, unixToDa } from '@urbit/api';
 import { hex2patp, patp2hex, patp } from 'urbit-ob';
-import { createRenderEffect } from 'solid-js';
+import { createRenderEffect, createSignal } from 'solid-js';
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -236,6 +236,23 @@ export function getDateString(date, short = true) {
   }
 }
 
+export function getTimeString(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d`;
+  } else if (hours > 0) {
+    return `${hours}h${minutes}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
 
 /** Random global functions
  *  @namespace Random */
@@ -342,6 +359,13 @@ export function input(el, callbacks) {
     if (onBlur) onBlur(e);
   });
 }
+
+export function createNow(interval) {
+  const [now, $now] = createSignal(Date.now());
+  setInterval(() => $now(Date.now()), interval);
+  return now;
+}
+export const now5 = createNow(5000);
 
 export function isTextInputFocused() {
   return document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT';

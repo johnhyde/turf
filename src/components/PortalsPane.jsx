@@ -1,7 +1,7 @@
 import { createSignal, createMemo, createSelector, onMount, onCleanup } from 'solid-js';
 import { createStore } from "solid-js/store";
 import { useState } from 'stores/state.jsx';
-import { bind, input, autofocus, normalizeTermIsh, uuidv4 } from 'lib/utils';
+import { bind, input, autofocus, createNow, now5, normalizeTermIsh, uuidv4 } from 'lib/utils';
 import SmallButton from '@/SmallButton';
 import Heading from '@/Heading';
 import Modal from '@/Modal';
@@ -15,14 +15,13 @@ export default function PortalsPane() {
   const state = useState();
   const placingPortal = createSelector(() => state.huskToPlace?.portal);
   const [inviteDialog, $inviteDialog] = createSignal(false);
-  const [now, $now] = createSignal(Date.now());
-  setInterval(() => $now(Date.now()), 5000);
+  const now = createNow(5000);
 
   const activeInvites = createMemo(() => {
     if (!state.e) return [];
     return Object.entries(state.e.invites || [])
       .map(([id, invite]) => ({ ...invite, id }))
-      .filter((invite) => invite.till > now());
+      .filter((invite) => invite.till > now5());
   });
 
   function goHome() {
