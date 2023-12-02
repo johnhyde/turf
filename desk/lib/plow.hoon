@@ -1207,7 +1207,8 @@
       ^-  goal:mist
       %.  jon
       %+  goal  goal:mist
-      :~  set-color+ni
+      :~  set-ctid+pa-turf-id-soft
+          set-color+ni
           add-thing-from-closet+pa
           del-thing+ni
           accept-port-offer+pa-turf-id

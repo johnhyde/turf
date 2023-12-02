@@ -50,7 +50,7 @@ function StateSummary() {
         <For each={Object.entries(state.e?.players || {})}>
           {([patp, player]) => (
             <li>
-              {patp}: {getDateString(player.wake)}
+              {patp}: {player.wake ? getDateString(player.wake) : 'n/a'}
             </li>
           )}
         </For>

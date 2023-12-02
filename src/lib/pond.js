@@ -38,6 +38,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this.$isNew = $isNew;
     options = {
       ...options,
+      onErr: () =>  window.dispatchEvent(new PondEvent('err', null, id)),
       onNew: () => $isNew(true),
       onNewGrits: (grits) => {
         grits.forEach((grit) => window.dispatchEvent(new PondEvent('grit', grit, id)));
@@ -402,7 +403,7 @@ export function _washTurf(grit) {
 
 export class PondEvent extends Event {
   constructor(name, event, id, options = {}) {
-    super(`pond-${name}-` + event.type, options);
+    super(`pond-${name}` + (event?.type ? '-' + event.type : ''), options);
     this[name] = event;
     this.turfId = id;
   }
@@ -616,7 +617,7 @@ const js = {
     chat.at = new Date(chat.at);
   },
   player(player) {
-    player.wake = new Date(player.wake);
+    player.wake = player.wake ? new Date(player.wake) : null;
   },
   deepVec2(obj) {
     for (const key in obj) {

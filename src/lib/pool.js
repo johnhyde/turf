@@ -94,12 +94,13 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       batch(() => {
         if (!res) {
           // TODO: cancel sub or something
+          options.onErr?.();
         } else if (res.hasOwnProperty('rock')) {
           const newCore = hydrate(res.rock.core);
           console.log(`new core with id ${newCore?.id} from rock`, newCore);
           console.log(`stir ids for ${newCore?.id} rock:`, res.rock.stirIds);
           if (!res.rock.stirIds[our]) {
-            if (options.onNew) options.onNew();
+            options.onNew?.();
           }
           this.updateReal(reconcile(newCore, { merge: true }));
           this.updatePulses(false, res.rock.stirIds[our]); // always resets ether because grit is undefined
@@ -113,7 +114,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           
           if (!noop) {
             wash(this.updateReal.bind(this), grits, src, wen);
-            if (options.onNewGrits) options.onNewGrits(grits);
+            options.onNewGrits?.(grits);
           }
           if (!noop && noPulses && noCharges) {
             wash(this.updateFake.bind(this), grits, src, wen);

@@ -71,6 +71,10 @@ export class Mist { // we use a class so we can put it inside a store without ge
     });
   }
 
+  enterVoid() {
+    this.sendWave('set-ctid', null);
+  }
+
   acceptInvite(turfId, inviteId) {
     this.sendWave('export-self', {
       for: turfId,

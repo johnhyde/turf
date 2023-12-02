@@ -245,7 +245,7 @@ export function getTimeString(ms) {
   if (days > 0) {
     return `${days}d`;
   } else if (hours > 0) {
-    return `${hours}h${minutes}m`;
+    return `${hours}h${minutes % 60}m`;
   } else if (minutes > 0) {
     return `${minutes}m`;
   } else {

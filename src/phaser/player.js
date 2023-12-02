@@ -36,7 +36,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.add(this.avatar);
     const [walking, $walking] = createSignal(false);
     this.walking = walking, this.$walking = $walking;
-    this.napping = createMemo(() => !this.walking() && (now5() - this.p.wake) > 5*60*1000);
+    this.napping = createMemo(() => !this.walking() && this.p?.wake && (now5() - this.p.wake) > 5*60*1000);
     // this.napping = createMemo(() => !this.walking() && (now5() - this.p.wake) > 5*1000);
     const [apparentDir, $apparentDir] = createSignal(null);
     this.apparentDir = apparentDir, this.$apparentDir = $apparentDir;
@@ -422,8 +422,12 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   setZzz() {
-    const str = getTimeString(Math.max(0, now5() - this.p.wake));
-    this.zzz.setText(`(zzz: ${str})`);
+    if (this.p?.wake) {
+      const str = getTimeString(Math.max(0, now5() - this.p.wake));
+      this.zzz.setText(`(zzz: ${str})`);
+    } else {
+      this.zzz.setText('');
+    }
     this.centerText(this.zzz);
   }
 

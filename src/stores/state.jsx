@@ -232,6 +232,10 @@ export function getState() {
         }
       }
     },
+    clearTurf(id) {
+      state.ponds[id]?.destroy?.();
+      $state('ponds', id, undefined);
+    },
     async resetConnection() {
       api.api.reset();
       for (const turfId in state.ponds) {
@@ -579,6 +583,10 @@ export function getState() {
         at,
       });
     }, 200);
+  });
+  window.addEventListener('pond-err', ({ _, turfId }) => {
+    _state.clearTurf(turfId);
+    _state.mist.enterVoid();
   });
 
   window.addEventListener('beforeunload', (e) => {

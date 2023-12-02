@@ -407,11 +407,13 @@
     =^  cards-1  sub-pond
       ?:  =(our.bowl ship.id)  `sub-pond
       (surf:da-pond sub-key)
+    :: ~&  ['sub cards' cards-1]
     =^  cards-2  state
       ?^  cards-1  `state
       ::  no sub cards, we are already subbed and not stale
       ::  tell frontend what we have
       (give-pond-rock:hc id %.y)
+    :: ~&  ['rock cards' cards-2]
     =/  cards-3  [(dont-logout:hc)]~
     :(weld cards-1 cards-2 cards-3)^this
       [%mist *]
