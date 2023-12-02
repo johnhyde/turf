@@ -208,7 +208,7 @@
     cards^this
   ::
       %secret-turf
-    =^  cards  pub-pond  (public:du-pond [dppath]~)
+    =^  cards  pub-pond  (secret:du-pond [dppath]~)
     cards^this
   ::
       %open-turf

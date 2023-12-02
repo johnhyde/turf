@@ -177,7 +177,7 @@ function createShade(shade, id, turf) {
     '--webkit-font-smoothing': 'none' }});
       textObj.x = sprite.x;
       textObj.y = sprite.y;
-      textObj.setDepth(sprite.depth);
+      // textObj.setDepth(sprite.depth);
       textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 + sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
       scene.add.existing(textObj);
     } else {
