@@ -17,10 +17,6 @@
     "_desk3": "bin/install.sh $TURF_DESK3",
     "_desks": "bin/install.sh $TURF_DESK & bin/install.sh $TURF_DESK2",
     "_deskss": "bin/install.sh $TURF_DESK & bin/install.sh $TURF_DESK2 & bin/install.sh $TURF_DESK3",
-    "_urbit": "bash -c $TURF_DESK/../.run #This (and _urbit2) invokes bash solely because the user may have set $TURF_DESK to something including ~, which bash will expand as $HOME but some other shells may not.",
-    "urbit": "dotenv -c local npm run _urbit",
-    "_urbit2": "bash -c $TURF_DESK2/../.run",
-    "urbit2": "dotenv -c local npm run _urbit2",
     "_desk-watch": "bin/install.sh -w $TURF_DESK",
     "glob": "dotenv -c local npm run _glob",
     "desk": "dotenv -c local npm run _desk",
@@ -33,7 +29,11 @@
     "_get-glob": "bin/get_glob.sh $GLOBBER_DESK",
     "get-glob": "dotenv -c local npm run _get-glob",
     "_commit": "bin/commit.sh $TURF_DESK",
-    "commit": "dotenv -c local npm run _commit"
+    "commit": "dotenv -c local npm run _commit",
+    "_urbit": "bash -c $TURF_DESK/../.run #This (and _urbit2) invokes bash solely because the user may have set $TURF_DESK to something including ~, which bash will expand as $HOME but some other shells may not.",
+    "_urbit2": "bash -c $TURF_DESK2/../.run",
+    "urbit": "dotenv -c local npm run _urbit",
+    "urbit2": "dotenv -c local npm run _urbit2"
   },
   "repository": {
     "type": "git",
