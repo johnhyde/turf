@@ -33,6 +33,7 @@ lensa() {
 
 sync() {
     rsync -r --copy-links --exclude-from=$EXCLUDE_FILE "${cdir}"/../base-desk/* $DESK_DIR/
+    rsync -r --copy-links --exclude-from=$EXCLUDE_FILE "${cdir}"/../call-desk/* $DESK_DIR/
     rsync -r --copy-links --exclude-from=$EXCLUDE_FILE "${cdir}"/../desk/* $DESK_DIR/
     if [ "$GLOBBER" ]; then
         rsync -r --copy-links "${cdir}"/../dist/* $DESK_DIR/turf

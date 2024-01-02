@@ -1,5 +1,6 @@
 import { createSignal, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
+import { usePhone } from 'stores/phone.jsx';
 import * as api from 'lib/api.js';
 import { stripPathPrefix, autofocus } from 'lib/utils';
 import Modal from '@/Modal';
@@ -7,6 +8,7 @@ import MediumButton from './MediumButton';
 
 export default function Modals() {
   const state = useState();
+  const phone = usePhone();
   
   function optIn() {
     state.p.markNotNew();
@@ -149,6 +151,34 @@ export default function Modals() {
             </MediumButton>
           </div>
         </Modal>
+      </Show>
+      <Show when={phone.rings[0]} keyed>
+
+      {(ring) => {
+        function answer() {
+          phone.answer(ring);
+        }
+        function reject() {
+          phone.reject(ring);
+        }
+        return (
+          <Modal class="bg-teal-700 text-slate-100 w-96">
+            <p class="text-xl mb-4 text-center">
+              Incoming call from:
+            </p>
+            <p class="text-center text-lg">
+              <span class="font-bold">{'~' + ring.peer}</span>?
+            </p>
+            <div class="flex w-full justify-center mt-4 space-x-4">
+              <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={answer}>
+                Answer
+              </button>
+              <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={reject}>
+                Reject
+              </button>
+            </div>
+          </Modal>);
+        }}
       </Show>
     </>
   );

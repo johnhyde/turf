@@ -2,6 +2,7 @@ import { useState } from 'stores/state.jsx';
 import { connection } from 'lib/api';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
+import CallInfo from '@/CallInfo';
 
 export default function Overlay() {
   const state = useState();
@@ -37,6 +38,7 @@ export default function Overlay() {
           </Heading>
         </Show>
         <div class="flex-grow text-left">
+          <CallInfo/>
           {/* <Heading>
             {connection()}
           </Heading> */}

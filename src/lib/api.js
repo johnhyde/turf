@@ -1,6 +1,8 @@
 import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
+import { UrbitRTCApp } from 'rtcswitchboard';
 import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
+import { normalizeIdAndDesig } from './utils';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -29,7 +31,7 @@ const ctx = canvas.getContext('2d');
 // }
 let connection, $connection;
 
-let api;
+let api, rtc;
 
 export function initApi() {
   const [con, $con] = createSignal('initial');
@@ -44,6 +46,7 @@ export function initApi() {
   // api.verbose = import.meta.env.DEV;
   api.verbose = true;
   window.api = api;
+  initRTC();
 }
 // api.onOpen = () => $connection('open');
 // api.onRetry = () => $connection('reconnecting');
@@ -184,4 +187,9 @@ export async function sendDM(patp, msg) {
   });
 }
 
-export { api, connection };
+
+export function initRTC() {
+  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers: [] }, api);
+}
+
+export { api, rtc, connection };
