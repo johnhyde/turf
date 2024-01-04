@@ -1,3 +1,4 @@
+/+  *util
 |%
 +$  visibility     ?(%public %private)
 +$  dest           [=ship =c-id]
@@ -26,10 +27,10 @@
       persistent=?  :: should this call disappear when unoccupied?
       confirm=?  :: do new peers need to be manually confirmed after they pass access checks?
   ==
-+$  ext-call
-  $:  host=ship
-      call=(unit call)
-  ==
+:: +$  ext-call
+::   $:  host=ship
+::       call=(unit call)
+::   ==
 +$  update  [%0 waves=waves]
 +$  waves  (list wave)
 +$  wave
@@ -54,7 +55,11 @@
       [%set-persistent persistent=?]
       [%set-confirm confirm=?]
   ==
-+$  action  [%0 =dest stirs=stirs]
++$  client-update
+  $:  %0
+      [%you-are =uuid]
+  ==
++$  action  [%0 =dest =stirs]
 +$  stirs  (list stir)
 +$  stir
   $%  any-stir
@@ -65,20 +70,22 @@
   $%  [%apply =uuids]  :: do access checks. if confirm, add-applicant; else add-peer
       [%add-client =uuid]  :: only adds clients to existing peers or applicants
       [%del-client =uuid]  :: only adds clients to existing peers or applicants
-      [%leave]
+      [%leave ~]
   ==
 :: +$  peer-stir
 ::   $%  []
 +$  admin-stir
   $%  [%accept-applicant =ship]  :: del-applicant and add-peer
       [%ban =ship]  :: del-peer and revoke-access
-      [%waves waves=waves]  :: only admins can do this
-      [%wave wave=wave]  :: only admins can do this
+      [%waves =waves]  :: only admins can do this
+      [%wave =wave]  :: only admins can do this
   ==
+++  admin-stir-tags  (tags admin-stir)
 +$  roars  (list roar)
 +$  roar
   $%  [%admit =ship]
       [%eject =ship]  :: either a rejection or a kick/ban
+      [%wave =wave]
       :: [%quit host=(unit ship)]  :: stop hosting and optionally name a successor
   ==
 +$  echo

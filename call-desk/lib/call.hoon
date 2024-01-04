@@ -1,9 +1,17 @@
 /-  *call
 |%
+++  make-action
+  |=  [=dest =stirs]
+  ^-  action
+  [%0 dest stirs]
 ++  make-update
-  |=  [=waves]
+  |=  =waves
   ^-  update
   [%0 waves]
+++  make-uuid
+  |=  [now=@da eny=@uvJ]
+  ^-  uuid
+  (scot %uv (shaw now 64 eny))
 :: ++  update-call
 ::   |=  [kol=call up=update]
 ::   ^-  call
@@ -83,21 +91,11 @@
 ++  hear-roar
   |=  [kol=call wav=wave]
   ^-  (list roar)
+  :-  [%wave wav]
   ?+    -.wav  ~
       %add-peer
     [%admit ship.wav]~
       ?(%del-peer %del-applicant)
     [%eject ship.wav]~
   ==
-:: ++  stir-call
-::   |=  [kol=call stir=stir]
-++  tags
-  |*  a=mold
-  ^-  mold
-  =/  b  |=(=a ?>(?=(^ a) -.a))
-  |=  c=*
-  ^+  *b
-  ?.  ?=(_*b c)
-    *b
-  c
 --
