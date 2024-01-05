@@ -17,24 +17,24 @@
   ==
 :: +$  perms  (map ship (set perm))
 :: +$  ?(%confirm %kick %ban %invite %grant)  :: should this be simpler? admin y/n?
-+$  call
++$  crew
   $:  %0
       peers=clients
       applicants=clients  :: ships who have asked to join
       admins=ships
       =visibility
       =access
-      persistent=?  :: should this call disappear when unoccupied?
+      persistent=?  :: should this crew disappear when unoccupied?
       confirm=?  :: do new peers need to be manually confirmed after they pass access checks?
   ==
-:: +$  ext-call
+:: +$  ext-crew
 ::   $:  host=ship
-::       call=(unit call)
+::       crew=(unit crew)
 ::   ==
 +$  update  [%0 waves=waves]
 +$  waves  (list wave)
 +$  wave
-  $%  [%set-call =call]
+  $%  [%set-crew =crew]
       [%add-peer =ship =uuids]
       [%del-peer =ship]
       [%add-peer-client =ship =uuid]
@@ -93,7 +93,7 @@
       [%eject ~]  :: either a rejection or a kick/ban
       [%quit host=(unit ship)]  :: stop hosting and optionally name a successor
   ==
-+$  call-poke
++$  shell
   $:  =c-id
       =echo
   ==

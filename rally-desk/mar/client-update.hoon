@@ -1,6 +1,6 @@
-/-  call
+/-  rally
 :: /+  
-|_  cup=client-update:call
+|_  cup=client-update:rally
   ++  grow
     |%
     ++  noun  cup
@@ -10,7 +10,7 @@
     --
   ++  grab
     |%
-    ++  noun  client-update:call
+    ++  noun  client-update:rally
     --
   ++  grad  %noun
   --

@@ -1,6 +1,6 @@
-/-  call
+/-  rally
 :: /+  
-|_  up=update:call
+|_  up=update:rally
   ++  grow
     |%
     ++  noun  up
@@ -10,7 +10,7 @@
     --
   ++  grab
     |%
-    ++  noun  update:call
+    ++  noun  update:rally
     --
   ++  grad  %noun
   --
