@@ -4,10 +4,14 @@
   |=  [=dest =stirs]
   ^-  action
   [%0 dest stirs]
-++  make-update
+++  make-waves-update
   |=  =waves
   ^-  update
-  [%0 waves]
+  [%0 %waves waves]
+++  make-quit-update
+  |=  host=(unit ship)
+  ^-  update
+  [%0 %quit host]
 ++  make-uuid
   |=  [now=@da eny=@uvJ]
   ^-  uuid

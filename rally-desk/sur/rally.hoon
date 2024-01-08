@@ -31,7 +31,11 @@
 ::   $:  host=ship
 ::       crew=(unit crew)
 ::   ==
-+$  update  [%0 waves=waves]
++$  update
+  $:  %0
+      $%  [%waves waves=waves]
+          [%quit host=(unit ship)]   :: stop hosting and optionally name a successor
+  ==  ==
 +$  waves  (list wave)
 +$  wave
   $%  [%set-crew =crew]
@@ -91,7 +95,6 @@
 +$  echo
   $%  [%admit ~]
       [%eject ~]  :: either a rejection or a kick/ban
-      [%quit host=(unit ship)]  :: stop hosting and optionally name a successor
   ==
 +$  shell
   $:  =c-id
