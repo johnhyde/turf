@@ -68,6 +68,7 @@
       %action
     =/  act  !<(action vase)
     ?:  =(ship.dest.act our.bowl)
+      ~&  'it me, the action poke'
       =^  cards  state  (apply-action:hc c-id.dest.act stirs.act src.bowl)
       cards^this
     ?>  =(src our):bowl
@@ -75,6 +76,7 @@
     [(action-card:hc act)]~
       %shell
     =/  [=c-id =echo]  !<(shell vase)
+    ?:  =(src our):bowl  `this
     =/  =dest  [src.bowl c-id]
     =/  path  (update-path:hc dest)
     ?-    -.echo
@@ -82,7 +84,7 @@
       ?>  (~(has by ext-crews) dest)
       :_  this
       [%pass path %agent [ship.dest dap.bowl] %watch path]~
-        ?(%eject %quit)  :: todo: on quit, eject and apply to new host
+        %eject
       =.  ext-crews  (~(del by ext-crews) dest)
       :_  this
       [%give %kick [path]~ ~]~
@@ -90,7 +92,17 @@
       %enter
     ?>  =(src our):bowl
     =+  !<([=dest =uuid] vase)
-    `this
+    =/  =stir  [%add-client uuid]
+    ?:  =(ship.dest our.bowl)
+      ?~  (~(gut by our-crews) c-id.dest ~)  !!
+      =?  stir  =(src our):bowl  [%wave %add-peer our.bowl [uuid ~ ~]]
+      =^  cards  state  (apply-action:hc c-id.dest [stir]~ src.bowl)
+      cards^this
+    ?>  =(src our):bowl
+    =/  cards  (send-action-stir:hc dest stir)
+    =?  ext-crews  !(~(has by ext-crews) dest)
+      (~(put by ext-crews) dest ~)
+    cards^this
       %leave
     ?>  =(src our):bowl
     =+  !<(=dest vase)
@@ -101,6 +113,11 @@
     =/  path  (update-path:hc dest)
     :_  this
     [%pass path %agent [ship.dest dap.bowl] %watch path]~
+      %unsub
+    =/  =dest  !<(dest vase)
+    =/  path  (update-path:hc dest)
+    :_  this
+    [%pass path %agent [ship.dest dap.bowl] %leave ~]~
       %give
     =/  =c-id  !<(c-id vase)
     =/  =update  (make-waves-update [%set-crew *crew]~)
@@ -118,39 +135,27 @@
   :: ?+  path  (on-watch:def path)
   ?+  path  `this
       [%update v=@ host=@ id=*]
-    =/  =dest  [(slav %p &4.path) |4.path]
+    ~&  "matched update sub handler"
+    =/  =dest  [(slav %p &3.path) |3.path]
     =/  uuid  (make-uuid [now eny]:bowl)
     =/  cup=client-update  [%0 [%you-are uuid]]
     =/  up-card=card  [%give %fact ~ %client-update !>(cup)]
     ?:  =(ship.dest our.bowl)
       =/  crew  (~(gut by our-crews) c-id.dest ~)
-      ?~  crew  !!
+      ?~  crew
+        ?.  =(src our):bowl  !!
+        ~[up-card]^this
       =/  init-card  (init-card:hc crew)
+      ?:  =(src our):bowl
+        [up-card init-card ~]^this
       =/  is-peer  (~(has by peers.crew) src.bowl)
-      =/  is-applicant  (~(has by applicants.crew) src.bowl)
-      ?.  =(src our):bowl
-        ?.  is-peer  !!
-        ~[init-card]^this
-      =/  =stir
-        ?:  |(is-peer is-applicant)
-          [%add-client uuid]
-        [%apply [uuid ~ ~]]
-      =^  cards  state  (apply-action:hc c-id.dest [stir]~ src.bowl)
-      [up-card init-card cards]^this
+      ?.  is-peer  !!
+      ~[init-card]^this
     ?>  =(src our):bowl
-    ?.  (~(has by ext-crews) dest)
-      =.  ext-crews  (~(put by ext-crews) dest ~)
-      :_  this
-      :-  up-card
-      (send-action-apply:hc dest uuid)
-    =/  cards=(list card)
-      :-  up-card
-      (send-action-stir:hc dest [%add-client uuid])
-    =/  ucrew  (~(got by ext-crews) dest)
+    =/  ucrew  (~(gut by ext-crews) dest ~)
     ?~  ucrew
-      cards^this
-    :_  this
-    [(init-card:hc u.ucrew) cards]
+      ~[up-card]^this
+    [up-card (init-card:hc u.ucrew) ~]^this
   ==
 ++  on-leave
   |=  left=path
@@ -177,14 +182,15 @@
   ::     u.p.sign
   ?+    wire  (on-agent:def wire sign)
       [%update v=@ host=@ id=*]
-    =/  =dest  [(slav %p &4.wire) |4.wire]
+    =/  =dest  [(slav %p &3.wire) |3.wire]
     ~&  ["got crew update" -.sign wire]
-    ?+    -.sign  `this
+    ?+    -.sign  (on-agent:def wire sign)
         %fact
       ?>  ?=(%update -.cage.sign)
       =/  =update  !<(update +.cage.sign)
       =^  cards  state  (apply-update:hc dest update)
-      `this
+      ~&  ['new kru after' (~(get by ext-crews) dest)]
+      cards^this
     ==
     :: 
       [~ %test ~]
@@ -203,12 +209,6 @@
   |=  [=dest =stir] 
   ^-  (list card)
   [(action-card (make-action dest [stir]~))]~
-++  send-action-apply
-  |=  [=dest id=uuid]
-  ^-  (list card)
-  =/  =stir
-    [%apply (silt `(list uuid)`[id]~)]
-  (send-action-stir dest stir)
 ++  apply-action
   |=  [=c-id =stirs actor=ship]
   ^-  (quip card _state)
@@ -217,24 +217,27 @@
     ?^  kru  kru
     ?>  =(our.bowl actor)
     *crew
+  ~&  ['we have our kru' kru]
   =|  cards=(list card)
   |-  ^-  (quip card _state)
   ?~  stirs  cards^state
   =^  roars  kru  (stir-top kru i.stirs actor)
+  ~&  ['new kru after' -.i.stirs kru]
   =/  new-cards  (roars-to-cards c-id roars)
   =.  our-crews  (~(put by our-crews) c-id kru)
   $(cards (weld cards new-cards), state state, stirs t.stirs)  :: do we need to "state state"?
 ++  stir-top
   |=  [kru=crew =stir actor=ship]
   ^-  (quip roar crew)
-  ?:  &(?=(admin-stir-tags -.stir) !(~(has in admins.kru) actor))
+  ?:  &(?=(admin-stir-tags -.stir) !(~(has in admins.kru) actor) !=(our.bowl actor))
+    ~&  "{<actor>} is not an admin may not apply a stir: {<-.stir>}"
     `kru
   (stir-crew kru stir actor)
 ++  stir-crew
   |=  [kru=crew =stir actor=ship]
   ^-  (quip roar crew)
-  =/  =waves  (stir-to-waves kru stir actor)
-  =^  roars  kru  (update-crew-loud kru waves)
+  =/  [=roars =waves]  (stir-to-waves kru stir actor)
+  =.  kru  (update-crew kru waves)
   roars^kru
 ++  apply-update
   |=  [=dest up=update]

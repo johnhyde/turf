@@ -18,9 +18,10 @@
 :: +$  perms  (map ship (set perm))
 :: +$  ?(%confirm %kick %ban %invite %grant)  :: should this be simpler? admin y/n?
 +$  crew
+  $+  crew
   $:  %0
       peers=clients
-      applicants=clients  :: ships who have asked to join
+      noobs=clients  :: ships who have asked to join
       admins=ships
       =visibility
       =access
@@ -43,10 +44,10 @@
       [%del-peer =ship]
       [%add-peer-client =ship =uuid]
       [%del-peer-client =ship =uuid]
-      [%add-applicant =ship =uuids]
-      [%del-applicant =ship]
-      [%add-applicant-client =ship =uuid]
-      [%del-applicant-client =ship =uuid]
+      [%add-noob =ship =uuids]
+      [%del-noob =ship]
+      [%add-noob-client =ship =uuid]
+      [%del-noob-client =ship =uuid]
       ::
       [%set-visibility =visibility]
       [%set-access-list list=access-list]
@@ -71,15 +72,14 @@
       admin-stir
   ==
 +$  any-stir
-  $%  [%apply =uuids]  :: do access checks. if confirm, add-applicant; else add-peer
-      [%add-client =uuid]  :: only adds clients to existing peers or applicants
-      [%del-client =uuid]  :: only adds clients to existing peers or applicants
+  $%  [%add-client =uuid]  :: only adds clients to existing peers or noobs
+      [%del-client =uuid]  :: only adds clients to existing peers or noobs
       [%leave ~]
   ==
 :: +$  peer-stir
 ::   $%  []
 +$  admin-stir
-  $%  [%accept-applicant =ship]  :: del-applicant and add-peer
+  $%  [%accept-noob =ship]  :: del-noob and add-peer
       [%ban =ship]  :: del-peer and revoke-access
       [%waves =waves]  :: only admins can do this
       [%wave =wave]  :: only admins can do this

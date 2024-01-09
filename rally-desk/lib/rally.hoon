@@ -19,53 +19,59 @@
 ::
 ++  stir-to-waves
   |=  [kru=crew =stir actor=ship]
-  ^-  waves
+  ^-  [roars waves]
   ?-    -.stir
-      %apply
-    =/  list-access
-      ?!  .=
-        ?=(%black kind.list.access.kru)
-      (~(has in ships.list.access.kru) actor)
-    :: todo: check the filter/thread
-    ?.  list-access  ~
-    ?:  confirm.kru
-      [%add-applicant actor uuids.stir]~
-    [%add-peer actor uuids.stir]~
     ::
       %add-client
     ?:  (~(has by peers.kru) actor)
-      [%add-peer-client actor uuid.stir]~
-    ?:  (~(has by applicants.kru) actor)
-      [%add-applicant-client actor uuid.stir]~
-    ~
+      `[%add-peer-client actor uuid.stir]~
+    ?:  (~(has by noobs.kru) actor)
+      `[%add-noob-client actor uuid.stir]~
+    =/  list-access
+      .=  ?=(%white kind.list.access.kru)
+      (~(has in ships.list.access.kru) actor)
+    :: todo: check the filter/thread
+    ?.  list-access  `~
+    ?:  confirm.kru
+      `[%add-noob actor `uuids`[uuid.stir ~ ~]]~
+    :-  [%admit actor]~
+    [%add-peer actor `uuids`[uuid.stir ~ ~]]~
     ::
       %del-client
+    :-  ~
     ?:  (~(has by peers.kru) actor)
       [%del-peer-client actor uuid.stir]~
-    ?:  (~(has by applicants.kru) actor)
-      [%del-applicant-client actor uuid.stir]~
+    ?:  (~(has by noobs.kru) actor)
+      [%del-noob-client actor uuid.stir]~
     ~
     ::
       %leave
+    :-  [%eject actor]~  :: todo: remove bc redundant?
     :~  [%del-peer actor]
-        [%del-applicant actor]
+        [%del-noob actor]
     ==
     ::
     ::
-      %accept-applicant
-    =/  app  (~(get by applicants.kru) ship.stir)
-    ?~  app  ~
-    :~  [%del-applicant ship.stir]
+      %accept-noob
+    =/  app  (~(get by noobs.kru) ship.stir)
+    ?~  app  `~
+    :-  [%admit ship.stir]~
+    :~  [%del-noob ship.stir]
         [%add-peer ship.stir u.app]
     ==
       %ban
+    :-  [%eject ship.stir]~
     :~  [%revoke-access ship.stir]
         [%del-peer ship.stir]
-        [%del-applicant ship.stir]
+        [%del-noob ship.stir]
     ==
       %waves
+    :-  %+  roll  waves.stir
+        |=  [=wave =roars]
+        (weld roars (hear-roar kru wave))
     waves.stir
       %wave
+    :-  (hear-roar kru wave.stir)
     [wave.stir ~]
   ==
 ::
@@ -86,6 +92,7 @@
 ++  wash-crew
   |=  [kru=crew wav=wave]
   ^-  crew
+  ~&  ['got wave!' wav]
   ?-    -.wav
       %set-crew
     crew.wav
@@ -99,16 +106,16 @@
     kru(peers (~(put ju peers.kru) ship.wav uuid.wav))
       %del-peer-client
     kru(peers (~(del ju peers.kru) ship.wav uuid.wav))
-      %add-applicant
-    =/  uuids  (~(gut by applicants.kru) ship.wav ~)
+      %add-noob
+    =/  uuids  (~(gut by noobs.kru) ship.wav ~)
     =.  uuids  (~(uni in uuids) uuids.wav)
-    kru(applicants (~(put by applicants.kru) ship.wav uuids))
-      %del-applicant
-    kru(applicants (~(del by applicants.kru) ship.wav))
-      %add-applicant-client
-    kru(applicants (~(put ju applicants.kru) ship.wav uuid.wav))
-      %del-applicant-client
-    kru(applicants (~(del ju applicants.kru) ship.wav uuid.wav))
+    kru(noobs (~(put by noobs.kru) ship.wav uuids))
+      %del-noob
+    kru(noobs (~(del by noobs.kru) ship.wav))
+      %add-noob-client
+    kru(noobs (~(put ju noobs.kru) ship.wav uuid.wav))
+      %del-noob-client
+    kru(noobs (~(del ju noobs.kru) ship.wav uuid.wav))
     ::
       %set-visibility
     kru(visibility visibility.wav)
@@ -161,7 +168,7 @@
   ?+    -.wav  ~
       %add-peer
     [%admit ship.wav]~
-      ?(%del-peer %del-applicant)
+      ?(%del-peer %del-noob)
     [%eject ship.wav]~
   ==
 --
