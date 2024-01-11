@@ -64,7 +64,7 @@
     ?.  (~(has by our-crews) c-id)  `this
     =.  our-crews  (~(del by our-crews) c-id)
     :_  this
-    [(quit-card:hc [our.bowl c-id] host)]~
+    (quit-cards:hc c-id host)
       %action
     =/  act  !<(action vase)
     ?:  =(ship.dest.act our.bowl)
@@ -94,8 +94,8 @@
     =+  !<([=dest =uuid] vase)
     =/  =stir  [%add-client uuid]
     ?:  =(ship.dest our.bowl)
-      ?~  (~(gut by our-crews) c-id.dest ~)  !!
-      =?  stir  =(src our):bowl  [%wave %add-peer our.bowl [uuid ~ ~]]
+      ?>  (~(has by our-crews) c-id.dest)
+      =?  stir  =(src our):bowl  [%wave %add-peer our.bowl [uuid ~ ~]]  :: bypass access list
       =^  cards  state  (apply-action:hc c-id.dest [stir]~ src.bowl)
       cards^this
     ?>  =(src our):bowl
@@ -103,10 +103,15 @@
     =?  ext-crews  !(~(has by ext-crews) dest)
       (~(put by ext-crews) dest ~)
     cards^this
-      %leave
+      %leave  :: only use %leave over %action if host is unresponsive
     ?>  =(src our):bowl
-    =+  !<(=dest vase)
-    `this
+    =+  !<([=dest] vase)
+    ?>  !=(ship.dest our.bowl)
+    ?>  =(src our):bowl
+    =/  =stir  [%leave ~]
+    =/  cards  (send-action-stir:hc dest stir)
+    =.  ext-crews  (~(del by ext-crews) dest)
+    cards^this
       ::
       %sub
     =/  =dest  !<(dest vase)
@@ -230,8 +235,8 @@
   |=  [kru=crew =stir actor=ship]
   ^-  (quip roar crew)
   ?:  &(?=(admin-stir-tags -.stir) !(~(has in admins.kru) actor) !=(our.bowl actor))
-    ~&  "{<actor>} is not an admin may not apply a stir: {<-.stir>}"
-    `kru
+    ~|  "{<actor>} is not an admin may not apply stir: {<-.stir>}"
+    !!
   (stir-crew kru stir actor)
 ++  stir-crew
   |=  [kru=crew =stir actor=ship]
@@ -285,13 +290,26 @@
     [(update-card [our.bowl c-id] [wave.roar]~)]~
   ==
 ::
-++  quit-card
-  |=  [=dest host=(unit ship)]
-  ^-  card
+++  quit-cards
+  |=  [=c-id host=(unit ship)]
+  ^-  (list card)
+  =/  =dest  [our.bowl c-id]
   =/  =update  (make-quit-update host)
-  :*  %give  %fact
-      ~[(update-path dest)]
-      %update  !>(update)
+  =/  =path  (update-path dest)
+  =/  noobs=(list ship)
+    =/  kru  (~(gut by our-crews) c-id ~)
+    ?~  kru  ~
+    ~(tap in ~(key by noobs.kru))
+  :*  :*  %give  %fact
+          ~[path]
+          %update  !>(update)
+      ==
+      ::
+      [%give %kick ~[path] ~]
+      ::
+      %+  turn  noobs
+      |=  noob=ship
+      (shell-card noob [c-id [%eject ~]])
   ==
 ++  shell-card
   |=  [=ship =shell]

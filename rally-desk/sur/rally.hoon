@@ -1,5 +1,6 @@
 /+  *util
 |%
++$  flug           $~(%.n ?)  :: flag which is false by default
 +$  visibility     ?(%public %private)
 +$  dest           [=ship =c-id]
 +$  c-id           path
@@ -25,8 +26,8 @@
       admins=ships
       =visibility
       =access
-      persistent=?  :: should this crew disappear when unoccupied?
-      confirm=?  :: do new peers need to be manually confirmed after they pass access checks?
+      persistent=flug  :: should this crew not disappear when unoccupied?
+      confirm=flug  :: do new peers need to be manually confirmed after they pass access checks?
   ==
 :: +$  ext-crew
 ::   $:  host=ship

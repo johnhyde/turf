@@ -20,6 +20,8 @@
 ++  stir-to-waves
   |=  [kru=crew =stir actor=ship]
   ^-  [roars waves]
+  =-  [(weld (turn waves (lead %wave)) roars) waves]
+  ^-  [=roars =waves]
   ?-    -.stir
     ::
       %add-client
@@ -31,19 +33,24 @@
       .=  ?=(%white kind.list.access.kru)
       (~(has in ships.list.access.kru) actor)
     :: todo: check the filter/thread
-    ?.  list-access  `~
+    ?.  list-access  [[%eject actor]~ ~]
     ?:  confirm.kru
       `[%add-noob actor `uuids`[uuid.stir ~ ~]]~
     :-  [%admit actor]~
     [%add-peer actor `uuids`[uuid.stir ~ ~]]~
     ::
       %del-client
-    :-  ~
     ?:  (~(has by peers.kru) actor)
-      [%del-peer-client actor uuid.stir]~
+      ?:  =((~(got by peers.kru) actor) [uuid.stir ~ ~])
+        :-  [%eject actor]~
+        [%del-peer actor]~
+      `[%del-peer-client actor uuid.stir]~
     ?:  (~(has by noobs.kru) actor)
-      [%del-noob-client actor uuid.stir]~
-    ~
+      ?:  =((~(got by noobs.kru) actor) [uuid.stir ~ ~])
+        :-  [%eject actor]~
+        [%del-noob actor]~
+      `[%del-noob-client actor uuid.stir]~
+    `~
     ::
       %leave
     :-  [%eject actor]~  :: todo: remove bc redundant?
@@ -164,7 +171,6 @@
 ++  hear-roar
   |=  [kru=crew wav=wave]
   ^-  (list roar)
-  :-  [%wave wav]
   ?+    -.wav  ~
       %add-peer
     [%admit ship.wav]~
