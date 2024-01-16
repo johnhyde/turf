@@ -24,15 +24,16 @@
       peers=clients
       noobs=clients  :: ships who have asked to join
       admins=ships
-      =visibility
       =access
-      persistent=flug  :: should this crew not disappear when unoccupied?
-      confirm=flug  :: do new peers need to be manually confirmed after they pass access checks?
+      =visibility
+      persistent=flug  :: should this crew persist when unoccupied?
+      confirm=flug  :: do noobs need to be manually accepted after they pass access checks?
   ==
-:: +$  ext-crew
-::   $:  host=ship
-::       crew=(unit crew)
-::   ==
++$  crow
+  :: %waiting means we've been admitted and we've subbed,
+  :: but we haven't gotten any updates yet
+  $@  state=?(%incoming %outgoing %waiting)
+  u=crew
 +$  update
   $:  %0
       $%  [%waves waves=waves]
@@ -50,7 +51,6 @@
       [%add-noob-client =ship =uuid]
       [%del-noob-client =ship =uuid]
       ::
-      [%set-visibility =visibility]
       [%set-access-list list=access-list]
       [%set-access-filter filter=access-filter]
       [%grant-access =ship]  :: updates ships.list.access
@@ -58,6 +58,7 @@
       :: should these be by ship or ships
       [%add-admin =ships]
       [%del-admin =ships]
+      [%set-visibility =visibility]
       [%set-persistent persistent=?]
       [%set-confirm confirm=?]
   ==
@@ -101,4 +102,11 @@
   $:  =c-id
       =echo
   ==
+::
++$  incoming
+  $:  %0
+      $%  [%cries dests=(list dest)]
+          [%cry =dest]
+          [%fade =dest]
+  ==  ==
 --

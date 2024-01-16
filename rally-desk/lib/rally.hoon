@@ -12,6 +12,10 @@
   |=  host=(unit ship)
   ^-  update
   [%0 %quit host]
+++  make-incoming
+  |=  =dest
+  ^-  incoming
+  [%0 %cry dest]
 ++  make-uuid
   |=  [now=@da eny=@uvJ]
   ^-  uuid
@@ -104,7 +108,7 @@
       %set-crew
     crew.wav
       %add-peer
-    =/  uuids  (~(gut by peers.kru) ship.wav ~)
+    =/  uuids  (~(get ju peers.kru) ship.wav)
     =.  uuids  (~(uni in uuids) uuids.wav)
     kru(peers (~(put by peers.kru) ship.wav uuids))
       %del-peer
@@ -112,9 +116,12 @@
       %add-peer-client
     kru(peers (~(put ju peers.kru) ship.wav uuid.wav))
       %del-peer-client
-    kru(peers (~(del ju peers.kru) ship.wav uuid.wav))
+    ?.  (~(has by peers.kru) ship.wav)  kru
+    =/  uuids  (~(get ju peers.kru) ship.wav)
+    =.  uuids  (~(del in uuids) uuid.wav)
+    kru(peers (~(put by peers.kru) ship.wav uuids))
       %add-noob
-    =/  uuids  (~(gut by noobs.kru) ship.wav ~)
+    =/  uuids  (~(get ju noobs.kru) ship.wav)
     =.  uuids  (~(uni in uuids) uuids.wav)
     kru(noobs (~(put by noobs.kru) ship.wav uuids))
       %del-noob
@@ -122,10 +129,11 @@
       %add-noob-client
     kru(noobs (~(put ju noobs.kru) ship.wav uuid.wav))
       %del-noob-client
-    kru(noobs (~(del ju noobs.kru) ship.wav uuid.wav))
+    ?.  (~(has by noobs.kru) ship.wav)  kru
+    =/  uuids  (~(get ju noobs.kru) ship.wav)
+    =.  uuids  (~(del in uuids) uuid.wav)
+    kru(noobs (~(put by noobs.kru) ship.wav uuids))
     ::
-      %set-visibility
-    kru(visibility visibility.wav)
       %set-access-list
     kru(list.access list.wav)
       %set-access-filter
@@ -163,6 +171,8 @@
     kru(admins (~(uni in admins.kru) ships.wav))
       %del-admin
     kru(admins (~(dif in admins.kru) ships.wav))
+      %set-visibility
+    kru(visibility visibility.wav)
       %set-persistent
     kru(persistent +.wav)
       %set-confirm

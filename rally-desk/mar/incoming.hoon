@@ -1,16 +1,16 @@
 /-  rally
 /+  enjs
-|_  cup=client-update:rally
+|_  in=incoming:rally
   ++  grow
     |%
-    ++  noun  cup
+    ++  noun  in
     ++  json
       ^-  ^json
-      (client-update:enjs cup)
+      (incoming:enjs in)
     --
   ++  grab
     |%
-    ++  noun  client-update:rally
+    ++  noun  incoming:rally
     --
   ++  grad  %noun
   --

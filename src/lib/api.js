@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
 import { UrbitRTCApp } from 'rtcswitchboard';
 import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
-import { normalizeIdAndDesig } from './utils';
+import { Rally } from 'lib/rally';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -31,7 +31,7 @@ const ctx = canvas.getContext('2d');
 // }
 let connection, $connection;
 
-let api, rtc;
+let api, rtc, rally, incoming;
 
 export function initApi() {
   const [con, $con] = createSignal('initial');
@@ -47,6 +47,7 @@ export function initApi() {
   api.verbose = true;
   window.api = api;
   initRTC();
+  initRally();
 }
 // api.onOpen = () => $connection('open');
 // api.onRetry = () => $connection('reconnecting');
@@ -108,7 +109,7 @@ export async function sendWave(mark, path, goals, stirId) {
       onError: (e) => {
         console.error('caught error in sending wave', e);
         // debugger;
-      }
+      },
     });
     return stirId;
   } catch (e) {
@@ -192,4 +193,19 @@ export function initRTC() {
   window.rtc = rtc = new UrbitRTCApp('turf', { iceServers: [] }, api);
 }
 
-export { api, rtc, connection };
+export function initRally() {
+  window.rally = rally = new Rally(api);
+  window.incoming = incoming = rally.watchIncoming('turf');
+  incoming.addEventListener('incoming', (e) => {
+    console.log('incoming!', e);
+  });
+  incoming.addEventListener('subscription-error', (e) => {
+    console.log('watch incoming error', e);
+  });
+  incoming.addEventListener('subscription-quit', (e) => {
+    console.log('watch incoming quit', e);
+  });
+  incoming.init();
+}
+
+export { api, rtc, connection, rally, incoming };
