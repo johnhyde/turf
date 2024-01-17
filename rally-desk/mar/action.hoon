@@ -1,5 +1,5 @@
 /-  rally
-:: /+  
+/+  dejs
 |_  act=action:rally
   ++  grow
     |%
@@ -11,6 +11,7 @@
   ++  grab
     |%
     ++  noun  action:rally
+    ++  json  action:dejs
     --
   ++  grad  %noun
   --

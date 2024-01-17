@@ -205,7 +205,6 @@ export function initRally() {
   incoming.addEventListener('subscription-quit', (e) => {
     console.log('watch incoming quit', e);
   });
-  incoming.init();
 }
 
 export { api, rtc, connection, rally, incoming };

@@ -1,6 +1,7 @@
 /-  *rally
 /+  *rally, dbug, default-agent, agentio, verb
-:: /$  cja  %json  %action
+/$  cja  %json  %action
+/$  cjd  %json  %delete
 /$  cje  %json  %enter
 :: /$  cjl  %json  %leave
 /$  cij  %incoming  %json
@@ -64,15 +65,6 @@
   |=  [=mark =vase]
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
-      %delete
-    ?>  =(src our):bowl
-    =+  !<([=c-id host=(unit ship)] vase)
-    ?.  (~(has by crews) c-id)  `this
-    =/  cards  (quit-cards:hc c-id host)
-    :: ~&  ['quit cards:' cards]
-    :: make sure to delete crew AFTER getting the list of peeps to eject
-    =.  crews  (~(del by crews) c-id)
-    cards^this
       %action
     =/  act  !<(action vase)
     ?:  =(ship.dest.act our.bowl)
@@ -82,6 +74,15 @@
     ?>  =(src our):bowl
     :_  this
     [(action-card:hc act)]~
+      %delete
+    ?>  =(src our):bowl
+    =+  !<([=c-id host=(unit ship)] vase)
+    ?.  (~(has by crews) c-id)  `this
+    =/  cards  (quit-cards:hc c-id host)
+    :: ~&  ['quit cards:' cards]
+    :: make sure to delete crew AFTER getting the list of peeps to eject
+    =.  crews  (~(del by crews) c-id)
+    cards^this
       %shell
     =/  [=c-id =echo]  !<(shell vase)
     ?:  =(src our):bowl  `this  :: ignore any shells we send to ourselves (ourshellves)

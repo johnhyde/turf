@@ -3,10 +3,14 @@ export class Rally extends EventTarget {
   constructor(api) {
     super();
     this.api = api;
+    this.incomings = {};
   }
 
   watchIncoming(dap=null) {
-    return new RallyIncoming(this.api, dap);
+    if (!this.incomings[dap]) {
+      this.incomings[dap] = new RallyIncoming(this.api, dap);
+    }
+    return this.incomings[dap];
   }
 
   createCrew(crewId, options={}) {
@@ -17,19 +21,28 @@ export class Rally extends EventTarget {
     return new RallyCrew(this.api, dest, options);
   }
 
-  joinCrew(ship, crewId) {
-    const dest = { ship, crewId };
-    return new RallyCrew(this.api, dest);
+  joinCrew(dest, options={}) {
+    if (typeof dest === 'string') dest = stringToDest(dest);
+    const dap = getDap(dest.crewId);
+    if (this.incomings[dap]) this.incomings[dap].removeDest(dest);
+    return new RallyCrew(this.api, dest, options);
   }
 }
 
 export class RallyIncoming extends EventTarget {
-  constructor(api, dap=null) {
+  constructor(api, dap=null, options={}) {
     super();
     this.api = api;
     this.dap = dap;
     this.dests = new Set();
     this.path = '/incoming/0' + (dap ? '/' + dap : '');
+    if (!options.waitToInit) {
+      this.init();
+    }
+  }
+
+  get incoming() {
+    return Array.from(this.dests).map(stringToDest);
   }
 
   init() {
@@ -37,8 +50,7 @@ export class RallyIncoming extends EventTarget {
       app: 'rally',
       path: this.path,
       event: (incoming) => {
-        updateIncomingDests(this.dests, incoming);
-        this.dispatchEvent(new IncomingEvent(incoming));
+        this.update(incoming);
       },
       err: (err) => {
         this.dispatchEvent(new SubscriptionErrorEvent(this.path, err));
@@ -50,15 +62,20 @@ export class RallyIncoming extends EventTarget {
     return this.promise;
   }
 
+  update(incoming) {
+    updateIncomingDests(this.dests, incoming);
+    this.dispatchEvent(new IncomingEvent(incoming));
+  }
+
   removeDest(dest) {
-    updateIncomingDests(this.dests, {
+    this.update({
       kind: 'fade',
       dest,
     });
   }
 
   removeDestString(str) {
-    updateIncomingDests(this.dests, {
+    this.update({
       kind: 'fade',
       dest: stringToDest(str),
     });
@@ -78,6 +95,14 @@ export class RallyCrew extends EventTarget {
       ...defaultCrew(),
     };
     this.path = '/update/0/' + dest.ship + dest.crewId;
+
+    if (options.clientId) {
+      this.clientId = options.clientId;
+      this.enter();
+    }
+    if (!options.waitToInit) {
+      this.init();
+    }
   }
 
   init() {
@@ -87,8 +112,10 @@ export class RallyCrew extends EventTarget {
       event: (update) => {
         if (update.kind === 'you-are') {
           console.log('client update', update);
-          this.clientId = update.uuid;
-          this.enter();
+          if (!this.clientId) {
+            this.clientId = update.uuid;
+            this.enter();
+          }
           this.dispatchEvent(new ClientUpdateEvent(update));
         } else {
           console.log('crew update', update);
@@ -110,9 +137,23 @@ export class RallyCrew extends EventTarget {
     return this.promise;
   }
 
+  delete() {
+    return this.api.poke({
+      app: 'rally',
+      mark: 'delete',
+      json: {
+        crewId: this.crewId,
+        host: null,
+      },
+      onError: (e) => {
+        console.error('RallyCrew failed to delete crew at ' + this.path, e);
+      },
+    });
+  }
+
   enter() {
     if (!this.clientId) throw new Error('Cannot enter without a clientId');
-    this.api.poke({
+    return this.api.poke({
       app: 'rally',
       mark: 'enter',
       json: {
@@ -122,7 +163,43 @@ export class RallyCrew extends EventTarget {
       onError: (e) => {
         console.error('RallyCrew failed to enter crew at ' + this.path, e);
       },
-    })
+    });
+  }
+
+  leave(allClients=false) {
+    if (allClients) {
+      return this.api.poke({
+        app: 'rally',
+        mark: 'leave',
+        json: {
+          dest: this.dest,
+        },
+        onError: (e) => {
+          console.error('RallyCrew failed to fully leave crew at ' + this.path, e);
+        },
+      });
+    }
+    if (!this.clientId) throw new Error('Cannot leave without a clientId');
+    return this.sendAction([{ leave: null }]);
+  }
+
+  invite(ship) {
+    return this.sendAction([{ wave: { 'add-peer': { ship, uuids: [] } }}]);
+  }
+
+  sendAction(stirs) {
+    this.api.poke({
+      app: 'rally',
+      mark: 'action',
+      json: {
+        version: 0,
+        dest: this.dest,
+        stirs,
+      },
+      onError: (e) => {
+        console.error('RallyCrew failed to send actions to crew at ' + this.path, stirs, e);
+      },
+    });
   }
 }
 
@@ -304,6 +381,10 @@ export function stringToDest(str) {
     ship: parts[0],
     crewId: parts[1],
   };
+}
+
+export function getDap(crewId) {
+  return crewId.split('/')[1] || null;
 }
 
 export function defaultCrew() {
