@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
 import { UrbitRTCApp } from 'rtcswitchboard';
 import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
-import { Rally } from 'lib/rally';
+import { Horn } from 'lib/horn';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -31,7 +31,7 @@ const ctx = canvas.getContext('2d');
 // }
 let connection, $connection;
 
-let api, rtc, rally, incoming;
+let api, rtc, horn, incoming;
 
 export function initApi() {
   const [con, $con] = createSignal('initial');
@@ -194,8 +194,8 @@ export function initRTC() {
 }
 
 export function initRally() {
-  window.rally = rally = new Rally(api);
-  window.incoming = incoming = rally.watchIncoming('turf');
+  window.horn = horn = new Horn(api);
+  window.incoming = incoming = horn.watchIncoming('turf');
   incoming.addEventListener('incoming', (e) => {
     console.log('incoming!', e);
   });
@@ -207,4 +207,4 @@ export function initRally() {
   });
 }
 
-export { api, rtc, connection, rally, incoming };
+export { api, rtc, connection, horn, incoming };

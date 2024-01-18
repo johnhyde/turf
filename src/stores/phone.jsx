@@ -74,15 +74,15 @@ export function getPhone() {
     },
   });
 
-  rtc.addEventListener("incomingcall", (e) => {
-    console.log('call in', e);
-    _phone.addRing(e);
-  });
+  // rtc.addEventListener("incomingcall", (e) => {
+  //   console.log('call in', e);
+  //   _phone.addRing(e);
+  // });
 
-  rtc.addEventListener("hungupcall", ({ uuid }) => {
-    _phone.delCallByUuid(uuid);
-  });
-  rtc.initialize();
+  // rtc.addEventListener("hungupcall", ({ uuid }) => {
+  //   _phone.delCallByUuid(uuid);
+  // });
+  // rtc.initialize();
 
   window.phone = _phone;
   return _phone;

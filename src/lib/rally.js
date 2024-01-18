@@ -1,34 +1,3 @@
-
-export class Rally extends EventTarget {
-  constructor(api) {
-    super();
-    this.api = api;
-    this.incomings = {};
-  }
-
-  watchIncoming(dap=null) {
-    if (!this.incomings[dap]) {
-      this.incomings[dap] = new RallyIncoming(this.api, dap);
-    }
-    return this.incomings[dap];
-  }
-
-  createCrew(crewId, options={}) {
-    const dest = {
-      ship: our,
-      crewId,
-    };
-    return new RallyCrew(this.api, dest, options);
-  }
-
-  joinCrew(dest, options={}) {
-    if (typeof dest === 'string') dest = stringToDest(dest);
-    const dap = getDap(dest.crewId);
-    if (this.incomings[dap]) this.incomings[dap].removeDest(dest);
-    return new RallyCrew(this.api, dest, options);
-  }
-}
-
 export class RallyIncoming extends EventTarget {
   constructor(api, dap=null, options={}) {
     super();
