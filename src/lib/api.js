@@ -195,7 +195,7 @@ export function initRTC() {
 
 export function initRally() {
   window.horn = horn = new Horn(api);
-  window.incoming = incoming = horn.watchIncoming('turf');
+  window.incoming = incoming = horn.watchIncoming();
   incoming.addEventListener('incoming', (e) => {
     console.log('incoming!', e);
   });

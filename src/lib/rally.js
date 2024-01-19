@@ -33,7 +33,7 @@ export class RallyIncoming extends EventTarget {
 
   update(incoming) {
     updateIncomingDests(this.dests, incoming);
-    this.dispatchEvent(new IncomingEvent(incoming));
+    this.dispatchEvent(new IncomingEvent(incoming, this.dap));
   }
 
   removeDest(dest) {
@@ -48,6 +48,11 @@ export class RallyIncoming extends EventTarget {
       kind: 'fade',
       dest: stringToDest(str),
     });
+  }
+
+  reject(dest) {
+    this.removeDest(dest);
+    return leaveRally(this.api, dest);
   }
 }
 
@@ -90,10 +95,11 @@ export class RallyCrew extends EventTarget {
           console.log('crew update', update);
           if (update.kind === 'quit') {
             console.log('it is over, bros');
+            this.dispatchEvent(new CrewQuitEvent(update.host));
           } else { // waves
             updateCrew(this.crew, update.waves);
+            this.dispatchEvent(new CrewUpdateEvent(update));
           }
-          this.dispatchEvent(new CrewUpdateEvent(update));
         }
       },
       err: (err) => {
@@ -137,23 +143,17 @@ export class RallyCrew extends EventTarget {
 
   leave(allClients=false) {
     if (allClients) {
-      return this.api.poke({
-        app: 'rally',
-        mark: 'leave',
-        json: {
-          dest: this.dest,
-        },
-        onError: (e) => {
-          console.error('RallyCrew failed to fully leave crew at ' + this.path, e);
-        },
-      });
+      return leaveRally(this.api, this.dest);
     }
     if (!this.clientId) throw new Error('Cannot leave without a clientId');
     return this.sendAction([{ leave: null }]);
   }
 
-  invite(ship) {
-    return this.sendAction([{ wave: { 'add-peer': { ship, uuids: [] } }}]);
+  invite(ships) {
+    if (!Array.isArray(ships)) ships = [ships];
+    return this.sendAction(
+      ships.map((ship) => ({ wave: { 'add-peer': { ship, uuids: [] } }}))
+    );
   }
 
   sendAction(stirs) {
@@ -177,10 +177,11 @@ export class RallyCrew extends EventTarget {
 //
 
 export class IncomingEvent extends Event {
-  constructor(incoming) {
+  constructor(incoming, dap) {
     super('incoming');
     this.kind = incoming.kind;
     this.incoming = incoming;
+    this.dap = dap;
   }
 }
 
@@ -200,6 +201,13 @@ export class CrewUpdateEvent extends Event {
   }
 }
 
+export class CrewQuitEvent extends Event {
+  constructor(host) {
+    super('crew-quit');
+    this.host = host;
+  }
+}
+
 export class SubscriptionErrorEvent extends Event {
   constructor(path, error) {
     super('subscription-error');
@@ -216,6 +224,21 @@ export class SubscriptionQuitEvent extends Event {
   }
 }
 
+//
+// API Calls
+//
+
+export function leaveRally(api, dest) {
+  return api.poke({
+    app: 'rally',
+    mark: 'leave',
+    json: { dest },
+    onError: (e) => {
+      console.error('RallyCrew failed to fully leave crew at ' + destToString(dest), e);
+    },
+  });
+}
+  
 //
 // Helpers
 //

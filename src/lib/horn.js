@@ -1,6 +1,7 @@
 import { hex2patp, patp2hex, patp2dec, patp } from 'urbit-ob';
 import { UrbitRTCApp, UrbitRTCPeerConnection } from 'rtcswitchboard';
 import { RallyIncoming, RallyCrew, stringToDest, destToString, getDap } from 'lib/rally';
+import { IncomingEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
 // import { patp2dec } from 'urbit-ob/src/internal/co';
 
 export class Horn extends EventTarget {
@@ -15,13 +16,16 @@ export class Horn extends EventTarget {
   watchIncoming(dap=null) {
     dap = dap || this.dap
     if (!this.incomings[dap]) {
-      this.incomings[dap] = new RallyIncoming(this.api, dap);
+      const incoming = this.incomings[dap] = new RallyIncoming(this.api, dap);
+      incoming.addEventListener('incoming', (e) => {
+        this.dispatchEvent(new IncomingEvent(e.incoming, dap));
+      });
     }
     return this.incomings[dap];
   }
 
   createRally(path=null, options={}) {
-    path = path || '/' + uuidv4();
+    path = path || '/' + genCrewId();
     if (path[0] !== '/') path = '/' + path;
     const crewId = `/${this.dap}${path}`
     const dest = {
@@ -45,6 +49,10 @@ export class Horn extends EventTarget {
   getRally(destStr) {
     if (typeof destStr !== 'string') destStr = destToString(destStr);
     return this.rallies[destStr];
+  }
+
+  get incoming() {
+    return this.incomings[this.dap]?.incoming || [];
   }
 }
 
@@ -76,7 +84,12 @@ export class Rally extends EventTarget {
       this.updateCalls();
     });
     this.crew.addEventListener('crew-update', (e) => {
+      this.dispatchEvent(new CrewUpdateEvent(e.update));
       this.updateCalls();
+    });
+    this.crew.addEventListener('crew-quit', (e) => {
+      this.dispatchEvent(new CrewQuitEvent(e.host));
+      // this.destroy();
     });
   }
 
@@ -140,12 +153,11 @@ export class Rally extends EventTarget {
         existingCalls.delete(str);
         return;
       }
-      const callId = makeCallId(this.crewId, client.clientId, us.clientId);
-      const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.api, this.rtc.configuration);
-      this.calls[str] = call;
-      this.listenToCall(call);
-      call.resubscribe() // todo?: is this right????? can I????
-        .catch(() => {});
+      // const callId = makeCallId(this.crewId, client.clientId, us.clientId);
+      // const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.api, this.rtc.configuration);
+      // this.calls[str] = call;
+      // this.listenToCall(call);
+      // call.initialize(); // attempt answering in case we're slow
     });
     toCall.forEach((client) => {
       const str = clientToString(client);
@@ -166,6 +178,10 @@ export class Rally extends EventTarget {
       this.calls[clientStr].close();
       delete this.calls[clientStr];
     });
+  }
+
+  get id() {
+    return destToString(this.dest);
   }
 
   get our() {
@@ -226,8 +242,12 @@ export class Rally extends EventTarget {
     return this.crew.invite(...args);
   }
 
-  close() {
-    return this.crew.delete();
+  leave(...args) {
+    return this.crew.leave(...args);
+  }
+  
+  delete(...args) {
+    return this.crew.delete(...args);
   }
 
   handleIncomingMessage(e) {
@@ -293,6 +313,9 @@ export function parseCallId(callId) {
   return { crewId: crewId, callerId, calleeId };
 }
 
+export function genCrewId() {
+  return uuidv4().replaceAll('-', '.');
+}
 export function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)

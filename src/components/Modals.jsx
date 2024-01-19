@@ -167,7 +167,7 @@ export default function Modals() {
               Incoming call from:
             </p>
             <p class="text-center text-lg">
-              <span class="font-bold">{'~' + ring.peer}</span>?
+              <span class="font-bold">{ring.ship}</span>?
             </p>
             <div class="flex w-full justify-center mt-4 space-x-4">
               <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={answer}>

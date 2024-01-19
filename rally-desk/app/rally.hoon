@@ -320,6 +320,7 @@
     =.  crows  (~(del by crows) dest)
     =/  path  (update-path dest)
     :_  state
+    :-  (update-quit-card dest host.up)
     [%pass path %agent [ship.dest dap.bowl] %leave ~]~
   =/  kru=crew  ?@(kro *crew u.kro)
   =.  crows
@@ -386,6 +387,14 @@
   |=  [=dest =waves]
   ^-  card
   =/  =update  (make-waves-update waves)
+  :*  %give  %fact
+      ~[(update-path dest)]
+      %update  !>(update)
+  ==
+++  update-quit-card
+  |=  [=dest host=(unit ship)]
+  ^-  card
+  =/  =update  (make-quit-update host)
   :*  %give  %fact
       ~[(update-path dest)]
       %update  !>(update)

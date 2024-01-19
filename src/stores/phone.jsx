@@ -1,61 +1,48 @@
 import { createSignal, createContext, createEffect, createMemo, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
-import * as api from 'lib/api.js';
-import { normalizeIdAndDesig } from 'lib/utils';
+import { horn, incoming } from 'lib/api.js';
+import { normalizeId } from 'lib/utils';
 
 export const PhoneContext = createContext();
 
 
 export function getPhone() {
   const [phone, $phone] = createStore({
-    calls: [],
+    calls: {},
     rings: [],
   });
 
   const _phone = mergeProps(phone, {
-    call(patp) {
-      const call = rtc.call(normalizeIdAndDesig(patp), rtc.dap);
+    call(peers) {
+      if (!Array.isArray(peers)) peers = [peers];
+      const call = horn.createRally();
       this.addCall(call);
-      call.initialize();
-      call.channel = call.createDataChannel('turf');
-      call.channel.onmessage = this.handleIncomingMessage;
-      call.channel.onopen = this.handleChannelOpen;
-      call.channel.onclose = this.handleChannelClose;
+      call.invite(peers.map(normalizeId));
     },
     answer(ring) {
-      const call = ring.answer();
+      const call = horn.joinRally(ring);
       this.addCall(call);
-      call.initialize();
       this.delRing(ring);
     },
     reject(ring) {
-      ring.reject();
+      incoming.reject(ring);
       this.delRing(ring);
     },
     hangUp(call) {
-      call.close();
+      call.leave(true);
       this.delCall(call);
     },
     addCall(call) {
-      call.addEventListener('hungupcall', (e) => {
+      call.addEventListener('crew-quit', (e) => {
         this.delCall(call);
       });
-      call.addEventListener('statechanged', ({ uuid, urbitState }) => {
-        console.log(`state change for ${uuid}: ${urbitState}`);
-      });
-      call.ondatachannel = (event) => {
-        call.channel = event.channel;
-        call.channel.onmessage = this.handleIncomingMessage;
-        call.channel.onopen = this.handleChannelOpen;
-        call.channel.onclose = this.handleChannelClose;
-      };
-      $phone('calls', c => [...c, call]);
+      $phone('calls', call.id, call);
     },
     delCall(call) {
-      $phone('calls', c => c.filter(c => c !== call));
+      this.delCallById(call.id);
     },
-    delCallByUuid(uuid) {
-      $phone('calls', c => c.filter(c => c.uuid !== uuid));
+    delCallById(id) {
+      $phone('calls', id, undefined);
     },
     addRing(ring) {
       $phone('rings', r => [...r, ring]);
@@ -74,13 +61,16 @@ export function getPhone() {
     },
   });
 
-  // rtc.addEventListener("incomingcall", (e) => {
-  //   console.log('call in', e);
-  //   _phone.addRing(e);
-  // });
+  incoming.addEventListener('incoming', (e) => {
+    if (e.dap === 'turf') {
+      $phone('rings', reconcile(horn.incoming));
+      // console.log('call in', e);
+      // _phone.addRing(e);
+    }
+  });
 
   // rtc.addEventListener("hungupcall", ({ uuid }) => {
-  //   _phone.delCallByUuid(uuid);
+  //   _phone.delCallById(uuid);
   // });
   // rtc.initialize();
 
