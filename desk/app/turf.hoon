@@ -790,6 +790,25 @@
             /kick
           ship.roar
         [%kicked turf-id.stir]
+          %host-call
+        :_  state
+        :_  ~
+        =/  call-id=path
+          (weld /turf/(scot %p src.bowl) path.turf-id.stir)
+        =/  waves
+          :-  [%set-confirm %.y]
+          :-  [%set-visibility %public]
+          :-  [%set-access-list %black ~]
+          :-  [%set-access-filter `[%turf %gate-call-access]] :: note: this currently does nothing
+          %+  turn  ~(tap in ships.roar)
+          |=  =ship
+          [%add-peer ship ~]
+        :*  %pass
+            /host-call
+            %agent
+            [our.bowl %rally]
+            [%poke %action !>([%0 [our.bowl call-id] [%waves waves]~])]
+        ==
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
