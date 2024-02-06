@@ -56,41 +56,33 @@ export class Horn extends EventTarget {
   }
 }
 
-export class Rally extends EventTarget {
+export class Rally extends RallyCrew {
   constructor(api, dest, options={}) {
-    super();
+    super(api, dest, options);
     this.api = api;
     this.dest = dest;
     this.dap = getDap(dest.crewId);
-    this.crewId = dest.crewId;
     this.rtc = new UrbitRTCApp(this.dap, { iceServers: [] }, api);
     this.calls = {};
     this.rings = [];
     this.toAnswer = new Set();
-    this.setupCrew(options);
+    this.setupCrew();
     this.setupRtc();
     // if (!options.waitToInit) {
     //   this.init();
     // }
   }
 
-  init() {
-    this.crew.init();
-  }
-
-  setupCrew(options={}) {
-    this.crew = new RallyCrew(this.api, this.dest, options);
-    this.crew.addEventListener('client-update', (e) => {
+  setupCrew() {
+    this.addEventListener('client-update', (e) => {
       this.updateCalls();
     });
-    this.crew.addEventListener('crew-update', (e) => {
-      this.dispatchEvent(new CrewUpdateEvent(e.update));
+    this.addEventListener('crew-update', (e) => {
       this.updateCalls();
     });
-    this.crew.addEventListener('crew-quit', (e) => {
-      this.dispatchEvent(new CrewQuitEvent(e.host));
+    // this.crew.addEventListener('crew-quit', (e) => {
       // this.destroy();
-    });
+    // });
   }
 
   setupRtc() {
@@ -126,7 +118,7 @@ export class Rally extends EventTarget {
   }
 
   async updateCalls() {
-    if (!this.crew.clientId) return;
+    if (!this.clientId) return;
     const us = this.client;
     const clients = this.clients;
     const toCall = [], toAnswer = new Set();
@@ -172,11 +164,13 @@ export class Rally extends EventTarget {
       this.addDataChannel(call);
       call.dispatchUrbitState('dialing');
       call.ring(callId);
+      this.dispatchEvent(new CallsUpdateEvent('add', str, call));
     });
     // now, any remaining existingCalls are ones that are no longer valid (removed from crew)
     Array.from(existingCalls).forEach((clientStr) => {
       this.calls[clientStr].close();
       delete this.calls[clientStr];
+      this.dispatchEvent(new CallsUpdateEvent('del', clientStr));
     });
   }
 
@@ -195,13 +189,9 @@ export class Rally extends EventTarget {
     };
   }
 
-  get clientId() {
-    return this.crew?.clientId;
-  }
-
   get clients() {
     let clients = [];
-    Object.entries(this.crew.crew.peers).forEach(([ship, clientIds]) => {
+    Object.entries(this.crew.peers).forEach(([ship, clientIds]) => {
       const newClients = clientIds.filter(id => id !== this.clientId)
                            .map(clientId => ({ ship, clientId }));
       clients = clients.concat(newClients);
@@ -213,6 +203,7 @@ export class Rally extends EventTarget {
     const call = ring.answer();
     this.listenToCall(call);
     this.calls[ring.clientStr] = call;
+    this.dispatchEvent(new CallsUpdateEvent('add', ring.clientStr, call));
     call.initialize();
   }
 
@@ -225,29 +216,23 @@ export class Rally extends EventTarget {
     });
     call.ondatachannel = (event) => {
       call.channel = event.channel;
-      call.channel.onmessage = this.handleIncomingMessage;
-      call.channel.onopen = this.handleChannelOpen;
-      call.channel.onclose = this.handleChannelClose;
+      this.handleDataChannel(call.channel);
     };
   }
 
   addDataChannel(call) {
     call.channel = call.createDataChannel(this.dap + '-text');
-    call.channel.onmessage = this.handleIncomingMessage;
-    call.channel.onopen = this.handleChannelOpen;
-    call.channel.onclose = this.handleChannelClose;
+    this.handleDataChannel(call.channel);
   }
 
-  invite(...args) {
-    return this.crew.invite(...args);
-  }
-
-  leave(...args) {
-    return this.crew.leave(...args);
-  }
-  
-  delete(...args) {
-    return this.crew.delete(...args);
+  handleDataChannel(channel) {
+    // channel.onmessage = this.handleIncomingMessage;
+    // channel.onopen = this.handleChannelOpen;
+    // channel.onclose = this.handleChannelClose;
+    channel.addEventListener('message', this.handleIncomingMessage);
+    channel.addEventListener('open', this.handleChannelOpen);
+    channel.addEventListener('close', this.handleChannelClose);
+    window.chan = channel;
   }
 
   handleIncomingMessage(e) {
@@ -320,4 +305,13 @@ export function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
+}
+
+export class CallsUpdateEvent extends Event {
+  constructor(kind, str, call) {
+    super('calls-update');
+    this.kind = kind;
+    this.clientString = str;
+    if (call) this.call = call;
+  }
 }

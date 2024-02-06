@@ -1,6 +1,7 @@
 import { onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state';
 import { usePhone } from 'stores/phone';
+import Modal from '@/Modal';
 import CallInfo from '@/CallInfo';
 
 export default function CallCenter(props) {
@@ -21,11 +22,16 @@ export default function CallCenter(props) {
           </For>
         </div>
       </Show>
-    ) : (<>
-      <span>hey</span>
-      <For each={calls()}>
-        {(call) => <CallInfo call={call}/>}
-      </For></>
+    ) : (
+      <Portal mount={document.getElementById('modals')}>
+        <For each={calls()}>
+          {(call) => (
+            <Modal class="!max-w-fit !max-h-full">
+              <CallInfo call={call}/>
+            </Modal>
+          )}
+        </For>
+      </Portal>
     )
   }</>);
 }
