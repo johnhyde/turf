@@ -96,6 +96,9 @@ export function getState() {
         get name() {
           return this.id ? this.id.replace('/pond/', '') : '';
         },
+        get host() {
+          return this.id ? this.name.split('/')[0] : '';
+        },
         get pond() {
           return parent.ponds[this.id];
         },
@@ -466,6 +469,10 @@ export function getState() {
     },
     delInvite(id) {
       this.sendPondWave('del-invite', { id });
+    },
+    makeCall(peers) {
+      if (!Array.isArray(peers)) peers = [peers];
+      return this.sendPondWave('call', { ships: peers });
     },
 
 

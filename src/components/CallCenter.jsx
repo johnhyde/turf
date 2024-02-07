@@ -14,7 +14,8 @@ export default function CallCenter(props) {
     (
       <Show when={state.c.peers.length > 0}>
         <div>
-          <button onClick={[phone.call.bind(phone), state.c.peers]}>Call</button>
+          {/* <button onClick={[phone.call.bind(phone), state.c.peers]}>Call</button> */}
+          <button onClick={[state.makeCall.bind(state), state.c.peers]}>Call</button>
           <For each={state.c.peers}>
             {(patp) => {
               return <p>{patp}</p>;

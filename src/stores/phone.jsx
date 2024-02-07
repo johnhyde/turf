@@ -2,11 +2,12 @@ import { createSignal, createContext, createEffect, createMemo, getOwner, runWit
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import { horn, incoming } from 'lib/api.js';
 import { normalizeId } from 'lib/utils';
+import { useState } from 'stores/state';
 
 export const PhoneContext = createContext();
 
 
-export function getPhone() {
+export function getPhone(state) {
   const [phone, $phone] = createStore({
     calls: {},
     rings: [],
@@ -64,10 +65,17 @@ export function getPhone() {
   incoming.addEventListener('incoming', (e) => {
     if (e.dap === 'turf') {
       $phone('rings', reconcile(horn.incoming));
-      // console.log('call in', e);
       // _phone.addRing(e);
     }
   });
+
+  createEffect(() => {
+    const ourCrewIdPrefix = `/turf/${our}`;
+    const ours = _phone.rings.filter((i) => {
+      return (i.ship === state.c.host) && (i.crewId.startsWith(ourCrewIdPrefix))
+    });
+    ours.forEach(_phone.answer.bind(_phone));
+  })
 
   // rtc.addEventListener("hungupcall", ({ uuid }) => {
   //   _phone.delCallById(uuid);
@@ -79,8 +87,9 @@ export function getPhone() {
 }
 
 export function PhoneProvider(props) {
+  const state = useState();
   return (
-    <PhoneContext.Provider value={getPhone()}>
+    <PhoneContext.Provider value={getPhone(state)}>
       {props.children}
     </PhoneContext.Provider>
   );
