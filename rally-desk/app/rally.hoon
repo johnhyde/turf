@@ -85,9 +85,8 @@
     cards^this
       %shell
     =/  [=c-id =echo]  !<(shell vase)
-    ?:  =(src our):bowl  `this  :: ignore any shells we send to ourselves (ourshellves)
+    :: ?:  =(src our):bowl  `this  :: ignore any shells we send to ourselves (ourshellves)
     =/  =dest  [src.bowl c-id]
-    =/  path  (update-path:hc dest)
     ?-    -.echo
         %admit
       =/  kro  (~(gut by crows) dest ~)
@@ -111,6 +110,7 @@
       ~&  ['getting ejected from' dest]
       =/  kro  (~(gut by crows) dest ~)
       =.  crows  (~(del by crows) dest)
+      =/  path  (crow-update-path:hc dest)
       :_  this
       :-  [%give %kick [path]~ ~]
       ?.  ?=(%incoming kro)  ~
@@ -124,13 +124,6 @@
     ?>  =(src our):bowl
     =+  !<([=dest =uuid] vase)
     =/  =stir  [%add-client uuid]
-    ?:  =(ship.dest our.bowl)
-      :: ?>  (~(has by crews) c-id.dest)
-      :: create on enter is ok???
-      =?  stir  =(src our):bowl  [%wave %add-peer our.bowl [uuid ~ ~]]  :: bypass access list
-      =^  cards  state  (apply-action:hc c-id.dest [stir]~ src.bowl)
-      cards^this
-    ?>  =(src our):bowl
     =/  cards  (send-action-stir:hc dest stir)
     =/  kro  (~(gut by crows) dest ~)
     =.  crows
@@ -146,26 +139,24 @@
     ?>  =(src our):bowl
     =+  !<([=dest] vase)
     =/  =stir  [%leave ~]
-    ?:  =(ship.dest our.bowl)
-      ?.  (~(has by crews) c-id.dest)  `this
-      =^  cards  state  (apply-action:hc c-id.dest [stir]~ src.bowl)
-      cards^this
-    ?>  =(src our):bowl
     ?.  (~(has by crows) dest)  `this
     =/  cards=(list card)
-      :-  [%pass (update-path:hc dest) %agent [ship.dest dap.bowl] %leave ~]
+      :: unsubscribe
+      :-  [%pass (crew-update-path:hc dest) %agent [ship.dest dap.bowl] %leave ~]
+      :: and kick subs
+      :-  [%give %kick ~[(crow-update-path:hc dest)] ~]
       (send-action-stir:hc dest stir)
     =.  crows  (~(del by crows) dest)
     cards^this
     ::
       %sub
     =/  =dest  !<(dest vase)
-    =/  path  (update-path:hc dest)
+    =/  path  (crew-update-path:hc dest)
     :_  this
     [%pass path %agent [ship.dest dap.bowl] %watch path]~
       %unsub
     =/  =dest  !<(dest vase)
-    =/  path  (update-path:hc dest)
+    =/  path  (crew-update-path:hc dest)
     :_  this
     [%pass path %agent [ship.dest dap.bowl] %leave ~]~
       %give
@@ -174,7 +165,7 @@
     :_  this
     :_  ~
     :*  %give  %fact
-      ~[(update-path:hc our.bowl c-id)]
+      ~[(crew-update-path:hc our.bowl c-id)]
       %update  !>(update)
     ==
   ==
@@ -185,6 +176,7 @@
   :: ?+  path  (on-watch:def path)
   ?+  path  `this
       [%incoming v=@ dap=*]
+    ?>  =(src our):bowl
     =/  dap=^path  |2.path
     =/  dests=(list dest)
       %+  murn
@@ -196,24 +188,25 @@
     =/  =incoming  [%0 %cries dests]
     :_  this
     [%give %fact ~ %incoming !>(incoming)]~
-      [%update v=@ host=@ id=*]
+      [?(%crew %crow) v=@ host=@ id=*]
     ~&  "matched update sub handler"
     =/  =dest  [(slav %p &3.path) |3.path]
-    =/  uuid  (make-uuid [now eny]:bowl)
-    =/  cup=client-update  [%0 [%you-are uuid]]
-    =/  up-card=card  [%give %fact ~ %client-update !>(cup)]
-    ?:  =(ship.dest our.bowl)
+    ?:  ?=(%crew i.path)
+      ?>  =(ship.dest our.bowl)
       =/  crew  (~(gut by crews) c-id.dest ~)
       ?~  crew
         ?.  =(src our):bowl  !!
-        ~[up-card]^this
+        `this
       =/  init-card  (init-card:hc crew)
       ?:  =(src our):bowl
-        [up-card init-card ~]^this
-      =/  is-peer  (~(has by peers.crew) src.bowl)
-      ?.  is-peer  !!
+        ~[init-card]^this
+      ?.  (~(has by peers.crew) src.bowl)
+        !!
       ~[init-card]^this
     ?>  =(src our):bowl
+    =/  uuid  (make-uuid [now eny]:bowl)
+    =/  cup=client-update  [%0 [%you-are uuid]]
+    =/  up-card=card  [%give %fact ~ %client-update !>(cup)]
     =/  kro  (~(gut by crows) dest ~)
     ?@  kro
       ~[up-card]^this
@@ -243,12 +236,12 @@
   ::     ?~  p.sign  ~
   ::     u.p.sign
   ?+    wire  (on-agent:def wire sign)
-      [%update v=@ host=@ id=*]
+      [%crew v=@ host=@ id=*]
     =/  =dest  [(slav %p &3.wire) |3.wire]
     ~&  ["got crew update" -.sign wire]
     ?+    -.sign  (on-agent:def wire sign)
         %fact
-      ?>  ?=(%update -.cage.sign)
+      ?.  ?=(%update -.cage.sign)  `this
       =/  =update  !<(update +.cage.sign)
       =^  cards  state  (apply-update:hc dest update)
       ~&  ['new kro after' (~(get by crows) dest)]
@@ -307,27 +300,26 @@
   =/  kro  (~(gut by crows) dest ~)
   ?:  ?=(%quit +<.up)
     =?  state  ?=(^ host.up)
-      ?:  =(our.bowl u.host.up)
-        =?  crews  ?=(^ kro)
-          (~(put by crews) c-id.dest u.kro)
-        state
       =.  crows
         :: todo: what if the new host prefers to use a different c-id???
         :: should we say the new c-id is (scot %p ship.dest)^c-id.dest???
         :: could get out of hand but probably solves issues...
         (~(put by crows) [u.host.up c-id.dest] %outgoing)  :: this leaves us open to %admit from new host
+      ?.  =(our.bowl u.host.up)  state
+      =?  crews  ?=(^ kro)
+        (~(put by crews) c-id.dest u.kro)
       state
     =.  crows  (~(del by crows) dest)
-    =/  path  (update-path dest)
+    =/  path  (crew-update-path dest)
     :_  state
-    :-  (update-quit-card dest host.up)
+    :-  (crow-update-quit-card dest host.up)
     [%pass path %agent [ship.dest dap.bowl] %leave ~]~
   =/  kru=crew  ?@(kro *crew u.kro)
   =.  crows
     %+  ~(put by crows)  dest
     (update-crew kru waves.up)
   :_  state
-  [(update-card dest waves.up)]~
+  [(crow-update-card dest waves.up)]~
 ::
 ++  roars-to-cards
   |=  [=c-id =roars]
@@ -341,10 +333,10 @@
     [(shell-card ship.roar c-id [%admit ~])]~
       %eject
     :~  (shell-card ship.roar c-id [%eject ~])
-        [%give %kick ~[(update-path our.bowl c-id)] `ship.roar]
+        [%give %kick ~[(crew-update-path our.bowl c-id)] `ship.roar]
     ==
       %wave
-    [(update-card [our.bowl c-id] [wave.roar]~)]~
+    [(crew-update-card [our.bowl c-id] [wave.roar]~)]~
   ==
 ::
 ++  quit-cards
@@ -352,7 +344,7 @@
   ^-  (list card)
   =/  =dest  [our.bowl c-id]
   =/  =update  (make-quit-update host)
-  =/  =path  (update-path dest)
+  =/  =path  (crew-update-path dest)
   =/  peeps=(list ship)
     =/  kru  (~(gut by crews) c-id ~)
     ?~  kru  ~
@@ -383,20 +375,28 @@
   ^-  card
   =/  wire  (action-wire:hc dest.act)
   [%pass wire %agent [ship.dest.act dap.bowl] %poke [%action !>(act)]]
-++  update-card
+++  crew-update-card
   |=  [=dest =waves]
   ^-  card
   =/  =update  (make-waves-update waves)
   :*  %give  %fact
-      ~[(update-path dest)]
+      ~[(crew-update-path dest)]
       %update  !>(update)
   ==
-++  update-quit-card
+++  crow-update-card
+  |=  [=dest =waves]
+  ^-  card
+  =/  =update  (make-waves-update waves)
+  :*  %give  %fact
+      ~[(crow-update-path dest)]
+      %update  !>(update)
+  ==
+++  crow-update-quit-card
   |=  [=dest host=(unit ship)]
   ^-  card
   =/  =update  (make-quit-update host)
   :*  %give  %fact
-      ~[(update-path dest)]
+      ~[(crow-update-path dest)]
       %update  !>(update)
   ==
 ++  init-card
@@ -407,7 +407,7 @@
 ++  watch-update-card
   |=  =dest
   ^-  card
-  =/  path  (update-path dest)
+  =/  path  (crew-update-path dest)
   [%pass path %agent [ship.dest dap.bowl] %watch path]
 :: ++  client-update-card
 ::   |=  [=c-id =uuid]
@@ -421,10 +421,14 @@
   |=  =dest
   ^-  path
   [%action '0' (scot %p ship.dest) c-id.dest]
-++  update-path
+++  crew-update-path
   |=  =dest
   ^-  path
-  [%update '0' (scot %p ship.dest) c-id.dest]
+  [%crew '0' (scot %p ship.dest) c-id.dest]
+++  crow-update-path
+  |=  =dest
+  ^-  path
+  [%crow '0' (scot %p ship.dest) c-id.dest]
 ++  incoming-path
   |=  =c-id
   ^-  path

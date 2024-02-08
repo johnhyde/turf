@@ -68,7 +68,7 @@ export class RallyCrew extends EventTarget {
       new: true,
       ...defaultCrew(),
     };
-    this.path = '/update/0/' + dest.ship + dest.crewId;
+    this.path = '/crow/0/' + dest.ship + dest.crewId;
 
     if (options.clientId) {
       this.clientId = options.clientId;
