@@ -23,8 +23,8 @@
       kind+[%s +<.cup]
       uuid+s+uuid.cup
   ==
-++  incoming
-  |=  in=incoming:r
+++  dests-update
+  |=  in=dests-update:r
   ^-  json
   %-  pairs
   :~  version+(numb -.in)
@@ -129,9 +129,9 @@
       ted+s+ted.u.fil
   ==
 ++  dests
-  |=  ds=(list dest:r)
+  |=  ds=(set dest:r)
   ^-  json
-  a+(turn ds dest)
+  a+(turn ~(tap in ds) dest)
 ++  dest
   |=  d=dest:r
   ^-  json

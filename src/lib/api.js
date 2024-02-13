@@ -196,7 +196,7 @@ export function initRTC() {
 export function initRally() {
   window.horn = horn = new Horn(api);
   window.incoming = incoming = horn.watchIncoming();
-  incoming.addEventListener('incoming', (e) => {
+  incoming.addEventListener('dests-update', (e) => {
     console.log('incoming!', e);
   });
   incoming.addEventListener('subscription-error', (e) => {

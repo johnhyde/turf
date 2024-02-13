@@ -1,16 +1,16 @@
 /-  rally
 /+  enjs
-|_  in=incoming:rally
+|_  in=dests-update:rally
   ++  grow
     |%
     ++  noun  in
     ++  json
       ^-  ^json
-      (incoming:enjs in)
+      (dests-update:enjs in)
     --
   ++  grab
     |%
-    ++  noun  incoming:rally
+    ++  noun  dests-update:rally
     --
   ++  grad  %noun
   --

@@ -1,16 +1,16 @@
-export class RallyIncoming extends EventTarget {
-  constructor(api, dap=null, options={}) {
+export class RallyList extends EventTarget {
+  constructor(api, path, dap=null, options={}) {
     super();
     this.api = api;
     this.dap = dap;
     this.dests = new Set();
-    this.path = '/incoming/0' + (dap ? '/' + dap : '');
+    this.path = path;
     if (!options.waitToInit) {
       this.init();
     }
   }
 
-  get incoming() {
+  get destStrs() {
     return Array.from(this.dests).map(stringToDest);
   }
 
@@ -18,8 +18,8 @@ export class RallyIncoming extends EventTarget {
     this.promise = this.api.subscribe({
       app: 'rally',
       path: this.path,
-      event: (incoming) => {
-        this.update(incoming);
+      event: (update) => {
+        this.update(update);
       },
       err: (err) => {
         this.dispatchEvent(new SubscriptionErrorEvent(this.path, err));
@@ -31,9 +31,16 @@ export class RallyIncoming extends EventTarget {
     return this.promise;
   }
 
-  update(incoming) {
-    updateIncomingDests(this.dests, incoming);
-    this.dispatchEvent(new IncomingEvent(incoming, this.dap));
+  async cancel() {
+    if (this.promise) {
+      const sub = await this.promise;
+      return this.api.unsubscribe(sub);
+    }
+  }
+
+  update(update) {
+    updateDestsList(this.dests, update);
+    this.dispatchEvent(new DestsUpdateEvent(update, this.dap));
   }
 
   removeDest(dest) {
@@ -49,10 +56,33 @@ export class RallyIncoming extends EventTarget {
       dest: stringToDest(str),
     });
   }
+}
+
+export class RallyIncoming extends RallyList {
+  constructor(api, dap=null, options={}) {
+    const path = '/incoming/0' + (dap ? '/' + dap : '');
+    super(api, path, dap, options);
+  }
+
+  get incoming() {
+    return this.destStrs;
+  }
 
   reject(dest) {
     this.removeDest(dest);
     return leaveRally(this.api, dest);
+  }
+}
+
+export class RallyPublics extends RallyList {
+  constructor(api, host, dap, options={}) {
+    const path = `/crews/0/${host}/${dap}`;
+    super(api, path, dap, options);
+    this.host = host;
+  }
+
+  get publics() {
+    return this.destStrs;
   }
 }
 
@@ -176,11 +206,11 @@ export class RallyCrew extends EventTarget {
 // Events
 //
 
-export class IncomingEvent extends Event {
-  constructor(incoming, dap) {
-    super('incoming');
-    this.kind = incoming.kind;
-    this.incoming = incoming;
+export class DestsUpdateEvent extends Event {
+  constructor(update, dap) {
+    super('dests-update');
+    this.kind = update.kind;
+    this.update = update;
     this.dap = dap;
   }
 }
@@ -243,12 +273,12 @@ export function leaveRally(api, dest) {
 // Helpers
 //
 
-export function updateIncomingDests(dests, incoming) {
-  if (incoming.kind === 'cries') {
-    incoming.dests.forEach((dest) => dests.add(destToString(dest)));
+export function updateDestsList(dests, update) {
+  if (update.kind === 'cries') {
+    update.dests.forEach((dest) => dests.add(destToString(dest)));
   } else {
-    const str = destToString(incoming.dest);
-    if (incoming.kind === 'cry') {
+    const str = destToString(update.dest);
+    if (update.kind === 'cry') {
       dests.add(str);
     } else {
       dests.delete(str);

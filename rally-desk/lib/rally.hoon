@@ -12,9 +12,9 @@
   |=  host=(unit ship)
   ^-  update
   [%0 %quit host]
-++  make-incoming
+++  make-dest-update
   |=  =dest
-  ^-  incoming
+  ^-  dests-update
   [%0 %cry dest]
 ++  make-uuid
   |=  [now=@da eny=@uvJ]
@@ -186,5 +186,11 @@
     [%admit ship.wav]~
       ?(%del-peer %del-noob)
     [%eject ship.wav]~
+      %set-visibility
+    ?:  =(visibility.kru visibility.wav)
+      ~
+    ?:  ?=(%public visibility.wav)
+      [%cry ~]~
+    [%fade ~]~
   ==
 --

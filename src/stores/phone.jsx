@@ -11,6 +11,7 @@ export function getPhone(state) {
   const [phone, $phone] = createStore({
     calls: {},
     rings: [],
+    publics: null,
   });
 
   const _phone = mergeProps(phone, {
@@ -62,7 +63,7 @@ export function getPhone(state) {
     },
   });
 
-  incoming.addEventListener('incoming', (e) => {
+  incoming.addEventListener('dests-update', (e) => {
     if (e.dap === 'turf') {
       $phone('rings', reconcile(horn.incoming));
       // _phone.addRing(e);
@@ -75,8 +76,21 @@ export function getPhone(state) {
       return (i.ship === state.c.host) && (i.crewId.startsWith(ourCrewIdPrefix))
     });
     ours.forEach(_phone.answer.bind(_phone));
-  })
+  });
 
+  createEffect(() => {
+    console.log('help');
+    if (phone.publics?.host !== state.c.host) {
+      if (phone.publics) phone.publics.cancel();
+      if (state.c.host) {
+        const publics = horn.watchPublics(state.c.host);
+        publics.addEventListener('dests-update', (e) => {
+          console.log(publics.publics);
+        });
+        $phone('publics', publics);
+      }
+    }
+  });
   // rtc.addEventListener("hungupcall", ({ uuid }) => {
   //   _phone.delCallById(uuid);
   // });

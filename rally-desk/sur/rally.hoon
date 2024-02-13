@@ -91,6 +91,7 @@
 +$  roar
   $%  [%admit =ship]
       [%eject =ship]  :: either a rejection or a kick/ban
+      [?(%cry %fade) ~]  :: when its visibility changes, so we can update /crews
       [%wave =wave]
       :: [%quit host=(unit ship)]  :: stop hosting and optionally name a successor
   ==
@@ -103,9 +104,9 @@
       =echo
   ==
 ::
-+$  incoming
++$  dests-update
   $:  %0
-      $%  [%cries dests=(list dest)]
+      $%  [%cries dests=(set dest)]
           [%cry =dest]
           [%fade =dest]
   ==  ==

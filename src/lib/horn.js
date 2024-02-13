@@ -1,7 +1,7 @@
 import { hex2patp, patp2hex, patp2dec, patp } from 'urbit-ob';
 import { UrbitRTCApp, UrbitRTCPeerConnection } from 'rtcswitchboard';
-import { RallyIncoming, RallyCrew, stringToDest, destToString, getDap } from 'lib/rally';
-import { IncomingEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
+import { RallyIncoming, RallyPublics, RallyCrew, stringToDest, destToString, getDap } from 'lib/rally';
+import { DestsUpdateEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
 // import { patp2dec } from 'urbit-ob/src/internal/co';
 
 export class Horn extends EventTarget {
@@ -17,11 +17,16 @@ export class Horn extends EventTarget {
     dap = dap || this.dap
     if (!this.incomings[dap]) {
       const incoming = this.incomings[dap] = new RallyIncoming(this.api, dap);
-      incoming.addEventListener('incoming', (e) => {
-        this.dispatchEvent(new IncomingEvent(e.incoming, dap));
+      incoming.addEventListener('dests-update', (e) => {
+        this.dispatchEvent(new DestsUpdateEvent(e.update, dap));
       });
     }
     return this.incomings[dap];
+  }
+
+  watchPublics(host, dap=null) {
+    dap = dap || this.dap;
+    return new RallyPublics(this.api, host, dap);
   }
 
   createRally(path=null, options={}) {

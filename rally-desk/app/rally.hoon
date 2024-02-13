@@ -4,8 +4,8 @@
 /$  cjd  %json  %delete
 /$  cje  %json  %enter
 :: /$  cjl  %json  %leave
-/$  cij  %incoming  %json
 /$  cuj  %update  %json
+/$  cduj  %dests-update  %json
 /$  ccuj  %client-update  %json
 |%
 +$  versioned-state
@@ -16,10 +16,11 @@
       =reset
       crews=(map c-id crew)
       crows=(map dest crow)
+      dests=(jug [ship @t] c-id)
       :: clients=(map uuid path)
   ==
 +$  current-state  state-0
-+$  reset  _3
++$  reset  _5
 ::
 +$  card  $+(card card:agent:gall)
 --
@@ -104,7 +105,7 @@
       ^-  (list card)
       ?.  ?=(%incoming new-kro)  ~  :: this allows multiple calls in a row without rejecting the first
       =/  in-path  (incoming-path:hc c-id)
-      [%give %fact [in-path]~ %incoming !>((make-incoming dest))]~
+      [%give %fact [in-path]~ %dests-update !>((make-dest-update dest))]~
       ::
         %eject
       ~&  ['getting ejected from' dest]
@@ -115,8 +116,8 @@
       :-  [%give %kick [path]~ ~]
       ?.  ?=(%incoming kro)  ~
       =/  in-path  (incoming-path:hc c-id)
-      =/  =incoming  [%0 %fade dest]
-      [%give %fact [in-path]~ %incoming !>(incoming)]~
+      =/  up=dests-update  [%0 %fade dest]
+      [%give %fact [in-path]~ %dests-update !>(up)]~
     ==
     ::
     ::
@@ -175,19 +176,43 @@
   ~&  >  "got on-watch on {<path>}"
   :: ?+  path  (on-watch:def path)
   ?+  path  `this
-      [%incoming v=@ dap=*]
+      [%incoming v=@ dap=@t ~]
     ?>  =(src our):bowl
-    =/  dap=^path  |2.path
     =/  dests=(list dest)
       %+  murn
         ~(tap by crows)
       |=  [=dest kro=crow]
       ?.  ?=(%incoming kro)  ~
+      :: in effect, this verifies the dap matches
       ?.  =((incoming-path:hc c-id.dest) path)  ~
       `dest
-    =/  =incoming  [%0 %cries dests]
+    =/  up=dests-update  [%0 %cries (silt dests)]
     :_  this
-    [%give %fact ~ %incoming !>(incoming)]~
+    [%give %fact ~ %dests-update !>(up)]~
+      [%crews v=@ host=@ dap=@t ~]
+    =/  host  (slav %p &3.path)
+    =/  loc  [host &4.path]
+    ?:  =(host our.bowl)
+      =/  dests=(list dest)
+        %+  murn
+          ~(tap by crews)
+        |=  [=c-id kru=crew]
+        =/  =dest  [host c-id]
+        ?.  ?=(%public visibility.kru)  ~
+        :: in effect, this verifies the dap matches
+        ?.  =((crews-path:hc dest) path)  ~
+        `dest
+      =/  up=dests-update  [%0 %cries (silt dests)]
+      :_  this
+      [%give %fact ~ %dests-update !>(up)]~
+    ?>  =(src our):bowl
+    =/  up=dests-update
+      :-  %0  :-  %cries
+      %-  ~(run in (~(get ju dests) loc))
+      |=  =c-id  [host c-id]
+    :_  this
+    :-  [%pass path %agent [host dap.bowl] %watch path]
+    [%give %fact ~ %dests-update !>(up)]~
       [?(%crew %crow) v=@ host=@ id=*]
     ~&  "matched update sub handler"
     =/  =dest  [(slav %p &3.path) |3.path]
@@ -215,8 +240,19 @@
 ++  on-leave
   |=  left=path
   ^-  (quip card _this)
+  ?+    left  `this
+      [%crews v=@ host=@ dap=@t *]
+    =/  host  (slav %p &3.left)
+    =/  loc  [host &4.left]
+    ?:  %-  ~(any by sup.bowl)
+        |=([* =path] =(left path))
+      `this
+    =.  dests  (~(del by dests) loc)
+    :_  this
+    ?:  =(host our.bowl)  ~
+    [%pass left %agent [host dap.bowl] %leave ~]~
   :: todo: automatically remove from whatever
-  `this
+  ==
 ::
 ++  on-peek
   |=  =path
@@ -236,6 +272,23 @@
   ::     ?~  p.sign  ~
   ::     u.p.sign
   ?+    wire  (on-agent:def wire sign)
+      [%crews v=@ host=@ dap=@t *]
+    =/  host  (slav %p &3.wire)
+    =/  loc  [host &4.wire]
+    ?+    -.sign  (on-agent:def wire sign)
+        %fact
+      ?.  ?=(%dests-update -.cage.sign)  `this
+      =/  up=dests-update  !<(dests-update +.cage.sign)
+      =.  dests
+        ?-  +<.up
+          %cries  (~(put by dests) loc (~(run in dests.up) tail))
+          %cry    (~(put ju dests) loc c-id.dest.up)
+          %fade   (~(del ju dests) loc c-id.dest.up)
+        ==
+      :_  this
+      [%give %fact [wire]~ cage.sign]~
+    ==
+    ::
       [%crew v=@ host=@ id=*]
     =/  =dest  [(slav %p &3.wire) |3.wire]
     ~&  ["got crew update" -.sign wire]
@@ -247,7 +300,7 @@
       ~&  ['new kro after' (~(get by crows) dest)]
       cards^this
     ==
-    :: 
+    ::
       [~ %test ~]
     `this
   ==
@@ -268,6 +321,7 @@
   |=  [=c-id =stirs actor=ship]
   ^-  (quip card _state)
   =/  kru  (~(gut by crews) c-id ~)
+  =/  new  ?=(^ kru)
   =/  kru
     ?^  kru  kru
     ?>  =(our.bowl actor)
@@ -307,6 +361,7 @@
         (~(put by crows) [u.host.up c-id.dest] %outgoing)  :: this leaves us open to %admit from new host
       ?.  =(our.bowl u.host.up)  state
       =?  crews  ?=(^ kro)
+        :: todo: need to emit a %dests-update %cry with this
         (~(put by crews) c-id.dest u.kro)
       state
     =.  crows  (~(del by crows) dest)
@@ -324,6 +379,7 @@
 ++  roars-to-cards
   |=  [=c-id =roars]
   ^-  (list card)
+  =/  =dest  [our.bowl c-id]
   %+  roll  roars
   |=  [=roar cards=(list card)]
   %+  weld  cards
@@ -333,10 +389,14 @@
     [(shell-card ship.roar c-id [%admit ~])]~
       %eject
     :~  (shell-card ship.roar c-id [%eject ~])
-        [%give %kick ~[(crew-update-path our.bowl c-id)] `ship.roar]
+        [%give %kick ~[(crew-update-path dest)] `ship.roar]
     ==
+      ?(%cry %fade)
+    =/  up=dests-update  :: for silly type reasons:
+      ?:  ?=(%cry -.roar)  [%0 -.roar dest]  [%0 -.roar dest]
+    [%give %fact [(crews-path dest)]~ %dests-update !>(up)]~
       %wave
-    [(crew-update-card [our.bowl c-id] [wave.roar]~)]~
+    [(crew-update-card dest [wave.roar]~)]~
   ==
 ::
 ++  quit-cards
@@ -354,6 +414,12 @@
   :*  :*  %give  %fact
           ~[path]
           %update  !>(update)
+      ==
+      ::
+      :*  %give  %fact
+          ~[(crews-path dest)]
+          %dests-update
+          !>(`dests-update`[%0 %fade dest])
       ==
       ::
       [%give %kick ~[path] ~]
@@ -421,6 +487,10 @@
   |=  =dest
   ^-  path
   [%action '0' (scot %p ship.dest) c-id.dest]
+++  crews-path
+  |=  =dest
+  ^-  path
+  [%crews '0' (scot %p ship.dest) (scag 1 c-id.dest)]
 ++  crew-update-path
   |=  =dest
   ^-  path

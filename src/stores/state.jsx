@@ -586,7 +586,7 @@ export function getState() {
         _state.subToTurf(_state.c.id);
         _state.clearTurfs(_state.c.id);
         _state.resetEditor();
-      })
+      });
     }
   });
 
