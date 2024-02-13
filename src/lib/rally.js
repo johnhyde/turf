@@ -10,7 +10,7 @@ export class RallyList extends EventTarget {
     }
   }
 
-  get destStrs() {
+  get destObjs() {
     return Array.from(this.dests).map(stringToDest);
   }
 
@@ -65,7 +65,7 @@ export class RallyIncoming extends RallyList {
   }
 
   get incoming() {
-    return this.destStrs;
+    return this.destObjs;
   }
 
   reject(dest) {
@@ -79,10 +79,30 @@ export class RallyPublics extends RallyList {
     const path = `/crews/0/${host}/${dap}`;
     super(api, path, dap, options);
     this.host = host;
+    this.rallies = {};
+    this.options = options;
+  }
+
+  update(update) {
+    updateDestsList(this.dests, update);
+    if (this.options.watchDetails) {
+      if (update.kind === 'fade') {
+        const destStr = destToString(update.dest);
+        this.rallies[destStr].cancel();
+        delete this.rallies[destStr];
+      } else {
+        this.dests.forEach((dest) => {
+          if (!this.rallies[dest]) {
+            this.rallies[dest] = new RallyCrew(this.api, stringToDest(dest), { dontEnter: true });
+          }
+        });
+      }
+    }
+    this.dispatchEvent(new DestsUpdateEvent(update, this.dap));
   }
 
   get publics() {
-    return this.destStrs;
+    return this.destObjs;
   }
 }
 
@@ -99,8 +119,8 @@ export class RallyCrew extends EventTarget {
       ...defaultCrew(),
     };
     this.path = '/crow/0/' + dest.ship + dest.crewId;
-
-    if (options.clientId) {
+    this.options = options;
+    if (options.clientId && !options.dontEnter) {
       this.clientId = options.clientId;
       this.enter();
     }
@@ -116,7 +136,7 @@ export class RallyCrew extends EventTarget {
       event: (update) => {
         if (update.kind === 'you-are') {
           console.log('client update', update);
-          if (!this.clientId) {
+          if (!this.clientId && !this.options.dontEnter) {
             this.clientId = update.uuid;
             this.enter();
           }
@@ -140,6 +160,13 @@ export class RallyCrew extends EventTarget {
       }
     });
     return this.promise;
+  }
+
+  async cancel() {
+    if (this.promise) {
+      const sub = await this.promise;
+      return this.api.unsubscribe(sub);
+    }
   }
 
   delete() {

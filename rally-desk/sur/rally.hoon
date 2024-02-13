@@ -29,11 +29,9 @@
       persistent=flug  :: should this crew persist when unoccupied?
       confirm=flug  :: do noobs need to be manually accepted after they pass access checks?
   ==
-+$  crow
-  :: %waiting means we've been admitted and we've subbed,
-  :: but we haven't gotten any updates yet
-  $@  state=?(%incoming %outgoing %waiting)
-  u=crew
++$  crow  (unit crew)
+:: %active means we've been admitted
++$  foot  ?(%incoming %outgoing %active)
 +$  update
   $:  %0
       $%  [%waves waves=waves]
@@ -90,7 +88,7 @@
 +$  roars  (list roar)
 +$  roar
   $%  [%admit =ship]
-      [%eject =ship]  :: either a rejection or a kick/ban
+      [%eject =ship kick=?]  :: either a rejection or a kick/ban
       [?(%cry %fade) ~]  :: when its visibility changes, so we can update /crews
       [%wave =wave]
       :: [%quit host=(unit ship)]  :: stop hosting and optionally name a successor

@@ -26,6 +26,7 @@
   ^-  [roars waves]
   =-  [(weld (turn waves (lead %wave)) roars) waves]
   ^-  [=roars =waves]
+  =/  private  ?=(%private visibility.kru)
   ?-    -.stir
     ::
       %add-client
@@ -37,7 +38,7 @@
       .=  ?=(%white kind.list.access.kru)
       (~(has in ships.list.access.kru) actor)
     :: todo: check the filter/thread
-    ?.  list-access  [[%eject actor]~ ~]
+    ?.  list-access  [[%eject actor private]~ ~]
     ?:  confirm.kru
       `[%add-noob actor `uuids`[uuid.stir ~ ~]]~
     :-  [%admit actor]~
@@ -46,18 +47,18 @@
       %del-client
     ?:  (~(has by peers.kru) actor)
       ?:  =((~(got by peers.kru) actor) [uuid.stir ~ ~])
-        :-  [%eject actor]~
+        :-  [%eject actor private]~
         [%del-peer actor]~
       `[%del-peer-client actor uuid.stir]~
     ?:  (~(has by noobs.kru) actor)
       ?:  =((~(got by noobs.kru) actor) [uuid.stir ~ ~])
-        :-  [%eject actor]~
+        :-  [%eject actor private]~
         [%del-noob actor]~
       `[%del-noob-client actor uuid.stir]~
     `~
     ::
       %leave
-    :-  [%eject actor]~  :: todo: remove bc redundant?
+    :-  [%eject actor private]~  :: todo: remove bc redundant?
     :~  [%del-peer actor]
         [%del-noob actor]
     ==
@@ -71,7 +72,7 @@
         [%add-peer ship.stir u.app]
     ==
       %ban
-    :-  [%eject ship.stir]~
+    :-  [%eject ship.stir private]~
     :~  [%revoke-access ship.stir]
         [%del-peer ship.stir]
         [%del-noob ship.stir]
@@ -185,7 +186,7 @@
       %add-peer
     [%admit ship.wav]~
       ?(%del-peer %del-noob)
-    [%eject ship.wav]~
+    [%eject ship.wav ?=(%private visibility.kru)]~
       %set-visibility
     ?:  =(visibility.kru visibility.wav)
       ~

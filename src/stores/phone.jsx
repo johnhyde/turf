@@ -12,6 +12,7 @@ export function getPhone(state) {
     calls: {},
     rings: [],
     publics: null,
+    publicCalls: {},
   });
 
   const _phone = mergeProps(phone, {
@@ -83,14 +84,18 @@ export function getPhone(state) {
     if (phone.publics?.host !== state.c.host) {
       if (phone.publics) phone.publics.cancel();
       if (state.c.host) {
-        const publics = horn.watchPublics(state.c.host);
+        const publics = horn.watchPublics(state.c.host, null, { watchDetails: true });
         publics.addEventListener('dests-update', (e) => {
           console.log(publics.publics);
+          $phone('publicCalls', reconcile(publics.rallies))
         });
         $phone('publics', publics);
       }
     }
   });
+  createEffect(() => {
+    console.log('public calls', JSON.stringify(phone.publicCalls, null, 2));
+  })
   // rtc.addEventListener("hungupcall", ({ uuid }) => {
   //   _phone.delCallById(uuid);
   // });

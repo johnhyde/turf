@@ -24,9 +24,9 @@ export class Horn extends EventTarget {
     return this.incomings[dap];
   }
 
-  watchPublics(host, dap=null) {
+  watchPublics(host, dap=null, options={}) {
     dap = dap || this.dap;
-    return new RallyPublics(this.api, host, dap);
+    return new RallyPublics(this.api, host, dap, options);
   }
 
   createRally(path=null, options={}) {
@@ -49,6 +49,14 @@ export class Horn extends EventTarget {
     const rally = new Rally(this.api, dest, options);
     this.rallies[destStr] = rally;
     return rally;
+  }
+
+  watchRally(dest, options={}) {
+    options = {
+      dontEnter: true,
+      ...options,
+    };
+    return new Rally(this.api, dest, options);
   }
 
   getRally(destStr) {
