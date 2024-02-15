@@ -42,6 +42,9 @@
   :~  add-client+(ot ~[uuid+so])
       del-client+(ot ~[uuid+so])
       leave+_~
+      accept-noob+(ot ~[ship+shp])
+      pass-noob+(ot ~[ship+shp])
+      ban+(ot ~[ship+shp])
       waves+waves
       wave+wave
   ==
@@ -78,7 +81,7 @@
   ==
 ++  access-filter
   %-  ot:soft
-  :~  dap+so:soft  :: todo: validate as @tas?
+  :~  desk+so:soft  :: todo: validate as @tas?
       ted+so:soft
   ==
 ++  uuids  (cork (ar so) silt)

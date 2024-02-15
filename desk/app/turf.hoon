@@ -440,6 +440,18 @@
   ?+     path  (on-peek:def path)
       [%x %local ~]
     ``local+!>(local:hc)
+      [%x %players *]
+    ?>  =(our src):bowl
+    =/  c-id  |2.path
+    =/  id=turf-id  [our.bowl (slag 2 c-id)]
+    =/  ppath  (turf-id-to-ppath id)
+    ~&  ['received players scry' id ppath]
+    =/  p  (~(gut by read:du-pond) ppath ~)
+    ?~  p  `~
+    ?~  turf.rock.p  `~
+    =*  turf  u.turf.rock.p
+    =/  players  ~(key by players.ephemera.turf)
+    ``noun+!>(players)
       :: [%x %dbug %state]
       :: *  ``noun+!<(~)
   ==
@@ -799,7 +811,7 @@
           :-  [%set-confirm %.y]
           :-  [%set-visibility %public]
           :-  [%set-access-list %black ~]
-          :-  [%set-access-filter `[%turf %gate-call-access]] :: note: this currently does nothing
+          :-  [%set-access-filter `[q.byk.bowl %gate-call-access]]
           %+  turn  ~(tap in ships.roar)
           |=  =ship
           [%add-peer ship ~]

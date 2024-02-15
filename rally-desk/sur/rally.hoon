@@ -10,7 +10,7 @@
 +$  clients        (jug ship uuid)
 :: blacklist bans ships, whitelist permits ships
 +$  access-list    [kind=?(%black %white) =ships]
-+$  access-filter  (unit [dap=@tas ted=@t])
++$  access-filter  (unit [=desk ted=term])
 +$  access
   :: ships must pass the list, and the filter if it exists
   $:  list=access-list
@@ -23,6 +23,7 @@
   $:  %0
       peers=clients
       noobs=clients  :: ships who have asked to join
+      filtered=(set ship)
       admins=ships
       =access
       =visibility
@@ -48,6 +49,7 @@
       [%del-noob =ship]
       [%add-noob-client =ship =uuid]
       [%del-noob-client =ship =uuid]
+      [%set-filtered =ship filtered=?]
       ::
       [%set-access-list list=access-list]
       [%set-access-filter filter=access-filter]
@@ -80,6 +82,7 @@
 ::   $%  []
 +$  admin-stir
   $%  [%accept-noob =ship]  :: del-noob and add-peer
+      [%pass-noob =ship]  :: mark noob as filtered
       [%ban =ship]  :: del-peer and revoke-access
       [%waves =waves]  :: only admins can do this
       [%wave =wave]  :: only admins can do this
@@ -89,6 +92,7 @@
 +$  roar
   $%  [%admit =ship]
       [%eject =ship kick=?]  :: either a rejection or a kick/ban
+      [%filter =ship]  :: start the filter thread for this noob
       [?(%cry %fade) ~]  :: when its visibility changes, so we can update /crews
       [%wave =wave]
       :: [%quit host=(unit ship)]  :: stop hosting and optionally name a successor
@@ -104,8 +108,11 @@
 ::
 +$  dests-update
   $:  %0
-      $%  [%cries dests=(set dest)]
-          [%cry =dest]
-          [%fade =dest]
-  ==  ==
+      dests-update-core
+  ==
++$  dests-update-core
+  $%  [%cries dests=(set dest)]
+      [%cry =dest]
+      [%fade =dest]
+  ==
 --

@@ -55,6 +55,8 @@
         ~[ship+(ship-json ship.wav)]
           ?(%add-peer-client %del-peer-client %add-noob-client %del-noob-client)
         ~[ship+(ship-json ship.wav) uuid+s+uuid.wav]
+          %set-filtered
+        ~[ship+(ship-json ship.wav) filtered+b+filtered.wav]
           %set-access-list
         ~[list+(access-list list.wav)]
           %set-access-filter
@@ -125,7 +127,7 @@
   ^-  json
   ?~  fil  ~
   %-  pairs
-  :~  dap+s+dap.u.fil
+  :~  desk+s+desk.u.fil
       ted+s+ted.u.fil
   ==
 ++  dests

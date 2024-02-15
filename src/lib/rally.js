@@ -60,7 +60,7 @@ export class RallyList extends EventTarget {
 
 export class RallyIncoming extends RallyList {
   constructor(api, dap=null, options={}) {
-    const path = '/incoming/0' + (dap ? '/' + dap : '');
+    const path = '/0/feet/incoming' + (dap ? '/' + dap : '');
     super(api, path, dap, options);
   }
 
@@ -76,7 +76,7 @@ export class RallyIncoming extends RallyList {
 
 export class RallyPublics extends RallyList {
   constructor(api, host, dap, options={}) {
-    const path = `/crews/0/${host}/${dap}`;
+    const path = `/0/crews/${host}/${dap}`;
     super(api, path, dap, options);
     this.host = host;
     this.rallies = {};
@@ -118,7 +118,7 @@ export class RallyCrew extends EventTarget {
       new: true,
       ...defaultCrew(),
     };
-    this.path = '/crow/0/' + dest.ship + dest.crewId;
+    this.path = '/0/crow/' + dest.ship + dest.crewId;
     this.options = options;
     if (options.clientId && !options.dontEnter) {
       this.clientId = options.clientId;
@@ -320,9 +320,10 @@ export function updateCrew(crew, waves=[]) {
 export function washCrew(crew, wave) {
   if (crew.new) crew.new = false;
   switch (wave.kind) {
-    case 'set-crew':
+    case 'set-crew': {
       Object.assign(crew, wave.crew);
       break;
+    }
     case 'add-peer': {
       const { ship, uuids } = wave;
       const oldUuids = crew.peers[ship] || [];
@@ -330,9 +331,10 @@ export function washCrew(crew, wave) {
       crew.peers[ship] = newUuids;
       break;
     }
-    case 'del-peer':
+    case 'del-peer': {
       delete crew.peers[wave.ship];
       break;
+    }
     case 'add-peer-client': {
       const { ship, uuid } = wave;
       const oldUuids = crew.peers[ship] || [];
@@ -355,9 +357,13 @@ export function washCrew(crew, wave) {
       crew.noobs[ship] = newUuids;
       break;
     }
-    case 'del-noob':
+    case 'del-noob': {
       delete crew.noobs[wave.ship];
+      const set = new Set(crew.filtered);
+      set.delete(wave.ship);
+      crew.filtered = Array.from(set);
       break;
+    }
     case 'add-noob-client': {
       const { ship, uuid } = wave;
       const oldUuids = crew.noobs[ship] || [];
@@ -373,11 +379,23 @@ export function washCrew(crew, wave) {
       crew.noobs[ship] = Array.from(set);
       break;
     }
+    case 'set-filtered': {
+      const set = new Set(crew.filtered);
+      if (wave.filtered) {
+        set.add(wave.ship);
+      } else {
+        set.delete(wave.ship);
+      }
+      crew.filtered = Array.from(set);
+      break;
+    }
     case 'set-access-list': {
       crew.access.list = wave.list;
+      break;
     }
     case 'set-access-filter': {
       crew.access.filter = wave.filter;
+      break;
     }
     case 'grant-access': {
       const shipSet = new Set(crew.access.list.ships);
@@ -387,6 +405,7 @@ export function washCrew(crew, wave) {
         shipSet.delete(wav.ship);
       }
       crew.access.list.ships = Array.from(shipSet);
+      break;
     }
     case 'revoke-access': {
       const shipSet = new Set(crew.access.list.ships);
@@ -396,27 +415,34 @@ export function washCrew(crew, wave) {
         shipSet.add(wave.ship);
       }
       crew.access.list.ships = Array.from(shipSet);
+      break;
     }
     case 'add-admin': {
       crew.admins = Array.from(new Set([...crew.admins, ...wave.ships]));
+      break;
     }
     case 'del-admin': {
       const shipSet = new Set(crew.admins);
       wave.ships.forEach(ship => shipSet.delete(ship));
       crew.admins = Array.from(shipSet);
+      break;
     }
     case 'set-visibility': {
       crew.visibility = wave.visibility;
+      break;
     }
     case 'set-persistent': {
       crew.persistent = wave.persistent;
+      break;
     }
     case 'set-confirm': {
       crew.confirm = wave.confirm;
+      break;
     }
-    default:
+    default: {
       console.log('wash crew not implemented for wave of kind', wave.kind);
       break;
+    }
   }
 }
 

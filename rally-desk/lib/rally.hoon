@@ -12,10 +12,14 @@
   |=  host=(unit ship)
   ^-  update
   [%0 %quit host]
-++  make-dest-update
+++  make-cry
   |=  =dest
   ^-  dests-update
   [%0 %cry dest]
+++  make-fade
+  |=  =dest
+  ^-  dests-update
+  [%0 %fade dest]
 ++  make-uuid
   |=  [now=@da eny=@uvJ]
   ^-  uuid
@@ -39,6 +43,9 @@
       (~(has in ships.list.access.kru) actor)
     :: todo: check the filter/thread
     ?.  list-access  [[%eject actor private]~ ~]
+    ?^  filter.access.kru
+      :-  [%filter actor]~
+      [%add-noob actor `uuids`[uuid.stir ~ ~]]~
     ?:  confirm.kru
       `[%add-noob actor `uuids`[uuid.stir ~ ~]]~
     :-  [%admit actor]~
@@ -65,11 +72,20 @@
     ::
     ::
       %accept-noob
-    =/  app  (~(get by noobs.kru) ship.stir)
-    ?~  app  `~
+    =/  unub  (~(get by noobs.kru) ship.stir)
+    ?~  unub  `~
     :-  [%admit ship.stir]~
     :~  [%del-noob ship.stir]
-        [%add-peer ship.stir u.app]
+        [%add-peer ship.stir u.unub]
+    ==
+      %pass-noob
+    =/  unub  (~(get by noobs.kru) ship.stir)
+    ?~  unub  `~
+    ?:  confirm.kru
+      `[%set-filtered ship.stir %.y]~
+    :-  [%admit ship.stir]~
+    :~  [%del-noob ship.stir]
+        [%add-peer ship.stir u.unub]
     ==
       %ban
     :-  [%eject ship.stir private]~
@@ -126,7 +142,10 @@
     =.  uuids  (~(uni in uuids) uuids.wav)
     kru(noobs (~(put by noobs.kru) ship.wav uuids))
       %del-noob
-    kru(noobs (~(del by noobs.kru) ship.wav))
+    %=  kru
+      noobs     (~(del by noobs.kru) ship.wav)
+      filtered  (~(del in filtered.kru) ship.wav)
+    ==
       %add-noob-client
     kru(noobs (~(put ju noobs.kru) ship.wav uuid.wav))
       %del-noob-client
@@ -134,6 +153,10 @@
     =/  uuids  (~(get ju noobs.kru) ship.wav)
     =.  uuids  (~(del in uuids) uuid.wav)
     kru(noobs (~(put by noobs.kru) ship.wav uuids))
+      %set-filtered
+    ?:  filtered.wav
+      kru(filtered (~(put in filtered.kru) ship.wav))
+    kru(filtered (~(del in filtered.kru) ship.wav))
     ::
       %set-access-list
     kru(list.access list.wav)
