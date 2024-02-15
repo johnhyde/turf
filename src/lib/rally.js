@@ -1,7 +1,7 @@
 export class RallyList extends EventTarget {
-  constructor(api, path, dap=null, options={}) {
+  constructor(urbit, path, dap=null, options={}) {
     super();
-    this.api = api;
+    this.urbit = urbit;
     this.dap = dap;
     this.dests = new Set();
     this.path = path;
@@ -15,7 +15,7 @@ export class RallyList extends EventTarget {
   }
 
   init() {
-    this.promise = this.api.subscribe({
+    this.promise = this.urbit.subscribe({
       app: 'rally',
       path: this.path,
       event: (update) => {
@@ -34,7 +34,7 @@ export class RallyList extends EventTarget {
   async cancel() {
     if (this.promise) {
       const sub = await this.promise;
-      return this.api.unsubscribe(sub);
+      return this.urbit.unsubscribe(sub);
     }
   }
 
@@ -59,9 +59,9 @@ export class RallyList extends EventTarget {
 }
 
 export class RallyIncoming extends RallyList {
-  constructor(api, dap=null, options={}) {
+  constructor(urbit, dap=null, options={}) {
     const path = '/0/feet/incoming' + (dap ? '/' + dap : '');
-    super(api, path, dap, options);
+    super(urbit, path, dap, options);
   }
 
   get incoming() {
@@ -70,16 +70,16 @@ export class RallyIncoming extends RallyList {
 
   reject(dest) {
     this.removeDest(dest);
-    return leaveRally(this.api, dest);
+    return leaveRally(this.urbit, dest);
   }
 }
 
 export class RallyPublics extends RallyList {
-  constructor(api, host, dap, options={}) {
+  constructor(urbit, host, dap, options={}) {
     const path = `/0/crews/${host}/${dap}`;
-    super(api, path, dap, options);
+    super(urbit, path, dap, options);
     this.host = host;
-    this.rallies = {};
+    this.crews = {};
     this.options = options;
   }
 
@@ -88,12 +88,12 @@ export class RallyPublics extends RallyList {
     if (this.options.watchDetails) {
       if (update.kind === 'fade') {
         const destStr = destToString(update.dest);
-        this.rallies[destStr].cancel();
-        delete this.rallies[destStr];
+        this.crews[destStr]?.cancel();
+        delete this.crews[destStr];
       } else {
         this.dests.forEach((dest) => {
-          if (!this.rallies[dest]) {
-            this.rallies[dest] = new RallyCrew(this.api, stringToDest(dest), { dontEnter: true });
+          if (!this.crews[dest]) {
+            this.crews[dest] = new RallyCrew(this.urbit, stringToDest(dest), { dontEnter: true });
           }
         });
       }
@@ -106,10 +106,12 @@ export class RallyPublics extends RallyList {
   }
 }
 
+const statuses = 'new | waiting | watching | active | ejected'.split(' | ');
+
 export class RallyCrew extends EventTarget {
-  constructor(api, dest, options={}) {
+  constructor(urbit, dest, options={}) {
     super();
-    this.api = api;
+    this.urbit = urbit;
     this.dest = dest;
     this.crewId = dest.crewId;
     this.clientId = null;
@@ -118,6 +120,8 @@ export class RallyCrew extends EventTarget {
       new: true,
       ...defaultCrew(),
     };
+    // new | waiting | watching | active | ejected
+    this.status = 'new';
     this.path = '/0/crow/' + dest.ship + dest.crewId;
     this.options = options;
     if (options.clientId && !options.dontEnter) {
@@ -129,8 +133,19 @@ export class RallyCrew extends EventTarget {
     }
   }
 
+  setStatus(newStatus) {
+    if (!statuses.includes(newStatus)) throw 'invalid crew status';
+    this.status = newStatus;
+    this.dispatchEvent(new CrewStatusEvent(this.status));
+  }
+
+  get active() {
+    return  (this.crew.peers?.[our] || []).includes(this.clientId);
+  }
+
   init() {
-    this.promise = this.api.subscribe({
+    this.setStatus('waiting');
+    this.promise = this.urbit.subscribe({
       app: 'rally',
       path: this.path,
       event: (update) => {
@@ -143,11 +158,22 @@ export class RallyCrew extends EventTarget {
           this.dispatchEvent(new ClientUpdateEvent(update));
         } else {
           console.log('crew update', update);
+          if (this.status === 'waiting') {
+            this.setStatus('watching');
+          }
           if (update.kind === 'quit') {
             console.log('it is over, bros');
+            this.shutDown();
             this.dispatchEvent(new CrewQuitEvent(update.host));
           } else { // waves
             updateCrew(this.crew, update.waves);
+            if (this.clientId) {
+              if (this.crew.peers[our]?.includes(this.clientId)) {
+                this.setStatus('active');
+              } else if (this.status === 'active') {
+                this.shutDown();
+              }
+            }
             this.dispatchEvent(new CrewUpdateEvent(update));
           }
         }
@@ -162,15 +188,20 @@ export class RallyCrew extends EventTarget {
     return this.promise;
   }
 
+  shutDown() {
+    this.cancel();
+    this.setStatus('ejected');
+  }
+
   async cancel() {
     if (this.promise) {
       const sub = await this.promise;
-      return this.api.unsubscribe(sub);
+      return this.urbit.unsubscribe(sub);
     }
   }
 
   delete() {
-    return this.api.poke({
+    return this.urbit.poke({
       app: 'rally',
       mark: 'delete',
       json: {
@@ -185,7 +216,7 @@ export class RallyCrew extends EventTarget {
 
   enter() {
     if (!this.clientId) throw new Error('Cannot enter without a clientId');
-    return this.api.poke({
+    return this.urbit.poke({
       app: 'rally',
       mark: 'enter',
       json: {
@@ -200,7 +231,7 @@ export class RallyCrew extends EventTarget {
 
   leave(allClients=false) {
     if (allClients) {
-      return leaveRally(this.api, this.dest);
+      return leaveRally(this.urbit, this.dest);
     }
     if (!this.clientId) throw new Error('Cannot leave without a clientId');
     return this.sendAction([{ leave: null }]);
@@ -214,7 +245,7 @@ export class RallyCrew extends EventTarget {
   }
 
   sendAction(stirs) {
-    this.api.poke({
+    this.urbit.poke({
       app: 'rally',
       mark: 'action',
       json: {
@@ -265,6 +296,13 @@ export class CrewQuitEvent extends Event {
   }
 }
 
+export class CrewStatusEvent extends Event {
+  constructor(status) {
+    super('crew-status');
+    this.status = status;
+  }
+}
+
 export class SubscriptionErrorEvent extends Event {
   constructor(path, error) {
     super('subscription-error');
@@ -285,8 +323,8 @@ export class SubscriptionQuitEvent extends Event {
 // API Calls
 //
 
-export function leaveRally(api, dest) {
-  return api.poke({
+export function leaveRally(urbit, dest) {
+  return urbit.poke({
     app: 'rally',
     mark: 'leave',
     json: { dest },

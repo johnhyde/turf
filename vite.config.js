@@ -44,6 +44,9 @@ export default ({ mode }) => {
       fs: {
         strict: false,
       },
+      hmr: {
+        overlay: false,
+      },
     },
     build: {
       target: 'esnext',

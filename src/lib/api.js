@@ -191,10 +191,14 @@ export async function sendDM(patp, msg) {
 
 export function initRTC() {
   window.rtc = rtc = new UrbitRTCApp('turf', { iceServers: [] }, api);
+  rtc.initialize();
+  rtc.addEventListener('incomingcall', (ring) => {
+    console.log('pardon me for mentioning it, ladies, but someone is ringing', ring);
+  });
 }
 
 export function initRally() {
-  window.horn = horn = new Horn(api);
+  window.horn = horn = new Horn(api, rtc);
   window.incoming = incoming = horn.watchIncoming();
   incoming.addEventListener('dests-update', (e) => {
     console.log('incoming!', e);

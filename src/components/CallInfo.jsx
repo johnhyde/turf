@@ -7,39 +7,42 @@ import { bind, input } from 'lib/utils';
 export default function CallInfo(props) {
   const phone = usePhone();
   const [peers, $peers] = createSignal([]);
+  const [activePeers, $activePeers] = createSignal([]);
   const [ourStream, $ourStream] = createSignal();
-  const [conns, $conns] = window.con = createStore(Object.entries(props.call.calls));
-  // const orderedConns = window.ocon = createMemo(() => {
-  //   return Object.entries(conns).sort((a, b) => {
-  //     return a[0].localeCompare(b[0]);
-  //   });
-  // });
+  const [store, $store] = window.con = createStore({ conns: {} });
+  const conns = () => store.conns;
+  const $conns = (...args) => $store('conns', ...args);
+  const absentPeers = () => peers().filter(p => !activePeers().includes(p));
+
   const orderedConns = window.ocon = () => {
-    // console.log(conns.butt);
-    return conns.sort((a, b) => {
+    return Object.entries(conns()).sort((a, b) => {
       return a[0].localeCompare(b[0]);
     });
   };
-  let controller;
+
   createEffect(() => {
-    controller = new AbortController();
+    $conns(reconcile(props.call.calls));
+    const controller = new AbortController();
     props.call.addEventListener('crew-update', (update) => {
       updatePeers();
     }, { signal: controller.signal });
     updatePeers();
     props.call.addEventListener('calls-update', (update) => {
       if (update.kind === 'add') {
-        $conns((conns) => [...conns,
-          [update.clientString, update.call],
-        ]);
+        $conns(update.clientString, update.call);
       } else {
-        $conns((conns) => conns.filter(c => c[0] !== update.clientString));
+        $conns(update.clientString, undefined);
       }
     }, { signal: controller.signal });
-    onCleanup(() => controller.abort());
+    onCleanup(() => {
+      controller.abort();
+      $conns(reconcile({}));
+    });
   });
   function updatePeers() {
-    $peers(Object.keys(props.call.crew.peers).filter(patp => patp !== our));
+    const peers = Object.entries(props.call.crew.peers).filter(p => p[0] !== our);
+    $peers(peers.map(p => p[0]));
+    $activePeers(peers.filter(p => p[1].length).map(p => p[0]));
   }
 
   onMount(() => {
@@ -50,7 +53,6 @@ export default function CallInfo(props) {
       })
       .then(stream => {
         $ourStream(stream);
-        // socket.emit("broadcaster");
       })
       .catch(error => console.error(error));
   });
@@ -58,7 +60,8 @@ export default function CallInfo(props) {
   return (
     <div class="bg-yellow-700 border border-yellow-950 rounded-lg pointer-events-auto mx-auto">
       <p>
-        Talking to {peers().length ? peers().join(', ') : 'no one, yet'}
+        Talking to {activePeers().length ? activePeers().join(', ') : 'no one, yet'}
+        {absentPeers().length && `; waiting for ${absentPeers().join(', ')}`}
       </p>
       <div class="flex flex-wrap justify-center">
         {/* {JSON.stringify(conns)}
@@ -69,9 +72,6 @@ export default function CallInfo(props) {
           }}
         </For>
         <VideoSquare stream={ourStream()} label={our} us />
-        {/* <div class="w-96">
-          <video ref={video} playsinline autoplay muted />
-        </div> */}
       </div>
       <div class="flex justify-center">
         <button onClick={() => phone.hangUp(props.call)}>
@@ -93,12 +93,9 @@ function Conn(props) {
     if (props.conn) {
       props.conn.addEventListener('datachannel', (event) => {
         $chan(event.channel);
-        // updatePeers();
         console.log('got new data channel in Conn component', event);
       }, { signal: controller.signal });
       props.conn.addEventListener('track', (event) => {
-        // $chan(event.track);
-        // updatePeers();
         $theirStream(event.streams[0]);
         console.log('got new track in Conn component', event);
       }, { signal: controller.signal });
@@ -118,10 +115,6 @@ function Conn(props) {
         console.log('we have received a dang message');
         $msgs([...msgs(), event.data]);
       }, { signal: controller.signal });
-      // chan().onmessage = (event) => {
-      //   console.log('we have received a dang message');
-      //   $msgs([...msgs(), event.data]);
-      // };
     }
     onCleanup(() => {
       controller.abort();

@@ -67,7 +67,6 @@ export function getPhone(state) {
   incoming.addEventListener('dests-update', (e) => {
     if (e.dap === 'turf') {
       $phone('rings', reconcile(horn.incoming));
-      // _phone.addRing(e);
     }
   });
 
@@ -87,7 +86,7 @@ export function getPhone(state) {
         const publics = horn.watchPublics(state.c.host, null, { watchDetails: true });
         publics.addEventListener('dests-update', (e) => {
           console.log(publics.publics);
-          $phone('publicCalls', reconcile(publics.rallies))
+          $phone('publicCalls', reconcile(publics.crews))
         });
         $phone('publics', publics);
       }
@@ -95,11 +94,7 @@ export function getPhone(state) {
   });
   createEffect(() => {
     console.log('public calls', JSON.stringify(phone.publicCalls, null, 2));
-  })
-  // rtc.addEventListener("hungupcall", ({ uuid }) => {
-  //   _phone.delCallById(uuid);
-  // });
-  // rtc.initialize();
+  });
 
   window.phone = _phone;
   return _phone;

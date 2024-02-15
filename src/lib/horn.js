@@ -5,10 +5,16 @@ import { DestsUpdateEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
 // import { patp2dec } from 'urbit-ob/src/internal/co';
 
 export class Horn extends EventTarget {
-  constructor(api, dap) {
+  constructor(urbit, rtc, dap) {
     super();
-    this.api = api;
-    this.dap = dap || api.desk
+    this.urbit = urbit;
+    this.rtc = rtc;
+    if (!this.rtc) {
+      this.rtc = new UrbitRTCApp(this.dap, { iceServers: [] }, urbit);
+      this.rtc.initialize();
+    }
+    this.api = { urbit, rtc };
+    this.dap = dap || urbit.desk
     this.incomings = {};
     this.rallies = {};
   }
@@ -16,7 +22,7 @@ export class Horn extends EventTarget {
   watchIncoming(dap=null) {
     dap = dap || this.dap
     if (!this.incomings[dap]) {
-      const incoming = this.incomings[dap] = new RallyIncoming(this.api, dap);
+      const incoming = this.incomings[dap] = new RallyIncoming(this.urbit, dap);
       incoming.addEventListener('dests-update', (e) => {
         this.dispatchEvent(new DestsUpdateEvent(e.update, dap));
       });
@@ -26,7 +32,7 @@ export class Horn extends EventTarget {
 
   watchPublics(host, dap=null, options={}) {
     dap = dap || this.dap;
-    return new RallyPublics(this.api, host, dap, options);
+    return new RallyPublics(this.urbit, host, dap, options);
   }
 
   createRally(path=null, options={}) {
@@ -34,7 +40,7 @@ export class Horn extends EventTarget {
     if (path[0] !== '/') path = '/' + path;
     const crewId = `/${this.dap}${path}`
     const dest = {
-      ship: '~' + this.api.ship,
+      ship: '~' + this.urbit.ship,
       crewId,
     };
     return this.joinRally(dest, options);
@@ -43,11 +49,25 @@ export class Horn extends EventTarget {
   joinRally(dest, options={}) {
     if (typeof dest === 'string') dest = stringToDest(dest);
     const destStr = destToString(dest);
-    if (this.rallies[destStr]) return this.rallies[destStr]
+    let rally = this.rallies[destStr];
+    if (rally) {
+      if (!(['new', 'ejected'].includes(rally.status))) {
+        return rally;
+      } else {
+        rally.shutDown();
+      }
+    }
     const dap = getDap(dest.crewId);
     if (this.incomings[dap]) this.incomings[dap].removeDest(dest);
-    const rally = new Rally(this.api, dest, options);
+    rally = new Rally(this.api, dest, options);
     this.rallies[destStr] = rally;
+    const controller = new AbortController();
+    rally.addEventListener('crew-status', (e) => {
+      if (e.status === 'ejected') {
+        delete this.rallies[destStr];
+        controller.abort();
+      }
+    }, { signal: controller.signal });
     return rally;
   }
 
@@ -71,35 +91,32 @@ export class Horn extends EventTarget {
 
 export class Rally extends RallyCrew {
   constructor(api, dest, options={}) {
-    super(api, dest, options);
+    super(api.urbit, dest, options);
     this.api = api;
+    this.urbit = api.urbit;
+    this.rtc = api.rtc;
     this.dest = dest;
     this.dap = getDap(dest.crewId);
-    this.rtc = new UrbitRTCApp(this.dap, { iceServers: [] }, api);
+    this.rtc = new UrbitRTCApp(this.dap, { iceServers: [] }, this.urbit);
     this.calls = {};
     this.rings = [];
     this.toAnswer = new Set();
+    this.controller = new AbortController();
     this.setupCrew();
     this.setupRtc();
-    // if (!options.waitToInit) {
-    //   this.init();
-    // }
   }
 
   setupCrew() {
     this.addEventListener('client-update', (e) => {
       this.updateCalls();
-    });
+    }, { signal: this.controller.signal });
     this.addEventListener('crew-update', (e) => {
       this.updateCalls();
-    });
-    // this.crew.addEventListener('crew-quit', (e) => {
-      // this.destroy();
-    // });
+    }, { signal: this.controller.signal });
   }
 
   setupRtc() {
-    rtc.addEventListener("incomingcall", (ring) => {
+    rtc.addEventListener('incomingcall', (ring) => {
       const { crewId, callerId: clientId, calleeId: us } = parseCallId(ring.uuid);
       if (!(crewId && clientId && us)) return;
       if (this.crewId !== crewId) return;
@@ -122,18 +139,18 @@ export class Rally extends RallyCrew {
           this.rings.push(ring); // maybe we need to wait for info
         }
       }
-    });
-  
-    rtc.addEventListener("hungupcall", ({ uuid }) => {
-      _phone.delCallByUuid(uuid);
-    });
-    rtc.initialize();
+    }, { signal: this.controller.signal });
+  }
+
+  shutDown() {
+    super.shutDown();
+    this.controller.abort();
   }
 
   async updateCalls() {
     if (!this.clientId) return;
     const us = this.client;
-    const clients = this.clients;
+    const clients = this.active ? this.clients : [];
     const toCall = [], toAnswer = new Set();
     clients.forEach((client) => {
       if (shouldCall(us, client)) {
@@ -158,11 +175,6 @@ export class Rally extends RallyCrew {
         existingCalls.delete(str);
         return;
       }
-      // const callId = makeCallId(this.crewId, client.clientId, us.clientId);
-      // const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.api, this.rtc.configuration);
-      // this.calls[str] = call;
-      // this.listenToCall(call);
-      // call.initialize(); // attempt answering in case we're slow
     });
     toCall.forEach((client) => {
       const str = clientToString(client);
@@ -171,9 +183,9 @@ export class Rally extends RallyCrew {
         return;
       }
       const callId = makeCallId(this.crewId, us.clientId, client.clientId);
-      const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.api, this.rtc.configuration);
+      const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.urbit, this.rtc.configuration);
       this.calls[str] = call;
-      this.listenToCall(call);
+      this.listenToCall(call, str);
       this.addDataChannel(call);
       call.dispatchUrbitState('dialing');
       call.ring(callId);
@@ -181,10 +193,16 @@ export class Rally extends RallyCrew {
     });
     // now, any remaining existingCalls are ones that are no longer valid (removed from crew)
     Array.from(existingCalls).forEach((clientStr) => {
-      this.calls[clientStr].close();
-      delete this.calls[clientStr];
-      this.dispatchEvent(new CallsUpdateEvent('del', clientStr));
+
+      const call = this.calls[clientStr];
+      if (call.connectionState !== 'closed') call.close();
+      this.deleteCall(clientStr);
     });
+  }
+
+  deleteCall(clientStr) {
+    delete this.calls[clientStr];
+    this.dispatchEvent(new CallsUpdateEvent('del', clientStr));
   }
 
   get id() {
@@ -192,7 +210,7 @@ export class Rally extends RallyCrew {
   }
 
   get our() {
-    return '~' + this.api.ship;
+    return '~' + this.urbit.ship;
   }
 
   get client() {
@@ -214,15 +232,16 @@ export class Rally extends RallyCrew {
 
   answerRing(ring) {
     const call = ring.answer();
-    this.listenToCall(call);
+    this.listenToCall(call, ring.clientStr);
     this.calls[ring.clientStr] = call;
     this.dispatchEvent(new CallsUpdateEvent('add', ring.clientStr, call));
     call.initialize();
   }
 
-  listenToCall(call) {
+  listenToCall(call, clientStr) {
     call.addEventListener('hungupcall', (e) => {
       console.log('call hung up', call.uuid);
+      this.deleteCall(clientStr);
     });
     call.addEventListener('statechanged', ({ uuid, urbitState }) => {
       console.log(`state change for ${uuid}: ${urbitState}`);
@@ -239,9 +258,6 @@ export class Rally extends RallyCrew {
   }
 
   handleDataChannel(channel) {
-    // channel.onmessage = this.handleIncomingMessage;
-    // channel.onopen = this.handleChannelOpen;
-    // channel.onclose = this.handleChannelClose;
     channel.addEventListener('message', this.handleIncomingMessage);
     channel.addEventListener('open', this.handleChannelOpen);
     channel.addEventListener('close', this.handleChannelClose);
@@ -259,7 +275,7 @@ export class Rally extends RallyCrew {
   }
 }
 
-// client: { ship: '~zod', clientId: '0v7eg.gfs4l.ute9f'}
+// example client: { ship: '~zod', clientId: '0v7eg.gfs4l.ute9f'}
 export function shouldCall(clientA, clientB) {
   if (clientA.ship !== clientB.ship) {
     return shipLessThan(clientA.ship, clientB.ship);
@@ -290,8 +306,6 @@ export function numLessThan(numA, numB) {
   return numLessThan(frontA, frontB);
 }
 // console.log('should say true', shipLessThan('~midlev-mindyr-midlev-mindyr--midlev-mindyr-midlev-mindyr', '~midlev-mindyr-midlev-mindyr--midlev-mindyr-midlev-minnup'));
-// window.hmm = patp2dec;
-// window.hmn = patp2hex;
 
 export function clientToString(client) {
   return client.ship + ':' + client.clientId;

@@ -28,6 +28,10 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
     'Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got mispelled?',
   );
 }
+if (import.meta.hot) {
+  import.meta.hot.accept(() => import.meta.hot.invalidate());
+}
+
 let violated = false;
 document.addEventListener("securitypolicyviolation", (e) => {
   console.log(e.blockedURI);
