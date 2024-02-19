@@ -35,6 +35,10 @@ export function getPhone(state) {
       call.leave(true);
       this.delCall(call);
     },
+    delete(call) {
+      call.delete();
+      this.delCall(call);
+    },
     addCall(call) {
       call.addEventListener('crew-quit', (e) => {
         this.delCall(call);

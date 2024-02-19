@@ -205,14 +205,6 @@ export class Rally extends RallyCrew {
     this.dispatchEvent(new CallsUpdateEvent('del', clientStr));
   }
 
-  get id() {
-    return destToString(this.dest);
-  }
-
-  get our() {
-    return '~' + this.urbit.ship;
-  }
-
   get client() {
     return {
       ship: this.our,
@@ -245,6 +237,10 @@ export class Rally extends RallyCrew {
     });
     call.addEventListener('statechanged', ({ uuid, urbitState }) => {
       console.log(`state change for ${uuid}: ${urbitState}`);
+    });
+    call.remoteStreams = new Set();
+    call.addEventListener('track', (event) => {
+      event.streams.forEach(s => call.remoteStreams.add(s));
     });
     call.ondatachannel = (event) => {
       call.channel = event.channel;
@@ -317,11 +313,18 @@ export function stringToClient(str) {
 }
 
 export function makeCallId(crewId, callerId, calleeId) {
-  return `._${crewId}_${callerId}_${calleeId}`.replaceAll('/', '-');
+  return `._${crewId}_${callerId}_${calleeId}`
+    .replaceAll('_', '___')
+    .replaceAll('-', '_--')
+    .replaceAll('/', '_-_');
 }
 
 export function parseCallId(callId) {
-  const [_, crewId, callerId, calleeId] = callId.replaceAll('-', '/').split('_');
+  let [_, crewId, callerId, calleeId] = callId
+    .replaceAll('_-_', '/')
+    .replaceAll('_--', '-')
+    .split('___');
+  crewId
   return { crewId: crewId, callerId, calleeId };
 }
 

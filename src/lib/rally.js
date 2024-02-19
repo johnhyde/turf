@@ -113,6 +113,7 @@ export class RallyCrew extends EventTarget {
     super();
     this.urbit = urbit;
     this.dest = dest;
+    this.host = dest.ship;
     this.crewId = dest.crewId;
     this.clientId = null;
     this.crew = {
@@ -139,8 +140,28 @@ export class RallyCrew extends EventTarget {
     this.dispatchEvent(new CrewStatusEvent(this.status));
   }
 
+  get id() {
+    return destToString(this.dest);
+  }
+
+  get our() {
+    return '~' + this.urbit.ship;
+  }
+
   get active() {
     return  (this.crew.peers?.[our] || []).includes(this.clientId);
+  }
+
+  get new() { return this.statuts === 'new'; }
+  get waiting() { return this.statuts === 'waiting'; }
+  get watching() { return this.statuts === 'watching'; }
+
+  get peers() {
+    return Object.keys(this.crew.peers);
+  }
+
+  get activePeers() {
+    return Object.entries(this.crew.peers).filter(p => p[1].length).map(p => p[0])
   }
 
   init() {
@@ -200,8 +221,8 @@ export class RallyCrew extends EventTarget {
     }
   }
 
-  delete() {
-    return this.urbit.poke({
+  async delete() {
+    const result = await this.urbit.poke({
       app: 'rally',
       mark: 'delete',
       json: {
@@ -212,6 +233,8 @@ export class RallyCrew extends EventTarget {
         console.error('RallyCrew failed to delete crew at ' + this.path, e);
       },
     });
+    this.shutDown();
+    return result;
   }
 
   enter() {
@@ -242,6 +265,10 @@ export class RallyCrew extends EventTarget {
     return this.sendAction(
       ships.map((ship) => ({ wave: { 'add-peer': { ship, uuids: [] } }}))
     );
+  }
+
+  confirm(ship) {
+    return this.sendAction([{ 'accept-noob': { ship } }]);
   }
 
   sendAction(stirs) {

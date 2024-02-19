@@ -1,13 +1,18 @@
-import { onMount, onCleanup } from 'solid-js';
+import { createSignal, createEffect, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state';
 import { usePhone } from 'stores/phone';
 import Modal from '@/Modal';
 import CallInfo from '@/CallInfo';
 
-export default function CallCenter(props) {
+function idSort(a, b) {
+  return a.id.localeCompare(b.id);
+}
+
+export default function CallCenter() {
   const state = useState();
   const phone = usePhone();
-  const calls = () => Object.values(phone.calls).sort((a, b) => a.id.localeCompare(b.id));
+  const calls = () => Object.values(phone.calls).sort(idSort);
+  const publicCalls = () => Object.values(phone.publicCalls).sort(idSort);
 
   return (<>{
     (calls().length == 0) ?
@@ -22,6 +27,11 @@ export default function CallCenter(props) {
             }}
           </For>
         </div>
+        <For each={publicCalls()}>
+          {(call) => {
+            return <JoinCallButton call={call} />
+          }}
+        </For>
       </Show>
     ) : (
       <Portal mount={document.getElementById('modals')}>
@@ -35,4 +45,30 @@ export default function CallCenter(props) {
       </Portal>
     )
   }</>);
+}
+
+
+function JoinCallButton(props) {
+  const state = useState();
+  const [callers, $callers] = createSignal([]);
+  const callPeers = () => callers().filter(c => state.c.peers.includes(c));
+  const phone = usePhone();
+  createEffect(() => {
+    if (props.call) {
+      const controller = new AbortController();
+      props.call.addEventListener('crew-update', (e) => {
+        $callers(props.call.activePeers);
+      }, { signal: controller.signal });
+      $callers(props.call.activePeers);
+      onCleanup(() => {
+        controller.abort();
+      });
+    }
+  });
+
+  return <Show when={callPeers().length}>
+    <button onClick={[phone.answer.bind(phone), props.call.id]}>
+      Join {callers().join(', ')}
+    </button>
+  </Show>
 }

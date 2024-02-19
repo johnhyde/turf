@@ -811,6 +811,7 @@
           :-  [%set-confirm %.y]
           :-  [%set-visibility %public]
           :-  [%set-access-list %black ~]
+          :-  [%add-admin (silt ~[src.bowl])]
           :-  [%set-access-filter `[q.byk.bowl %gate-call-access]]
           %+  turn  ~(tap in ships.roar)
           |=  =ship

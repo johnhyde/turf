@@ -8,11 +8,28 @@ export default function CallInfo(props) {
   const phone = usePhone();
   const [peers, $peers] = createSignal([]);
   const [activePeers, $activePeers] = createSignal([]);
+  const [status, $status] = createSignal();
   const [ourStream, $ourStream] = createSignal();
-  const [store, $store] = window.con = createStore({ conns: {} });
+  const [store, $store] = window.con = createStore({ conns: {}, crew: {} });
   const conns = () => store.conns;
   const $conns = (...args) => $store('conns', ...args);
+  const crew = () => store.crew;
+  const $crew = (...args) => $store('crew', ...args);
+  const weAreAdmin = () => our === props.call?.host || crew().admins?.includes(our);
+  const noobs = () => Object.keys(crew().noobs || {});
+  const validNoobs = () => (!crew().access?.filter) ? noobs() : noobs().filter(n => crew().filtered?.includes(n));
   const absentPeers = () => peers().filter(p => !activePeers().includes(p));
+
+  const msg = () => {
+    if (status() == 'active') {
+      const talkingTo = activePeers().length ? activePeers().join(', ') : 'no one, yet';
+      const waitingMsg = absentPeers().length ? `; waiting for ${absentPeers().join(', ')}` : '';
+      return `Talking to ${talkingTo + waitingMsg}`;
+    } else if (status() === 'waiting' || status() === 'watching') {
+      return 'Waiting to be let into the call';
+    }
+    return '';
+  }
 
   const orderedConns = window.ocon = () => {
     return Object.entries(conns()).sort((a, b) => {
@@ -24,9 +41,13 @@ export default function CallInfo(props) {
     $conns(reconcile(props.call.calls));
     const controller = new AbortController();
     props.call.addEventListener('crew-update', (update) => {
-      updatePeers();
+      updateCrewInfo();
     }, { signal: controller.signal });
-    updatePeers();
+    updateCrewInfo();
+    props.call.addEventListener('crew-status', () => {
+      $status(props.call.status);
+    }, { signal: controller.signal });
+    $status(props.call.status);
     props.call.addEventListener('calls-update', (update) => {
       if (update.kind === 'add') {
         $conns(update.clientString, update.call);
@@ -39,10 +60,10 @@ export default function CallInfo(props) {
       $conns(reconcile({}));
     });
   });
-  function updatePeers() {
-    const peers = Object.entries(props.call.crew.peers).filter(p => p[0] !== our);
-    $peers(peers.map(p => p[0]));
-    $activePeers(peers.filter(p => p[1].length).map(p => p[0]));
+  function updateCrewInfo() {
+    $peers(props.call.peers.filter(p => p !== our));
+    $activePeers(props.call.activePeers.filter(p => p !== our));
+    $crew(reconcile(props.call.crew));
   }
 
   onMount(() => {
@@ -60,14 +81,13 @@ export default function CallInfo(props) {
   return (
     <div class="bg-yellow-700 border border-yellow-950 rounded-lg pointer-events-auto mx-auto">
       <p>
-        Talking to {activePeers().length ? activePeers().join(', ') : 'no one, yet'}
-        {absentPeers().length && `; waiting for ${absentPeers().join(', ')}`}
+        {msg()}
       </p>
       <div class="flex flex-wrap justify-center">
         {/* {JSON.stringify(conns)}
         {JSON.stringify(orderedConns())} */}
         <For each={orderedConns()}>
-        {([clientStr, conn]) => {
+          {([clientStr, conn]) => {
             return <Conn conn={conn} clientStr={clientStr} stream={ourStream()} />;
           }}
         </For>
@@ -77,6 +97,18 @@ export default function CallInfo(props) {
         <button onClick={() => phone.hangUp(props.call)}>
           Hang Up
         </button>
+        <Show when={weAreAdmin()}>
+          <button onClick={() => phone.delete(props.call)}>
+            End Call
+          </button>
+          <For each={validNoobs()}>
+            {(noob) => {
+              return <button onClick={() => props.call.confirm(noob)}>
+                Let {noob} in
+              </button>;
+            }}
+          </For>
+        </Show>
       </div>
     </div>);
 }
@@ -91,6 +123,7 @@ function Conn(props) {
   createEffect(() => {
     let controller = new AbortController();
     if (props.conn) {
+      console.log('apparently connection changed', props.conn.peer);
       props.conn.addEventListener('datachannel', (event) => {
         $chan(event.channel);
         console.log('got new data channel in Conn component', event);
@@ -99,12 +132,18 @@ function Conn(props) {
         $theirStream(event.streams[0]);
         console.log('got new track in Conn component', event);
       }, { signal: controller.signal });
+      if (props.conn.remoteStreams?.size) {
+        $theirStream([...props.conn.remoteStreams][0]);
+      }
+      props.conn.getReceivers
     }
     onCleanup(() => controller.abort());
   });
   createEffect(() => {
     if (props.stream && props.conn) {
-      props.stream.getTracks().forEach(track => props.conn.addTrack(track, props.stream));
+      props.stream.getTracks().forEach((track) => {
+        try { props.conn.addTrack(track, props.stream); } catch (e) {}
+      });
     }
   });
 
