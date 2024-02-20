@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
-import { UrbitRTCApp } from 'rtcswitchboard';
+import { UrbitRTCApp } from 'lib/switchboard';
 import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
 import { Horn } from 'lib/horn';
 
@@ -198,7 +198,7 @@ async function fetchIceServers() {
   return response.json();
 }
 export function initRTC(iceServers) {
-  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers }, api);
+  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers }, api, 'turf-switchboard');
   rtc.initialize();
   rtc.addEventListener('incomingcall', (ring) => {
     console.log('pardon me for mentioning it, ladies, but someone is ringing', ring);

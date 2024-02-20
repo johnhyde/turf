@@ -1,5 +1,5 @@
 import { hex2patp, patp2hex, patp2dec, patp } from 'urbit-ob';
-import { UrbitRTCApp, UrbitRTCPeerConnection } from 'rtcswitchboard';
+import { UrbitRTCApp, UrbitRTCPeerConnection } from 'lib/switchboard';
 import { RallyIncoming, RallyPublics, RallyCrew, stringToDest, destToString, getDap } from 'lib/rally';
 import { DestsUpdateEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
 // import { patp2dec } from 'urbit-ob/src/internal/co';
@@ -103,10 +103,9 @@ export class Rally extends RallyCrew {
     super(api.urbit, dest, options);
     this.api = api;
     this.urbit = api.urbit;
-    this.rtc = api.rtc;
+    this.rtc = api.rtc || new UrbitRTCApp(this.dap, { iceServers: [] }, this.urbit);
     this.dest = dest;
     this.dap = getDap(dest.crewId);
-    this.rtc = new UrbitRTCApp(this.dap, { iceServers: [] }, this.urbit);
     this.calls = {};
     this.rings = [];
     this.toAnswer = new Set();
@@ -192,11 +191,12 @@ export class Rally extends RallyCrew {
         return;
       }
       const callId = makeCallId(this.crewId, us.clientId, client.clientId);
-      const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.urbit, this.rtc.configuration);
+      const call = new UrbitRTCPeerConnection(client.ship.substring(1), this.dap, callId, this.urbit, this.rtc.app, this.rtc.configuration);
       this.calls[str] = call;
       this.listenToCall(call, str);
       this.addDataChannel(call);
-      call.dispatchUrbitState('dialing');
+      // call.dispatchUrbitState('dialing');
+      call.urbitState = 'dialing';
       call.ring(callId);
       this.dispatchEvent(new CallsUpdateEvent('add', str, call));
     });

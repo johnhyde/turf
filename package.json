@@ -63,7 +63,6 @@
     "dotenv-cli": "^7.3.0",
     "lodash": "^4.17.21",
     "phaser": "^3.60.0",
-    "rtcswitchboard": "file:../call/packages/rtcswitchboard-js",
     "solid-js": "^1.6.10",
     "urbit-ob": "^5.0.1"
   },
