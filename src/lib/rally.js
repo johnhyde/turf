@@ -5,6 +5,7 @@ export class RallyList extends EventTarget {
     this.dap = dap;
     this.dests = new Set();
     this.path = path;
+    this.app = options.app || 'rally';
     if (!options.waitToInit) {
       this.init();
     }
@@ -16,7 +17,7 @@ export class RallyList extends EventTarget {
 
   init() {
     this.promise = this.urbit.subscribe({
-      app: 'rally',
+      app: this.app,
       path: this.path,
       event: (update) => {
         this.update(update);
@@ -70,7 +71,7 @@ export class RallyIncoming extends RallyList {
 
   reject(dest) {
     this.removeDest(dest);
-    return leaveRally(this.urbit, dest);
+    return leaveRally(this.urbit, dest, this.app);
   }
 }
 
@@ -93,7 +94,7 @@ export class RallyPublics extends RallyList {
       } else {
         this.dests.forEach((dest) => {
           if (!this.crews[dest]) {
-            this.crews[dest] = new RallyCrew(this.urbit, stringToDest(dest), { dontEnter: true });
+            this.crews[dest] = new RallyCrew(this.urbit, stringToDest(dest), { app: this.app, dontEnter: true });
           }
         });
       }
@@ -124,6 +125,7 @@ export class RallyCrew extends EventTarget {
     // new | waiting | watching | active | ejected
     this.status = 'new';
     this.path = '/0/crow/' + dest.ship + dest.crewId;
+    this.app = options.app || 'rally';
     this.options = options;
     if (options.clientId && !options.dontEnter) {
       this.clientId = options.clientId;
@@ -167,7 +169,7 @@ export class RallyCrew extends EventTarget {
   init() {
     this.setStatus('waiting');
     this.promise = this.urbit.subscribe({
-      app: 'rally',
+      app: this.app,
       path: this.path,
       event: (update) => {
         if (update.kind === 'you-are') {
@@ -223,8 +225,8 @@ export class RallyCrew extends EventTarget {
 
   async delete() {
     const result = await this.urbit.poke({
-      app: 'rally',
-      mark: 'delete',
+      app: this.app,
+      mark: 'rally-delete',
       json: {
         crewId: this.crewId,
         host: null,
@@ -240,8 +242,8 @@ export class RallyCrew extends EventTarget {
   enter() {
     if (!this.clientId) throw new Error('Cannot enter without a clientId');
     return this.urbit.poke({
-      app: 'rally',
-      mark: 'enter',
+      app: this.app,
+      mark: 'rally-enter',
       json: {
         dest: this.dest,
         uuid: this.clientId,
@@ -254,7 +256,7 @@ export class RallyCrew extends EventTarget {
 
   leave(allClients=false) {
     if (allClients) {
-      return leaveRally(this.urbit, this.dest);
+      return leaveRally(this.urbit, this.dest, this.app);
     }
     if (!this.clientId) throw new Error('Cannot leave without a clientId');
     return this.sendAction([{ leave: null }]);
@@ -273,8 +275,8 @@ export class RallyCrew extends EventTarget {
 
   sendAction(stirs) {
     this.urbit.poke({
-      app: 'rally',
-      mark: 'action',
+      app: this.app,
+      mark: 'rally-action',
       json: {
         version: 0,
         dest: this.dest,
@@ -350,10 +352,10 @@ export class SubscriptionQuitEvent extends Event {
 // API Calls
 //
 
-export function leaveRally(urbit, dest) {
+function leaveRally(urbit, dest, app) {
   return urbit.poke({
-    app: 'rally',
-    mark: 'leave',
+    app,
+    mark: 'rally-leave',
     json: { dest },
     onError: (e) => {
       console.error('RallyCrew failed to fully leave crew at ' + destToString(dest), e);

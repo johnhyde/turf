@@ -5,24 +5,26 @@ import { DestsUpdateEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
 // import { patp2dec } from 'urbit-ob/src/internal/co';
 
 export class Horn extends EventTarget {
-  constructor(urbit, rtc, dap, iceServers = []) {
+  constructor(urbit, rtc, dap, options = {}) {
     super();
     this.urbit = urbit;
     this.rtc = rtc;
     if (!this.rtc) {
-      this.rtc = new UrbitRTCApp(this.dap, { iceServers }, urbit);
+      this.rtc = new UrbitRTCApp(this.dap, options.rtcOptions || {}, urbit);
       this.rtc.initialize();
     }
     this.api = { urbit, rtc };
     this.dap = dap || urbit.desk
     this.incomings = {};
     this.rallies = {};
+    this.app = options.app || 'rally';
+    this.aptions = { app: this.app };
   }
 
   watchIncoming(dap=null) {
     dap = dap || this.dap
     if (!this.incomings[dap]) {
-      const incoming = this.incomings[dap] = new RallyIncoming(this.urbit, dap);
+      const incoming = this.incomings[dap] = new RallyIncoming(this.urbit, dap, this.aptions);
       incoming.addEventListener('dests-update', (e) => {
         this.dispatchEvent(new DestsUpdateEvent(e.update, dap));
       });
@@ -32,7 +34,10 @@ export class Horn extends EventTarget {
 
   watchPublics(host, dap=null, options={}) {
     dap = dap || this.dap;
-    return new RallyPublics(this.urbit, host, dap, options);
+    return new RallyPublics(this.urbit, host, dap, {
+      ...this.aptions,
+      ...options,
+    });
   }
 
   createRally(path=null, options={}) {
@@ -59,7 +64,10 @@ export class Horn extends EventTarget {
     }
     const dap = getDap(dest.crewId);
     if (this.incomings[dap]) this.incomings[dap].removeDest(dest);
-    rally = new Rally(this.api, dest, options);
+    rally = new Rally(this.api, dest, {
+      ...this.aptions,
+      ...options,
+    });
     this.rallies[destStr] = rally;
     const controller = new AbortController();
     rally.addEventListener('crew-status', (e) => {
@@ -74,6 +82,7 @@ export class Horn extends EventTarget {
   watchRally(dest, options={}) {
     options = {
       dontEnter: true,
+      ...this.aptions,
       ...options,
     };
     return new Rally(this.api, dest, options);

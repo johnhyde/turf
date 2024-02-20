@@ -206,8 +206,8 @@ export function initRTC(iceServers) {
   return rtc;
 }
 
-export function initHorn(rtc, iceServers) {
-  let horn = new Horn(api, rtc, 'turf', iceServers);
+export function initHorn(rtc) {
+  let horn = new Horn(api, rtc, 'turf', { app: 'turf-rally' });
   let incoming = horn.watchIncoming();
   incoming.addEventListener('dests-update', (e) => {
     console.log('incoming!', e);

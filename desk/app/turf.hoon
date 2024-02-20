@@ -819,8 +819,8 @@
         :*  %pass
             /host-call
             %agent
-            [our.bowl %rally]
-            [%poke %action !>([%0 [our.bowl call-id] [%waves waves]~])]
+            [our.bowl %turf-rally]
+            [%poke %rally-action !>([%0 [our.bowl call-id] [%waves waves]~])]
         ==
       ==
     (weld cards new-cards)^state

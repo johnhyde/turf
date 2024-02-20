@@ -1,12 +1,12 @@
 /-  *rally
 /+  *rally, dbug, default-agent, agentio, verb
-/$  cja  %json  %action
-/$  cjd  %json  %delete
-/$  cje  %json  %enter
+/$  cja  %json  %rally-action
+/$  cjd  %json  %rally-delete
+/$  cje  %json  %rally-enter
 :: /$  cjl  %json  %leave
-/$  cuj  %update  %json
-/$  cduj  %dests-update  %json
-/$  ccuj  %client-update  %json
+/$  cuj  %rally-update  %json
+/$  cduj  %rally-dests-update  %json
+/$  ccuj  %rally-client-update  %json
 |%
 +$  versioned-state
   $%  state-0
@@ -52,7 +52,7 @@
   :: =|  cards-0=(list card)
   =/  old-reset  !<(@ud (slot 6 old-state))
   =+  :-  cards-0=`(list card)`~
-      ?.  =(old-reset reset)  ~&('reseting %rally state' old=state)
+      ?.  =(old-reset reset)  ~&('reseting %turf-rally state' old=state)
       old=!<(versioned-state old-state)
   :: =*  quolp  -
   :: =?  quolp  ?=(%0 -.old)
@@ -67,7 +67,7 @@
   |=  [=mark =vase]
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
-      %action
+      %rally-action
     =/  act  !<(action vase)
     ?:  =(ship.dest.act our.bowl)
       ~&  'it me, the action poke'
@@ -76,7 +76,7 @@
     ?>  =(src our):bowl
     :_  this
     [(action-card:hc act)]~
-      %delete
+      %rally-delete
     ?>  =(src our):bowl
     =+  !<([=c-id host=(unit ship)] vase)
     ?.  (~(has by crews) c-id)  `this
@@ -85,7 +85,7 @@
     :: make sure to delete crew AFTER getting the list of peeps to eject
     =.  crews  (~(del by crews) c-id)
     cards^this
-      %shell
+      %rally-shell
     =/  [=c-id =echo]  !<(shell vase)
     :: ?:  =(src our):bowl  `this  :: ignore any shells we send to ourselves (ourshellves)
     =/  =dest  [src.bowl c-id]
@@ -111,7 +111,7 @@
     ==
     ::
     ::
-      %enter
+      %rally-enter
     ?>  =(src our):bowl
     =+  !<([=dest =uuid] vase)
     =/  =stir  [%add-client uuid]
@@ -127,7 +127,7 @@
       ?.  ?=(%active new-fut)  `state
       (watch-crew:hc dest)
     :(weld cards feet-cards watch-cards)^this
-      %leave  :: only need to use %leave over %action if host is unresponsive
+      %rally-leave  :: only need to use %leave over %rally-action if host is unresponsive
     ?>  =(src our):bowl
     =+  !<([=dest] vase)
     ?.  (~(has by feet) dest)  `this
@@ -153,7 +153,7 @@
     :_  ~
     :*  %give  %fact
       ~[(crew-update-path:hc our.bowl c-id)]
-      %update  !>(update)
+      %rally-update  !>(update)
     ==
   ==
 ++  on-watch
@@ -175,7 +175,7 @@
       `dest
     =/  up=dests-update  [%0 %cries (silt dests)]
     :_  this
-    [%give %fact ~ %dests-update !>(up)]~
+    [%give %fact ~ %rally-dests-update !>(up)]~
       [v=@ %crews host=@ dap=@t ~]
     =/  host  (slav %p &3.path)
     =/  loc  [host &4.path]
@@ -191,7 +191,7 @@
         `dest
       =/  up=dests-update  [%0 %cries (silt dests)]
       :_  this
-      [%give %fact ~ %dests-update !>(up)]~
+      [%give %fact ~ %rally-dests-update !>(up)]~
     ?>  =(src our):bowl
     =/  up=dests-update
       :-  %0  :-  %cries
@@ -199,7 +199,7 @@
       |=  =c-id  [host c-id]
     :_  this
     :-  [%pass path %agent [host dap.bowl] %watch path]
-    [%give %fact ~ %dests-update !>(up)]~
+    [%give %fact ~ %rally-dests-update !>(up)]~
       [v=@ ?(%crew %crow) host=@ id=*]
     ~&  "matched update sub handler"
     =/  =dest  [(slav %p &3.path) |3.path]
@@ -222,7 +222,7 @@
       ?>  =(src our):bowl
       =/  uuid  (make-uuid [now eny]:bowl)
       =/  cup=client-update  [%0 [%you-are uuid]]
-      =/  up-card=card  [%give %fact ~ %client-update !>(cup)]
+      =/  up-card=card  [%give %fact ~ %rally-client-update !>(cup)]
       =/  uukro  (~(get by crows) dest)
       ?~  uukro
         =^  cards  state  (watch-crew:hc dest)
@@ -284,7 +284,7 @@
     =/  loc  [host &4.wire]
     ?+    -.sign  (on-agent:def wire sign)
         %fact
-      ?.  ?=(%dests-update -.cage.sign)  `this
+      ?.  ?=(%rally-dests-update -.cage.sign)  `this
       =/  up=dests-update  !<(dests-update +.cage.sign)
       =.  dests
         ?-  +<.up
@@ -301,7 +301,7 @@
     ~&  ["got crew update" -.sign wire]
     ?+    -.sign  (on-agent:def wire sign)
         %fact
-      ?.  ?=(%update -.cage.sign)  `this
+      ?.  ?=(%rally-update -.cage.sign)  `this
       =/  =update  !<(update +.cage.sign)
       =^  cards  state  (apply-update:hc dest update)
       ~&  ['new kro after' (~(get by crows) dest)]
@@ -407,7 +407,7 @@
     =^  cards  state  (move-foot [u.host.up c-id.dest] %outgoing)
     ?.  =(our.bowl u.host.up)  cards^state
     ?~  kro  cards^state
-      :: todo: need to emit a %dests-update %cry with this
+      :: todo: need to emit a %rally-dests-update %cry with this
     =.  crews  (~(put by crews) c-id.dest u.kro)
     :_  state
     :-  (crews-update-card %cry [our.bowl c-id.dest])
@@ -501,7 +501,7 @@
     ~(tap in ~(key by noobs.kru))
   :*  :*  %give  %fact
           ~[path]
-          %update  !>(update)
+          %rally-update  !>(update)
       ==
       ::
       (crews-update-card %fade dest)
@@ -518,13 +518,13 @@
   :*  %pass
       `wire`[%shell '0' -.echo.shell c-id.shell]
       %agent  [ship dap.bowl]
-      [%poke %shell !>(shell)]
+      [%poke %rally-shell !>(shell)]
   ==
 ++  action-card
   |=  act=action
   ^-  card
   =/  wire  (action-wire dest.act)
-  [%pass wire %agent [ship.dest.act dap.bowl] %poke [%action !>(act)]]
+  [%pass wire %agent [ship.dest.act dap.bowl] %poke [%rally-action !>(act)]]
 ++  feet-update-card
   |=  [=foot up=dests-update-core]
   ^-  card
@@ -535,7 +535,7 @@
       [^ *]  +<+.up
     ==
   =/  path  (feet-path foot c-id)
-  [%give %fact [path]~ %dests-update !>(`dests-update`[%0 up])]
+  [%give %fact [path]~ %rally-dests-update !>(`dests-update`[%0 up])]
 ++  crews-update-card
   |=  up=dests-update-core
   ^-  card
@@ -546,14 +546,14 @@
       [^ *]  +<.up
     ==
   =/  paths  ?~(dest ~ [(crews-path dest)]~)
-  [%give %fact paths %dests-update !>(`dests-update`[%0 up])]
+  [%give %fact paths %rally-dests-update !>(`dests-update`[%0 up])]
 ++  crew-update-card
   |=  [=dest =waves]
   ^-  card
   =/  =update  (make-waves-update waves)
   :*  %give  %fact
       ~[(crew-update-path dest)]
-      %update  !>(update)
+      %rally-update  !>(update)
   ==
 ++  crow-update-card
   |=  [=dest =waves]
@@ -561,7 +561,7 @@
   =/  =update  (make-waves-update waves)
   :*  %give  %fact
       ~[(crow-update-path dest)]
-      %update  !>(update)
+      %rally-update  !>(update)
   ==
 ++  crow-update-quit-card
   |=  [=dest host=(unit ship)]
@@ -569,13 +569,13 @@
   =/  =update  (make-quit-update host)
   :*  %give  %fact
       ~[(crow-update-path dest)]
-      %update  !>(update)
+      %rally-update  !>(update)
   ==
 ++  init-card
   |=  =crew
   ^-  card
   =/  =update  (make-waves-update [%set-crew crew]~)
-  [%give %fact ~ %update !>(update)]
+  [%give %fact ~ %rally-update !>(update)]
 ++  watch-update-card
   |=  =dest
   ^-  card
@@ -587,7 +587,7 @@
 ::   =/  =update  [%0 [%you-are uuid]]
 ::   :*  %give  %fact
 ::       ~[(update-path our.bowl c-id)]
-::       %client-update  !>(update)
+::       %rally-client-update  !>(update)
 ::   ==
 ++  action-wire
   |=  =dest
