@@ -76,6 +76,11 @@ export default function CallInfo(props) {
         $ourStream(stream);
       })
       .catch(error => console.error(error));
+    onCleanup(() => {
+      if (ourStream()) {
+        ourStream().getTracks().forEach(t => t.stop());
+      }
+    });
   });
 
   return (
