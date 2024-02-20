@@ -5,12 +5,12 @@ import { DestsUpdateEvent, CrewUpdateEvent, CrewQuitEvent } from 'lib/rally';
 // import { patp2dec } from 'urbit-ob/src/internal/co';
 
 export class Horn extends EventTarget {
-  constructor(urbit, rtc, dap) {
+  constructor(urbit, rtc, dap, iceServers = []) {
     super();
     this.urbit = urbit;
     this.rtc = rtc;
     if (!this.rtc) {
-      this.rtc = new UrbitRTCApp(this.dap, { iceServers: [] }, urbit);
+      this.rtc = new UrbitRTCApp(this.dap, { iceServers }, urbit);
       this.rtc.initialize();
     }
     this.api = { urbit, rtc };

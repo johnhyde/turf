@@ -15,7 +15,7 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default ({ mode }) => {
-  Object.assign(process.env, loadEnv(mode, process.cwd()));
+  Object.assign(process.env, loadEnv(mode, process.cwd(), ''));
   const SHIP_URL = process.env.SHIP_URL || process.env.VITE_SHIP_URL || 'http://localhost:8080';
   console.log(SHIP_URL);
 
@@ -38,6 +38,7 @@ export default ({ mode }) => {
     },
     define: {
       'process.env.prod': !process.env.NODE_ENV === 'development',
+      'process.env.meteredApiKey': '"' + process.env.METERED_API_KEY + '"',
     },
     server: {
       port: 3000,

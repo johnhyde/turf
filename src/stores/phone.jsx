@@ -1,10 +1,13 @@
-import { createSignal, createContext, createEffect, createMemo, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
+import { createSignal, createContext, createEffect, createMemo, createResource, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
 import { createStore, reconcile, unwrap } from 'solid-js/store';
-import { horn, incoming } from 'lib/api.js';
+import { horn as hornPromise } from 'lib/api.js';
 import { normalizeId } from 'lib/utils';
 import { useState } from 'stores/state';
 
 export const PhoneContext = createContext();
+
+const [horn, _] = createResource(() => hornPromise);
+const incoming = () => horn()?.incomings?.['turf'];
 
 
 export function getPhone(state) {
@@ -16,19 +19,21 @@ export function getPhone(state) {
   });
 
   const _phone = mergeProps(phone, {
-    call(peers) {
+    async call(peers) {
+      if (!horn()) await hornPromise;
       if (!Array.isArray(peers)) peers = [peers];
-      const call = horn.createRally();
+      const call = horn().createRally();
       this.addCall(call);
       call.invite(peers.map(normalizeId));
     },
-    answer(ring) {
-      const call = horn.joinRally(ring);
+    async answer(ring) {
+      if (!horn()) await hornPromise;
+      const call = horn().joinRally(ring);
       this.addCall(call);
       this.delRing(ring);
     },
     reject(ring) {
-      incoming.reject(ring);
+      incoming().reject(ring);
       this.delRing(ring);
     },
     hangUp(call) {
@@ -68,9 +73,14 @@ export function getPhone(state) {
     },
   });
 
-  incoming.addEventListener('dests-update', (e) => {
-    if (e.dap === 'turf') {
-      $phone('rings', reconcile(horn.incoming));
+  createEffect(() => {
+    if (incoming()) {
+      incoming().addEventListener('dests-update', (e) => {
+        if (e.dap === 'turf') {
+          $phone('rings', reconcile(horn().incoming));
+        }
+      });
+      $phone('rings', reconcile(horn().incoming));
     }
   });
 
@@ -86,8 +96,8 @@ export function getPhone(state) {
     console.log('help');
     if (phone.publics?.host !== state.c.host) {
       if (phone.publics) phone.publics.cancel();
-      if (state.c.host) {
-        const publics = horn.watchPublics(state.c.host, null, { watchDetails: true });
+      if (state.c.host && horn()) {
+        const publics = horn().watchPublics(state.c.host, null, { watchDetails: true });
         publics.addEventListener('dests-update', (e) => {
           console.log(publics.publics);
           $phone('publicCalls', reconcile(publics.crews))

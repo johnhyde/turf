@@ -31,9 +31,11 @@ const ctx = canvas.getContext('2d');
 // }
 let connection, $connection;
 
-let api, rtc, horn, incoming;
-
-export function initApi() {
+let api, rtc, horn, setHorn;
+horn = new Promise((resolve) => {
+  setHorn = resolve;
+});
+export async function initApi() {
   const [con, $con] = createSignal('initial');
   connection = con;
   $connection = $con;
@@ -46,8 +48,11 @@ export function initApi() {
   // api.verbose = import.meta.env.DEV;
   api.verbose = true;
   window.api = api;
-  initRTC();
-  initRally();
+  const iceServers = await fetchIceServers();
+  rtc = initRTC(iceServers);
+  const realHorn = initHorn(rtc);
+  setHorn(realHorn);
+  window.h = realHorn;
 }
 // api.onOpen = () => $connection('open');
 // api.onRetry = () => $connection('reconnecting');
@@ -188,18 +193,22 @@ export async function sendDM(patp, msg) {
   });
 }
 
-
-export function initRTC() {
-  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers: [] }, api);
+async function fetchIceServers() {
+  const response = await fetch(`https://turf.metered.live/api/v1/turn/credentials?apiKey=${process.env.meteredApiKey}`);
+  return response.json();
+}
+export function initRTC(iceServers) {
+  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers }, api);
   rtc.initialize();
   rtc.addEventListener('incomingcall', (ring) => {
     console.log('pardon me for mentioning it, ladies, but someone is ringing', ring);
   });
+  return rtc;
 }
 
-export function initRally() {
-  window.horn = horn = new Horn(api, rtc);
-  window.incoming = incoming = horn.watchIncoming();
+export function initHorn(rtc, iceServers) {
+  let horn = new Horn(api, rtc, 'turf', iceServers);
+  let incoming = horn.watchIncoming();
   incoming.addEventListener('dests-update', (e) => {
     console.log('incoming!', e);
   });
@@ -209,6 +218,7 @@ export function initRally() {
   incoming.addEventListener('subscription-quit', (e) => {
     console.log('watch incoming quit', e);
   });
+  return horn;
 }
 
-export { api, rtc, connection, horn, incoming };
+export { api, rtc, connection, horn };
