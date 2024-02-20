@@ -70,7 +70,7 @@ export default function CallInfo(props) {
     navigator.mediaDevices
       .getUserMedia({
         video: { facingMode: "user" },
-        // audio: true, // todo: enable
+        audio: true,
       })
       .then(stream => {
         $ourStream(stream);
