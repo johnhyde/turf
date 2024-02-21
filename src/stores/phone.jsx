@@ -19,6 +19,8 @@ export function getPhone(state) {
   });
 
   const _phone = mergeProps(phone, {
+    get r() { return Object.values(phone.calls)[0] },
+    get c() { return Object.values(this.r.calls)[0] },
     async call(peers) {
       if (!horn()) await hornPromise;
       if (!Array.isArray(peers)) peers = [peers];

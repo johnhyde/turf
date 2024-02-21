@@ -10,7 +10,14 @@ export default function CallInfo(props) {
   const [activePeers, $activePeers] = createSignal([]);
   const [status, $status] = createSignal();
   const [ourStream, $ourStream] = createSignal();
-  const [store, $store] = window.con = createStore({ conns: {}, crew: {} });
+  const [ourScreen, $ourScreen] = createSignal();
+  const [store, $store] = window.con = createStore({
+    conns: {},
+    crew: {},
+    camera: true,
+    mic: true,
+    screen: false,
+  });
   const conns = () => store.conns;
   const $conns = (...args) => $store('conns', ...args);
   const crew = () => store.crew;
@@ -60,6 +67,7 @@ export default function CallInfo(props) {
       $conns(reconcile({}));
     });
   });
+
   function updateCrewInfo() {
     $peers(props.call.peers.filter(p => p !== our));
     $activePeers(props.call.activePeers.filter(p => p !== our));
@@ -70,17 +78,54 @@ export default function CallInfo(props) {
     navigator.mediaDevices
       .getUserMedia({
         video: { facingMode: "user" },
-        audio: true,
+        // audio: true,
       })
       .then(stream => {
         $ourStream(stream);
+        window.str = stream;
       })
       .catch(error => console.error(error));
     onCleanup(() => {
       if (ourStream()) {
         ourStream().getTracks().forEach(t => t.stop());
       }
+      if (ourScreen()) {
+        ourScreen().getTracks().forEach(t => t.stop());
+      }
     });
+  });
+
+  createEffect(() => {
+    if (ourStream()) {
+      ourStream().getVideoTracks().forEach(t => t.enabled = store.camera);
+    }
+  });
+  createEffect(() => {
+    if (ourStream()) {
+      ourStream().getAudioTracks().forEach(t => t.enabled = store.mic);
+    }
+  });
+  createEffect(() => {
+    if (ourScreen()) {
+      if (!store.screen) {
+        ourScreen().getTracks().forEach((t) => {
+          t.stop();
+          ourScreen().removeTrack(t);
+        });
+        $ourScreen(undefined);
+      }
+    } else if (store.screen) {
+      navigator.mediaDevices
+      .getDisplayMedia({
+        video: true,
+        audio: false,
+      })
+      .then(stream => {
+        $ourScreen(stream);
+        window.scr = stream;
+      })
+      .catch(error => console.error(error));
+    }
   });
 
   return (
@@ -93,19 +138,35 @@ export default function CallInfo(props) {
         {JSON.stringify(orderedConns())} */}
         <For each={orderedConns()}>
           {([clientStr, conn]) => {
-            return <Conn conn={conn} clientStr={clientStr} stream={ourStream()} />;
+            return <Conn conn={conn} clientStr={clientStr} stream={ourStream()} screen={ourScreen()} />;
           }}
         </For>
-        <VideoSquare stream={ourStream()} label={our} us />
+        <VideoSquare stream={ourStream()} label={`You (${our})`} us />
+        <Show when={ourScreen()}>
+          <VideoSquare stream={ourScreen()} label="Your screen" us />
+        </Show>
       </div>
-      <div class="flex justify-center">
+      <div class="flex justify-center gap-2">
+        <button onClick={() => $store('camera', b => !b)}>
+          {store.camera ? 'stop camera' : 'start camera'}
+        </button>
+        <button onClick={() => $store('mic', b => !b)}>
+          {store.mic ? 'stop mic' : 'start mic'}
+        </button>
+        <button onClick={() => $store('screen', b => !b)}>
+          {store.screen ? 'stop screenshare' : 'start screenshare'}
+        </button>
+      </div>
+      <div class="flex justify-center gap-2">
         <button onClick={() => phone.hangUp(props.call)}>
           Hang Up
         </button>
-        <Show when={weAreAdmin()}>
+        <Show when={our === props.call.host}>
           <button onClick={() => phone.delete(props.call)}>
             End Call
           </button>
+        </Show>
+        <Show when={weAreAdmin()}>
           <For each={validNoobs()}>
             {(noob) => {
               return <button onClick={() => props.call.confirm(noob)}>
@@ -123,24 +184,52 @@ function Conn(props) {
   const [msgs, $msgs] = createSignal([]);
   const [msg, $msg] = createSignal('');
   const [theirStream, $theirStream] = createSignal();
-  let video;
+  const [theirScreen, $theirScreen] = createSignal();
 
   createEffect(() => {
-    let controller = new AbortController();
+    const controller = new AbortController();
+    const sigOpts = { signal: controller.signal };
     if (props.conn) {
       console.log('apparently connection changed', props.conn.peer);
       props.conn.addEventListener('datachannel', (event) => {
         $chan(event.channel);
         console.log('got new data channel in Conn component', event);
-      }, { signal: controller.signal });
+      }, sigOpts);
       props.conn.addEventListener('track', (event) => {
-        $theirStream(event.streams[0]);
+        const stream = event.streams[0];
+        if (!theirStream()) {
+          $theirStream(stream);
+          listenToStream(stream);
+        } else if (stream !== theirStream() && !theirScreen()) {
+          $theirScreen(stream);
+          listenToStream(stream);
+        }
         console.log('got new track in Conn component', event);
-      }, { signal: controller.signal });
+      }, sigOpts);
       if (props.conn.remoteStreams?.size) {
-        $theirStream([...props.conn.remoteStreams][0]);
+        const streams = [...props.conn.remoteStreams];
+        streams.forEach(listenToStream);
+        if (streams[1]?.getTracks().length > 1) {
+          $theirStream(streams[1]);
+          $theirScreen(streams[0]);
+        } else {
+          $theirStream(streams[0]);
+          $theirScreen(streams[1]);
+        }
       }
-      props.conn.getReceivers
+    }
+    function listenToStream(stream) {
+      stream.addEventListener('removetrack', (event) => {
+        console.log('track was removed!', event);
+        if (stream.getTracks().length === 0) {
+          if (stream === theirStream()) {
+            $theirStream(undefined);
+          }
+          if (stream === theirScreen()) {
+            $theirScreen(undefined);
+          }
+        }
+      }, sigOpts);
     }
     onCleanup(() => controller.abort());
   });
@@ -149,6 +238,23 @@ function Conn(props) {
       props.stream.getTracks().forEach((track) => {
         try { props.conn.addTrack(track, props.stream); } catch (e) {}
       });
+    }
+  });
+  let screenSenders = [];
+  createEffect(() => {
+    if (props.conn) {
+      if (props.screen) {
+        screenSenders = props.screen.getTracks().map((track) => {
+          try {
+            return props.conn.addTrack(track, props.screen);
+          } catch (e) {}
+        });
+      } else if (screenSenders.length) {
+        screenSenders.forEach(s => {
+          if (s) props.conn.removeTrack(s);
+        });
+        screenSenders = [];
+      }
     }
   });
 
@@ -171,7 +277,12 @@ function Conn(props) {
     $msg('');
   }
 
-  return <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />;
+  return <>
+    <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />;
+    <Show when={theirScreen()}>
+      <VideoSquare stream={theirScreen()} label={'~' + props.conn.peer + "'s screen"} />;
+    </Show>
+  </>;
 }
 
 function VideoSquare(props) {

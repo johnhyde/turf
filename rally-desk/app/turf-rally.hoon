@@ -52,7 +52,7 @@
   :: =|  cards-0=(list card)
   =/  old-reset  !<(@ud (slot 6 old-state))
   =+  :-  cards-0=`(list card)`~
-      ?.  =(old-reset reset)  ~&('reseting %turf-rally state' old=state)
+      ?.  =(old-reset reset)  ~&(['reseting state' dap.bowl] old=state)
       old=!<(versioned-state old-state)
   :: =*  quolp  -
   :: =?  quolp  ?=(%0 -.old)
@@ -77,7 +77,7 @@
     :_  this
     [(action-card:hc act)]~
       %rally-delete
-    ?>  =(src our):bowl
+    ?>  =(src our):bowl :: todo: let admins delete? hmm
     =+  !<([=c-id host=(unit ship)] vase)
     ?.  (~(has by crews) c-id)  `this
     =/  cards  (quit-cards:hc c-id host)

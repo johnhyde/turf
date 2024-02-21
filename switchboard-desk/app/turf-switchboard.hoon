@@ -17,6 +17,7 @@
 --
 %-  agent:dbug
 %+  verb  %.y
+=/  agent-name  %turf-switchboard
 =|  state=state-1
 ^-  agent:gall
 =<
@@ -278,7 +279,7 @@
     :~
       :*
         %pass   /ring-poke/[uuid.call]
-        %agent  [peer.call %turf-switchboard]  :: agent name
+        %agent  [peer.call agent-name]
         %poke   [%switchboard-to-switchboard !>([uuid=uuid.call %ring dap=dap.call])]
       ==
       :*
@@ -320,7 +321,7 @@
     :~
       :*
         %pass   /answer-poke/[uuid.call]
-        %agent  [peer.call %turf-switchboard]  :: agent name
+        %agent  [peer.call agent-name]
         %poke   [%switchboard-to-switchboard !>([uuid=uuid.call %pickup ~])]
       ==
       :*
@@ -414,7 +415,7 @@
       ==
       :*
         %pass  /inter-poke/[uuid]
-        %agent  [peer.call.call-state %turf-switchboard]  :: agent name
+        %agent  [peer.call.call-state agent-name]
         %poke   [%switchboard-to-switchboard !>([uuid=uuid %give-turn ~])]
       ==
     ==
@@ -429,7 +430,7 @@
   :~
     :*
       %pass   /inter-poke/[uuid]
-      %agent  [peer.call %turf-switchboard]  :: agent name
+      %agent  [peer.call agent-name]
       %poke   [%switchboard-to-switchboard !>([uuid=uuid sdp])]
     ==
     :*
@@ -451,7 +452,7 @@
     :~
       :*
         %pass  /inter-poke/[uuid]
-        %agent  [peer.call %turf-switchboard]  :: agent name
+        %agent  [peer.call agent-name]
         %poke   [%switchboard-to-switchboard !>([uuid=uuid %ask-turn ~])]
       ==
       :*
@@ -514,7 +515,7 @@
   :~
     :*
       %pass  /inter-poke/[uuid]
-      %agent  [peer.call %turf-switchboard]  :: agent name
+      %agent  [peer.call agent-name]
       %poke  [%switchboard-to-switchboard !>([uuid=uuid icecandidate])]
     ==
   ==
@@ -528,7 +529,7 @@
   :~
     :*
       %pass  /inter-poke/[uuid]
-      %agent  [peer.call.callstate %turf-switchboard]  :: agent name
+      %agent  [peer.call.callstate agent-name]
       %poke  [%switchboard-to-switchboard !>([uuid=uuid [%hangup ~]])]
     ==
   ==

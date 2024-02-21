@@ -195,7 +195,10 @@ export async function sendDM(patp, msg) {
 
 async function fetchIceServers() {
   const response = await fetch(`https://turf.metered.live/api/v1/turn/credentials?apiKey=${process.env.meteredApiKey}`);
-  return response.json();
+  const servers = await response.json();
+  if (dev) return [];
+  if (servers.length <= 2) return servers;
+  return [servers[0], servers[servers.length - 1]];
 }
 export function initRTC(iceServers) {
   window.rtc = rtc = new UrbitRTCApp('turf', { iceServers }, api, 'turf-switchboard');

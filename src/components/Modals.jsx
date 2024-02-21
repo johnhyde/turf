@@ -161,13 +161,14 @@ export default function Modals() {
         function reject() {
           phone.reject(ring);
         }
+        const creator = ring.crewId.split('/')[2];
         return (
           <Modal class="bg-teal-700 text-slate-100 w-96">
             <p class="text-xl mb-4 text-center">
               Incoming call from:
             </p>
             <p class="text-center text-lg">
-              <span class="font-bold">{ring.ship}</span>?
+              <span class="font-bold">{creator}</span>?
             </p>
             <div class="flex w-full justify-center mt-4 space-x-4">
               <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={answer}>
