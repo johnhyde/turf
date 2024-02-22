@@ -67,7 +67,7 @@ function JoinCallButton(props) {
   });
 
   return <Show when={callPeers().length}>
-    <button onClick={[phone.answer.bind(phone), props.call.id]}>
+    <button onClick={() => phone.answer(props.call.id)}>
       Join {callers().join(', ')}
     </button>
   </Show>

@@ -17,6 +17,7 @@ export class Horn extends EventTarget {
     this.dap = dap || urbit.desk
     this.incomings = {};
     this.rallies = {};
+    this.crews = {};
     this.app = options.app || 'rally';
     this.aptions = { app: this.app };
   }
@@ -24,10 +25,7 @@ export class Horn extends EventTarget {
   watchIncoming(dap=null) {
     dap = dap || this.dap
     if (!this.incomings[dap]) {
-      const incoming = this.incomings[dap] = new RallyIncoming(this.urbit, dap, this.aptions);
-      incoming.addEventListener('dests-update', (e) => {
-        this.dispatchEvent(new DestsUpdateEvent(e.update, dap));
-      });
+      this.incomings[dap] = new RallyIncoming(this.urbit, dap, this.aptions);
     }
     return this.incomings[dap];
   }
@@ -79,13 +77,13 @@ export class Horn extends EventTarget {
     return rally;
   }
 
-  watchRally(dest, options={}) {
+  watchCrew(dest, options={}) {
     options = {
       dontEnter: true,
       ...this.aptions,
       ...options,
     };
-    return new Rally(this.api, dest, options);
+    return new RallyCrew(this.urbit, dest, options);
   }
 
   getRally(destStr) {

@@ -32,7 +32,7 @@ export default function CallInfo(props) {
       const talkingTo = activePeers().length ? activePeers().join(', ') : 'no one, yet';
       const waitingMsg = absentPeers().length ? `; waiting for ${absentPeers().join(', ')}` : '';
       return `Talking to ${talkingTo + waitingMsg}`;
-    } else if (status() === 'waiting' || status() === 'watching') {
+    } else if (status() === 'waiting') {
       return 'Waiting to be let into the call';
     }
     return '';
@@ -123,6 +123,9 @@ export default function CallInfo(props) {
       .then(stream => {
         $ourScreen(stream);
         window.scr = stream;
+        stream.getTracks()[0].addEventListener('ended', () => {
+          $store('screen', false);
+        }, { once: true });
       })
       .catch(error => console.error(error));
     }

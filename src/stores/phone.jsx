@@ -39,7 +39,7 @@ export function getPhone(state) {
       this.delRing(ring);
     },
     hangUp(call) {
-      call.leave(true);
+      call.leaveAsPeer();
       this.delCall(call);
     },
     delete(call) {

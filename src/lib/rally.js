@@ -75,6 +75,38 @@ export class RallyIncoming extends RallyList {
   }
 }
 
+export class RallyOutgoing extends RallyList {
+  constructor(urbit, dap=null, options={}) {
+    const path = '/0/feet/outgoing' + (dap ? '/' + dap : '');
+    super(urbit, path, dap, options);
+  }
+
+  get outgoing() {
+    return this.destObjs;
+  }
+
+  cancel(dest) {
+    this.removeDest(dest);
+    return leaveRally(this.urbit, dest, this.app);
+  }
+}
+
+export class RallyActive extends RallyList {
+  constructor(urbit, dap=null, options={}) {
+    const path = '/0/feet/active' + (dap ? '/' + dap : '');
+    super(urbit, path, dap, options);
+  }
+
+  get active() {
+    return this.destObjs;
+  }
+
+  leave(dest) {
+    this.removeDest(dest);
+    return leaveRally(this.urbit, dest, this.app);
+  }
+}
+
 export class RallyPublics extends RallyList {
   constructor(urbit, host, dap, options={}) {
     const path = `/0/crews/${host}/${dap}`;
@@ -94,7 +126,7 @@ export class RallyPublics extends RallyList {
       } else {
         this.dests.forEach((dest) => {
           if (!this.crews[dest]) {
-            this.crews[dest] = new RallyCrew(this.urbit, stringToDest(dest), { app: this.app, dontEnter: true });
+            this.crews[dest] = new RallyCrewSub(this.urbit, stringToDest(dest), { app: this.app, dontEnter: true });
           }
         });
       }
@@ -107,39 +139,34 @@ export class RallyPublics extends RallyList {
   }
 }
 
-const statuses = 'new | waiting | watching | active | ejected'.split(' | ');
+const subStatuses = 'new | waiting | watching | kicked | closed'.split(' | ');
 
-export class RallyCrew extends EventTarget {
+export class RallyCrewSub extends EventTarget {
   constructor(urbit, dest, options={}) {
     super();
     this.urbit = urbit;
     this.dest = dest;
     this.host = dest.ship;
     this.crewId = dest.crewId;
-    this.clientId = null;
     this.crew = {
       id: dest.crewId,
       new: true,
       ...defaultCrew(),
     };
     // new | waiting | watching | active | ejected
-    this.status = 'new';
+    this.subStatus = 'new';
     this.path = '/0/crow/' + dest.ship + dest.crewId;
     this.app = options.app || 'rally';
     this.options = options;
-    if (options.clientId && !options.dontEnter) {
-      this.clientId = options.clientId;
-      this.enter();
-    }
     if (!options.waitToInit) {
       this.init();
     }
   }
 
-  setStatus(newStatus) {
-    if (!statuses.includes(newStatus)) throw 'invalid crew status';
-    this.status = newStatus;
-    this.dispatchEvent(new CrewStatusEvent(this.status));
+  setSubStatus(newStatus) {
+    if (!subStatuses.includes(newStatus)) throw 'invalid crew sub status';
+    this.subStatus = newStatus;
+    this.dispatchEvent(new CrewSubStatusEvent(this.subStatus));
   }
 
   get id() {
@@ -148,10 +175,6 @@ export class RallyCrew extends EventTarget {
 
   get our() {
     return '~' + this.urbit.ship;
-  }
-
-  get active() {
-    return  (this.crew.peers?.[our] || []).includes(this.clientId);
   }
 
   get new() { return this.statuts === 'new'; }
@@ -166,54 +189,48 @@ export class RallyCrew extends EventTarget {
     return Object.entries(this.crew.peers).filter(p => p[1].length).map(p => p[0])
   }
 
-  init() {
-    this.setStatus('waiting');
+  async init() {
     this.promise = this.urbit.subscribe({
       app: this.app,
       path: this.path,
-      event: (update) => {
-        if (update.kind === 'you-are') {
-          console.log('client update', update);
-          if (!this.clientId && !this.options.dontEnter) {
-            this.clientId = update.uuid;
-            this.enter();
-          }
-          this.dispatchEvent(new ClientUpdateEvent(update));
-        } else {
-          console.log('crew update', update);
-          if (this.status === 'waiting') {
-            this.setStatus('watching');
-          }
-          if (update.kind === 'quit') {
-            console.log('it is over, bros');
-            this.shutDown();
-            this.dispatchEvent(new CrewQuitEvent(update.host));
-          } else { // waves
-            updateCrew(this.crew, update.waves);
-            if (this.clientId) {
-              if (this.crew.peers[our]?.includes(this.clientId)) {
-                this.setStatus('active');
-              } else if (this.status === 'active') {
-                this.shutDown();
-              }
-            }
-            this.dispatchEvent(new CrewUpdateEvent(update));
-          }
-        }
-      },
+      event: update => this.handleUpdate(update),
       err: (err) => {
+        this.setSubStatus('kicked');
         this.dispatchEvent(new SubscriptionErrorEvent(this.path, err));
       },
       quit: (data) => {
+        this.setSubStatus('kicked');
         this.dispatchEvent(new SubscriptionQuitEvent(this.path, data));
       }
     });
+    await this.promise;
+    this.setSubStatus('waiting');
     return this.promise;
   }
 
-  shutDown() {
-    this.cancel();
-    this.setStatus('ejected');
+  handleUpdate(update) {
+    if (update.kind === 'you-are') {
+      console.log('client update', update);
+      this.dispatchEvent(new ClientUpdateEvent(update));
+    } else {
+      console.log('crew update', update);
+      if (this.subStatus === 'waiting' || this.subStatus === 'new') {
+        this.setSubStatus('watching');
+      }
+      if (update.kind === 'quit') {
+        console.log('it is over, bros');
+        this.setSubStatus('kicked');
+        this.cancel();
+        this.dispatchEvent(new CrewQuitEvent(update.host));
+      } else { // waves
+        this.applyWaves(update.waves);
+        this.dispatchEvent(new CrewUpdateEvent(update));
+      }
+    }
+  }
+
+  applyWaves(waves) {
+    updateCrew(this.crew, waves);
   }
 
   async cancel() {
@@ -221,9 +238,15 @@ export class RallyCrew extends EventTarget {
       const sub = await this.promise;
       return this.urbit.unsubscribe(sub);
     }
+    if (this.subStatus !== 'kicked') {
+      this.setSubStatus('closed');
+    }
   }
 
   async delete() {
+    if (this.host !== this.our) {
+      throw new Error('Cannot delete crew that does not belong to us');
+    }
     const result = await this.urbit.poke({
       app: this.app,
       mark: 'rally-delete',
@@ -235,31 +258,12 @@ export class RallyCrew extends EventTarget {
         console.error('RallyCrew failed to delete crew at ' + this.path, e);
       },
     });
-    this.shutDown();
+    this.cancel();
     return result;
   }
 
-  enter() {
-    if (!this.clientId) throw new Error('Cannot enter without a clientId');
-    return this.urbit.poke({
-      app: this.app,
-      mark: 'rally-enter',
-      json: {
-        dest: this.dest,
-        uuid: this.clientId,
-      },
-      onError: (e) => {
-        console.error('RallyCrew failed to enter crew at ' + this.path, e);
-      },
-    });
-  }
-
-  leave(allClients=false) {
-    if (allClients) {
-      return leaveRally(this.urbit, this.dest, this.app);
-    }
-    if (!this.clientId) throw new Error('Cannot leave without a clientId');
-    return this.sendAction([{ leave: null }]);
+  leaveAsPeer() {
+    return leaveRally(this.urbit, this.dest, this.app);
   }
 
   invite(ships) {
@@ -286,6 +290,95 @@ export class RallyCrew extends EventTarget {
         console.error('RallyCrew failed to send actions to crew at ' + this.path, stirs, e);
       },
     });
+  }
+}
+
+const statuses = 'new | waiting | active | ejected'.split(' | ');
+
+export class RallyCrew extends RallyCrewSub {
+  constructor(urbit, dest, options={}) {
+    super(urbit, dest, {
+      ...options,
+      waitToInit: true,
+    });
+    this.clientId = options.clientId;
+
+    // new | waiting | active | ejected
+    this.status = 'new';
+    if (this.clientId && !options.dontEnter) {
+      this.enter();
+    }
+    if (!options.waitToInit) {
+      this.init();
+    }
+  }
+
+  setStatus(newStatus) {
+    if (!statuses.includes(newStatus)) throw 'invalid crew status';
+    this.status = newStatus;
+    this.dispatchEvent(new CrewStatusEvent(this.status));
+  }
+
+  get active() {
+    return  (this.crew.peers?.[this.our] || []).includes(this.clientId);
+  }
+
+  get new() { return this.statuts === 'new'; }
+  get waiting() { return this.statuts === 'waiting'; }
+  get ejected() { return this.statuts === 'ejected'; }
+
+  handleUpdate(update) {
+    if (update.kind === 'you-are') {
+      if (!this.clientId && !this.options.dontEnter) {
+        this.clientId = update.uuid;
+        this.enter();
+      }
+    } else {
+      if (update.kind === 'quit') {
+        this.setStatus('ejected');
+      }
+    }
+    super.handleUpdate(update);
+  }
+
+  applyWaves(waves) {
+    super.applyWaves(waves);
+    if (this.clientId) {
+      if (this.active) {
+        this.setStatus('active');
+      } else if (this.subStatus === 'active') {
+        this.cancel();
+      }
+    }
+  }
+
+  cancel() {
+    super.cancel();
+    this.setStatus('ejected');
+  }
+
+  enter() {
+    if (!this.clientId) throw new Error('Cannot enter without a clientId');
+    this.setStatus('waiting');
+    return this.urbit.poke({
+      app: this.app,
+      mark: 'rally-enter',
+      json: {
+        dest: this.dest,
+        uuid: this.clientId,
+      },
+      onError: (e) => {
+        console.error('RallyCrew failed to enter crew at ' + this.path, e);
+        this.cancel();
+      },
+    });
+  }
+
+  async leaveAsClient() {
+    if (!this.clientId) throw new Error('Cannot leave without a clientId');
+    const result = await this.sendAction([{ leave: null }]);
+    this.cancel();
+    return result;
   }
 }
 
@@ -325,6 +418,13 @@ export class CrewQuitEvent extends Event {
   }
 }
 
+export class CrewSubStatusEvent extends Event {
+  constructor(status) {
+    super('crew-sub-status');
+    this.status = status;
+  }
+}
+
 export class CrewStatusEvent extends Event {
   constructor(status) {
     super('crew-status');
@@ -352,7 +452,7 @@ export class SubscriptionQuitEvent extends Event {
 // API Calls
 //
 
-function leaveRally(urbit, dest, app) {
+function leaveRally(urbit, dest, app = 'rally') {
   return urbit.poke({
     app,
     mark: 'rally-leave',
