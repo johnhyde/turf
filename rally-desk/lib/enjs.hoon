@@ -19,9 +19,12 @@
   |=  cup=client-update:r
   ^-  json
   %-  pairs
-  :~  version+(numb -.cup)
+  :*  version+(numb -.cup)
       kind+[%s +<.cup]
-      uuid+s+uuid.cup
+      ?-  +<.cup
+        %you-are  ~[uuid+s+uuid.cup]
+        %ejected  ~
+      ==
   ==
 ++  dests-update
   |=  in=dests-update:r

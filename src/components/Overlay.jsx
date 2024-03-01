@@ -23,9 +23,9 @@ export default function Overlay() {
   return (
     <div class="absolute top-[64px] sm:top-0 w-full flex flex-col pointer-events-none">
       <div class="flex">
-        <div class="flex-grow"></div>
+        <div class="basis-1/2"></div>
         <Show when={state.c.id}>
-          <Heading class="text-xl mt-3 flex items-center pointer-events-auto">
+          <Heading class="text-xl mt-3 h-fit flex items-center pointer-events-auto">
             {state.c.name}
             <div
               class={'ml-2 mr-1 w-2 h-2 rounded-full ' + dotColor()}
@@ -37,7 +37,7 @@ export default function Overlay() {
             {/* </Show> */}
           </Heading>
         </Show>
-        <div class="flex-grow text-left pointer-events-auto">
+        <div class="basis-1/2 text-left pointer-events-auto">
           <CallCenter/>
           {/* <Heading>
             {connection()}

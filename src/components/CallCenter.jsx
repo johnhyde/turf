@@ -3,6 +3,9 @@ import { useState } from 'stores/state';
 import { usePhone } from 'stores/phone';
 import Modal from '@/Modal';
 import CallInfo from '@/CallInfo';
+import MediumButton from '@/MediumButton';
+import SmallButton from '@/SmallButton';
+import { destToString } from '../lib/rally';
 
 function idSort(a, b) {
   return a.id.localeCompare(b.id);
@@ -14,45 +17,50 @@ export default function CallCenter() {
   const calls = () => Object.values(phone.calls).sort(idSort);
   const publicCalls = () => Object.values(phone.publicCalls).sort(idSort);
 
-  return (<>{
+  return (<div class="m-3 flex flex-wrap justify-end gap-3">{
     (calls().length == 0) ?
     (
       <Show when={state.c.peers.length > 0}>
-        <div>
-          {/* <button onClick={[phone.call.bind(phone), state.c.peers]}>Call</button> */}
-          <button onClick={[state.makeCall.bind(state), state.c.peers]}>Call</button>
-          <For each={state.c.peers}>
-            {(patp) => {
-              return <p>{patp}</p>;
+          <MediumButton onClick={() => state.makeCall(state.c.peers)} class="!m-0">
+            Call {state.c.peers.join(', ')}
+          </MediumButton>
+          <For each={publicCalls()}>
+            {(call) => {
+              return <JoinCallButton call={call} />
             }}
           </For>
-        </div>
-        <For each={publicCalls()}>
-          {(call) => {
-            return <JoinCallButton call={call} />
-          }}
-        </For>
       </Show>
     ) : (
-      <Portal mount={document.getElementById('modals')}>
-        <For each={calls()}>
-          {(call) => (
-            <Modal class="!max-w-fit !max-h-full">
-              <CallInfo call={call}/>
-            </Modal>
-          )}
+      <>
+        <For each={phone.rings}>
+          {(ring) => {
+            const creator = () => ring.crewId.split('/')[2];
+            return <MediumButton class="!m-0">
+              {creator()} is calling
+            </MediumButton>
+          }}
         </For>
-      </Portal>
+        <Portal mount={document.getElementById('modals')}>
+          <For each={calls()}>
+            {(call) => (
+              <Modal class="!max-w-fit !max-h-full">
+                <CallInfo call={call}/>
+              </Modal>
+            )}
+          </For>
+        </Portal>
+      </>
     )
-  }</>);
+  }</div>);
 }
 
 
 function JoinCallButton(props) {
   const state = useState();
   const [callers, $callers] = createSignal([]);
-  const callPeers = () => callers().filter(c => state.c.peers.includes(c));
+  const callPeers = () => callers().filter(c => [our, ...state.c.peers].includes(c));
   const phone = usePhone();
+  const isInvite = () => phone.rings.map(destToString).includes(props.call.id);
   createEffect(() => {
     if (props.call) {
       const controller = new AbortController();
@@ -67,8 +75,8 @@ function JoinCallButton(props) {
   });
 
   return <Show when={callPeers().length}>
-    <button onClick={() => phone.answer(props.call.id)}>
-      Join {callers().join(', ')}
-    </button>
+    <MediumButton onClick={() => phone.answer(props.call.id)} class="!m-0">
+      {isInvite() ? 'Answer' : 'Join'} {callers().join(', ')}
+    </MediumButton>
   </Show>
 }

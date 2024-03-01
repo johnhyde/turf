@@ -62,9 +62,10 @@
       [%set-persistent persistent=?]
       [%set-confirm confirm=?]
   ==
-+$  client-update
-  $:  %0
-      [%you-are =uuid]
++$  client-update  [%0 client-update-core]
++$  client-update-core
+  $%  [%you-are =uuid]
+      [%ejected ~]
   ==
 +$  action  [%0 =dest =stirs]
 +$  stirs  (list stir)

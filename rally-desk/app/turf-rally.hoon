@@ -107,7 +107,9 @@
         %eject
       ~&  ['getting ejected from' dest]
       =^  cards  state  (move-foot:hc dest ~)
-      cards^this
+      :_  this
+      :-  (client-update-card:hc dest [%ejected ~])
+      cards
     ==
     ::
     ::
@@ -536,6 +538,12 @@
     ==
   =/  path  (feet-path foot c-id)
   [%give %fact [path]~ %rally-dests-update !>(`dests-update`[%0 up])]
+++  client-update-card
+  |=  [=dest up=client-update-core]
+  ^-  card
+  =/  path  (crow-update-path dest)
+  =/  cup=client-update  [%0 up]
+  [%give %fact ~[path] %rally-client-update !>(cup)]
 ++  crews-update-card
   |=  up=dests-update-core
   ^-  card

@@ -3,6 +3,8 @@ import { createStore, reconcile } from 'solid-js/store';
 import { useState } from 'stores/state';
 import { usePhone } from 'stores/phone';
 import { bind, input } from 'lib/utils';
+import MediumButton from '@/MediumButton';
+import SmallButton from '@/SmallButton';
 
 export default function CallInfo(props) {
   const phone = usePhone();
@@ -38,11 +40,11 @@ export default function CallInfo(props) {
     return '';
   }
 
-  const orderedConns = window.ocon = () => {
-    return Object.entries(conns()).sort((a, b) => {
-      return a[0].localeCompare(b[0]);
+  const orderedConns = window.ocon = createMemo(() => {
+    return Object.values(conns()).sort((a, b) => {
+      return a.clientString.localeCompare(b.clientString);
     });
-  };
+  });
 
   createEffect(() => {
     $conns(reconcile(props.call.calls));
@@ -78,7 +80,7 @@ export default function CallInfo(props) {
     navigator.mediaDevices
       .getUserMedia({
         video: { facingMode: "user" },
-        // audio: true,
+        audio: !dev,
       })
       .then(stream => {
         $ourStream(stream);
@@ -132,51 +134,71 @@ export default function CallInfo(props) {
   });
 
   return (
-    <div class="bg-yellow-700 border border-yellow-950 rounded-lg pointer-events-auto mx-auto">
-      <p>
+    <div class="w-fit bg-yellow-700 border border-yellow-950 rounded-lg pointer-events-auto">
+      <p class="text-center my-1">
         {msg()}
       </p>
-      <div class="flex flex-wrap justify-center">
+      <div class="flex flex-wrap justify-center gap-2">
         {/* {JSON.stringify(conns)}
         {JSON.stringify(orderedConns())} */}
         <For each={orderedConns()}>
-          {([clientStr, conn]) => {
-            return <Conn conn={conn} clientStr={clientStr} stream={ourStream()} screen={ourScreen()} />;
+          {(conn) => {
+            return <Conn conn={conn} clientStr={conn.clientString} stream={ourStream()} screen={ourScreen()} />
           }}
         </For>
         <VideoSquare stream={ourStream()} label={`You (${our})`} us />
         <Show when={ourScreen()}>
           <VideoSquare stream={ourScreen()} label="Your screen" us />
         </Show>
+        <For each={validNoobs()}>
+          {(noob) => {
+            {/* if (noob === our && !weAreAdmin()) return null; */}
+            return (
+              <div class="w-96 h-72 flex flex-col bg-gray-800 text-white text-center">
+                <span class="basis-1/2" />
+                {noob === our ?
+                  'Waiting to be let in'
+                :
+                  `${noob} wants to join`
+                }
+                <div class="basis-1/2 flex justify-center items-center gap-2">
+                  {weAreAdmin() ?
+                    <>
+                      <MediumButton onClick={() => props.call.confirm(noob)} class="!m-0 text-black">
+                        Confirm
+                      </MediumButton>
+                      <MediumButton onClick={() => props.call.delNoob(noob)} class="!m-0 text-black">
+                        Deny
+                      </MediumButton>
+                    </>
+                  :
+                    '(awaiting confirmation from ' + props.call.crew.admins.join(', ') + ')'
+                  }
+                </div>
+              </div>
+            );
+          }}
+        </For>
       </div>
-      <div class="flex justify-center gap-2">
-        <button onClick={() => $store('camera', b => !b)}>
+      <div class="m-2 flex justify-center gap-2">
+        <SmallButton onClick={() => $store('camera', b => !b)}>
           {store.camera ? 'stop camera' : 'start camera'}
-        </button>
-        <button onClick={() => $store('mic', b => !b)}>
+        </SmallButton>
+        <SmallButton onClick={() => $store('mic', b => !b)}>
           {store.mic ? 'stop mic' : 'start mic'}
-        </button>
-        <button onClick={() => $store('screen', b => !b)}>
+        </SmallButton>
+        <SmallButton onClick={() => $store('screen', b => !b)}>
           {store.screen ? 'stop screenshare' : 'start screenshare'}
-        </button>
+        </SmallButton>
       </div>
-      <div class="flex justify-center gap-2">
-        <button onClick={() => phone.hangUp(props.call)}>
+      <div class="m-2 flex justify-center gap-2">
+        <SmallButton onClick={() => phone.hangUp(props.call)}>
           Hang Up
-        </button>
+        </SmallButton>
         <Show when={our === props.call.host}>
-          <button onClick={() => phone.delete(props.call)}>
+          <SmallButton onClick={() => phone.delete(props.call)}>
             End Call
-          </button>
-        </Show>
-        <Show when={weAreAdmin()}>
-          <For each={validNoobs()}>
-            {(noob) => {
-              return <button onClick={() => props.call.confirm(noob)}>
-                Let {noob} in
-              </button>;
-            }}
-          </For>
+          </SmallButton>
         </Show>
       </div>
     </div>);
@@ -222,8 +244,7 @@ function Conn(props) {
       }
     }
     function listenToStream(stream) {
-      stream.addEventListener('removetrack', (event) => {
-        console.log('track was removed!', event);
+      const maybeRemove = () => {
         if (stream.getTracks().length === 0) {
           if (stream === theirStream()) {
             $theirStream(undefined);
@@ -232,7 +253,12 @@ function Conn(props) {
             $theirScreen(undefined);
           }
         }
+      };
+      stream.addEventListener('removetrack', (event) => {
+        console.log('track was removed!', event);
+        maybeRemove();
       }, sigOpts);
+      maybeRemove();
     }
     onCleanup(() => controller.abort());
   });
@@ -281,9 +307,9 @@ function Conn(props) {
   }
 
   return <>
-    <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />;
+    <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />
     <Show when={theirScreen()}>
-      <VideoSquare stream={theirScreen()} label={'~' + props.conn.peer + "'s screen"} />;
+      <VideoSquare stream={theirScreen()} label={'~' + props.conn.peer + "'s screen"} />
     </Show>
   </>;
 }
@@ -297,22 +323,16 @@ function VideoSquare(props) {
   });
 
   return (
-    <div class="w-96 flex-col bg-gray-800 text-white">
+    <div class="w-96 flex flex-col items-center bg-gray-800 text-white">
+      <video ref={video} playsinline autoplay controls={!props.us} muted={props.us} hidden={!props.stream} />
+      <Show when={!props.stream}>
+        <div class="h-72 flex flex-col justify-center">
+          Establishing a connection...
+        </div>
+      </Show>
       <Show when={props.label}>
         <span>{props.label}</span>
       </Show>
-      <video ref={video} playsinline autoplay controls={!props.us} muted={props.us} />
-      {/* <For each={msgs()}>
-        {(msg) => <p>{msg}</p>}
-      </For> */}
-      {/* <input
-        class="text-black"
-        use:input
-        use:bind={[msg, $msg]}
-      />
-      <button onClick={sendMsg}>
-        Send
-      </button> */}
     </div>
   );
 }

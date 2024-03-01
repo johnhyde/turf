@@ -153,7 +153,7 @@ export class RallyCrewSub extends EventTarget {
       new: true,
       ...defaultCrew(),
     };
-    // new | waiting | watching | active | ejected
+    // new | waiting | watching | kicked | closed
     this.subStatus = 'new';
     this.path = '/0/crow/' + dest.ship + dest.crewId;
     this.app = options.app || 'rally';
@@ -176,10 +176,6 @@ export class RallyCrewSub extends EventTarget {
   get our() {
     return '~' + this.urbit.ship;
   }
-
-  get new() { return this.statuts === 'new'; }
-  get waiting() { return this.statuts === 'waiting'; }
-  get watching() { return this.statuts === 'watching'; }
 
   get peers() {
     return Object.keys(this.crew.peers);
@@ -209,8 +205,9 @@ export class RallyCrewSub extends EventTarget {
   }
 
   handleUpdate(update) {
-    if (update.kind === 'you-are') {
-      console.log('client update', update);
+    const clientUpdateKinds = ['you-are', 'ejected'];
+    if (clientUpdateKinds.includes(update.kind)) {
+      console.log('client update', update)
       this.dispatchEvent(new ClientUpdateEvent(update));
     } else {
       console.log('crew update', update);
@@ -236,11 +233,12 @@ export class RallyCrewSub extends EventTarget {
   async cancel() {
     if (this.promise) {
       const sub = await this.promise;
-      return this.urbit.unsubscribe(sub);
+      this.urbit.unsubscribe(sub);
     }
     if (this.subStatus !== 'kicked') {
       this.setSubStatus('closed');
     }
+    this.dispatchEvent(new CrewOverEvent());
   }
 
   async delete() {
@@ -275,6 +273,18 @@ export class RallyCrewSub extends EventTarget {
 
   confirm(ship) {
     return this.sendAction([{ 'accept-noob': { ship } }]);
+  }
+
+  delNoob(ship) {
+    return this.sendAction([{ wave: { 'del-noob': { ship } } }]);
+  }
+
+  delPeer(ship) {
+    return this.sendAction([{ wave: { 'del-peer': { ship } } }]);
+  }
+
+  delClient(uuid) {
+    return this.sendAction([{ 'del-client': { uuid } }]);
   }
 
   sendAction(stirs) {
@@ -323,9 +333,9 @@ export class RallyCrew extends RallyCrewSub {
     return  (this.crew.peers?.[this.our] || []).includes(this.clientId);
   }
 
-  get new() { return this.statuts === 'new'; }
-  get waiting() { return this.statuts === 'waiting'; }
-  get ejected() { return this.statuts === 'ejected'; }
+  get new() { return this.status === 'new'; }
+  get waiting() { return this.status === 'waiting'; }
+  get ejected() { return this.status === 'ejected'; }
 
   handleUpdate(update) {
     if (update.kind === 'you-are') {
@@ -333,6 +343,9 @@ export class RallyCrew extends RallyCrewSub {
         this.clientId = update.uuid;
         this.enter();
       }
+    } else if (update.kind === 'ejected') {
+      this.setStatus('ejected');
+      this.cancel();
     } else {
       if (update.kind === 'quit') {
         this.setStatus('ejected');
@@ -346,7 +359,7 @@ export class RallyCrew extends RallyCrewSub {
     if (this.clientId) {
       if (this.active) {
         this.setStatus('active');
-      } else if (this.subStatus === 'active') {
+      } else if (this.status === 'active') {
         this.cancel();
       }
     }
@@ -357,10 +370,10 @@ export class RallyCrew extends RallyCrewSub {
     this.setStatus('ejected');
   }
 
-  enter() {
+  async enter() {
     if (!this.clientId) throw new Error('Cannot enter without a clientId');
     this.setStatus('waiting');
-    return this.urbit.poke({
+    const result = await this.urbit.poke({
       app: this.app,
       mark: 'rally-enter',
       json: {
@@ -372,11 +385,22 @@ export class RallyCrew extends RallyCrewSub {
         this.cancel();
       },
     });
+    if (this.options.leaveOtherClients) {
+      const clients = [...(this.crew?.peers?.[our] || []), ...(this.crew?.noobs?.[our] || [])]
+      clients.forEach(id => {
+        if (id !== this.clientId) {
+          console.log('deleted clientId', id, 'not ours hopefully', this.clientId);
+          this.delClient(id);
+        }
+      });
+    }
+    return result;
   }
 
   async leaveAsClient() {
     if (!this.clientId) throw new Error('Cannot leave without a clientId');
-    const result = await this.sendAction([{ leave: null }]);
+    // const result = await this.sendAction([{ leave: null }]);
+    const result = await this.delClient(this.clientId);
     this.cancel();
     return result;
   }
@@ -429,6 +453,12 @@ export class CrewStatusEvent extends Event {
   constructor(status) {
     super('crew-status');
     this.status = status;
+  }
+}
+
+export class CrewOverEvent extends Event {
+  constructor(status) {
+    super('crew-over');
   }
 }
 

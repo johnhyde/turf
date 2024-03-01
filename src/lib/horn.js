@@ -238,6 +238,7 @@ export class Rally extends RallyCrew {
   }
 
   listenToCall(call, clientStr) {
+    call.clientString = clientStr;
     call.addEventListener('hungupcall', (e) => {
       console.log('call hung up', call.uuid);
       this.deleteCall(clientStr);

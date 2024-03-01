@@ -30,16 +30,16 @@ export function getPhone(state) {
     },
     async answer(ring) {
       if (!horn()) await hornPromise;
-      const call = horn().joinRally(ring);
+      const call = horn().joinRally(ring, { leaveOtherClients: true });
       this.addCall(call);
       this.delRing(ring);
     },
     reject(ring) {
       incoming().reject(ring);
-      this.delRing(ring);
+      this.delRing(ring); // not actually necessary because incoming updates
     },
     hangUp(call) {
-      call.leaveAsPeer();
+      call.leaveAsClient();
       this.delCall(call);
     },
     delete(call) {
@@ -47,7 +47,7 @@ export function getPhone(state) {
       this.delCall(call);
     },
     addCall(call) {
-      call.addEventListener('crew-quit', (e) => {
+      call.addEventListener('crew-over', (e) => {
         this.delCall(call);
       });
       $phone('calls', call.id, call);
@@ -62,7 +62,9 @@ export function getPhone(state) {
       $phone('rings', r => [...r, ring]);
     },
     delRing(ring) {
-      $phone('rings', r => r.filter(r => r !== ring));
+      $phone('rings', r => r.filter((r) => {
+        return !(r.ship === ring.ship && r.crewId === ring.crewId);
+      }));
     },
     handleIncomingMessage(e) {
       console.log('IncomingMessage', e);
