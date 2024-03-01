@@ -215,7 +215,7 @@ export class RallyCrewSub extends EventTarget {
         this.setSubStatus('watching');
       }
       if (update.kind === 'quit') {
-        console.log('it is over, bros');
+        console.log('it is over, bros (the call was deleted)');
         this.setSubStatus('kicked');
         this.cancel();
         this.dispatchEvent(new CrewQuitEvent(update.host));
@@ -242,22 +242,23 @@ export class RallyCrewSub extends EventTarget {
   }
 
   async delete() {
-    if (this.host !== this.our) {
-      throw new Error('Cannot delete crew that does not belong to us');
-    }
-    const result = await this.urbit.poke({
-      app: this.app,
-      mark: 'rally-delete',
-      json: {
-        crewId: this.crewId,
-        host: null,
-      },
-      onError: (e) => {
-        console.error('RallyCrew failed to delete crew at ' + this.path, e);
-      },
-    });
-    this.cancel();
-    return result;
+    return this.sendAction([{ 'delete': null }]);
+    // if (this.host !== this.our) {
+    //   throw new Error('Cannot delete crew that does not belong to us');
+    // }
+    // const result = await this.urbit.poke({
+    //   app: this.app,
+    //   mark: 'rally-delete',
+    //   json: {
+    //     crewId: this.crewId,
+    //     host: null,
+    //   },
+    //   onError: (e) => {
+    //     console.error('RallyCrew failed to delete crew at ' + this.path, e);
+    //   },
+    // });
+    // this.cancel();
+    // return result;
   }
 
   leaveAsPeer() {

@@ -45,6 +45,7 @@
       accept-noob+(ot ~[ship+shp])
       pass-noob+(ot ~[ship+shp])
       ban+(ot ~[ship+shp])
+      delete+_~
       waves+waves
       wave+wave
   ==

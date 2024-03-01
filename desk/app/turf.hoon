@@ -445,7 +445,6 @@
     =/  c-id  |2.path
     =/  id=turf-id  [our.bowl (slag 2 c-id)]
     =/  ppath  (turf-id-to-ppath id)
-    ~&  ['received players scry' id ppath]
     =/  p  (~(gut by read:du-pond) ppath ~)
     ?~  p  `~
     ?~  turf.rock.p  `~

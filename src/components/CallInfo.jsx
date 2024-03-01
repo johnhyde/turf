@@ -195,7 +195,8 @@ export default function CallInfo(props) {
         <SmallButton onClick={() => phone.hangUp(props.call)}>
           Hang Up
         </SmallButton>
-        <Show when={our === props.call.host}>
+        {/* <Show when={our === props.call.host}> */}
+        <Show when={weAreAdmin()}>
           <SmallButton onClick={() => phone.delete(props.call)}>
             End Call
           </SmallButton>
@@ -215,10 +216,8 @@ function Conn(props) {
     const controller = new AbortController();
     const sigOpts = { signal: controller.signal };
     if (props.conn) {
-      console.log('apparently connection changed', props.conn.peer);
       props.conn.addEventListener('datachannel', (event) => {
         $chan(event.channel);
-        console.log('got new data channel in Conn component', event);
       }, sigOpts);
       props.conn.addEventListener('track', (event) => {
         const stream = event.streams[0];
@@ -229,7 +228,6 @@ function Conn(props) {
           $theirScreen(stream);
           listenToStream(stream);
         }
-        console.log('got new track in Conn component', event);
       }, sigOpts);
       if (props.conn.remoteStreams?.size) {
         const streams = [...props.conn.remoteStreams];
@@ -255,7 +253,6 @@ function Conn(props) {
         }
       };
       stream.addEventListener('removetrack', (event) => {
-        console.log('track was removed!', event);
         maybeRemove();
       }, sigOpts);
       maybeRemove();
@@ -291,7 +288,6 @@ function Conn(props) {
     let controller = new AbortController();
     if (chan()) {
       chan().addEventListener('message', (event) => {
-        console.log('we have received a dang message');
         $msgs([...msgs(), event.data]);
       }, { signal: controller.signal });
     }

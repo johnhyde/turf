@@ -85,6 +85,7 @@
   $%  [%accept-noob =ship]  :: del-noob and add-peer
       [%pass-noob =ship]  :: mark noob as filtered
       [%ban =ship]  :: del-peer and revoke-access
+      [%delete ~]
       [%waves =waves]  :: only admins can do this
       [%wave =wave]  :: only admins can do this
   ==

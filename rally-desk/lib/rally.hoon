@@ -93,6 +93,8 @@
         [%del-peer ship.stir]
         [%del-noob ship.stir]
     ==
+      %delete
+    `[%set-crew *crew]~  :: so that it will be empty and not persistent and get deleted
       %waves
     :-  %+  roll  waves.stir
         |=  [=wave =roars]
@@ -120,7 +122,7 @@
 ++  wash-crew
   |=  [kru=crew wav=wave]
   ^-  crew
-  ~&  ['got wave!' wav]
+  :: ~&  ['got wave!' wav]
   ?-    -.wav
       %set-crew
     crew.wav

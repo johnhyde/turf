@@ -134,10 +134,10 @@ export class Rally extends RallyCrew {
       };
       ring.clientStr = clientToString(client);
       if (!this.clientId) {
-        console.log('call in, waiting', ring);
+        // console.log('call in, waiting', ring);
         this.rings.push(ring);
       } else {
-        console.log('call in', ring);
+        // console.log('call in', ring);
         if (this.clientId !== us) return;
         if (this.toAnswer.has(ring.clientStr)) {
           this.answerRing(ring);
@@ -240,12 +240,12 @@ export class Rally extends RallyCrew {
   listenToCall(call, clientStr) {
     call.clientString = clientStr;
     call.addEventListener('hungupcall', (e) => {
-      console.log('call hung up', call.uuid);
+      // console.log('call hung up', call.uuid);
       this.deleteCall(clientStr);
     });
-    call.addEventListener('statechanged', ({ uuid, urbitState }) => {
-      console.log(`state change for ${uuid}: ${urbitState}`);
-    });
+    // call.addEventListener('statechanged', ({ uuid, urbitState }) => {
+    //   console.log(`state change for ${uuid}: ${urbitState}`);
+    // });
     call.remoteStreams = new Set();
     call.addEventListener('track', (event) => {
       event.streams.forEach(s => call.remoteStreams.add(s));

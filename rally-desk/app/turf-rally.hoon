@@ -70,7 +70,6 @@
       %rally-action
     =/  act  !<(action vase)
     ?:  =(ship.dest.act our.bowl)
-      ~&  'it me, the action poke'
       =^  cards  state  (apply-action:hc c-id.dest.act stirs.act src.bowl)
       cards^this
     ?>  =(src our):bowl
@@ -105,7 +104,7 @@
       (weld feet-cards cards)
       ::
         %eject
-      ~&  ['getting ejected from' dest]
+      :: ~&  ['getting ejected from' dest]
       =^  cards  state  (move-foot:hc dest ~)
       :_  this
       :-  (client-update-card:hc dest [%ejected ~])
@@ -161,7 +160,7 @@
 ++  on-watch
   |=  =path
   ^-  (quip card _this)
-  ~&  >  "got on-watch on {<path>}"
+  :: ~&  >  "got on-watch on {<path>}"
   :: ?+  path  (on-watch:def path)
   ?+  path  `this
       [v=@ %feet foot dap=@t ~]
@@ -203,7 +202,7 @@
     :-  [%pass path %agent [host dap.bowl] %watch path]
     [%give %fact ~ %rally-dests-update !>(up)]~
       [v=@ ?(%crew %crow) host=@ id=*]
-    ~&  "matched update sub handler"
+    :: ~&  "matched update sub handler"
     =/  =dest  [(slav %p &3.path) |3.path]
     ?-    &2.path
         %crew
@@ -300,13 +299,13 @@
     ::
       [v=@ %crew host=@ id=*]
     =/  =dest  [(slav %p &3.wire) |3.wire]
-    ~&  ["got crew update" -.sign wire]
+    :: ~&  ["got crew update" -.sign wire]
     ?+    -.sign  (on-agent:def wire sign)
         %fact
       ?.  ?=(%rally-update -.cage.sign)  `this
       =/  =update  !<(update +.cage.sign)
       =^  cards  state  (apply-update:hc dest update)
-      ~&  ['new kro after' (~(get by crows) dest)]
+      :: ~&  ['new kro after' (~(get by crows) dest)]
       cards^this
         %kick
       =^  cards  state  (get-kicked:hc dest)
@@ -331,12 +330,12 @@
     ?>  ?=([%khan %arow *] sign)
     ?:  ?=(%.n -.p.sign)
       :: del-noob
-      ~&  ['filter thread failed noob' noob c-id]
+      :: ~&  ['filter thread failed noob' noob c-id]
       %-  (slog leaf+<p.p.sign> ~)
       =/  cards  (send-action-stir:hc dest [%wave %del-noob noob])
       cards^this
     :: pass-noob
-    ~&  ['filter thread passed noob' noob c-id]
+    :: ~&  ['filter thread passed noob' noob c-id]
     =/  cards  (send-action-stir:hc dest [%pass-noob noob])
     cards^this
   ==
@@ -361,12 +360,12 @@
     ?^  kru  kru
     ?>  =(our.bowl actor)
     *crew
-  ~&  ['we have our kru' kru]
+  :: ~&  ['we have our kru' kru]
   =^  cards-1  kru  (apply-stirs c-id kru stirs actor)
   =^  cards-2  crews
     ?:  |(?=(^ peers.kru) persistent.kru)
       `(~(put by crews) c-id kru)
-    ~&  ['deleting crew because everyone has left' c-id]
+    :: ~&  ['deleting crew because everyone has left' c-id]
     :-  (quit-cards c-id ~)
     (~(del by crews) c-id)
   (weld cards-1 cards-2)^state
@@ -376,7 +375,7 @@
   |-  ^-  (quip card crew)
   ?~  stirs  cards^kru
   =^  roars  kru  (stir-crew kru i.stirs actor)
-  ~&  ['new kru after' -.i.stirs kru]
+  :: ~&  ['new kru after' -.i.stirs kru]
   =/  new-cards  (roars-to-cards c-id kru roars)
   $(cards (weld cards new-cards), kru kru, stirs t.stirs)  :: do we need to "kru kru"?
 ++  stir-crew
