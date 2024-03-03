@@ -25,7 +25,7 @@ export default function Overlay() {
       <div class="flex">
         <div class="basis-1/2"></div>
         <Show when={state.c.id}>
-          <Heading class="text-xl mt-3 h-fit flex items-center pointer-events-auto">
+          <Heading class="shrink-0 text-xl mt-3 h-fit flex items-center pointer-events-auto">
             {state.c.name}
             <div
               class={'ml-2 mr-1 w-2 h-2 rounded-full ' + dotColor()}

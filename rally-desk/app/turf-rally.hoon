@@ -28,7 +28,7 @@
 %-  agent:dbug
 =|  current-state
 =*  state  -
-%+  verb  &
+%+  verb  |
 ^-  agent:gall
 =<
 |_  =bowl:gall

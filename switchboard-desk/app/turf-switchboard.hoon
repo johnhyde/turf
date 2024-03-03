@@ -16,7 +16,7 @@
 +$  card  card:agent:gall
 --
 %-  agent:dbug
-%+  verb  %.y
+%+  verb  %.n
 =/  agent-name  %turf-switchboard
 =|  state=state-1
 ^-  agent:gall
