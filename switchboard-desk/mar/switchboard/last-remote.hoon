@@ -1,6 +1,6 @@
 /-  switchboard
 /+  *switchboard
-|_  =switchboard-to-switchboard:switchboard
+|_  =last-remote:switchboard
 ++  grab
   |%
   ++  noun  last-remote:switchboard

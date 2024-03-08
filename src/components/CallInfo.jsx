@@ -129,7 +129,10 @@ export default function CallInfo(props) {
           $store('screen', false);
         }, { once: true });
       })
-      .catch(error => console.error(error));
+      .catch(error => {
+        $store('screen', false);
+        console.error(error);
+      });
     }
   });
 
