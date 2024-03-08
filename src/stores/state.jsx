@@ -24,7 +24,7 @@ function initEditorState() {
 }
 
 export function getState() {
-  let portals;
+  let portals, peers;
   const [state, $state] = createStore({
     ponds: {},
     mist: new Mist('/mist'),
@@ -96,6 +96,9 @@ export function getState() {
         get name() {
           return this.id ? this.id.replace('/pond/', '') : '';
         },
+        get host() {
+          return this.id ? this.name.split('/')[0] : '';
+        },
         get pond() {
           return parent.ponds[this.id];
         },
@@ -116,6 +119,9 @@ export function getState() {
           if (!this.ether) return null;
           return this.ether.skye[parent.editor.selectedFormId] || null;
         },
+        get peers() { // people no more than two spaces away
+          return peers();
+        }
       };
       return current;
     },
@@ -205,6 +211,18 @@ export function getState() {
       },
       lunk,
     };
+  });
+
+  peers = createMemo(() => {
+    if (!state.e) return [];
+    if (!state.player) return [];
+    const pos = vec2(state.player.pos);
+    const peers = Object.entries(state.e.players).filter(([patp, player]) => {
+      if (patp === our) return false;
+      return pos.distance(player.pos) < 2.5;
+    }).map(([patp, _]) => patp);
+    console.log('peers', peers);
+    return peers;
   });
 
   const selectedTab = () => state.selectedTab;
@@ -452,6 +470,10 @@ export function getState() {
     delInvite(id) {
       this.sendPondWave('del-invite', { id });
     },
+    makeCall(peers) {
+      if (!Array.isArray(peers)) peers = [peers];
+      return this.sendPondWave('call', { ships: peers });
+    },
 
 
     setScaleLog(scaleLog) {
@@ -564,7 +586,7 @@ export function getState() {
         _state.subToTurf(_state.c.id);
         _state.clearTurfs(_state.c.id);
         _state.resetEditor();
-      })
+      });
     }
   });
 

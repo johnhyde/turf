@@ -15,7 +15,7 @@ import resize from 'assets/icons/resize.png';
 export default function TownPane() {
   const state = useState();
   const weAreHost = our.length <= 7;
-  const thisIsTown = () => state.c.name.length <= 7;
+  const thisIsTown = () => state.c.host.length <= 7;
   const thisHost = createMemo(() => state.portals.lunk?.for?.ship);
   const dinks = () => state.portals.dinks;
   const ourDink = createMemo(() => [...dinks().approved, ...dinks().confirmed].find((dink) => {
@@ -33,7 +33,7 @@ export default function TownPane() {
       a = isUs ? 'Your Town' : state.c.name;
       b = `has ${count} housed resident${count === 1 ? '' : 's'}.`;
     } else {
-      const resident = state.c.name;
+      const resident = state.c.host;
       if (thisHost()) {
         if (isLunkApproved(state.e)) {
           a = isUs ? 'Your' : resident + "'s"

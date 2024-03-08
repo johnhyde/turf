@@ -159,7 +159,8 @@
       goal-0-only
   ==
 +$  goal-2
-  $%  grit-2
+  $%  [%call ships=(set ship) ~]
+      grit-2
       goal-0-only
   ==
 +$  cur-goal  goal-2
@@ -193,6 +194,7 @@
       [%port-reject =ship]
       [%player-add =ship]
       [%player-del =ship]
+      [%host-call ships=(set ship) ~]
   ==
 +$  roars  (list roar)
 ::

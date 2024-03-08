@@ -1,12 +1,14 @@
 import { createSignal, createSelector, onMount, onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
+import { usePhone } from 'stores/phone.jsx';
 import * as api from 'lib/api.js';
-import { stripPathPrefix, autofocus } from 'lib/utils';
+import { stripPathPrefix, autofocus, jClone } from 'lib/utils';
 import Modal from '@/Modal';
 import MediumButton from './MediumButton';
 
 export default function Modals() {
   const state = useState();
+  const phone = usePhone();
   
   function optIn() {
     state.p.markNotNew();
@@ -22,7 +24,7 @@ export default function Modals() {
   }
 
   return (
-    <>
+    <div id="modals">
       <Show when={state.portOffer || state.v?.portOffer} keyed>
         {(portOffer) => {
           function accept() {
@@ -150,6 +152,39 @@ export default function Modals() {
           </div>
         </Modal>
       </Show>
-    </>
+      <Show when={Object.keys(phone.calls).length == 0 && phone.rings.length}>
+        <Modal class="bg-teal-700 text-slate-100 w-96">
+          <p class="text-xl mb-4 text-center">
+            Incoming call{phone.rings.length > 1 ? 's' : ''} from:
+          </p>
+          <For each={phone.rings}>
+            {(ring, index) => {
+              function answer() {
+                phone.answer(jClone(ring));
+              }
+              function reject() {
+                phone.reject(jClone(ring));
+              }
+
+              const creator = () => ring.crewId.split('/')[2];
+              return (<>
+                {index() == 0 ? null : <div class="my-4 border-b" />}
+                <p class="text-center text-lg">
+                  <span class="font-bold">{creator()}</span>?
+                </p>
+                <div class="flex w-full justify-center mt-4 space-x-4">
+                  <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={answer}>
+                    Answer
+                  </button>
+                  <button class="bg-teal-800 rounded-lg px-4 py-2" onClick={reject}>
+                    Reject
+                  </button>
+                </div>
+              </>);
+            }}
+          </For>
+        </Modal>
+      </Show>
+    </div>
   );
 }

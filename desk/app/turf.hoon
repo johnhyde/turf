@@ -440,6 +440,17 @@
   ?+     path  (on-peek:def path)
       [%x %local ~]
     ``local+!>(local:hc)
+      [%x %players *]
+    ?>  =(our src):bowl
+    =/  c-id  |2.path
+    =/  id=turf-id  [our.bowl (slag 2 c-id)]
+    =/  ppath  (turf-id-to-ppath id)
+    =/  p  (~(gut by read:du-pond) ppath ~)
+    ?~  p  `~
+    ?~  turf.rock.p  `~
+    =*  turf  u.turf.rock.p
+    =/  players  ~(key by players.ephemera.turf)
+    ``noun+!>(players)
       :: [%x %dbug %state]
       :: *  ``noun+!<(~)
   ==
@@ -790,6 +801,26 @@
             /kick
           ship.roar
         [%kicked turf-id.stir]
+          %host-call
+        :_  state
+        :_  ~
+        =/  call-id=path
+          (weld /turf/(scot %p src.bowl) path.turf-id.stir)
+        =/  waves
+          :-  [%set-confirm %.y]
+          :-  [%set-visibility %public]
+          :-  [%set-access-list %black ~]
+          :-  [%add-admin (silt ~[src.bowl])]
+          :-  [%set-access-filter `[q.byk.bowl %gate-call-access]]
+          %+  turn  ~(tap in ships.roar)
+          |=  =ship
+          [%add-peer ship ~]
+        :*  %pass
+            /host-call
+            %agent
+            [our.bowl %turf-rally]
+            [%poke %rally-action !>([%0 [our.bowl call-id] [%waves waves]~])]
+        ==
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"

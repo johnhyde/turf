@@ -1,5 +1,6 @@
 import { onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
+import { usePhone } from 'stores/phone.jsx';
 import { isValidPatp } from 'urbit-ob';
 import { sendDM } from 'lib/api';
 import { input, normalizeId, isTextInputFocused } from 'lib/utils';
@@ -7,12 +8,14 @@ import MediumButton from '@/MediumButton';
 
 export default function ChatBar() {
   const state = useState();
+  const phone = usePhone();
   let chatbox;
 
   function sendChat(text) {
     const joinMatch = text.match(/^\/join (.*)/);
     const dmMatch = text.match(/^\/dm (~?[-a-z_]+) (.*)/);
     const kickMatch = text.match(/^\/kick (~?[-a-z_]+)/);
+    const callMatch = text.match(/^\/call (~?[-a-z_]+)/);
     if (joinMatch) {
       state.mist.acceptInviteCode(joinMatch[1]);
     } else if (dmMatch) {
@@ -28,6 +31,11 @@ export default function ChatBar() {
         if (isValidPatp(patp)) {
           state.delPlayer(patp);
         }
+      }
+    } else if (callMatch) {
+      const patp = normalizeId(callMatch[1]);
+      if (isValidPatp(patp) && patp !== our) {
+        phone.call(patp);
       }
     } else {
       state.sendChat(chatbox.value);

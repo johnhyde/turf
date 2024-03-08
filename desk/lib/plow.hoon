@@ -490,6 +490,9 @@
     :-  [%player-del ship.goal]~
     :-  [goal]~
     [%del-port-offer ship.goal]~
+      %call
+    :_  `~
+    [%host-call (~(put in ships.goal) src.bowl) ~]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
@@ -1184,13 +1187,14 @@
           ::
           add-portal+(ot ~[for+ot-turf-id at+ni:soft])
           del-portal+(ot ~[from+ni loud+bo])
-          send-chat+(ot ~[from+(se %p) text+so])
-          move+(ot ~[ship+(se %p) pos+svec2])
-          face+(ot ~[ship+(se %p) dir+dir])
-          ping-player+(ot ~[ship+(se %p) by+(se %p)])
-          del-player+(ot ~[ship+(se %p)])
+          send-chat+(ot ~[from+shp text+so])
+          move+(ot ~[ship+shp pos+svec2])
+          face+(ot ~[ship+shp dir+dir])
+          ping-player+(ot ~[ship+shp by+shp])
+          del-player+(ot ~[ship+shp])
           add-invite+(ot ~[id+so name+so till+di])
           del-invite+(ot ~[id+so])
+          call+(cork (ot ~[ships+(cork (ar shp) silt)]) (late ~))
       ==
     ::
     ++  mist-stir
@@ -1311,7 +1315,7 @@
     ++  ot-turf-id
       |=  jon=json
       ^-  ^turf-id
-      ((ot ~[ship+(se %p) path+pa]) jon)
+      ((ot ~[ship+shp path+pa]) jon)
     :: ++turf-id used by %join-turf mark
     :: we're trying to support an intentionally blank turf-id
     :: but I think this is the wrong aporach
@@ -1326,5 +1330,6 @@
       ^-  action:vita-client
       %.  jon
       (of ~[set-enabled+bo])
+    ++  shp  (se %p)
   --
 --

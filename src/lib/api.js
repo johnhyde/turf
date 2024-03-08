@@ -1,6 +1,8 @@
 import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
+import { UrbitRTCApp } from 'lib/switchboard';
 import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
+import { Horn } from 'lib/horn';
 
 window.imgData = {};
 const canvas = document.createElement('canvas');
@@ -29,9 +31,11 @@ const ctx = canvas.getContext('2d');
 // }
 let connection, $connection;
 
-let api;
-
-export function initApi() {
+let api, rtc, horn, setHorn;
+horn = new Promise((resolve) => {
+  setHorn = resolve;
+});
+export async function initApi() {
   const [con, $con] = createSignal('initial');
   connection = con;
   $connection = $con;
@@ -44,6 +48,11 @@ export function initApi() {
   // api.verbose = import.meta.env.DEV;
   api.verbose = true;
   window.api = api;
+  const iceServers = await fetchIceServers();
+  rtc = initRTC(iceServers);
+  const realHorn = initHorn(rtc);
+  setHorn(realHorn);
+  window.h = realHorn;
 }
 // api.onOpen = () => $connection('open');
 // api.onRetry = () => $connection('reconnecting');
@@ -105,7 +114,7 @@ export async function sendWave(mark, path, goals, stirId) {
       onError: (e) => {
         console.error('caught error in sending wave', e);
         // debugger;
-      }
+      },
     });
     return stirId;
   } catch (e) {
@@ -184,4 +193,35 @@ export async function sendDM(patp, msg) {
   });
 }
 
-export { api, connection };
+async function fetchIceServers() {
+  const response = await fetch(`https://turf.metered.live/api/v1/turn/credentials?apiKey=${process.env.meteredApiKey}`);
+  const servers = await response.json();
+  if (dev) return [];
+  if (servers.length <= 2) return servers;
+  return [servers[0], servers[servers.length - 1]];
+}
+export function initRTC(iceServers) {
+  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers }, api, 'turf-switchboard');
+  rtc.initialize();
+  rtc.addEventListener('incomingcall', (ring) => {
+    console.log('pardon me for mentioning it, ladies, but someone is ringing', ring);
+  });
+  return rtc;
+}
+
+export function initHorn(rtc) {
+  let horn = new Horn(api, rtc, 'turf', { app: 'turf-rally' });
+  let incoming = horn.watchIncoming();
+  incoming.addEventListener('dests-update', (e) => {
+    console.log('incoming!', e);
+  });
+  incoming.addEventListener('subscription-error', (e) => {
+    console.log('watch incoming error', e);
+  });
+  incoming.addEventListener('subscription-quit', (e) => {
+    console.log('watch incoming quit', e);
+  });
+  return horn;
+}
+
+export { api, rtc, connection, horn };
