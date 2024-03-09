@@ -342,10 +342,12 @@ export function startPhaser(_owner, _container) {
             mapEdit(pointer);
         });
 
-        this.input.on('pointerup', (pointer) => {
+        this.input.on('pointerup', (pointer, gameObjects) => {
           const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
           if (![state.tabs.EDITOR, state.tabs.TOWN, state.tabs.PORTALS].includes(state.selectedTab)) {
-            player?.moveTo?.(pos);
+            if (!(gameObjects[0] instanceof Player)) {
+              player?.moveTo?.(pos);
+            }
           }
           if (state.editor.huskToPlace) {
             if (typeof state.huskToPlace.shade === 'object') {
