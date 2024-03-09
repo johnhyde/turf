@@ -89,6 +89,16 @@ export function getPhone(state) {
   });
 
   createEffect(() => {
+    if (state.gameLoaded && state.soundOn) {
+      if (phone.rings.length) {
+        game.sound.play('ring', { loop: true });
+      } else {
+        game.sound.stopByKey('ring');
+      }
+    }
+  });
+
+  createEffect(() => {
     const ourCrewIdPrefix = `/turf/${our}`;
     const ours = _phone.rings.filter((i) => {
       return (i.ship === state.c.host) && (i.crewId.startsWith(ourCrewIdPrefix))

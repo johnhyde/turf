@@ -7,6 +7,7 @@ import MediumButton from '@/MediumButton';
 import SmallButton from '@/SmallButton';
 
 export default function CallInfo(props) {
+  const state = useState();
   const phone = usePhone();
   const [peers, $peers] = createSignal([]);
   const [activePeers, $activePeers] = createSignal([]);
@@ -133,6 +134,15 @@ export default function CallInfo(props) {
         $store('screen', false);
         console.error(error);
       });
+    }
+  });
+  createEffect(() => {
+    if (state.gameLoaded && state.soundOn) {
+      if (validNoobs().filter(p => p !== our).length) {
+        game.sound.play('join');
+      // } else {
+      //   game.sound.stopByKey('join');
+      }
     }
   });
 

@@ -297,6 +297,7 @@ export function startPhaser(_owner, _container) {
       };
 
       window.game = game = new Phaser.Game(config);
+      game.loaded = loaded;
 
       function init() {
         window.scene = scene = this;
@@ -307,6 +308,8 @@ export function startPhaser(_owner, _container) {
       function preload() {
         console.log('preload');
         this.load.audio('ping', ['audio/ping.mp3']);
+        this.load.audio('ring', ['audio/ring.mp3']);
+        this.load.audio('join', ['audio/join.mp3']);
         // this.load.image('speech-bubble', 'sprites/speech-bubble.png');
       }
 
@@ -449,6 +452,7 @@ export function startPhaser(_owner, _container) {
 
       const state = useState();
       window.state = state;
+      state.setGameLoaded();
 
       new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);

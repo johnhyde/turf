@@ -86,6 +86,7 @@ export function getState() {
     notifications: [],
     text: null,
     soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
+    gameLoaded: false,
     portOffer: null,
     get current() {
       const parent = this;
@@ -571,6 +572,9 @@ export function getState() {
         return notifs.filter(n => n !== notification);
       });
     },
+    setGameLoaded() {
+      $state('gameLoaded', true);
+    }
   });
 
   createEffect(() => {
