@@ -274,11 +274,30 @@
     cards^this
   ::
       %logout
+    ?>  =(our src):bowl
     =^  cards  state  (give-mist:hc dmpath set-ctid+~)
     cards^this
   ::
       %ping
+    ?>  =(our src):bowl
     (delay-logout:hc ~m2)^this
+  ::
+      %kick-nappers
+    ?>  =(our src):bowl
+    =/  cutoff  !<(@dr vase)
+    =/  uturf  (default-turf:hc)
+    ?~  uturf  `this
+    =*  turf  u.uturf
+    =/  goals=cur-goals:pond
+      %+  murn  ~(tap by players.ephemera.turf)
+      |=  [=ship =player]
+      ^-  (unit cur-grit:pond)
+      ?~  wake.player  ~
+      ?:  (gth (add u.wake.player cutoff) now.bowl)  ~
+      `[%del-player ship]
+    =/  =turf-id  (ship-ppath-to-turf-id our.bowl dppath)
+    =^  cards  state  (give-pond:hc turf-id goals)
+    cards^this
   ::
 
       %join-turf  !!
@@ -533,13 +552,20 @@
   =^  cards-2  state
     (give-mist dmpath set-ctid+`dtid)
   (weld cards-1 cards-2)^state
-++  default-turf
+++  default-rock
   |.
   ^-  (unit rock:pond)
   ((lift |=([* =rock:pond] rock)) (~(get by read:du-pond) dppath))
+++  default-turf
+  |.
+  ^-  (unit turf)
+  =/  urok  (default-rock)
+  ?~  urok  ~
+  ?.  ?=(current-rock-v:pond -.u.urok)  ~
+  turf.u.urok
 ++  default-turf-exists
   |.
-  =+  (default-turf)
+  =+  (default-rock)
   ?~  -  %.n
   ?=(^ turf.u.-)
 ++  init-turf
@@ -829,13 +855,13 @@
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   [:(weld ssio-cards cards roar-cards) state] :: cards before roar-cards in case we poke ourselves
 ++  give-pond
-  |=  [=turf-id =goals:pond]
+  |=  [=turf-id goals=cur-goals:pond]
   ^-  (quip card _state)
   :: ~&  "trying to give pond. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  (stir-pond ~ turf-id ~ goals)
+  (stir-pond ~ turf-id ~ (turn goals (lead *cur-goal-v:pond)))
 ++  give-pond-goal
   |=  [=turf-id goal=cur-goal:pond]
-  (give-pond turf-id [*cur-goal-v:pond goal]~)
+  (give-pond turf-id [goal]~)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
   ^-  (quip card _state)
@@ -886,7 +912,7 @@
 ++  update-skye
   |=  =skye
   ^-  (quip card _state)
-  =/  rock  (default-turf)
+  =/  rock  (default-rock)
   ?~  rock  `state
   ?.  ?=(current-rock-v:pond -.u.rock)  `state
   ?~  turf.u.rock  `state

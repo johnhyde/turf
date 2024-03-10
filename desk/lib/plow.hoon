@@ -544,6 +544,10 @@
 ++  ship-ppath-to-path
   |=  [=ship ppath=pond-path]
   (turf-id-to-path ship ;;(path +.ppath))
+++  ship-ppath-to-turf-id
+  |=  [=ship ppath=pond-path]
+  ^-  turf-id
+  [ship ;;(path +.ppath)]
 ::
 ++  enjs
   =,  enjs:format

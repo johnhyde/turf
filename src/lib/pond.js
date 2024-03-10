@@ -108,7 +108,9 @@ export class Pond { // we use a class so we can put it inside a store without ge
   async subscribe() {
     if (this.sub === null) {
       const onPondErr = () => {};
-      const onPondQuit = () => {};
+      const onPondQuit = () => {
+        this.subscribe();
+      };
       this.sub = api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
       return this.sub
     } else {
