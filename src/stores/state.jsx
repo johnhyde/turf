@@ -597,6 +597,10 @@ export function getState() {
   createEffect(() => {
     localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
   });
+  const pinger = setInterval(() => {
+    api.ping();
+  }, 60000);
+  api.ping();
 
   window.addEventListener('pond-roar-port-offer', ({ roar, turfId }) => {
     const { ship, from, for: forId, at } = roar.arg;
@@ -618,6 +622,7 @@ export function getState() {
   window.addEventListener('beforeunload', (e) => {
     _state.clearTurfs();
     _state.mist.destroy();
+    clearInterval(pinger);
   });
 
   return _state;

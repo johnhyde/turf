@@ -151,6 +151,14 @@ export async function getLocal() {
   return local;
 }
 
+export function ping() {
+  return api.poke({
+    app: 'turf',
+    mark: 'ping',
+    json: null,
+  });
+}
+
 export async function setVitaEnabled(enabled) {
   return api.poke({
     app: 'turf',

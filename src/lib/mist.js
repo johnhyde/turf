@@ -14,8 +14,15 @@ export class Mist { // we use a class so we can put it inside a store without ge
     const apiSendWave = (...args) => {
       api.sendMistWave(id, ...args);
     };
+    this.waiting = true;
     options = {
       ...options,
+      onNewRock: () => {
+        if (this.waiting) {
+          this.waiting = false;
+          if (!this.mist.currentTurfId) this.goHome();
+        }
+      },
       // preFilters,
       filters: filters(this),
     };

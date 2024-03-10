@@ -1310,7 +1310,11 @@
       ^-  @sd
       ?>  ?=([%n *] jon)
       (need (toi:rd (ne jon)))
-    ++  pa-turf-id-soft  (cork pa path-to-turf-id)
+    ++  pa-turf-id-soft
+      |=  jon=json
+      ^-  (unit ^turf-id)
+      ?~  jon  ~
+      (path-to-turf-id (pa jon))
     ++  pa-turf-id  (cork pa-turf-id-soft need)
     ++  ot-turf-id
       |=  jon=json

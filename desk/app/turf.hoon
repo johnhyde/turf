@@ -277,6 +277,9 @@
     =^  cards  state  (give-mist:hc dmpath set-ctid+~)
     cards^this
   ::
+      %ping
+    (delay-logout:hc ~m2)^this
+  ::
 
       %join-turf  !!
     :: ?>  =(our src):bowl
@@ -414,7 +417,7 @@
       ::  tell frontend what we have
       (give-pond-rock:hc id %.y)
     :: ~&  ['rock cards' cards-2]
-    =/  cards-3  [(dont-logout:hc)]~
+    =/  cards-3  (delay-logout:hc ~m2)
     :(weld cards-1 cards-2 cards-3)^this
       [%mist *]
     ?>  =(our src):bowl
@@ -431,7 +434,7 @@
     |(=(/mist pat) ?=([%pond *] pat))
   :: ~&  ['is there a client subbed to a mist or turf?' left online]
   ?:  online  `this
-  =/  cards  (delay-logout:hc)
+  =/  cards  (delay-logout:hc ~s10)
   cards^this
 ::
 ++  on-peek
@@ -898,13 +901,14 @@
   ^-  (list card)
   [%give %kick `(list path)`(turn ~(val by sup.bowl) tail) ~]~
 ++  delay-logout
-  |.
+  |=  delay=@dr
   ^-  (list card)
   =/  tid  'turf-delayed-logout'
   =/  ta-now  `@ta`(scot %da now.bowl)
-  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(~)]
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(delay)]
+  :: [%pass /thread/[tid]/[ta-now] %arvo %k %fard q.byk.bowl tid %noun !>(delay)]~
   :~
-    [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+    [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
     [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-start !>(start-args)]
   ==
 ++  dont-logout
@@ -912,5 +916,5 @@
   ^-  card
   =/  tid  'turf-delayed-logout'
   =/  ta-now  `@ta`(scot %da now.bowl)
-  [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+  [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
 --  --
