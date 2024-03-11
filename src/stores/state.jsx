@@ -285,6 +285,9 @@ export function getState() {
         return this.mist.sendWave(type, arg, id);
       }
     },
+    wake() {
+      this.sendPondWave('wake', null);
+    },
     setPortOffer(portOffer) {
       $state('portOffer', portOffer);
     },

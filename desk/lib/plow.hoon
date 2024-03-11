@@ -590,6 +590,7 @@
         :: ?@  grit  ~
         ?-  -.grit
           %noop  ~
+          %wake  ~
           %upgrade  ~
             %set-turf
           (turf turf.grit)
@@ -1172,7 +1173,9 @@
       %.  jon
       %+  goal  cur-goal:pond
       :: todo: set-turf?
-      :~  size-turf+(ot ~[offset+svec2 size+vec2])
+      :~  noop+_~
+          wake+_~
+          size-turf+(ot ~[offset+svec2 size+vec2])
           add-form+form-spec
           del-form+(ot ~['formId'^pa])
           add-husk+add-husk-spec

@@ -103,7 +103,8 @@
   ==
 ++  grit-2
   =,  turf-2
-  $%  [%set-turf =turf]  :: should be included when turf and grit versions change together
+  $%  [%wake ~]
+      [%set-turf =turf]  :: should be included when turf and grit versions change together
       [%add-player =ship =player]
       $<  ?(%set-turf %add-player)  :: properly override previous definition
       grit-1
@@ -245,8 +246,7 @@
     |=  =player
     player(wake wen.foam)
   ?-    -.grit
-    %noop  turf
-    %upgrade  turf
+    ?(%noop %wake %upgrade)  turf
     ::
       %size-turf
     =.  turf  %=  turf

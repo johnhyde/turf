@@ -374,19 +374,20 @@ export function _washTurf(grit) {
   // console.log('washing a turf with grit', JSON.stringify(grit, null, 2))
   switch (grit.type) {
     case 'noop':
-      return (turf) => turf;
+    case 'wake':
+      return produce((turf) => js.turf(turf));
     case 'del-turf':
       return null;
     case 'set-turf':
-      return (turf) => {
+      return reconcile((turf) => {
         const newTurf = {
           id: turf?.id,
           ...grit.arg,
         };
         return js.turf(newTurf);
-      };
+      });
     case 'ping-player':
-      return (turf) => turf;
+      return produce((turf) => js.turf(turf));
     default:
       return produce((turf) => {
         if (pondGrits[grit.type]) {

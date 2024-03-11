@@ -15,6 +15,8 @@
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
 =/  sub-mist-init  (mk-subs mist-lake mist-path)
 =/  pub-mist-init  (mk-pubs mist-lake mist-path)
+=/  nap-patrol-interval  ~m5
+=/  nap-patrol-cutoff  ~m30
 |%
 +$  versioned-state
   $%  state-0
@@ -123,7 +125,13 @@
   =/  vita-cards
     ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
     [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
-  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards kick-all-subs:hc)^this
+  =/  ted-cards  (start-nap-patrol:hc nap-patrol-interval nap-patrol-cutoff)
+  :_  this
+  ;:  weld
+      cards-0  upgrade-cards
+      cards-1  cards-2
+      vita-cards  ted-cards  kick-all-subs:hc
+  ==
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -285,8 +293,10 @@
       %kick-nappers
     ?>  =(our src):bowl
     =/  cutoff  !<(@dr vase)
+    :: ~&  ['got kick nappers' cutoff]
     =/  uturf  (default-turf:hc)
-    ?~  uturf  `this
+    =/  ted-cards  (patrol-nappers:hc nap-patrol-interval nap-patrol-cutoff)
+    ?~  uturf  ted-cards^this
     =*  turf  u.uturf
     =/  goals=cur-goals:pond
       %+  murn  ~(tap by players.ephemera.turf)
@@ -297,7 +307,7 @@
       `[%del-player ship]
     =/  =turf-id  (ship-ppath-to-turf-id our.bowl dppath)
     =^  cards  state  (give-pond:hc turf-id goals)
-    cards^this
+    (weld cards ted-cards)^this
   ::
 
       %join-turf  !!
@@ -926,6 +936,20 @@
 ++  kick-all-subs
   ^-  (list card)
   [%give %kick `(list path)`(turn ~(val by sup.bowl) tail) ~]~
+++  start-nap-patrol
+  |=  [delay=@dr cutoff=@dr]
+  ^-  (list card)
+  =/  tid  'turf-nap-patrol'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  :-  [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+  (patrol-nappers delay cutoff)
+++  patrol-nappers
+  |=  [delay=@dr cutoff=@dr]
+  ^-  (list card)
+  =/  tid  'turf-nap-patrol'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %nap-patrol !>([delay cutoff])]
+  [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-start !>(start-args)]~
 ++  delay-logout
   |=  delay=@dr
   ^-  (list card)

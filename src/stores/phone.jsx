@@ -90,10 +90,25 @@ export function getPhone(state) {
 
   createEffect(() => {
     if (state.gameLoaded && state.soundOn) {
-      if (phone.rings.length) {
+      if (Object.keys(phone.calls).length == 0 && phone.rings.length) {
         game.sound.play('ring', { loop: true });
       } else {
         game.sound.stopByKey('ring');
+      }
+    }
+  });
+
+  let wakeTimer = null;
+  createEffect(() => {
+    if (Object.keys(phone.calls).length) {
+      if (!wakeTimer) {
+        wakeTimer = setInterval(() => state.wake(), 60000);
+        state.wake();
+      }
+    } else {
+      if (wakeTimer) {
+        clearInterval(wakeTimer);
+        wakeTimer = null;
       }
     }
   });
