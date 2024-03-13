@@ -2,13 +2,15 @@ import { createEffect, createSignal, createMemo, onMount, onCleanup } from 'soli
 import { createStore, reconcile } from 'solid-js/store';
 import { useState } from 'stores/state';
 import { usePhone } from 'stores/phone';
-import { bind, input } from 'lib/utils';
+import { calcRowsColsRig, calcCellDims, bind, input } from 'lib/utils';
+import Modal from '@/Modal';
 import MediumButton from '@/MediumButton';
 import SmallButton from '@/SmallButton';
 
 export default function CallInfo(props) {
   const state = useState();
   const phone = usePhone();
+  const [popout, $popout] = createSignal(false);
   const [peers, $peers] = createSignal([]);
   const [activePeers, $activePeers] = createSignal([]);
   const [status, $status] = createSignal();
@@ -16,10 +18,12 @@ export default function CallInfo(props) {
   const [ourScreen, $ourScreen] = createSignal();
   const [store, $store] = window.con = createStore({
     conns: {},
+    connScreens: {},
     crew: {},
     camera: true,
     mic: true,
     screen: false,
+    videoBoxRatio: null,
   });
   const conns = () => store.conns;
   const $conns = (...args) => $store('conns', ...args);
@@ -30,22 +34,33 @@ export default function CallInfo(props) {
   const validNoobs = () => (!crew().access?.filter) ? noobs() : noobs().filter(n => crew().filtered?.includes(n));
   const absentPeers = () => peers().filter(p => !activePeers().includes(p));
 
-  const msg = () => {
-    if (status() == 'active') {
-      const talkingTo = activePeers().length ? activePeers().join(', ') : 'no one, yet';
-      const waitingMsg = absentPeers().length ? `; waiting for ${absentPeers().join(', ')}` : '';
-      return `Talking to ${talkingTo + waitingMsg}`;
-    } else if (status() === 'waiting') {
-      return 'Waiting to be let into the call';
-    }
-    return '';
-  }
 
   const orderedConns = window.ocon = createMemo(() => {
     return Object.values(conns()).sort((a, b) => {
       return a.clientString.localeCompare(b.clientString);
     });
   });
+  const connScreenCount = createMemo(() => {
+    return Object.values(store.connScreens).length;
+  });
+  const videoCount = () => orderedConns().length + connScreenCount() + 1 + (ourScreen() ? 1 : 0) + validNoobs().length + absentPeers().length;
+  const videoRowsCols = createMemo(() => {
+    if (popout()) return calcRowsColsRig(videoCount(), 4/3, store.videoBoxRatio);
+    return [videoCount(), 1];
+  });
+  const videoDims = createMemo(() => {
+    return calcCellDims(videoCount(), 4/3, store.videoBoxWidth, popout() ? store.videoBoxHeight : 0, 10);
+  });
+  const videoStyle = () => ({
+    width: videoDims().x + 'px',
+    height: videoDims().y + 'px',
+    'pointer-events': 'auto',
+  });
+
+  function togglePopout() {
+    $popout(p => !p);
+  }
+
 
   createEffect(() => {
     $conns(reconcile(props.call.calls));
@@ -77,6 +92,7 @@ export default function CallInfo(props) {
     $crew(reconcile(props.call.crew));
   }
 
+  let videoBox;
   onMount(() => {
     navigator.mediaDevices
       .getUserMedia({
@@ -88,6 +104,13 @@ export default function CallInfo(props) {
         window.str = stream;
       })
       .catch(error => console.error(error));
+    function vidResize() {
+      $store('videoBoxRatio', videoBox.clientWidth / videoBox.clientHeight);
+      $store('videoBoxWidth', videoBox.clientWidth);
+      $store('videoBoxHeight', videoBox.clientHeight);
+    }
+    new ResizeObserver(vidResize).observe(videoBox);
+    vidResize();
     onCleanup(() => {
       if (ourStream()) {
         ourStream().getTracks().forEach(t => t.stop());
@@ -140,82 +163,119 @@ export default function CallInfo(props) {
     if (state.gameLoaded && state.soundOn) {
       if (validNoobs().filter(p => p !== our).length) {
         game.sound.play('join');
-      // } else {
-      //   game.sound.stopByKey('join');
       }
     }
   });
 
-  return (
-    <div class="w-fit bg-yellow-700 border border-yellow-950 rounded-lg pointer-events-auto">
-      <p class="text-center my-1">
-        {msg()}
-      </p>
-      <div class="flex flex-wrap justify-center gap-2">
-        {/* {JSON.stringify(conns)}
-        {JSON.stringify(orderedConns())} */}
-        <For each={orderedConns()}>
-          {(conn) => {
-            return <Conn conn={conn} clientStr={conn.clientString} stream={ourStream()} screen={ourScreen()} />
-          }}
-        </For>
-        <VideoSquare stream={ourStream()} label={`You (${our})`} us />
-        <Show when={ourScreen()}>
-          <VideoSquare stream={ourScreen()} label="Your screen" us />
-        </Show>
-        <For each={validNoobs()}>
-          {(noob) => {
-            {/* if (noob === our && !weAreAdmin()) return null; */}
-            return (
-              <div class="w-96 h-72 flex flex-col bg-gray-800 text-white text-center">
-                <span class="basis-1/2" />
-                {noob === our ?
-                  'Waiting to be let in'
-                :
-                  `${noob} wants to join`
-                }
-                <div class="basis-1/2 flex justify-center items-center gap-2">
-                  {weAreAdmin() ?
-                    <>
-                      <MediumButton onClick={() => props.call.confirm(noob)} class="!m-0 text-black">
-                        Confirm
-                      </MediumButton>
-                      <MediumButton onClick={() => props.call.delNoob(noob)} class="!m-0 text-black">
-                        Deny
-                      </MediumButton>
-                    </>
-                  :
-                    '(awaiting confirmation from ' + props.call.crew.admins.join(', ') + ')'
-                  }
-                </div>
-              </div>
-            );
-          }}
-        </For>
+  const videos = (<>
+    <For each={orderedConns()}>
+      {(conn) => {
+        return <Conn conn={conn} clientStr={conn.clientString} stream={ourStream()} screen={ourScreen()} videoStyle={videoStyle()} $screen={(...args) => $store('connScreens', ...args)} />;
+      }}
+    </For>
+    <div style={videoStyle()}>
+      <VideoSquare stream={ourStream()} label={`You (${our})`} us />
+    </div>
+    <Show when={ourScreen()}>
+      <div style={videoStyle()}>
+        <VideoSquare stream={ourScreen()} label="Your screen" us />
       </div>
-      <div class="m-2 flex justify-center gap-2">
-        <SmallButton onClick={() => $store('camera', b => !b)}>
-          {store.camera ? 'stop camera' : 'start camera'}
-        </SmallButton>
-        <SmallButton onClick={() => $store('mic', b => !b)}>
-          {store.mic ? 'stop mic' : 'start mic'}
-        </SmallButton>
-        <SmallButton onClick={() => $store('screen', b => !b)}>
-          {store.screen ? 'stop screenshare' : 'start screenshare'}
-        </SmallButton>
+    </Show>
+    <For each={validNoobs()}>
+      {(noob) => {
+        return (
+          <div style={videoStyle()} class="flex flex-col bg-gray-800 text-white text-center rounded-xl">
+            <span class="basis-1/2" />
+            {noob === our ?
+              'Waiting to be let in'
+            :
+              `${noob} wants to join`
+            }
+            <div class="basis-1/2 flex justify-center items-center gap-2">
+              {weAreAdmin() ?
+                <>
+                  <MediumButton onClick={() => props.call.confirm(noob)} class="!m-0 text-black">
+                    Confirm
+                  </MediumButton>
+                  <MediumButton onClick={() => props.call.delNoob(noob)} class="!m-0 text-black">
+                    Deny
+                  </MediumButton>
+                </>
+              :
+                '(awaiting confirmation from ' + props.call.crew.admins.join(', ') + ')'
+              }
+            </div>
+          </div>
+        );
+      }}
+    </For>
+    <For each={absentPeers()}>
+      {(peer) => (
+        <div style={videoStyle()} class="flex flex-col bg-gray-800 text-white text-center rounded-xl">
+          <span class="basis-1/2" />
+          Waiting for {peer}
+          <div class="basis-1/2 flex justify-center items-center gap-2">
+            <Show when={weAreAdmin()}>
+                <MediumButton onClick={() => props.call.delPeer(peer)} class="!m-0 text-black">
+                  Stop Calling
+                </MediumButton>
+            </Show>
+          </div>
+        </div>
+      )}
+    </For>
+  </>);
+  window.videos = videos;
+  const contents = (
+    <>
+      <div ref={videoBox}
+        class={'grow flex flex-wrap gap-[10px] ' + (popout() ? 'm-[10px] place-content-center overflow-hidden' : 'pointer-events-auto overflow-auto')}
+      >
+        {videos}
       </div>
-      <div class="m-2 flex justify-center gap-2">
-        <SmallButton onClick={() => phone.hangUp(props.call)}>
-          Hang Up
+      <div class="mt-2 flex flex-col items-center pointer-events-auto">
+        <SmallButton onClick={togglePopout}>
+          {popout() ? 'Pop In' : 'Pop Out'}
         </SmallButton>
-        {/* <Show when={our === props.call.host}> */}
-        <Show when={weAreAdmin()}>
-          <SmallButton onClick={() => phone.delete(props.call)}>
-            End Call
+        <div class="m-2 flex justify-center gap-2">
+          <SmallButton onClick={() => $store('camera', b => !b)}>
+            {store.camera ? 'stop camera' : 'start camera'}
           </SmallButton>
-        </Show>
+          <SmallButton onClick={() => $store('mic', b => !b)}>
+            {store.mic ? 'stop mic' : 'start mic'}
+          </SmallButton>
+          <SmallButton onClick={() => $store('screen', b => !b)}>
+            {store.screen ? 'stop screenshare' : 'start screenshare'}
+          </SmallButton>
+        </div>
+        <div class="m-2 flex justify-center gap-2">
+          <SmallButton onClick={() => phone.hangUp(props.call)}>
+            Hang Up
+          </SmallButton>
+          <Show when={weAreAdmin()}>
+            <SmallButton onClick={() => phone.delete(props.call)}>
+              End Call
+            </SmallButton>
+          </Show>
+        </div>
       </div>
-    </div>);
+    </>
+  );
+
+  return () => {
+    return popout() ?
+      <Portal mount={document.getElementById('modals')}>
+        <Modal class="w-full h-full !max-w-full !max-h-full pointer-events-none" onClose={togglePopout}>
+          <div class="w-full h-full flex flex-col">
+            {contents}
+          </div>
+        </Modal>
+      </Portal>
+    :
+    <div class="min-h-0 flex flex-col pointer-events-none">
+      {contents}
+    </div>
+  };
 }
 
 function Conn(props) {
@@ -270,7 +330,10 @@ function Conn(props) {
       }, sigOpts);
       maybeRemove();
     }
-    onCleanup(() => controller.abort());
+    onCleanup(() => {
+      controller.abort();
+      props.$screen(props.conn.uuid, undefined);
+    });
   });
   createEffect(() => {
     if (props.stream && props.conn) {
@@ -279,6 +342,15 @@ function Conn(props) {
       });
     }
   });
+  createEffect(() => {
+    if (props.conn?.uuid) {
+      if (theirScreen()) {
+        props.$screen(props.conn.uuid, true);
+      } else {
+        props.$screen(props.conn.uuid, undefined);
+      }
+    }
+  })
   let screenSenders = [];
   createEffect(() => {
     if (props.conn) {
@@ -316,9 +388,13 @@ function Conn(props) {
   }
 
   return <>
-    <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />
+    <div style={props.videoStyle}>
+      <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />
+    </div>
     <Show when={theirScreen()}>
-      <VideoSquare stream={theirScreen()} label={'~' + props.conn.peer + "'s screen"} />
+      <div style={props.videoStyle}>
+        <VideoSquare stream={theirScreen()} label={'~' + props.conn.peer + "'s screen"} />
+      </div>
     </Show>
   </>;
 }
@@ -332,16 +408,21 @@ function VideoSquare(props) {
   });
 
   return (
-    <div class="w-96 flex flex-col items-center bg-gray-800 text-white">
-      <video ref={video} playsinline autoplay controls={!props.us} muted={props.us} hidden={!props.stream} />
+    <div class="w-full h-full relative flex place-content-center bg-gray-800 text-white rounded-xl">
+      <video class="absolute top-0 left-0 w-full h-full rounded-xl" ref={video} playsinline autoplay controls={!props.us} muted={props.us} hidden={!props.stream} />
       <Show when={!props.stream}>
-        <div class="h-72 flex flex-col justify-center">
-          Establishing a connection...
+        <div class="flex flex-col justify-center">
+          {props.us ? 'Connecting to camera...' : 'Establishing a connection...'}
         </div>
       </Show>
       <Show when={props.label}>
-        <span>{props.label}</span>
+        <span class="absolute top-0 left-0 m-2 px-2 py-1 bg-gray-500 rounded-lg opacity-70 pointer-events-none">{props.label}</span>
+        <span class="absolute top-0 left-0 m-2 px-2 py-1">{props.label}</span>
       </Show>
+      {/* <span class="absolute top-0 left-0 m-2 px-2 py-1 bg-gray-500 rounded-lg opacity-70 pointer-events-none"
+        onClick={() => props.onToggleExpand?.()}
+      >▢</span>
+      <span class="absolute top-0 left-0 m-2 px-2 py-1 pointer-events-none">▢</span> */}
     </div>
   );
 }

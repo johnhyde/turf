@@ -589,9 +589,9 @@ export function startPhaser(_owner, _container) {
       const height = ~~cam.displayHeight;
       // adjust the viewport bounds if level is smaller
       const buffer = {
-        l: turf.tileSize.x * factor * 1,
+        l: turf.tileSize.x * factor * 4,
         t: turf.tileSize.y * factor * 3,
-        r: turf.tileSize.x * factor * 1,
+        r: turf.tileSize.x * factor * 4,
         b: turf.tileSize.y * factor * 1,
       };
       const bbounds = {

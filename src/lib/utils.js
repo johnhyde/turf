@@ -323,6 +323,49 @@ export const Random = {
   randSeeded,
 }
 
+function calcMaxHeight(n, r, v, a) {
+  const c = Math.ceil(n/r);
+  const mw1 = a/c;
+  const mh1 = mw1/v;
+  const mh2 = 1/r; 
+  return Math.min(mh1, mh2);
+}
+
+function testRig(n, v, a) {
+  const tests = [];
+  for (let i = 1; i < 100; i++) {
+    tests.push([i, calcMaxHeight(n, i, v, a)]);
+  }
+  return tests;
+}
+export function calcRowsColsRig(n, v, a) {
+  const tests = testRig(n, v, a);
+  let [rows, biggest] = tests[0];
+  tests.forEach(([r, h]) => {
+    if (h > biggest) {
+      biggest = h;
+      rows = r;
+    }
+  });
+  const cols = Math.ceil(n/rows);
+  console.log('just calculated rows and cols', rows, cols);
+  return [rows, cols, biggest];
+}
+
+export function calcCellDims(n, v, aw, ah, gap = 0) {
+  if (aw === 0) {
+    return vec2(ah * v, ah);
+  }
+  if (ah === 0) {
+    return vec2(aw, aw / v);
+  }
+  const [rows, cols, maxHeight] = calcRowsColsRig(n, v, aw / ah);
+  let gapW = gap * ((cols - 1) / cols);
+  const gapH = Math.max(gap * ((rows - 1) / rows), gapW / v);
+  gapW = gapH * v;
+  return vec2((v * maxHeight * ah) - gapW, (maxHeight * ah) - gapH);
+}
+
 export function bind(el, accessor) {
   const [s, set] = accessor();
   el.addEventListener("input", (e) => set(e.currentTarget.value));

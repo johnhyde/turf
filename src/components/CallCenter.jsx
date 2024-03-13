@@ -16,11 +16,12 @@ export default function CallCenter() {
   const phone = usePhone();
   const calls = () => Object.values(phone.calls).sort(idSort);
   const publicCalls = () => Object.values(phone.publicCalls).sort(idSort);
+  const wrapperClass = 'flex flex-wrap justify-end items-start content-start gap-3 pointer-events-auto';
 
-  return (<div class="m-3 flex flex-wrap justify-end gap-3">{
-    (calls().length == 0) ?
-    (
-      <Show when={state.c.peers.length > 0}>
+  return (
+    <div class="p-3 h-full flex flex-col gap-3 items-end">
+      <Show when={!calls().length && state.c.peers.length}>
+        <div class={wrapperClass}>
           <MediumButton onClick={() => state.makeCall(state.c.peers)} class="!m-0">
             Call {state.c.peers.join(', ')}
           </MediumButton>
@@ -29,29 +30,29 @@ export default function CallCenter() {
               return <JoinCallButton call={call} />
             }}
           </For>
+        </div>
       </Show>
-    ) : (
-      <>
-        <For each={phone.rings}>
-          {(ring) => {
-            const creator = () => ring.crewId.split('/')[2];
-            return <MediumButton class="!m-0">
-              {creator()} is calling
-            </MediumButton>
-          }}
-        </For>
-        <Portal mount={document.getElementById('modals')}>
-          <For each={calls()}>
-            {(call) => (
-              <Modal class="!max-w-fit !max-h-full">
-                <CallInfo call={call}/>
-              </Modal>
-            )}
+      <Show when={calls().length && phone.rings.length}>
+        <div class={wrapperClass}>
+          <For each={phone.rings}>
+            {(ring) => {
+              const creator = () => ring.crewId.split('/')[2];
+              return <MediumButton class="!m-0">
+                {creator()} is calling
+              </MediumButton>
+            }}
           </For>
-        </Portal>
-      </>
-    )
-  }</div>);
+        </div>
+      </Show>
+      <div class="min-h-0 max-w-[245px] flex flex-col">
+        <For each={calls()}>
+          {(call) => (
+            <CallInfo call={call}/>
+          )}
+        </For>
+      </div>
+    </div>
+  );
 }
 
 
