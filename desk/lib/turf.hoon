@@ -224,7 +224,8 @@
   ++  new-player
     |=  [pos=svec2 av=(unit avatar)]
     ^-  player
-    :*  pos
+    :*  ~
+        pos
         %down
         ?~(av default-avatar u.av)
     ==

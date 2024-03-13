@@ -24,7 +24,7 @@ function initEditorState() {
 }
 
 export function getState() {
-  let portals;
+  let portals, peers;
   const [state, $state] = createStore({
     ponds: {},
     mist: new Mist('/mist'),
@@ -86,6 +86,7 @@ export function getState() {
     notifications: [],
     text: null,
     soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
+    gameLoaded: false,
     portOffer: null,
     get current() {
       const parent = this;
@@ -95,6 +96,9 @@ export function getState() {
         },
         get name() {
           return this.id ? this.id.replace('/pond/', '') : '';
+        },
+        get host() {
+          return this.id ? this.name.split('/')[0] : '';
         },
         get pond() {
           return parent.ponds[this.id];
@@ -116,6 +120,9 @@ export function getState() {
           if (!this.ether) return null;
           return this.ether.skye[parent.editor.selectedFormId] || null;
         },
+        get peers() { // people no more than two spaces away
+          return peers();
+        }
       };
       return current;
     },
@@ -207,6 +214,18 @@ export function getState() {
     };
   });
 
+  peers = createMemo(() => {
+    if (!state.e) return [];
+    if (!state.player) return [];
+    const pos = vec2(state.player.pos);
+    const peers = Object.entries(state.e.players).filter(([patp, player]) => {
+      if (patp === our) return false;
+      return pos.distance(player.pos) < 2.5;
+    }).map(([patp, _]) => patp);
+    console.log('peers', peers);
+    return peers;
+  });
+
   const selectedTab = () => state.selectedTab;
   const owner = getOwner();
 
@@ -231,6 +250,10 @@ export function getState() {
           $state('ponds', turfId, undefined);
         }
       }
+    },
+    clearTurf(id) {
+      state.ponds[id]?.destroy?.();
+      $state('ponds', id, undefined);
     },
     async resetConnection() {
       api.api.reset();
@@ -261,6 +284,9 @@ export function getState() {
       if (this.mist) {
         return this.mist.sendWave(type, arg, id);
       }
+    },
+    wake() {
+      this.sendPondWave('wake', null);
     },
     setPortOffer(portOffer) {
       $state('portOffer', portOffer);
@@ -448,6 +474,10 @@ export function getState() {
     delInvite(id) {
       this.sendPondWave('del-invite', { id });
     },
+    makeCall(peers) {
+      if (!Array.isArray(peers)) peers = [peers];
+      return this.sendPondWave('call', { ships: peers });
+    },
 
 
     setScaleLog(scaleLog) {
@@ -545,6 +575,9 @@ export function getState() {
         return notifs.filter(n => n !== notification);
       });
     },
+    setGameLoaded() {
+      $state('gameLoaded', true);
+    }
   });
 
   createEffect(() => {
@@ -560,13 +593,17 @@ export function getState() {
         _state.subToTurf(_state.c.id);
         _state.clearTurfs(_state.c.id);
         _state.resetEditor();
-      })
+      });
     }
   });
 
   createEffect(() => {
     localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
   });
+  const pinger = setInterval(() => {
+    api.ping();
+  }, 60000);
+  api.ping();
 
   window.addEventListener('pond-roar-port-offer', ({ roar, turfId }) => {
     const { ship, from, for: forId, at } = roar.arg;
@@ -580,10 +617,15 @@ export function getState() {
       });
     }, 200);
   });
+  window.addEventListener('pond-err', ({ _, turfId }) => {
+    _state.clearTurf(turfId);
+    _state.mist.enterVoid();
+  });
 
   window.addEventListener('beforeunload', (e) => {
     _state.clearTurfs();
     _state.mist.destroy();
+    clearInterval(pinger);
   });
 
   return _state;

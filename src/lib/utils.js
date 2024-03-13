@@ -1,6 +1,6 @@
 import { decToUd, udToDec, unixToDa } from '@urbit/api';
 import { hex2patp, patp2hex, patp } from 'urbit-ob';
-import { createRenderEffect } from 'solid-js';
+import { createRenderEffect, createSignal } from 'solid-js';
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -236,6 +236,23 @@ export function getDateString(date, short = true) {
   }
 }
 
+export function getTimeString(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d`;
+  } else if (hours > 0) {
+    return `${hours}h${minutes % 60}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
 
 /** Random global functions
  *  @namespace Random */
@@ -306,6 +323,49 @@ export const Random = {
   randSeeded,
 }
 
+function calcMaxHeight(n, r, v, a) {
+  const c = Math.ceil(n/r);
+  const mw1 = a/c;
+  const mh1 = mw1/v;
+  const mh2 = 1/r; 
+  return Math.min(mh1, mh2);
+}
+
+function testRig(n, v, a) {
+  const tests = [];
+  for (let i = 1; i < 100; i++) {
+    tests.push([i, calcMaxHeight(n, i, v, a)]);
+  }
+  return tests;
+}
+export function calcRowsColsRig(n, v, a) {
+  const tests = testRig(n, v, a);
+  let [rows, biggest] = tests[0];
+  tests.forEach(([r, h]) => {
+    if (h > biggest) {
+      biggest = h;
+      rows = r;
+    }
+  });
+  const cols = Math.ceil(n/rows);
+  console.log('just calculated rows and cols', rows, cols);
+  return [rows, cols, biggest];
+}
+
+export function calcCellDims(n, v, aw, ah, gap = 0) {
+  if (aw === 0) {
+    return vec2(ah * v, ah);
+  }
+  if (ah === 0) {
+    return vec2(aw, aw / v);
+  }
+  const [rows, cols, maxHeight] = calcRowsColsRig(n, v, aw / ah);
+  let gapW = gap * ((cols - 1) / cols);
+  const gapH = Math.max(gap * ((rows - 1) / rows), gapW / v);
+  gapW = gapH * v;
+  return vec2((v * maxHeight * ah) - gapW, (maxHeight * ah) - gapH);
+}
+
 export function bind(el, accessor) {
   const [s, set] = accessor();
   el.addEventListener("input", (e) => set(e.currentTarget.value));
@@ -342,6 +402,13 @@ export function input(el, callbacks) {
     if (onBlur) onBlur(e);
   });
 }
+
+export function createNow(interval) {
+  const [now, $now] = createSignal(Date.now());
+  setInterval(() => $now(Date.now()), interval);
+  return now;
+}
+export const now5 = createNow(5000);
 
 export function isTextInputFocused() {
   return document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT';

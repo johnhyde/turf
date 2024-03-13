@@ -48,6 +48,8 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         console.log('sending goals', gritsTypeStr(goals), ', predicting grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
         this.addPulse({
           id: uuid,
+          src: our,
+          wen: Date.now(),
           grits,
         });
         this.sendWavePoke(goals, uuid);
@@ -92,31 +94,33 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       batch(() => {
         if (!res) {
           // TODO: cancel sub or something
+          options.onErr?.();
         } else if (res.hasOwnProperty('rock')) {
           const newCore = hydrate(res.rock.core);
           console.log(`new core with id ${newCore?.id} from rock`, newCore);
           console.log(`stir ids for ${newCore?.id} rock:`, res.rock.stirIds);
           if (!res.rock.stirIds[our]) {
-            if (options.onNew) options.onNew();
+            options.onNew?.();
           }
           this.updateReal(reconcile(newCore, { merge: true }));
           this.updatePulses(false, res.rock.stirIds[our]); // always resets ether because grit is undefined
           console.log('leftover pulses: ', this.pulses.length);
+          options.onNewRock?.(res.rock.core);
         } else if (res.hasOwnProperty('wave')) {
-          const { grits, id } = res.wave;
-          console.log(`getting wave for ${this.real?.id}`, gritsTypeStr(grits), 'with id', id ? id.substring(0, 4) : id);
+          const { grits, id, src, wen } = res.wave;
+          console.log(`getting wave for ${this.real?.id}`, gritsTypeStr(grits), 'with id', (id ? id.substring(0, 4) : id), 'src', src, 'wen', wen);
           const noop = !grits || grits.length === 0;
           const noPulses = this.pulses.length === 0;
           const noCharges = this.charges.length === 0;
           
           if (!noop) {
-            wash(this.updateReal.bind(this), grits);
-            if (options.onNewGrits) options.onNewGrits(grits);
+            wash(this.updateReal.bind(this), grits, src, wen);
+            options.onNewGrits?.(grits);
           }
           if (!noop && noPulses && noCharges) {
-            wash(this.updateFake.bind(this), grits);
+            wash(this.updateFake.bind(this), grits, src, wen);
           } else {
-            this.updatePulses(noop, id, grits);
+            this.updatePulses(noop, id, src, wen, grits);
           }
         } else {
           console.error('Pool response not a rock or wave???', res);
@@ -124,21 +128,25 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       });
     },
 
-    applyGrits(grits) {
-      wash(this.updateFake.bind(this), grits);
+    applyGrits(grits, src, wen) {
+      wash(this.updateFake.bind(this), grits, src, wen);
     },
   
     addPulse(pulse, apply = true) {
       batch(() => {
         this.$('pulses', (pulses) => [...pulses, pulse]);
-        if (apply) this.applyGrits(pulse.grits);
+        if (apply) this.applyPulse(pulse);
       });
     },
   
     applyPulses() {
       this.pulses.forEach((pulse) => {
-        this.applyGrits(pulse.grits);
+        this.applyPulse(pulse);
       });
+    },
+  
+    applyPulse(pulse) {
+      this.applyGrits(pulse.grits, pulse.src, pulse.wen);
     },
   
     removePulse(uuid) {
@@ -150,7 +158,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       this.$('pulses', []);
     },
   
-    updatePulses(noop, id, grits) {
+    updatePulses(noop, id, src, wen, grits) {
       const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
       const matches = pulseI >= 0;
       const matchesFirst = pulseI === 0;
@@ -178,7 +186,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       this.setLastChargeTimer();
       batch(() => {
         this.$('charges', (charges) => [...charges, charge]);
-        if (apply) this.applyGrits(charge.grits);
+        if (apply) this.applyCharge(charge);
       });
     },
   
@@ -208,8 +216,12 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
   
     applyCharges() {
       this.charges.forEach((charge) => {
-        this.applyGrits(charge.grits);
+        this.applyCharge(charge);
       });
+    },
+  
+    applyCharge(charge) {
+      this.applyGrits(charge.grits, our, Date.now());
     },
   
     fireCharges() {
@@ -228,6 +240,8 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         this.$('charges', []);
         this.addPulse({
           id: uuid,
+          src: our,
+          wen: Date.now(),
           grits,
         }, false); // don't apply because charges were already applied
         this.sendWavePoke(goals, uuid);

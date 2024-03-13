@@ -1,17 +1,18 @@
 import { createEffect } from 'solid-js';
 import { Routes, Route, useSearchParams } from "@solidjs/router";
 import { StateProvider, useState } from 'stores/state.jsx';
+import { PhoneProvider, usePhone } from 'stores/phone.jsx';
 import Sidebar from '@/Sidebar';
 import Modals from '@/Modals';
 import Game from '@/Game';
 
 function App() {
   return (
-    <StateProvider>
+    <StateProvider><PhoneProvider>
       <Routes>
         <Route path="/apps/turf/" component={MainScreen} />
       </Routes>
-    </StateProvider>
+    </PhoneProvider></StateProvider>
   );
 }
 

@@ -28,7 +28,7 @@ export default function Modal(props) {
     <div class="absolute top-0 left-0 w-full h-full z-20 bg-gray-500 opacity-30">
     </div>
     <div class="absolute top-0 left-0 w-full h-full flex z-20" onClick={(e) => props.onClose?.(e)} on:keydown={onKeyDown}>
-      <div class={"m-auto max-w-md max-h-md p-4 rounded-2xl max-h-full overflow-auto " + (props.class || '')} onClick={e => e.stopPropagation()}>
+      <div class={"m-auto max-w-md max-h-full p-4 rounded-2xl overflow-auto " + (props.class || '')} onClick={e => e.stopPropagation()}>
         {props.children}
       </div>
     </div>

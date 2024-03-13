@@ -1,7 +1,7 @@
-import { createRoot, createEffect, createSignal, on } from "solid-js";
+import { createRoot, createEffect, createSignal, createMemo, on } from "solid-js";
 import { useState } from 'stores/state';
 import isEqual from 'lodash/isEqual';
-import { vec2, roundV, dirs, sleep, intToHex, cite, jClone } from 'lib/utils';
+import { vec2, roundV, dirs, sleep, now5, getTimeString, intToHex, cite, jClone } from 'lib/utils';
 import { spriteNameWithDir } from 'lib/turf';
 
 
@@ -36,12 +36,14 @@ export class Player extends Phaser.GameObjects.Container {
     this.add(this.avatar);
     const [walking, $walking] = createSignal(false);
     this.walking = walking, this.$walking = $walking;
+    this.napping = createMemo(() => !this.walking() && this.p?.wake && (now5() - this.p.wake) > 5*60*1000);
+    // this.napping = createMemo(() => !this.walking() && (now5() - this.p.wake) > 5*1000);
     const [apparentDir, $apparentDir] = createSignal(null);
     this.apparentDir = apparentDir, this.$apparentDir = $apparentDir;
     this.setInteractive({
       cursor: 'pointer',
       hitArea: new Phaser.Geom.Rectangle(),
-      hitAreaCallback: CreatePixelPerfectHandler(game.textures, 255),
+      hitAreaCallback: CreatePixelPerfectHandler(game.textures, 255, this.isUs),
     });
     this.addToUpdateList();
     this.on('pointerdown', this.onClick.bind(this));
@@ -62,7 +64,7 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   get dir() {
-    return this.apparentDir() ?? this.p?.dir;
+    return this.napping() ? 'up' : (this.apparentDir() ?? this.p?.dir);
   }
 
   get properDepth() {
@@ -94,7 +96,7 @@ export class Player extends Phaser.GameObjects.Container {
       });
       createEffect(on(() => {
         if (!this.p) return null;
-        return [this.dir, this.walking()];
+        return [this.dir, this.walking(), this.napping()];
       }, async () => {
         if (this.p?.avatar) {
           await sleep(0);
@@ -110,6 +112,9 @@ export class Player extends Phaser.GameObjects.Container {
           this.updateAnims();
         }
       }, { defer: true }));
+      createEffect(() => {
+        this.setZzz();
+      });
     })
   }
 
@@ -135,14 +140,18 @@ export class Player extends Phaser.GameObjects.Container {
         frameRate,
       });
     });
+    const footOffset = 4;
+    const playerCenter = vec2(tileSize).scale(0.25).add(vec2(footOffset/2));
     const playerOffset = vec2(avatar.body.thing.offset).add(avatar.body.thing.form.offset);
-    this.bodyImage.setDisplayOrigin(playerOffset.x, playerOffset.y);
+    const bodyOffset = vec2(playerOffset).add(playerCenter);
+    this.avatar.setPosition(playerCenter.x * factor, playerCenter.y * factor);
+    this.bodyImage.setDisplayOrigin(bodyOffset.x, bodyOffset.y);
     this.bodyImage.setScale(factor);
     this.bodyImage.preDestroy = preDestroy;
     this.bodyImage.setTint(avatar.body.color);
     this.things = avatar.things.map((thing) => {
       const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(this.t.id, thing.formId, thing.form, dirs[dir], this.patp));
-      const offset = vec2(thing.offset).add(thing.form.offset).add(playerOffset);
+      const offset = vec2(thing.offset).add(thing.form.offset).add(bodyOffset);
       const defaultDir = spriteDirs.filter(key => key)[0];
       const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });
       if (!spriteDirs[dirs[this.dir]]) sprite.setVisible(false);
@@ -173,8 +182,15 @@ export class Player extends Phaser.GameObjects.Container {
     this.add(this.name);
     this.ping = scene.make.text({ text: '(ping)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
-    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height + this.ping.height);
+    this.ping.setDisplayOrigin(0, playerOffset.y*factor + this.name.height + this.ping.height);
+    this.centerPing();
     this.ping.setVisible(false);
+    this.zzz = scene.make.text({ text: '(zzz)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    '--webkit-font-smoothing': 'none' }});
+    this.zzz.setDisplayOrigin(0, playerOffset.y*factor - this.zzz.height/2);
+    this.setZzz();
+    this.centerText(this.zzz);
+    this.zzz.setVisible(false);
     /* Make speech bubble */
     this.speechBubble = scene.add.image(0, 0, "speech-bubble").setScale(factor);
     const bubblePos = roundV(vec2(this.bodyImage.width*1.3, -this.bodyImage.height/2)).scale(factor);
@@ -197,6 +213,15 @@ export class Player extends Phaser.GameObjects.Container {
 
   updateAnims() {
     if (this.p) {
+      if (this.napping()) {
+        this.avatar.setAngle(90);
+        this.add(this.zzz);
+        this.zzz.setVisible(true);
+      } else {
+        this.avatar.setAngle(0);
+        this.remove(this.zzz);
+        this.zzz.setVisible(false);
+      }
       this.avatar.list.forEach((sprite) => {
         if (sprite.anims) {
           const newAnim = sprite.anims.get(this.dir);
@@ -388,8 +413,22 @@ export class Player extends Phaser.GameObjects.Container {
     return state.editor.editing && state.editor.eraser;
   }
 
-  setPingOrigin() {
-    this.ping.setDisplayOrigin(this.ping.width/2 - this.bodyImage.width*factor/2, this.ping.displayOriginY);
+  centerPing() {
+    this.centerText(this.ping);
+  }
+
+  centerText(text) {
+    text.setDisplayOrigin(text.width/2 - this.bodyImage.width*factor/2, text.displayOriginY);
+  }
+
+  setZzz() {
+    if (this.p?.wake) {
+      const str = getTimeString(Math.max(0, now5() - this.p.wake));
+      this.zzz.setText(`(zzz: ${str})`);
+    } else {
+      this.zzz.setText('');
+    }
+    this.centerText(this.zzz);
   }
 
   onClick(pointer) {
@@ -402,7 +441,7 @@ export class Player extends Phaser.GameObjects.Container {
       } else {
         this.s.pingPlayer(this.patp);
         this.ping.setText('pinged!');
-        this.setPingOrigin();
+        this.centerPing();
       }
     }
   }
@@ -415,7 +454,7 @@ export class Player extends Phaser.GameObjects.Container {
     const text = (this.isKickable && this.kickMode) ? '(kick)' : '(ping)';
     if (this.ping.text !== text) {
       this.ping.setText(text);
-      this.setPingOrigin();
+      this.centerPing();
     }
   }
   
@@ -424,7 +463,7 @@ export class Player extends Phaser.GameObjects.Container {
       this.ping.setVisible(false);
       this.remove(this.ping);
       this.ping.setText('(ping)');
-      this.setPingOrigin();
+      this.centerPing();
     }
   }
 
@@ -435,8 +474,9 @@ export class Player extends Phaser.GameObjects.Container {
 }
 
 
-function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
+function CreatePixelPerfectHandler (textureManager, alphaTolerance, log) {
   function pixelPerfectHitTest (hitArea, x, y, gameObject) {
+    // if (log) console.log('pixel hit test', x, y, gameObject);
     // if this gameObject has a texture and a frame, then it is something we can query for pixels - so do it and return the result
     if (gameObject.texture && gameObject.frame) {
       const alpha = textureManager.getPixelAlpha(x, y, gameObject.texture.key, gameObject.frame.name)
@@ -446,18 +486,22 @@ function CreatePixelPerfectHandler (textureManager, alphaTolerance) {
     // see if the gameObject might be a Container, and if it is, check the children looking for a hit
     if (gameObject.list) {
       for (const child of gameObject.list) {
-        let childX = x/child.scale + child.displayOriginX;
+        if (!child.visible) continue;
+        let childX = x/child.scale + child.displayOriginX - child.x;
+        let childY = y/child.scale + child.displayOriginY - child.y;
+        let childPos = vec2(childX, childY).rotate(-child.rotation || 0);
+        childX = childPos.x;
+        childY = childPos.y;
         if (child.flipX) {
           childX = child.width - childX;
         }
         childX = Math.floor(childX);
-        let childY = y/child.scale + child.displayOriginY;
         if (child.flipY) {
           childY = child.height - childY;
         }
         childY = Math.floor(childY);
-        const isName = child instanceof Phaser.GameObjects.Text;
-        if (isName) {
+        const isText = child instanceof Phaser.GameObjects.Text;
+        if (isText) {
           const rect = new Phaser.Geom.Rectangle(0, 0, child.width, child.height);
           if (Phaser.Geom.Rectangle.Contains(rect, childX, childY, child)) return true;
         } else if (pixelPerfectHitTest(hitArea, childX, childY, child)) {

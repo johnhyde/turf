@@ -2,6 +2,7 @@ import { useState } from 'stores/state.jsx';
 import { connection } from 'lib/api';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
+import CallCenter from '@/CallCenter';
 
 export default function Overlay() {
   const state = useState();
@@ -20,11 +21,11 @@ export default function Overlay() {
     }
   }
   return (
-    <div class="absolute top-[64px] sm:top-0 w-full flex flex-col pointer-events-none">
-      <div class="flex">
-        <div class="flex-grow"></div>
+    <div class="absolute top-[64px] bottom-0 sm:top-0 w-full flex pointer-events-none">
+      <div class="basis-1/2"></div>
+      <div class="shrink-0 flex flex-col">
         <Show when={state.c.id}>
-          <Heading class="text-xl mt-3 flex items-center pointer-events-auto">
+          <Heading class="text-xl mt-3 h-fit flex items-center pointer-events-auto">
             {state.c.name}
             <div
               class={'ml-2 mr-1 w-2 h-2 rounded-full ' + dotColor()}
@@ -36,20 +37,18 @@ export default function Overlay() {
             {/* </Show> */}
           </Heading>
         </Show>
-        <div class="flex-grow text-left">
-          {/* <Heading>
-            {connection()}
-          </Heading> */}
+        <div class="flex flex-col items-center space-y-2 mt-2 pointer-events-auto">
+          <For each={state.notifications}>
+            {(notif, index) =>
+              <SmallButton class="font-normal !px-3 !py-1.5 !bg-yellow-600 transition" onClick={() => state.unnotify(index())}>
+                {notif?.msg || notif}
+              </SmallButton>
+            }
+          </For>
         </div>
       </div>
-      <div class="flex flex-col items-center space-y-2 mt-2 pointer-events-auto">
-        <For each={state.notifications}>
-          {(notif, index) =>
-            <SmallButton class="font-normal !px-3 !py-1.5 !bg-yellow-600 transition" onClick={() => state.unnotify(index())}>
-              {notif?.msg || notif}
-            </SmallButton>
-          }
-        </For>
+      <div class="basis-1/2 text-left pointer-events-none">
+        <CallCenter/>
       </div>
     </div>
   );

@@ -10,13 +10,13 @@
   |%
   ++  name  name:pool
   +$  rock  rock:pool
-  +$  wave  [=foam:pool grits=(list grit:pool)]
+  +$  wave  [foam=foam-all:pool grits=(list grit:pool)]
   ++  wash
     |=  [=rock =wave]
     ^-  ^rock
     ?~  grits.wave  rock
     %=  $
-      rock  (wash:pool rock foam.wave i.grits.wave)
+      rock  (wash:pool rock (foam:pool foam.wave) i.grits.wave)
       grits.wave  t.grits.wave
     ==
   --

@@ -6,6 +6,7 @@
 +$  rock  ^rock
 +$  goal  ^goal
 +$  foam  ^foam  :: from lib/turf
++$  foam-all  ^foam-all
 +$  grit  ^grit
 ++  wash  wash-grit
 --
@@ -66,7 +67,7 @@
 +$  roars  (list roar)
 ::
 ++  wash-grit
-  |=  [=rock [id=stir-id src=(unit ship)] =grit]
+  |=  [=rock foam =grit]
   ^-  ^rock
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))

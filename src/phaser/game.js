@@ -177,7 +177,7 @@ function createShade(shade, id, turf) {
     '--webkit-font-smoothing': 'none' }});
       textObj.x = sprite.x;
       textObj.y = sprite.y;
-      textObj.setDepth(sprite.depth);
+      // textObj.setDepth(sprite.depth);
       textObj.setDisplayOrigin(textObj.width/2 - sprite.width*factor/2 + sprite.offset.x*factor, sprite.offset.y*factor + textObj.height);
       scene.add.existing(textObj);
     } else {
@@ -297,6 +297,7 @@ export function startPhaser(_owner, _container) {
       };
 
       window.game = game = new Phaser.Game(config);
+      game.loaded = loaded;
 
       function init() {
         window.scene = scene = this;
@@ -307,6 +308,8 @@ export function startPhaser(_owner, _container) {
       function preload() {
         console.log('preload');
         this.load.audio('ping', ['audio/ping.mp3']);
+        this.load.audio('ring', ['audio/ring.mp3']);
+        this.load.audio('join', ['audio/join.mp3']);
         // this.load.image('speech-bubble', 'sprites/speech-bubble.png');
       }
 
@@ -339,10 +342,12 @@ export function startPhaser(_owner, _container) {
             mapEdit(pointer);
         });
 
-        this.input.on('pointerup', (pointer) => {
+        this.input.on('pointerup', (pointer, gameObjects) => {
           const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
           if (![state.tabs.EDITOR, state.tabs.TOWN, state.tabs.PORTALS].includes(state.selectedTab)) {
-            player?.moveTo?.(pos);
+            if (!(gameObjects[0] instanceof Player)) {
+              player?.moveTo?.(pos);
+            }
           }
           if (state.editor.huskToPlace) {
             if (typeof state.huskToPlace.shade === 'object') {
@@ -449,6 +454,7 @@ export function startPhaser(_owner, _container) {
 
       const state = useState();
       window.state = state;
+      state.setGameLoaded();
 
       new ResizeObserver(setGameSize).observe(container);
       game.scale.addListener(Phaser.Scale.Events.ENTER_FULLSCREEN, setGameSize);
@@ -583,9 +589,9 @@ export function startPhaser(_owner, _container) {
       const height = ~~cam.displayHeight;
       // adjust the viewport bounds if level is smaller
       const buffer = {
-        l: turf.tileSize.x * factor * 1,
+        l: turf.tileSize.x * factor * 4,
         t: turf.tileSize.y * factor * 3,
-        r: turf.tileSize.x * factor * 1,
+        r: turf.tileSize.x * factor * 4,
         b: turf.tileSize.y * factor * 1,
       };
       const bbounds = {

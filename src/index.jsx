@@ -28,6 +28,10 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
     'Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got mispelled?',
   );
 }
+if (import.meta.hot) {
+  import.meta.hot.accept(() => import.meta.hot.invalidate());
+}
+
 let violated = false;
 document.addEventListener("securitypolicyviolation", (e) => {
   console.log(e.blockedURI);
@@ -35,15 +39,16 @@ document.addEventListener("securitypolicyviolation", (e) => {
   console.log(e.originalPolicy);
   if (!violated) {
     violated = true;
-    alert("Turf is being blocked by a Content Security Policy. Please consider using a CSP-blocker browser extension to work around this. If that doesn't work, please DM ~midlev-mindyr.");
+    alert("Turf is being blocked by a Content Security Policy. Please DM ~midlev-mindyr about this, and in the meantime: consider using a browser extension like 'Disable Content-Security-Policy' to work around this.");
   }
 });
 
 render(() => {
   initApi();
   return (
-  <Router>
-    <App />
-  </Router>
+    <Router>
+      <App />
+    </Router>
   );
 }, root);
+

@@ -14,8 +14,15 @@ export class Mist { // we use a class so we can put it inside a store without ge
     const apiSendWave = (...args) => {
       api.sendMistWave(id, ...args);
     };
+    this.waiting = true;
     options = {
       ...options,
+      onNewRock: () => {
+        if (this.waiting) {
+          this.waiting = false;
+          if (!this.mist.currentTurfId) this.goHome();
+        }
+      },
       // preFilters,
       filters: filters(this),
     };
@@ -53,7 +60,9 @@ export class Mist { // we use a class so we can put it inside a store without ge
 
   async subscribe() {
     const onMistErr = () => {};
-    const onMistQuit = () => {};
+    const onMistQuit = () => {
+      this.subscribe();
+    };
     this.sub = await api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
   }
   async unsubscribe() {
@@ -69,6 +78,10 @@ export class Mist { // we use a class so we can put it inside a store without ge
       for: ourPond,
       via: null,
     });
+  }
+
+  enterVoid() {
+    this.sendWave('set-ctid', null);
   }
 
   acceptInvite(turfId, inviteId) {
@@ -161,7 +174,7 @@ const mistGrits = {
   },
 };
 
-export function washMist(update, grits) {
+export function washMist(update, grits, src, wen) {
   grits.forEach((grit) => {
     update(_washMist(grit));
   });

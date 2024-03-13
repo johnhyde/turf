@@ -38,6 +38,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this.$isNew = $isNew;
     options = {
       ...options,
+      onErr: () =>  window.dispatchEvent(new PondEvent('err', null, id)),
       onNew: () => $isNew(true),
       onNewGrits: (grits) => {
         grits.forEach((grit) => window.dispatchEvent(new PondEvent('grit', grit, id)));
@@ -51,12 +52,12 @@ export class Pond { // we use a class so we can put it inside a store without ge
       preFilters,
       filters,
     };
-    const wash = (update, grits) => {
+    const wash = (update, grits,  ...args) => {
       update((turf) => {
         if (!turf?.id) return { ...turf, id };
         return turf;
       });
-      washTurf(update, grits);
+      washTurf(update, grits, ...args);
     }
     const hydrate = (rock) => {
       if (rock) rock.id = id;
@@ -107,7 +108,9 @@ export class Pond { // we use a class so we can put it inside a store without ge
   async subscribe() {
     if (this.sub === null) {
       const onPondErr = () => {};
-      const onPondQuit = () => {};
+      const onPondQuit = () => {
+        this.subscribe();
+      };
       this.sub = api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
       return this.sub
     } else {
@@ -353,7 +356,14 @@ const pondGrits = {
   },
 };
 
-export function washTurf(update, grits) {
+export function washTurf(update, grits, src, wen) {
+  if (src && wen) {
+    update(produce((turf) => {
+      if (turf && turf.players[src]) {
+        turf.players[src].wake = wen;
+      }
+    }));
+  }
   grits.forEach((grit) => {
     update(_washTurf(grit));
   });
@@ -364,19 +374,20 @@ export function _washTurf(grit) {
   // console.log('washing a turf with grit', JSON.stringify(grit, null, 2))
   switch (grit.type) {
     case 'noop':
-      return (turf) => turf;
+    case 'wake':
+      return produce((turf) => js.turf(turf));
     case 'del-turf':
       return null;
     case 'set-turf':
-      return (turf) => {
+      return reconcile((turf) => {
         const newTurf = {
           id: turf?.id,
           ...grit.arg,
         };
         return js.turf(newTurf);
-      };
+      });
     case 'ping-player':
-      return (turf) => turf;
+      return produce((turf) => js.turf(turf));
     default:
       return produce((turf) => {
         if (pondGrits[grit.type]) {
@@ -395,7 +406,7 @@ export function _washTurf(grit) {
 
 export class PondEvent extends Event {
   constructor(name, event, id, options = {}) {
-    super(`pond-${name}-` + event.type, options);
+    super(`pond-${name}` + (event?.type ? '-' + event.type : ''), options);
     this[name] = event;
     this.turfId = id;
   }
@@ -601,11 +612,15 @@ const js = {
     // this.deepVec2(turf)
     if (turf) {
       turf.chats.forEach(this.chat.bind(this));
+      Object.values(turf.players).forEach(this.player.bind(this));
     }
     return turf;
   },
   chat(chat) {
     chat.at = new Date(chat.at);
+  },
+  player(player) {
+    player.wake = player.wake ? new Date(player.wake) : null;
   },
   deepVec2(obj) {
     for (const key in obj) {

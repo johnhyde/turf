@@ -68,10 +68,10 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  =-  [(weld pre-roars roars) (turn grits (lead %1)) (turn goals (lead %1))]
+  =-  [(weld pre-roars roars) (turn grits (lead *cur-grit-v:pond)) (turn goals (lead *cur-goal-v:pond))]
   ^-  [=roars grits=cur-grits:pond goals=cur-goals:pond]
-  ?.  ?=([%1 *] vgoal)  ``~
-  =/  goal=goal-1:pond  +.vgoal
+  ?.  ?=([cur-goal-v:pond *] vgoal)  ``~
+  =/  goal=cur-goal:pond  +.vgoal
   :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   :: ~&  "filtering pond goal {<-.goal>}, top: {<top>}"
   ?:  ?=([%upgrade ~] goal)
@@ -425,6 +425,7 @@
       `pos.shade
     ?~  pos  ~
     =|  =player
+    =.  wake.player  `now.bowl
     =.  pos.player  u.pos
     =.  avatar.player  avatar.goal
     %+  murn
@@ -479,6 +480,7 @@
     ``[%import-player ship.goal `from.goal avatar.req]~
       %join-player
     =|  =player
+    =.  wake.player  `now.bowl
     ``[%add-player ship.goal player(avatar avatar.goal)]~
       %add-player
     :-  [%player-add ship.goal]~
@@ -488,6 +490,9 @@
     :-  [%player-del ship.goal]~
     :-  [goal]~
     [%del-port-offer ship.goal]~
+      %call
+    :_  `~
+    [%host-call (~(put in ships.goal) src.bowl) ~]~
   ==
 ++  pull-trigger
   |=  [=turf =ship =trigger pos=svec2]
@@ -539,6 +544,10 @@
 ++  ship-ppath-to-path
   |=  [=ship ppath=pond-path]
   (turf-id-to-path ship ;;(path +.ppath))
+++  ship-ppath-to-turf-id
+  |=  [=ship ppath=pond-path]
+  ^-  turf-id
+  [ship ;;(path +.ppath)]
 ::
 ++  enjs
   =,  enjs:format
@@ -557,18 +566,21 @@
         (turf u.turf.rock)
     ==
   ++  pond-wave
-    |=  [id=stir-id:pond =grits:pond]
+    |=  [foam:pond =grits:pond]
     ^-  json
     %+  frond  %wave
     %-  pairs
-    :_  [id+(fall (bind id |=(i=@t s+i)) ~)]~
+    :_  :~  id+?~(id ~ s+u.id)
+            src+?~(src ~ (ship-json u.src))
+            wen+?~(wen ~ (time u.wen))
+        ==
     :-  %grits
     a+(turn grits pond-grit)
   ++  pond-grit
     |=  vgrit=grit:pond
     ^-  json
-    ?.  ?=([%1 *] vgrit)  ~
-    =/  grit=grit-1:pond  +.vgrit
+    ?.  ?=([cur-grit-v:pond *] vgrit)  ~
+    =/  grit=cur-grit:pond  +.vgrit
     %-  pairs
     :~  :-  %type
         :: s+?@(grit grit -.grit)
@@ -578,6 +590,7 @@
         :: ?@  grit  ~
         ?-  -.grit
           %noop  ~
+          %wake  ~
           %upgrade  ~
             %set-turf
           (turf turf.grit)
@@ -929,10 +942,15 @@
     |=  =^player
     ^-  json
     %-  pairs
-    :~  pos+(svec2 pos.player)
+    :~  wake+(wake wake.player)
+        pos+(svec2 pos.player)
         dir+s+dir.player
         avatar+(avatar avatar.player)
     ==
+  ++  wake
+    |=  wek=(unit @da)
+    ^-  json
+    ?~(wek ~ (time u.wek))
   ++  avatar
     |=  =^avatar
     ^-  json
@@ -1151,11 +1169,13 @@
     ++  pond-goal
       |=  jon=json
       ^-  goal:pond
-      :-  %1
+      :-  *cur-goal-v:pond
       %.  jon
       %+  goal  cur-goal:pond
       :: todo: set-turf?
-      :~  size-turf+(ot ~[offset+svec2 size+vec2])
+      :~  noop+_~
+          wake+_~
+          size-turf+(ot ~[offset+svec2 size+vec2])
           add-form+form-spec
           del-form+(ot ~['formId'^pa])
           add-husk+add-husk-spec
@@ -1174,13 +1194,14 @@
           ::
           add-portal+(ot ~[for+ot-turf-id at+ni:soft])
           del-portal+(ot ~[from+ni loud+bo])
-          send-chat+(ot ~[from+(se %p) text+so])
-          move+(ot ~[ship+(se %p) pos+svec2])
-          face+(ot ~[ship+(se %p) dir+dir])
-          ping-player+(ot ~[ship+(se %p) by+(se %p)])
-          del-player+(ot ~[ship+(se %p)])
+          send-chat+(ot ~[from+shp text+so])
+          move+(ot ~[ship+shp pos+svec2])
+          face+(ot ~[ship+shp dir+dir])
+          ping-player+(ot ~[ship+shp by+shp])
+          del-player+(ot ~[ship+shp])
           add-invite+(ot ~[id+so name+so till+di])
           del-invite+(ot ~[id+so])
+          call+(cork (ot ~[ships+(cork (ar shp) silt)]) (late ~))
       ==
     ::
     ++  mist-stir
@@ -1197,7 +1218,8 @@
       ^-  goal:mist
       %.  jon
       %+  goal  goal:mist
-      :~  set-color+ni
+      :~  set-ctid+pa-turf-id-soft
+          set-color+ni
           add-thing-from-closet+pa
           del-thing+ni
           accept-port-offer+pa-turf-id
@@ -1295,12 +1317,16 @@
       ^-  @sd
       ?>  ?=([%n *] jon)
       (need (toi:rd (ne jon)))
-    ++  pa-turf-id-soft  (cork pa path-to-turf-id)
+    ++  pa-turf-id-soft
+      |=  jon=json
+      ^-  (unit ^turf-id)
+      ?~  jon  ~
+      (path-to-turf-id (pa jon))
     ++  pa-turf-id  (cork pa-turf-id-soft need)
     ++  ot-turf-id
       |=  jon=json
       ^-  ^turf-id
-      ((ot ~[ship+(se %p) path+pa]) jon)
+      ((ot ~[ship+shp path+pa]) jon)
     :: ++turf-id used by %join-turf mark
     :: we're trying to support an intentionally blank turf-id
     :: but I think this is the wrong aporach
@@ -1315,5 +1341,6 @@
       ^-  action:vita-client
       %.  jon
       (of ~[set-enabled+bo])
+    ++  shp  (se %p)
   --
 --

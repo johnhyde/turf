@@ -1,4 +1,4 @@
-/-  *turf, turf-0, turf-1=turf
+/-  *turf, turf-0, turf-1, turf-2=turf
 /+  *turf
 =<
 |%
@@ -6,6 +6,7 @@
 +$  rock  ^rock
 +$  goal  ^goal
 +$  foam  ^foam  :: from sur/turf
++$  foam-all  ^foam-all
 +$  grit  ^grit
 ++  wash  wash-grit
 --
@@ -14,6 +15,7 @@
   $+  pond-rock
   $%  rock-0
       rock-1
+      rock-2
   ==
 :: :: +$  rock-old
 :: ::   $:  stir-ids=(map ship @t)
@@ -30,10 +32,16 @@
       stir-ids=(map ship @t)
       core-1
   ==
-+$  current-rock  rock-1
++$  rock-2
+  $:  %2
+      stir-ids=(map ship @t)
+      core-2
+  ==
++$  current-rock  rock-2
 +$  current-rock-v  _-:*current-rock
 +$  core-0  turf=(unit turf:turf-0)
-+$  core-1  turf=(unit turf)
++$  core-1  turf=(unit turf:turf-1)
++$  core-2  turf=(unit turf:turf-2)
 +$  grit-0
   $+  pond-grit-0
   $@(grit-0-atom grit-0-cell)
@@ -91,14 +99,24 @@
       [%add-invite id=invite-id =invite]
       [%del-invite id=invite-id]
       $<  %set-turf  :: properly override previous definition
-      grit-0-cell 
+      grit-0-cell
   ==
-+$  cur-grit  grit-1
+++  grit-2
+  =,  turf-2
+  $%  [%wake ~]
+      [%set-turf =turf]  :: should be included when turf and grit versions change together
+      [%add-player =ship =player]
+      $<  ?(%set-turf %add-player)  :: properly override previous definition
+      grit-1
+  ==
++$  cur-grit  grit-2
++$  cur-grit-v  %2
 +$  grit
   $+  pond-grit
   $@  grit-0
   $%  grit-0
       [%1 grit-1]
+      [%2 grit-2]
   ==
 +$  grits  (list grit)
 +$  cur-grits  (list cur-grit)
@@ -141,19 +159,26 @@
   $%  grit-1
       goal-0-only
   ==
-+$  cur-goal  goal-1
++$  goal-2
+  $%  [%call ships=(set ship) ~]
+      grit-2
+      goal-0-only
+  ==
++$  cur-goal  goal-2
++$  cur-goal-v  cur-grit-v
 +$  goal
   $+  pond-goal
   $@  grit-0-atom
   $%  goal-0-cell
       [%1 goal-1]
+      [%2 goal-2]
   ==
 +$  goals  (list goal)
 +$  cur-goals  (list cur-goal)
 ::
 +$  stirred
     $%  [what=%rock =rock]
-        [what=%wave id=stir-id =grits]
+        [what=%wave foam =grits]
     ==
 ::
 :: roars are turf-scoped effects emitted by filters
@@ -170,35 +195,41 @@
       [%port-reject =ship]
       [%player-add =ship]
       [%player-del =ship]
+      [%host-call ships=(set ship) ~]
   ==
 +$  roars  (list roar)
 ::
 ++  wash-grit
-  |=  [=rock [id=stir-id src=(unit ship)] =grit]
+  |=  [=rock =foam =grit]
   ^-  ^rock
+  =,  foam
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))
   ?:  ?=(?([%upgrade ~] [* %upgrade ~]) grit)
     (fully-upgrade-rock rock)
-  (wash-grit-v rock grit)
+  (wash-grit-v rock foam grit)
 ++  wash-grit-v
-  |*  [=rock =grit]
+  |*  [=rock =foam =grit]
   ^-  _rock
   ?-    grit
+      [%2 *]
+    ?.  ?=(%2 -.rock)
+      rock
+    (wash-grit-2 rock foam +.grit)
       [%1 *]
     ?.  ?=(%1 -.rock)
       rock
-    (wash-grit-1 rock +.grit)
+    (wash-grit-1 rock foam +.grit)
     ::
       *
     ?.  ?=(%0 -.rock)
       rock
-    (wash-grit-0 rock grit)
+    (wash-grit-0 rock foam grit)
   ==
 ::
-++  wash-grit-1
-  |=  [rock=rock-1 grit=grit-1]
-  ^-  rock-1
+++  wash-grit-2
+  |=  [rock=rock-2 =foam grit=grit-2]
+  ^-  rock-2
   ?:  =(%upgrade grit)  rock  :: upgrade should have been handled by +wash-grit
   :-  -.rock
   :-  stir-ids.rock
@@ -209,9 +240,13 @@
   :-  ~
   =*  turf  u.turf.rock
   =*  players  players.ephemera.turf
+  =?  players  &(?=(^ wen.foam) ?=(^ src.foam))
+    ?.  (~(has by players) u.src.foam)  players
+    %+  ~(jab by players)  u.src.foam
+    |=  =player
+    player(wake wen.foam)
   ?-    -.grit
-    %noop  turf
-    %upgrade  turf
+    ?(%noop %wake %upgrade)  turf
     ::
       %size-turf
     =.  turf  %=  turf
@@ -343,9 +378,9 @@
       (~(del by invites.deed.turf) id.grit)
     turf
   ==
-++  wash-grit-0
-  |=  [rock=rock-0 grit=grit-0]
-  ^-  rock-0
+++  wash-grit-1
+  |=  [rock=rock-1 =foam grit=grit-1]
+  ^-  rock-1
   :-  -.rock
   :-  stir-ids.rock
   ?:  ?=([%set-turf *] grit)  `turf.grit
@@ -353,6 +388,23 @@
   ?~  turf.rock  ~
   =*  turf  u.turf.rock
   =*  players  players.ephemera.turf
+  ?-    -.grit
+      %add-player
+    =.  players
+      (~(put by players) ship.grit player.grit)
+    `turf
+      *
+    turf:(wash-newer `rock-1`rock foam 1+grit)
+  ==
+++  wash-grit-0
+  |=  [rock=rock-0 =foam grit=grit-0]
+  ^-  rock-0
+  :-  -.rock
+  :-  stir-ids.rock
+  ?:  ?=([%set-turf *] grit)  `turf.grit
+  :: only %set-turf can change a null turf
+  ?~  turf.rock  ~
+  =*  turf  u.turf.rock
   ?@  grit
     ?-  grit
       %noop  turf.rock
@@ -360,32 +412,38 @@
         %inc-counter
       `turf(stuff-counter.plot +(stuff-counter.plot.turf))
     ==
-  ?-  -.grit
+  ?-    -.grit
       *
-    turf:%+(wash-newer `rock-0`rock grit) :: would be 0+grit if everything was versioned properly
+    turf:(wash-newer `rock-0`rock foam grit) :: would be 0+grit if everything was versioned properly
   ==
 ++  wash-newer
-  |*  [=rock =grit]
+  |*  [=rock =foam =grit]
   ^+  rock
-  (downgrade-rock (wash-grit-v (upgrade-rock rock) grit))
+  (downgrade-rock (wash-grit-v (upgrade-rock rock) foam grit))
 ++  fully-upgrade-rock
   |=  =rock
   ^-  current-rock
-  =?  rock  ?=(%0 -.rock)
-    (rock-0-to-1 rock)
-  ?>  ?=(current-rock-v -.rock)
-  rock
+  |-
+  ?:  ?=(current-rock-v -.rock)
+    rock
+  $(rock (upgrade-rock rock))
+  :: =?  rock  ?=(%0 -.rock)
+  ::   (rock-0-to-1 rock)
+  :: ?>  ?=(current-rock-v -.rock)
+  :: rock
 ++  upgrade-rock
   |*  [=rock]
   ?-  -.rock
     %0  (rock-0-to-1 rock)
-    %1  rock
+    %1  (rock-1-to-2 rock)
+    %2  rock
   ==
 ++  downgrade-rock
   |*  =rock
   ?-  -.rock
     %0  rock
     %1  (rock-1-to-0 rock)
+    %2  (rock-2-to-1 rock)
   ==
 ++  rock-0-to-1
   |=  rock=rock-0
@@ -409,4 +467,32 @@
   =*  turf  u.turf.rock
   =/  =deed:turf-0  +.deed.turf
   [ephemera.turf deed plot.turf]
+++  rock-1-to-2
+  |=  rock=rock-1
+  ^-  rock-2
+  :-  %2
+  :-  stir-ids.rock
+  ?~  turf.rock  ~
+  :-  ~
+  =*  turf  u.turf.rock
+  =/  =players:turf-2
+    %-  ~(run by players.ephemera.turf)
+    |=  =player:turf-1
+    ^-  player:turf-2
+    [~ player]
+  turf(players.ephemera players)
+++  rock-2-to-1
+  |=  rock=rock-2
+  ^-  rock-1
+  :-  %1
+  :-  stir-ids.rock
+  ?~  turf.rock  ~
+  :-  ~
+  =*  turf  u.turf.rock
+  =/  =players:turf-1
+    %-  ~(run by players.ephemera.turf)
+    |=  =player:turf-2
+    ^-  player:turf-1
+    +.player
+  turf(players.ephemera players)
 --

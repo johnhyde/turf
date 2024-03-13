@@ -15,6 +15,8 @@
 =/  pub-pond-init  (mk-pubs pond-lake pond-path)
 =/  sub-mist-init  (mk-subs mist-lake mist-path)
 =/  pub-mist-init  (mk-pubs mist-lake mist-path)
+=/  nap-patrol-interval  ~m5
+=/  nap-patrol-cutoff  ~m30
 |%
 +$  versioned-state
   $%  state-0
@@ -123,7 +125,13 @@
   =/  vita-cards
     ?:  =(vita-parent.cfg vita-parent.vita-config)  ~
     [(set-config:vita-client bowl enabled.cfg vita-parent.vita-config)]~
-  :(weld cards-0 upgrade-cards cards-1 cards-2 vita-cards kick-all-subs:hc)^this
+  =/  ted-cards  (start-nap-patrol:hc nap-patrol-interval nap-patrol-cutoff)
+  :_  this
+  ;:  weld
+      cards-0  upgrade-cards
+      cards-1  cards-2
+      vita-cards  ted-cards  kick-all-subs:hc
+  ==
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
@@ -208,7 +216,7 @@
     cards^this
   ::
       %secret-turf
-    =^  cards  pub-pond  (public:du-pond [dppath]~)
+    =^  cards  pub-pond  (secret:du-pond [dppath]~)
     cards^this
   ::
       %open-turf
@@ -268,14 +276,38 @@
   ::
       %pond-goal
     ?>  =(our src):bowl
-    =/  goal  !<(goal-1:pond vase)
-    =/  stir  [dtid:hc ~ [%1 goal]~]
+    =/  goal  !<(cur-goal:pond vase)
+    =/  stir  [dtid:hc ~ [*cur-goal-v:pond goal]~]
     =^  cards  state  (stir-pond:hc `src.bowl stir)
     cards^this
   ::
       %logout
+    ?>  =(our src):bowl
     =^  cards  state  (give-mist:hc dmpath set-ctid+~)
     cards^this
+  ::
+      %ping
+    ?>  =(our src):bowl
+    (delay-logout:hc ~m2)^this
+  ::
+      %kick-nappers
+    ?>  =(our src):bowl
+    =/  cutoff  !<(@dr vase)
+    :: ~&  ['got kick nappers' cutoff]
+    =/  uturf  (default-turf:hc)
+    =/  ted-cards  (patrol-nappers:hc nap-patrol-interval nap-patrol-cutoff)
+    ?~  uturf  ted-cards^this
+    =*  turf  u.uturf
+    =/  goals=cur-goals:pond
+      %+  murn  ~(tap by players.ephemera.turf)
+      |=  [=ship =player]
+      ^-  (unit cur-grit:pond)
+      ?~  wake.player  ~
+      ?:  (gth (add u.wake.player cutoff) now.bowl)  ~
+      `[%del-player ship]
+    =/  =turf-id  (ship-ppath-to-turf-id our.bowl dppath)
+    =^  cards  state  (give-pond:hc turf-id goals)
+    (weld cards ted-cards)^this
   ::
 
       %join-turf  !!
@@ -318,7 +350,7 @@
       =/  =stirred:pond
         ?~  wave.msg
           [%rock rock.msg]
-        [%wave id.foam.u.wave.msg grits.u.wave.msg]
+        [%wave (foam foam.u.wave.msg) grits.u.wave.msg]
       =/  give-paths=(list path)  [this-turf-path]~
       =?  give-paths  =((ctid:hc) `this-turf-id)
         :: ???
@@ -407,12 +439,14 @@
     =^  cards-1  sub-pond
       ?:  =(our.bowl ship.id)  `sub-pond
       (surf:da-pond sub-key)
+    :: ~&  ['sub cards' cards-1]
     =^  cards-2  state
       ?^  cards-1  `state
       ::  no sub cards, we are already subbed and not stale
       ::  tell frontend what we have
       (give-pond-rock:hc id %.y)
-    =/  cards-3  [(dont-logout:hc)]~
+    :: ~&  ['rock cards' cards-2]
+    =/  cards-3  (delay-logout:hc ~m2)
     :(weld cards-1 cards-2 cards-3)^this
       [%mist *]
     ?>  =(our src):bowl
@@ -429,7 +463,7 @@
     |(=(/mist pat) ?=([%pond *] pat))
   :: ~&  ['is there a client subbed to a mist or turf?' left online]
   ?:  online  `this
-  =/  cards  (delay-logout:hc)
+  =/  cards  (delay-logout:hc ~s10)
   cards^this
 ::
 ++  on-peek
@@ -438,6 +472,17 @@
   ?+     path  (on-peek:def path)
       [%x %local ~]
     ``local+!>(local:hc)
+      [%x %players *]
+    ?>  =(our src):bowl
+    =/  c-id  |2.path
+    =/  id=turf-id  [our.bowl (slag 2 c-id)]
+    =/  ppath  (turf-id-to-ppath id)
+    =/  p  (~(gut by read:du-pond) ppath ~)
+    ?~  p  `~
+    ?~  turf.rock.p  `~
+    =*  turf  u.turf.rock.p
+    =/  players  ~(key by players.ephemera.turf)
+    ``noun+!>(players)
       :: [%x %dbug %state]
       :: *  ``noun+!<(~)
   ==
@@ -517,13 +562,20 @@
   =^  cards-2  state
     (give-mist dmpath set-ctid+`dtid)
   (weld cards-1 cards-2)^state
-++  default-turf
+++  default-rock
   |.
   ^-  (unit rock:pond)
   ((lift |=([* =rock:pond] rock)) (~(get by read:du-pond) dppath))
+++  default-turf
+  |.
+  ^-  (unit turf)
+  =/  urok  (default-rock)
+  ?~  urok  ~
+  ?.  ?=(current-rock-v:pond -.u.urok)  ~
+  turf.u.urok
 ++  default-turf-exists
   |.
-  =+  (default-turf)
+  =+  (default-rock)
   ?~  -  %.n
   ?=(^ turf.u.-)
 ++  init-turf
@@ -569,7 +621,7 @@
   =/  stir=stir:pond
     :*  turf-id
         ~
-        [%1 goal]~
+        [*cur-goal-v:pond goal]~
     ==
   :*  %pass
       wire
@@ -600,7 +652,7 @@
   =^  [ssio-cards=(list card) [=roars:mist *] =grits:mist]  pub-mist
     %-  (filter:de-mist ,[roars:mist $~(closet skye)])
     :*  mpath.stir
-        `foam`[id.stir src]
+        `foam`[%1 id.stir src `now.bowl]
         goals.stir
         filter-mist-goal
     ==
@@ -673,15 +725,16 @@
   ^-  (quip card _state)
   :: ~&  "start to stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   =/  ppath  (turf-id-to-ppath turf-id.stir)
+  =/  =foam  `foam`[*cur-foam-v id.stir src `now.bowl]
   =^  [ssio-cards=(list card) =roars:pond =grits:pond]  pub-pond
     %-  (filter:de-pond roars:pond)
     :*  ppath
-        `foam`[id.stir src]
+        foam
         goals.stir
         filter-pond-goal
     ==
   =/  cards=(list card)
-    =/  =stirred:pond  [%wave id.stir grits]
+    =/  =stirred:pond  [%wave foam grits]
     [%give %fact [(turf-id-to-path turf-id.stir)]~ %pond-stirred !>(stirred)]~
   =^  roar-cards=(list card)  state
     %+  roll  roars
@@ -787,18 +840,38 @@
             /kick
           ship.roar
         [%kicked turf-id.stir]
+          %host-call
+        :_  state
+        :_  ~
+        =/  call-id=path
+          (weld /turf/(scot %p src.bowl) path.turf-id.stir)
+        =/  waves
+          :-  [%set-confirm %.y]
+          :-  [%set-visibility %public]
+          :-  [%set-access-list %black ~]
+          :-  [%add-admin (silt ~[src.bowl])]
+          :-  [%set-access-filter `[q.byk.bowl %gate-call-access]]
+          %+  turn  ~(tap in ships.roar)
+          |=  =ship
+          [%add-peer ship ~]
+        :*  %pass
+            /host-call
+            %agent
+            [our.bowl %turf-rally]
+            [%poke %rally-action !>([%0 [our.bowl call-id] [%waves waves]~])]
+        ==
       ==
     (weld cards new-cards)^state
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   [:(weld ssio-cards cards roar-cards) state] :: cards before roar-cards in case we poke ourselves
 ++  give-pond
-  |=  [=turf-id =goals:pond]
+  |=  [=turf-id goals=cur-goals:pond]
   ^-  (quip card _state)
   :: ~&  "trying to give pond. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  (stir-pond ~ turf-id ~ goals)
+  (stir-pond ~ turf-id ~ (turn goals (lead *cur-goal-v:pond)))
 ++  give-pond-goal
   |=  [=turf-id goal=cur-goal:pond]
-  (give-pond turf-id [%1 goal]~)
+  (give-pond turf-id [goal]~)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
   ^-  (quip card _state)
@@ -849,7 +922,7 @@
 ++  update-skye
   |=  =skye
   ^-  (quip card _state)
-  =/  rock  (default-turf)
+  =/  rock  (default-rock)
   ?~  rock  `state
   ?.  ?=(current-rock-v:pond -.u.rock)  `state
   ?~  turf.u.rock  `state
@@ -863,14 +936,29 @@
 ++  kick-all-subs
   ^-  (list card)
   [%give %kick `(list path)`(turn ~(val by sup.bowl) tail) ~]~
+++  start-nap-patrol
+  |=  [delay=@dr cutoff=@dr]
+  ^-  (list card)
+  =/  tid  'turf-nap-patrol'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  :-  [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+  (patrol-nappers delay cutoff)
+++  patrol-nappers
+  |=  [delay=@dr cutoff=@dr]
+  ^-  (list card)
+  =/  tid  'turf-nap-patrol'
+  =/  ta-now  `@ta`(scot %da now.bowl)
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %nap-patrol !>([delay cutoff])]
+  [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-start !>(start-args)]~
 ++  delay-logout
-  |.
+  |=  delay=@dr
   ^-  (list card)
   =/  tid  'turf-delayed-logout'
   =/  ta-now  `@ta`(scot %da now.bowl)
-  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(~)]
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(delay)]
+  :: [%pass /thread/[tid]/[ta-now] %arvo %k %fard q.byk.bowl tid %noun !>(delay)]~
   :~
-    [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+    [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
     [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-start !>(start-args)]
   ==
 ++  dont-logout
@@ -878,5 +966,5 @@
   ^-  card
   =/  tid  'turf-delayed-logout'
   =/  ta-now  `@ta`(scot %da now.bowl)
-  [%pass /thread-stop/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
+  [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]
 --  --
