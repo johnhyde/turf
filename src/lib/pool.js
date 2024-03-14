@@ -38,10 +38,10 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
     },
 
     sendWave(type, arg, batch = true) {
-      let charge = this.filterGoals(this.fake, [{ type, arg }]);
+      let charge = this.filterGoals(this.fake, [{ type, arg }], true);
       if (!charge) return false;
       if (batch) {
-        this.addCharge(charge);
+        this.addCharge(charge, false);
       } else {
         const {goals, grits} = charge;
         const uuid = uuidv4();
@@ -51,7 +51,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           src: our,
           wen: Date.now(),
           grits,
-        });
+        }, false);
         this.sendWavePoke(goals, uuid);
       }
       return true;
@@ -281,8 +281,9 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
 
     // returns false if goal is rejected
     // otherwise, returns {goals, grits}
-    filterGoals(rock, goals) {
-      const [temp, $temp] = createStore(hydrate(cloneDeep(rock)));
+    filterGoals(rock, goals, apply = false) {
+      let [temp, $temp] = [rock, this.updateFake.bind(this)];
+      if (!apply) [temp, $temp] = createStore(hydrate(cloneDeep(rock)));
       goals = goals.map(g => this.preFilterGoal(temp, g)).filter(g => g);
       let newGoals = [], grits = [], roars = [];
       goals.forEach((goal) => {
@@ -316,14 +317,14 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       if (depth > 20) return ret();
       const goal = goals[0];
       const filtered = this.filterGoal(rock, goal, top);
-      wash($rock, filtered.grits);
+      wash($rock, filtered.grits, our, Date.now());
       const restGoals = [...filtered.goals, ...goals.slice(1)];
       depth += filtered.goals.length;
       distToTop = Math.max(0, distToTop - 1) + filtered.goals.length;
       const rest = this.fGoals(rock, $rock, restGoals, distToTop, depth);
       roars = [...filtered.roars, ...rest.roars];
       grits = [...filtered.grits, ...rest.grits];
-      return ret()
+      return ret();
     },
 
     preFilterGoal(rock, goal) {

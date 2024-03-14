@@ -222,7 +222,6 @@ export function getState() {
       if (patp === our) return false;
       return pos.distance(player.pos) < 2.5;
     }).map(([patp, _]) => patp);
-    console.log('peers', peers);
     return peers;
   });
 
