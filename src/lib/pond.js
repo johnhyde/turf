@@ -4,7 +4,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
   clampToTurf, isInTurf, fillEmptySpace, getCollision, getEffectsByHusk,
-  generateHusk, jabBySpaces, delShade, delShadeFromSpace, delPortal,
+  generateHusk, jabBySpaces, getShade, delShade, delShadeFromSpace, delPortal,
   getThingsAtPos, getEffectsByThing,
 } from 'lib/turf';
 import { vec2, vecToStr, jClone, turfIdToPath } from 'lib/utils';
@@ -190,7 +190,7 @@ const pondGrits = {
   },
   'move-shade': (turf, arg) => {
     const { shadeId, pos } = arg;
-    const shade = turf.cave[shadeId];
+    const shade = getShade(turf, shadeId);
     if (shade) {
       const oldPos = shade.pos;
       shade.pos = pos;
@@ -200,7 +200,7 @@ const pondGrits = {
   },
   'cycle-shade': (turf, arg) => {
     const { shadeId, amount } = arg;
-    const shade = turf.cave[shadeId];
+    const shade = getShade(turf, shadeId);
     if (shade) {
       const form = turf.skye[shade.formId];
       if (form) {
@@ -210,7 +210,7 @@ const pondGrits = {
   },
   'set-shade-var': (turf, arg) => {
     const { shadeId, variation } = arg;
-    const shade = turf.cave[shadeId];
+    const shade = getShade(turf, shadeId);
     if (shade) {
       const form = turf.skye[shade.formId];
       if (form) {
@@ -220,7 +220,7 @@ const pondGrits = {
   },
   'set-shade-effect': (turf, arg) => {
     const { shadeId, trigger, effect } = arg;
-    const shade = turf.cave[shadeId];
+    const shade = getShade(turf, shadeId);
     if (shade) {
       shade.effects[trigger] = effect;
     }
@@ -261,7 +261,7 @@ const pondGrits = {
   },
   'del-portal-from-shade': (turf, arg) => {
     const { shadeId, portalId } = arg;
-    const shade = turf.cave[shadeId];
+    const shade = getShade(turf, shadeId);
     if (shade) {
       const { fullFx, huskFx, formFx } = getEffectsByHusk(turf, shade);
       Object.entries(fullFx).forEach(([trigger, effect]) => {

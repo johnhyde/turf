@@ -63,8 +63,14 @@ export function fillEmptySpace(turf, formId) {
   }
 }
 
-export function getShadeWithForm(turf, shadeId) {
+export function getShade(turf, shadeId) {
   const shade = turf.cave[shadeId];
+  if (!shade) return null;
+  return shade
+}
+
+export function getShadeWithForm(turf, shadeId) {
+  const shade = getShade(turf, shadeId);
   if (!shade) return null;
   const form = turf.skye[shade.formId];
   if (!form) return null;
@@ -108,19 +114,24 @@ export function getThingsAtPos(turf, pos) {
   return shades;
 }
 
+export function getShadesAtPosByFormId(turf, pos, formId) {
+  return getShadesAtPos(turf, pos).filter(shade => shade.formId === formId);
+}
+
 export function getShadesAtPosByType(turf, pos, type) {
   return getShadesAtPos(turf, pos).filter(shade => shade.form.type === type);
 }
 
-export function getWallsAtPos(turf, pos) {
+export function getWallsAtPos(turf, pos, formId) {
+  if (formId) return getShadesAtPosByFormId(turf, pos, formId);
   return getShadesAtPosByType(turf, pos, 'wall');
 }
 
-export function getWallVariationAtPos(turf, pos, orFlags = 0, andFlags = 15) {
-  const down = getWallsAtPos(turf, vec2(pos).add(vec2(0, 1)));
-  const right = getWallsAtPos(turf, vec2(pos).add(vec2(1, 0)));
-  const up = getWallsAtPos(turf, vec2(pos).add(vec2(0, -1)));
-  const left = getWallsAtPos(turf, vec2(pos).add(vec2(-1, 0)));
+export function getWallVariationAtPos(turf, pos, orFlags = 0, andFlags = 15, formId) {
+  const down = getWallsAtPos(turf, vec2(pos).add(vec2(0, 1)), formId);
+  const right = getWallsAtPos(turf, vec2(pos).add(vec2(1, 0)), formId);
+  const up = getWallsAtPos(turf, vec2(pos).add(vec2(0, -1)), formId);
+  const left = getWallsAtPos(turf, vec2(pos).add(vec2(-1, 0)), formId);
   // set flag to one if length > 0
   const d = +!!down.length;
   const r = +!!right.length;
@@ -183,7 +194,7 @@ export function getEffectsByThing(thing) {
 }
 
 export function delShade(turf, shadeId) {
-  const shade = turf.cave[shadeId];
+  const shade = getShade(turf, shadeId);
   if (shade) {
     delShadeFromSpace(turf, shadeId, shade.pos)
     delete turf.cave[shadeId];

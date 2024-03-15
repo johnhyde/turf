@@ -211,7 +211,7 @@ export default function FormEditor(props) {
         </div>
         <div class="flex space-x-2">
           <span class="font-semibold">Type</span>
-          <Radio value={form()?.type} $value={setType} items={[['tile', 'Tile'], ['item', 'Item']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
+          <Radio value={form()?.type} $value={setType} items={[['tile', 'Tile'], ['item', 'Item'], ['wall', 'Wall']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
         </div>
         <div class="flex space-x-2">
           <span class="font-semibold">Offset</span>

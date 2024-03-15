@@ -330,7 +330,7 @@ export function startPhaser(_owner, _container) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
             if (state.c.selectedForm.type === 'wall') {
-              const variation = getWallVariationAtPos(state.e, pos);
+              const variation = getWallVariationAtPos(state.e, pos, 0, 15, state.editor.selectedFormId);
               const added = state.addHusk(pos, state.editor.selectedFormId, variation);
               if (added) state.updateWallsAroundPos(pos, false);
             } else {

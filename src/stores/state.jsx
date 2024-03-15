@@ -385,33 +385,57 @@ export function getState() {
       });
     },
     updateWallAtPos(shadeId, pos) {
-      const variation = getWallVariationAtPos(this.e, pos);
+      const shade = getShade(this.e, shadeId);
+      // should we bail if no shade, or allow that it might not be added yet?
+      const variation = getWallVariationAtPos(this.e, pos, shade?.formId);
       this.setShadeVariation(shadeId, variation);
     },
-    updateWallsAtPos(pos, orFlags, andFlags) {
+    updateWallsAtPos(pos, orFlags, andFlags, formId) {
       batch(() => {
-        const walls = getWallsAtPos(this.e, pos);
-        if (walls.length > 0) {
-          const variation = getWallVariationAtPos(this.e, pos, orFlags, andFlags);
+        const walls = getWallsAtPos(this.e, pos, formId);
+        if (!walls.length) return;
+        if (formId) {
+          const variation = getWallVariationAtPos(this.e, pos, orFlags, andFlags, formId);
           walls.forEach((wall) => this.setShadeVariation(wall.id, variation));
+        } else {
+          walls.forEach((wall) => {
+            const variation = getWallVariationAtPos(this.e, pos, orFlags, andFlags, wall.formId);
+            this.setShadeVariation(wall.id, variation);
+          });
         }
       });
     },
     updateWallsAroundPos(pos, updateCenter = false, ignoredWalls = []) {
       ignoredWalls = ignoredWalls.map(id => Number(id));
-      const walls = getWallsAtPos(this.e, pos).filter(w => !ignoredWalls.includes(Number(w.id)));
-      const y = !!walls.length;
-      const n = !y;
-      const poses = [
-        [vec2(pos).add(vec2( 1,  0)), y ? 8 : 0, n ?  7 : 15],
-        [vec2(pos).add(vec2(-1,  0)), y ? 2 : 0, n ? 13 : 15],
-        [vec2(pos).add(vec2( 0,  1)), y ? 4 : 0, n ? 11 : 15],
-        [vec2(pos).add(vec2( 0, -1)), y ? 1 : 0, n ? 14 : 15],
-      ];
-      if (y && updateCenter) {
-        poses.push([vec2(pos)]);
+      const walls = getWallsAtPos(this.e, pos);
+      const mustIgnore = walls.some(w => ignoredWalls.includes(Number(w.id)));
+      if (mustIgnore) {
+        walls.forEach((wall) => {
+          const n = ignoredWalls.includes(Number(wall.id));
+          const y = !n;
+          const poses = [
+            [vec2(pos).add(vec2( 1,  0)), y ? 8 : 0, n ?  7 : 15],
+            [vec2(pos).add(vec2(-1,  0)), y ? 2 : 0, n ? 13 : 15],
+            [vec2(pos).add(vec2( 0,  1)), y ? 4 : 0, n ? 11 : 15],
+            [vec2(pos).add(vec2( 0, -1)), y ? 1 : 0, n ? 14 : 15],
+          ];
+          if (y && updateCenter) {
+            poses.push([vec2(pos), 0, 15]);
+          }
+          poses.forEach((p) => this.updateWallsAtPos(...p, wall.formId));
+        });
+      } else {
+        const poses = [
+          [vec2(pos).add(vec2( 1,  0)), 0, 15],
+          [vec2(pos).add(vec2(-1,  0)), 0, 15],
+          [vec2(pos).add(vec2( 0,  1)), 0, 15],
+          [vec2(pos).add(vec2( 0, -1)), 0, 15],
+        ];
+        if (walls.length && updateCenter) {
+          poses.push([vec2(pos), 0, 15]);
+        }
+        poses.forEach((p) => this.updateWallsAtPos(...p));
       }
-      poses.forEach((p) => this.updateWallsAtPos(...p));
     },
     huskInteract(husk) {
       if (this.e && husk) {
