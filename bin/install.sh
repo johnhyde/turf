@@ -41,6 +41,18 @@ sync() {
     fi
 }
 
+s3upload() {
+    hash=$1
+    local_file="$cdir/../globs/glob-${hash}.glob"
+    remote_file="${S3_BUCKET_FOLDER}/${hash}.glob"
+
+    $CURL_EXE --progress-bar -k -X PUT \
+        --user "${S3_ACCESS_KEY}":"${S3_SECRET_KEY}" \
+        --aws-sigv4 "aws:amz:${S3_REGION}:s3" \
+        --upload-file ${local_file} \
+        https://${S3_BUCKET_NAME}.s3.${S3_REGION}.amazonaws.com/${remote_file}
+    echo "https://${S3_BUCKET_NAME}.s3.${S3_REGION}.amazonaws.com/${remote_file}"
+}
 
 while getopts "wg" opt; do
     case ${opt} in
@@ -85,6 +97,7 @@ if [ -z "$WATCH_MODE" ]; then
         HASH="${GLOB//glob-/}"
         HASH="${HASH//.glob/}"
         echo $HASH
+        s3upload $HASH
     else
         lensa 'hood' "+hood/install our %$DESK"
     fi
