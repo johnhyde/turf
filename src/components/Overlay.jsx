@@ -21,7 +21,7 @@ export default function Overlay() {
     }
   }
   return (
-    <div class="absolute top-[64px] bottom-0 sm:top-0 w-full flex pointer-events-none">
+    <div class="absolute top-[64px] bottom-[32px] left-0 sm:top-0 sm:bottom-0 w-full flex pointer-events-none">
       <div class="basis-1/2"></div>
       <div class="shrink-0 flex flex-col">
         <Show when={state.c.id}>

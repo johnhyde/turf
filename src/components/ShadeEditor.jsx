@@ -6,10 +6,19 @@ import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
 import FormInfo from '@/FormInfo';
+import ItemButton from '@/ItemButton';
 
 export default function ShadeEditor(props) {
   const state = useState();
   const [newEffects, $newEffects] = createStore({});
+  const varSelected = createSelector(() => props.shade.variation);
+  const form = () => props.shade.form;
+  const variationButtons = () => {
+    if (form().type === "wall") {
+      return '▪ ╻ ╺ ╹ ╸ ┃ ━ ┏ ┗ ┛ ┓ ┣ ┻ ┫ ┳ ╋'.split(' ').slice(0, form().variations.length);
+    }
+    return 'a'.repeat(form().variations.length).split('');
+  };
 
   function clearNewEffects() {
     $newEffects(reconcile({}));
@@ -57,6 +66,37 @@ export default function ShadeEditor(props) {
         <FormInfo formId={props.shade.formId} />
         <div class="my-2 border-t border-yellow-950"></div>
         <div class="mx-1">
+          <div class="flex justify-center">
+            <Show when={form().variations.length > 1} >
+              <SmallButton onClick={() => state.cycleShade(props.shade.id, form().variations.length - 1)}>
+                {"<"}
+              </SmallButton>
+            </Show>
+            <div class="grow min-h-[64px] flex justify-center">
+              <ItemButton form={form()} variation={props.shade.variation} />
+            </div>
+            <Show when={form().variations.length > 1} >
+              <SmallButton onClick={() => state.cycleShade(props.shade.id)}>
+                {">"}
+              </SmallButton>
+            </Show>
+          </div>
+          <Show when={form().variations.length > 1}>
+            <div class="my-1 flex flex-wrap justify-center gap-1">
+              <Index each={variationButtons()}>
+                {(label, i) => {
+                  return <SmallButton onClick={() => state.setShadeVariation(props.shade.id, i)}
+                    selected={varSelected(i)}
+                    class="!py-1">
+                    {label() === 'a' ? i + 1 : label()}
+                  </SmallButton>;
+                }}
+              </Index>
+            </div>
+          </Show>
+          <p class="text-center">
+            Variation: {props.shade.variation + 1} of {form().variations.length}
+          </p>
           <p class="text-center">
             Position: {props.shade.pos.x}x{props.shade.pos.y}
           </p>

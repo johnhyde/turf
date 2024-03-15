@@ -362,7 +362,7 @@ export function getState() {
         amount: Number.parseInt(amount),
       });
     },
-    setShadeVariation(shadeId, variation = 1) {
+    setShadeVariation(shadeId, variation) {
       this.sendPondWave('set-shade-var', {
         shadeId: Number.parseInt(shadeId),
         variation: Number.parseInt(variation),

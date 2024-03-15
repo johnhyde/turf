@@ -10,7 +10,8 @@ function Game() {
   });
 
   return (
-    <div id="shell" class="relative">
+    // <div id="shell" class="relative">
+    <div id="shell" >
       <Overlay/>
       <div id="gameContainer" style={{ 'background-color': 'green' }}>
       </div>
