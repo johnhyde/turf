@@ -263,6 +263,7 @@
   ::
       %pond-stir
     =/  stir  !<(stir:pond vase)
+    :: ~&  [%pond-stir stir]
     =/  target  ship.turf-id.stir
     =/  vita-card  (active:vita-client bowl)
     ?:  =(our.bowl target)
@@ -272,7 +273,7 @@
     ?>  =(our src):bowl
     :_  this
     :-  vita-card
-    [%pass [%pond-stir (drop id.stir)] %agent [target %turf] %poke [%pond-stir vase]]~
+    [%pass /pond-stir %agent [target %turf] %poke [%pond-stir vase]]~
   ::
       %pond-goal
     ?>  =(our src):bowl
@@ -616,16 +617,14 @@
   ^-  ^local
   [config closet]
 ++  pond-stir-card
-  |=  [=wire =turf-id goal=cur-goal:pond]
+  |=  [=turf-id goal=cur-goal:pond]
   ^-  card
   =/  stir=stir:pond
     :*  turf-id
         ~
         [*cur-goal-v:pond goal]~
     ==
-  :*  %pass
-      wire
-      %agent
+  :*  %pass  /pond-stir  %agent
       [ship.turf-id %turf]
       [%poke %pond-stir !>(stir)]
   ==
@@ -668,8 +667,8 @@
       ?-    -.roar
           %port-offer-accept
         :_  state
-        :-  %^    pond-stir-card
-                /port-request
+        :-  %+  pond-stir-card
+                ::  /port-request
               for.roar
             [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
         :: if we have been invited somewhere
@@ -677,15 +676,15 @@
         :: don't accept port offer
         ?@  via.roar  ~
         :_  ~
-        %^    pond-stir-card
-            /port-offer-accept
+        %+  pond-stir-card
+            ::  /port-offer-accept
           of.u.via.roar
         [%port-offer-accepted our.bowl from.u.via.roar]
           %port-offer-reject
         :_  state
         :_  ~
-        %^    pond-stir-card
-            /port-offer-reject
+        %+  pond-stir-card
+            ::  /port-offer-reject
           of.roar
         [%port-offer-rejected our.bowl from.roar]
           %turf-join
@@ -698,8 +697,8 @@
           (quit:da-pond (turf-id-to-sub-key turf-id.roar))
         :-  ?~  old-tid  ~
             :_  ~
-            %^    pond-stir-card
-                (weld /pond-stir (drop id.stir))
+            %+  pond-stir-card
+                ::  (weld /pond-stir (drop id.stir))
               u.old-tid
             [%del-player our.bowl]
         state
@@ -745,29 +744,29 @@
           %portal-request
         :_  state
         :_  ~
-        %^    pond-stir-card
-            [%portal-request (scot %ud from.roar) path.turf-id.stir]
+        %+  pond-stir-card
+            ::  [%portal-request (scot %ud from.roar) path.turf-id.stir]
           for.roar
         [%portal-requested for=turf-id.stir at=from.roar is-link.roar]
           %portal-retract
         :_  state
         :_  ~
-        %^    pond-stir-card
-            /portal-retract
+        %+  pond-stir-card
+            ::  /portal-retract
           for.roar
         [%portal-retracted for=turf-id.stir at=from.roar]
           %portal-confirm
         :_  state
         :_  ~
-        %^    pond-stir-card
-            [%portal-confirm (scot %ud from.roar) path.turf-id.stir]
+        %+  pond-stir-card
+            ::  [%portal-confirm (scot %ud from.roar) path.turf-id.stir]
           for.roar
         [%portal-confirmed from=at.roar at=from.roar]
           %portal-discard
         :_  state
         :_  ~
-        %^    pond-stir-card
-            /portal-discard
+        %+  pond-stir-card
+            ::  /portal-discard
           for.roar
         [%portal-discarded from=at.roar]
         ::
@@ -806,8 +805,8 @@
           %port
         :_  state
         :_  ~
-        %^    pond-stir-card
-            /port-vouch
+        %+  pond-stir-card
+            ::  /port-vouch
           for.roar
         [%add-port-rec from=at.roar ship.roar]
           %port-offer

@@ -12,6 +12,7 @@ export class Player extends Phaser.GameObjects.Container {
     const player = () => turf()?.players[patp];
     const pos = vec2(player()?.pos || 0).scale(tileFactor);
     super(scene, pos.x, pos.y);
+    this.cam = this.scene.cameras.main;
     this.s = state;
     this.turf = turf;
     this.player = player;
@@ -29,7 +30,8 @@ export class Player extends Phaser.GameObjects.Container {
         ...scene.input.keyboard.createCursorKeys(),
         ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
       };
-      scene.cameras.main.startFollow(this, true, 0.2, 0.2);
+      // set lerp to 1 here to avoid weird jerking, set to 0.2 when we're ready
+      this.cam.startFollow(this, true, 1, 1, this.cam.followOffset.x, this.cam.followOffset.y);
     }
     this.loadPlayerSprites = load;
     this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
@@ -119,15 +121,15 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   async recreateAvatar() {
-    if (!(this.p && this.t)) return;
+    if (!(this.p && this.t && this.scene)) return;
     const avatar = this.p.avatar;
     
     await this.loadPlayerSprites(this.t);
-    if (!(this.p && this.t)) return; // regret to inform that these might disappear while we await the above
+    if (!(this.p && this.t && this.scene)) return; // regret to inform that these might disappear while we await the above
     this.avatar.removeAll(true);
     const frameRate = 7;
     const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(this.t.id, avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
-    this.bodyImage = scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
+    this.bodyImage = this.scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
     this.bodyImage.thing = avatar.body.thing;
     if (avatar.body.thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
       this.bodyImage.setFlipX(true);
@@ -153,7 +155,7 @@ export class Player extends Phaser.GameObjects.Container {
       const spriteDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(this.t.id, thing.formId, thing.form, dirs[dir], this.patp));
       const offset = vec2(thing.offset).add(thing.form.offset).add(bodyOffset);
       const defaultDir = spriteDirs.filter(key => key)[0];
-      const sprite = scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });
+      const sprite = this.scene.make.sprite({ key: spriteDirs[dirs[this.dir]] || defaultDir });
       if (!spriteDirs[dirs[this.dir]]) sprite.setVisible(false);
       sprite.thing = thing;
       sprite.preDestroy = preDestroy;
@@ -176,30 +178,30 @@ export class Player extends Phaser.GameObjects.Container {
       return sprite;
     }).filter(thing => !!thing);
     this.avatar.add([this.bodyImage, ...this.things]);
-    this.name = scene.make.text({ text: cite(this.patp), style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    this.name = this.scene.make.text({ text: cite(this.patp), style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
     this.add(this.name);
-    this.ping = scene.make.text({ text: '(ping)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    this.ping = this.scene.make.text({ text: '(ping)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.ping.setDisplayOrigin(0, playerOffset.y*factor + this.name.height + this.ping.height);
     this.centerPing();
     this.ping.setVisible(false);
-    this.zzz = scene.make.text({ text: '(zzz)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
+    this.zzz = this.scene.make.text({ text: '(zzz)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.zzz.setDisplayOrigin(0, playerOffset.y*factor - this.zzz.height/2);
     this.setZzz();
     this.centerText(this.zzz);
     this.zzz.setVisible(false);
     /* Make speech bubble */
-    this.speechBubble = scene.add.image(0, 0, "speech-bubble").setScale(factor);
+    this.speechBubble = this.scene.add.image(0, 0, "speech-bubble").setScale(factor);
     const bubblePos = roundV(vec2(this.bodyImage.width*1.3, -this.bodyImage.height/2)).scale(factor);
-    this.speechBubbleContainer = new Phaser.GameObjects.Container(scene, bubblePos.x, bubblePos.y);
+    this.speechBubbleContainer = new Phaser.GameObjects.Container(this.scene, bubblePos.x, bubblePos.y);
     this.speechBubbleContainer.add(this.speechBubble);
     this.speechBubbleContainer.setDepth(100);
     this.add(this.speechBubbleContainer);
     this.speechBubble.setVisible(true);
-    this.speechBubbleTextDisplay = scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
+    this.speechBubbleTextDisplay = this.scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
     this.speechBubbleTextDisplay.setMaxLines(4)
     this.speechBubbleTextDisplay.setOrigin(0.5, 0.5);
     this.speechBubbleTextDisplay.setVisible(true);
@@ -208,7 +210,11 @@ export class Player extends Phaser.GameObjects.Container {
     /* Scaling and dimensions of camera stuff */
     const dims = vec2(this.bodyImage.width, this.bodyImage.height).scale(factor);
     const cameraOffset = vec2().subtract(dims).scale(0.5).add(vec2(playerOffset).scale(factor));
-    scene.cameras.main.setFollowOffset(cameraOffset.x, cameraOffset.y);
+    this.cam.setLerp(1, 1);
+    this.cam.setFollowOffset(cameraOffset.x, cameraOffset.y);
+    setTimeout(() => {
+      this.cam.setLerp(0.2, 0.2);
+    }, 1);
   }
 
   updateAnims() {
