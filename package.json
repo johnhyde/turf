@@ -63,6 +63,7 @@
     "@urbit/http-api": "^2.4.5-debug",
     "@urbit/vite-plugin-urbit": "^1.0.0",
     "dotenv-cli": "^7.3.0",
+    "gifuct-js": "^2.1.2",
     "lodash": "^4.17.21",
     "phaser": "^3.60.0",
     "solid-js": "^1.6.10",

@@ -6,19 +6,13 @@ import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
 import FormInfo from '@/FormInfo';
+import VariationPicker from '@/VariationPicker';
 import ItemButton from '@/ItemButton';
 
 export default function ShadeEditor(props) {
   const state = useState();
   const [newEffects, $newEffects] = createStore({});
-  const varSelected = createSelector(() => props.shade.variation);
   const form = () => props.shade.form;
-  const variationButtons = () => {
-    if (form().type === "wall") {
-      return '▪ ╻ ╺ ╹ ╸ ┃ ━ ┏ ┗ ┛ ┓ ┣ ┻ ┫ ┳ ╋'.split(' ').slice(0, form().variations.length);
-    }
-    return 'a'.repeat(form().variations.length).split('');
-  };
 
   function clearNewEffects() {
     $newEffects(reconcile({}));
@@ -81,18 +75,8 @@ export default function ShadeEditor(props) {
               </SmallButton>
             </Show>
           </div>
-          <Show when={form().variations.length > 1}>
-            <div class="my-1 flex flex-wrap justify-center gap-1">
-              <Index each={variationButtons()}>
-                {(label, i) => {
-                  return <SmallButton onClick={() => state.setShadeVariation(props.shade.id, i)}
-                    selected={varSelected(i)}
-                    class="!py-1">
-                    {label() === 'a' ? i + 1 : label()}
-                  </SmallButton>;
-                }}
-              </Index>
-            </div>
+          <Show when={form().variations.length > 1 || props.shade.variation >= form().variations.length}>
+            <VariationPicker type={form().type} variations={form().variations} variation={props.shade.variation} onSelect={(i) => state.setShadeVariation(props.shade.id, i)} />
           </Show>
           <p class="text-center">
             Variation: {props.shade.variation + 1} of {form().variations.length}

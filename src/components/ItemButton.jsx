@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js';
+import voidUrl from 'assets/sprites/void.png';
 
 export default function ItemButton(props) {
   const [width, $width] = createSignal();
@@ -8,17 +9,18 @@ export default function ItemButton(props) {
       $width(el.naturalWidth*2)
     };
   }
-  function previewForm(form) {
+  const previewForm = (form) => {
     let variation = props.variation ?? 0;
     if (form.type === 'wall' && form.variations.length >= 7) {
       variation = props.variation ?? 6;
     }
-    const sprite = form.variations[variation].sprite;
+    const sprite = form.variations[variation]?.sprite;
+    if (!sprite) return voidUrl;
     if (sprite.frames) {
       return sprite.frames[0];
     }
     return sprite;
-  }
+  };
 
   return (
     <div class={'rounded-lg p-[5px] ' + (props.selected ? 'bg-yellow-600' : '')}>

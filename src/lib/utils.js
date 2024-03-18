@@ -1,6 +1,7 @@
 import { decToUd, udToDec, unixToDa } from '@urbit/api';
 import { hex2patp, patp2hex, patp } from 'urbit-ob';
 import { createRenderEffect, createSignal } from 'solid-js';
+import { parseGIF, decompressFrames } from 'gifuct-js';
 
 const Vector2 = Phaser.Math.Vector2;
 
@@ -474,3 +475,35 @@ export async function tintImage(image, color) {
     image.src = dataUrl;
   });
 }
+
+export function gifTest(url){ //unseen imports of parseGIF() and decompressFrames() from gifuct-js above ^^
+  let request=new XMLHttpRequest();
+  request.open("GET", url, true);
+  request.responseType = "arraybuffer"
+  request.onload = function(event) {
+    let arrayBuffer = request.response
+    if (arrayBuffer) {
+      let rawGifData = parseGIF(arrayBuffer)
+      let frames = decompressFrames(rawGifData, true)
+      let ancillaryCanvas = scene.textures.createCanvas('frames', frames[0].dims.width*frames.length, frames[0].dims.height)
+      let ancillaryContext = ancillaryCanvas.context
+      for (let i = 0; i<frames.length; i++){
+        let thisFramesImageData = ancillaryContext.createImageData(frames[i].dims.width, frames[i].dims.height)
+        thisFramesImageData.data.set(frames[i].patch)
+        ancillaryContext.putImageData(thisFramesImageData, frames[i].dims.width*i, 0)
+        ancillaryCanvas.add(i, 0, frames[i].dims.width*i, 0, frames[i].dims.width, frames[i].dims.height)
+      }
+      ancillaryCanvas.refresh()
+      scene.anims.create({
+        key:'animatedGif',
+        frames:scene.anims.generateFrameNumbers('frames', {start:1, end:frames.length}),
+        frameRate:Math.floor(1000/frames[0].delay),
+        repeat:-1,
+      })
+      let animatedGif = scene.add.sprite(200, 200, 'frames').play('animatedGif')
+    }
+  }
+  request.send(null);
+}
+
+window.gifTest = gifTest;
