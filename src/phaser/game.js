@@ -464,7 +464,7 @@ export function startPhaser(_owner, _container) {
         () => {
           if (!state.e) return {};
           return {
-            ...extractPlayerSprites(state.e.id, state.e.players),
+            // ...extractPlayerSprites(state.e.id, state.e.players),
             ...extractSkyeSprites(state.e.id, state.e.skye),
             void: {
               sprite: voidUrl,

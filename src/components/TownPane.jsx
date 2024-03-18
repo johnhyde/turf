@@ -127,7 +127,7 @@ export default function TownPane() {
           <br/>
           (try ~pandux, it's open)
         </p>
-        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId} blockLower
+        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId} blockLower blockSame
           placeholder="~pandux"
         />
       </Show>
