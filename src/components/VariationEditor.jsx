@@ -113,6 +113,7 @@ export default function VariationEditor(props) {
             ]}
             placeholder="Image URL"
             ref={urlInput}
+            class="rounded-md pl-1"
           />
           <SmallButton onClick={loadSprite}>
             Load

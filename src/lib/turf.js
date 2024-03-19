@@ -178,7 +178,7 @@ export function isLunkApproved(turf) {
 }
 
 export function isHuskCollidable(husk) {
-  return !!(husk.collidable || husk.form.collidable);
+  return !!(husk.collidable ?? husk.form.collidable);
 }
 
 export function getCollision(turf, pos) {
