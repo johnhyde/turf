@@ -2,21 +2,22 @@ import { createSignal, createEffect, createRoot, createResource, runWithOwner, m
 import { unwrap } from "solid-js/store";
 import uniq from 'lodash/uniq';
 import { useState } from 'stores/state';
-import { vec2, near, pixelsToTiles, swapAxes, truncateString, sleep, tintImage } from 'lib/utils';
+import { vec2, near, vecToStr, pixelsToTiles, swapAxes, truncateString, sleep, jClone, tintImage } from 'lib/utils';
 import { isInTurf, getShadeWithForm, getSpace, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
 import { extractSkyeSprites, extractSkyeTileSprites, extractPlayerSprites, spriteName, spriteNameWithDir } from 'lib/turf';
-import { Player } from "./player";
-import { Shade } from "./shade";
-import { Preview } from "./preview";
-import { Resizer } from "./resizer";
-import { TileIndicator } from "./tileIndicator";
+import { Player } from './player';
+import { Shade } from './shade';
+import { Preview } from './preview';
+import { Resizer } from './resizer';
+import { TileIndicator } from './tileIndicator';
 
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
 let gritController = new AbortController();
-var game, scene, cam, cursors, keys = {}, player, tiles, flats, stand, preview;
-var formIndexMap, players = {}, shades = {};
+var game, scene, cam, cursors, keys = {}, player, earth, flats, stand, preview;
+var formIndexMap, players = {}, tiles = {}, shades = {};
+window.tiles = tiles;
 window.shades = shades;
 const factor = 8;
 const tileSize = 32;
@@ -119,56 +120,63 @@ async function loadImageUnsafe(id, url, config = {}) {
 
 let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
-  const siblings = getSpace(turf, shade.pos)?.shades || [];
+  const isShade = typeof id === 'number';
+  const siblings = getSpace(turf, shade.pos)?.shades || []; // tile depth mod = 0
   const i = Math.min(siblings.length - 1, siblings.findIndex(s => Number(s) === Number(id)));
   const index = siblings.length - i - 1; // reverse since bottom/first is most recent
-  const indexDepthMod = index/1000;
+  const indexDepthMod = isShade ? index/1000 : 0;
   let sprite = new Shade(scene, shade, turf, indexDepthMod);
   const { formId } = shade;
   if (!sprite.active) {
     console.error('Could not create shade', formId);
     return;
   }
-  createEffect(() => {
-    shade = state.e?.cave?.[id];
-    if (shade) {
-      const form = state.e.skye[shade.formId];
-      let variation = form?.variations?.[shade.variation];
-      sprite.depthMod = 0;
-      if (variation?.deep == 'flat') {
-        flats.add(sprite);
-        sprite.updateDepth();
-        flats.sort('depth');
-      } else {
-        stand.add(sprite);
-        if (variation?.deep == 'fore') {
-          sprite.depthMod += 0.6;
-        }
-        sprite.updateDepth();
-        stand.sort('depth');
-      }
-    }
-  });
-  sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
-  if (shade.formId === '/portal') {
-    const state = useState();
+  if (isShade) {
     createEffect(() => {
       shade = state.e?.cave?.[id];
       if (shade) {
-        const step = shade.effects['step'];
-        if (step?.type === 'port' &&
-            step.arg !== undefined &&
-            step.arg !== null &&
-            state.e.portals[step.arg]?.at
-        ) {
-          sprite.setAlpha(1);
-          sprite.setTint(0xffffff)
+        const form = state.e.skye[shade.formId];
+        let variation = form?.variations?.[shade.variation];
+        sprite.depthMod = 0;
+        if (variation?.deep == 'flat') {
+          flats.add(sprite);
+          sprite.updateDepth();
+          flats.sort('depth');
         } else {
-          sprite.setAlpha(0.7);
-          sprite.setTint(0xbbbbbb)
+          stand.add(sprite);
+          if (variation?.deep == 'fore') {
+            sprite.depthMod += 0.6;
+          }
+          sprite.updateDepth();
+          stand.sort('depth');
         }
       }
-    })
+    });
+    sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
+    if (shade.formId === '/portal') {
+      const state = useState();
+      createEffect(() => {
+        shade = state.e?.cave?.[id];
+        if (shade) {
+          const step = shade.effects['step'];
+          if (step?.type === 'port' &&
+              step.arg !== undefined &&
+              step.arg !== null &&
+              state.e.portals[step.arg]?.at
+          ) {
+            sprite.setAlpha(1);
+            sprite.setTint(0xffffff)
+          } else {
+            sprite.setAlpha(0.7);
+            sprite.setTint(0xbbbbbb)
+          }
+        }
+      })
+    }
+  } else {
+    sprite.setInteractive();
+    earth.add(sprite);
+    earth.sort('depth');
   }
   let textObj;
   function addText(text, limit = 21) {
@@ -198,7 +206,7 @@ function createShade(shade, id, turf) {
   function onTouch(pointer) {
     console.log('got pointer down on shade', id, shade.formId);
     if (state.editor.editing) {
-      if (state.editor.eraser) {
+      if (state.editor.eraser && isShade) {
         const shade = getShadeWithForm(state.e, id);
         state.delShade(id);
         if (shade && shade.form.type === 'wall') {
@@ -206,19 +214,25 @@ function createShade(shade, id, turf) {
         }
         console.log('try to remove shade');
       } else if (state.editor.cycler) {
-        state.cycleShade(id);
+        if (isShade) {
+          state.cycleShade(id);
+        } else {
+          state.cycleTile(shade.pos);
+        }
       }
     }
   }
   function onClick(pointer) {
-    console.log('got click on shade', id, formId);
-    lastClickedShadeId = id;
-    if (state.editor.editing) {
-      if (state.editor.pointer) {
-        state.selectShade(id);
+    if (isShade) {
+      console.log('got click on shade', id, formId);
+      lastClickedShadeId = id;
+      if (state.editor.editing) {
+        if (state.editor.pointer) {
+          state.selectShade(id);
+        }
+      } else {
+        state.huskInteract(shade);
       }
-    } else {
-      state.huskInteract(shade);
     }
   }
   sprite.on('pointermove', (pointer) => {
@@ -369,8 +383,11 @@ export function startPhaser(_owner, _container) {
             }
             state.clearHuskToPlace();
           } else {
-            if (state.editor.editing && state.editor.pointer && !gameObjects.length) {
-              state.selectTile(pos);
+            if (state.editor.editing && state.editor.pointer && isInTurf(state.e, pos)) {
+              const tile = tiles[vecToStr(pos)];
+              if (gameObjects.filter(o => o !== tile).length === 0) {
+                state.selectTile(pos);
+              }
             }
           }
         });
@@ -489,7 +506,7 @@ export function startPhaser(_owner, _container) {
           }
         });
       const readyToRender = () => !!(loader.state === 'ready' && state.e && state.player);
-      const gameInited = () => readyToRender() && !!tiles;
+      const gameInited = () => readyToRender() && !!earth;
       createEffect(on(() => [
         loader.state,
         state.c.id,
@@ -500,7 +517,8 @@ export function startPhaser(_owner, _container) {
         destroyCurrentTurf();
         if (loader.state === 'ready') {
           if (readyToRender()) {
-            initTurf(state.e, state.p.grid, state.player);
+            initTurf(state.e, state.player);
+            initTiles(state.e);
             initShades(state.e);
             initPlayers(state.e);
             initShadePreview(state.e);
@@ -508,39 +526,11 @@ export function startPhaser(_owner, _container) {
           return state.c.id;
         };
       }));
-      createEffect(on(() => JSON.stringify(state.p?.grid), (_, lastGrid) => {
-        lastGrid = JSON.parse(lastGrid || '[]');
-        // console.log('running tile effect');
+      createEffect(on(() => [loader.state, JSON.stringify(state.e?.spaces)], () => {
         if (gameInited()) {
-          console.log('updating tiles');
-          state.p.grid.map((col, i) => {
-            col.map((space, j) => {
-              const lastTileFormId = lastGrid[i] ? lastGrid[i][j]?.tile?.formId : undefined;
-              const lastTileVariation = lastGrid[i] ? lastGrid[i][j]?.tile?.variation : undefined;
-              if (space.tile && (space.tile.formId !== lastTileFormId || space.tile.variation !== lastTileVariation)) {
-                const pos = vec2(i, j);
-                // console.log('updating tile ', pos);
-                const gid = formIndexMap[spriteName(state.p.id, space.tile.formId, space.tile.variation)];
-                tiles.putTileAt(gid, pos.x, pos.y);
-              }
-              space.shades.forEach((shadeId, i) => {
-                const sprite = shades[shadeId];
-                if (!sprite) return;
-                const index = space.shades.length - i - 1; // reverse since bottom/first is most recent
-                const mod = index/1000;
-                if (sprite.indexDepthMod !== mod) {
-                  sprite.indexDepthMod = mod;
-                  sprite.updateDepth();
-                }
-
-              });
-            });
-          });
-          flats.sort('depth');
-          stand.sort('depth');
+          initTiles(state.e);
         }
-        return [];
-      }, { defer: false }));
+      }, { defer: true }));
       createEffect(on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
         if (gameInited()) {
           initShades(state.e);
@@ -569,21 +559,14 @@ export function startPhaser(_owner, _container) {
   function destroyCurrentTurf() {
     window.player = player = null;
     window.players = players = {};
+    window.tiles = tiles = {};
     window.shades = shades = {};
-    tiles = flats = stand = null;
+    earth = flats = stand = null;
     preview = null;
-    // I think we don't need these, as of 09/12/23
-    // TODO: Delete by Nov 2023 if not needed
-    // (scene.add.displayList.list || []).forEach((e) => {
-    //   if (e) e.destroy();
-    // });
-    // (scene.add.updateList.list || []).forEach((e) => {
-    //   if (e) e.destroy();
-    // });
     game.scene.start(scene);
   }
   window.destroyTurf = destroyCurrentTurf;
-  async function initTurf(turf, grid, _player) {
+  async function initTurf(turf, _player) {
     const bounds = {
       x: turf.offset.x * turf.tileSize.x * factor,
       y: turf.offset.y * turf.tileSize.y * factor,
@@ -614,14 +597,7 @@ export function startPhaser(_owner, _container) {
     });
     console.log("init turf tile layer", turf);
     
-    const [level, tilesetData] = generateMap(turf, grid);
-    const map = scene.make.tilemap({ data: level, tileWidth: turf.tileSize.x, tileHeight: turf.tileSize.y });
-    const tilesets = tilesetData.map((image, i) => {
-      return map.addTilesetImage(image, undefined, undefined, undefined, undefined, undefined, i + 1);
-    });
-    const layer = map.createLayer(0, tilesets, bounds.x, bounds.y);
-    layer.setScale(factor);
-    window.tiles = tiles = layer;
+    window.earth = earth = scene.add.container();
     window.flats = flats = scene.add.container();
     window.stand = stand = scene.add.container();
     window.resizer = new Resizer(scene, turf.id);
@@ -654,17 +630,45 @@ export function startPhaser(_owner, _container) {
     }
   }
 
+  function initTiles(turf) {
+    console.log('init shades');
+    if (turf) {
+      const spaces = jClone(turf.spaces);
+      const poses = uniq([...Object.keys(tiles), ...Object.keys(spaces)]);
+      poses.forEach((posId) => {
+        const pos = vec2(...posId.split(',').map(Number));
+        let sprite;
+        const tileObject = tiles[posId];
+        const tileData = spaces[posId]?.tile;
+        if (tileData) tileData.pos = pos;
+        if (tileData && tileObject) {
+          if (tileObject.texture.key !== (sprite = spriteName(turf.id, tileData.formId, tileData.variation))) {
+            tileObject.setTexture(sprite);
+          }
+          const pos = vec2(tileData.pos).scale(tileFactor);
+          tileObject.setPosition(pos.x, pos.y);
+        } else if (!tileData || !isInTurf(turf, tileData.pos)) {
+          tiles[posId].destroy();
+          delete tiles[posId];
+        } else {
+          tiles[posId] = createShade(tileData, pos, turf);
+        }
+      });
+    }
+    earth.sort('depth');
+  }
+
   function initShades(turf) {
     console.log('init shades');
     if (turf) {
-      const ids = uniq([...Object.keys(shades), ...Object.keys(turf.cave)]);
+      const ids = uniq([...Object.keys(shades), ...Object.keys(turf.cave)]).map(Number);
       ids.forEach((id) => {
         let sprite;
         const shadeObject = shades[id];
         const shadeData = turf.cave[id];
         if (!shadeObject) {
           if (isInTurf(turf, shadeData.pos)) {
-            shades[id] = createShade(shadeData, id, turf, stand);
+            shades[id] = createShade(shadeData, id, turf);
           }
         } else if (!shadeData) {
           shades[id].destroy();
@@ -685,21 +689,4 @@ export function startPhaser(_owner, _container) {
   function initShadePreview(turf) {
     preview = new Preview(scene, turf.id);
   }
-}
-
-const coreTiles = ['void'];
-
-function generateMap(turf, grid) {
-  formIndexMap = {};
-  const tiles = Object.entries(extractSkyeTileSprites(turf.id, turf.skye)).map(([id, _], i) => {
-    formIndexMap[id] = i + coreTiles.length + 1;
-    return id;
-  });
-  const data = swapAxes(grid).map((row) => row.map((space) => {
-    if (!space.tile) return 1;
-    const sprite = spriteName(turf.id, space.tile.formId, space.tile.variation);
-    if (!formIndexMap[sprite]) return 1;
-    return formIndexMap[sprite];
-  }));
-  return [data, [...coreTiles, ...tiles]];
 }

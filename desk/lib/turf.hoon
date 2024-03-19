@@ -40,6 +40,15 @@
         :-  /cobble/red
         (new-tile 'Red Cobble' cobble-red)
       ::
+        :: :-  /cobble/animated
+        :: =/  cobble  (new-tile 'Red Cobble' cobble-red)
+        :: ?~  variations.cobble  cobble
+        :: =.  i.variations.cobble
+        ::   :*  ~  %flat  %loop
+        ::       ~['sprites/cobble.png' 'sprites/cobble-red.png']
+        ::   ==
+        :: cobble
+      ::
         :-  /table/round
         =/  table  (new-form %item 'Round Table' table)
         table(collidable %.y, offset [--0 --4])
