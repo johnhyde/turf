@@ -58,7 +58,7 @@ export default function EditPane() {
   const onKeyDown = (e) => {
     if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
       if (e.key === 'Escape') {
-        if (state.editor.selectedTool || state.editor.selectedShadeId) {
+        if (null != (state.editor.selectedTool ?? state.editor.selectedShadeId ?? state.editor.selectedTilePos)) {
           selectTool(null);
           if (buttons.point) buttons.point.focus();
           e.stopPropagation();
