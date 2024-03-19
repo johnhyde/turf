@@ -216,12 +216,14 @@ export default function FormEditor(props) {
               </Show>
             </div>
           </div>
-          <div class="break-all">
-            {JSON.stringify(form(), (_, v) => {
-              if (typeof v === 'string') return v.substring(0,40);
-              return v;
-            }, 2)}
-          </div>
+          {dev &&
+            <div class="break-all">
+              {JSON.stringify(form(), (_, v) => {
+                if (typeof v === 'string') return v.substring(0,40);
+                return v;
+              }, 2)}
+            </div>
+          }
         </div>
         <div class="flex justify-center space-x-2">
           <SmallButton onClick={save} disabled={!readyToSave()}>
