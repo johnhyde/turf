@@ -1,10 +1,10 @@
-import { spriteName } from 'lib/turf';
+import { spriteName, getForm } from 'lib/turf';
 
 export class Shade extends Phaser.GameObjects.Image {
   constructor(scene, shade, turf, indexDepthMod) {
     const huskPos = vec2(shade.pos).scale(tileFactor);
     super(scene, huskPos.x, huskPos.y, spriteName(turf.id, shade.formId, shade.variation));
-    let form = turf.skye[shade.formId];
+    let form = getForm(turf, shade.formId);
     if (!form) {
       this.destroy();
     } else {

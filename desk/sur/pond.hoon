@@ -106,6 +106,10 @@
   $%  [%wake ~]
       [%set-turf =turf]  :: should be included when turf and grit versions change together
       [%add-player =ship =player]
+      [%cycle-husk =husk-id amt=@ud]
+      [%set-husk-var =husk-id variation=@ud]
+      [%set-husk-effect =husk-id =trigger effect=(unit possible-effect)]
+      [%set-husk-collidable =husk-id collidable=(unit ?)]
       $<  ?(%set-turf %add-player)  :: properly override previous definition
       grit-1
   ==
@@ -268,6 +272,10 @@
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)
+    %cycle-husk  (cycle-husk turf +.grit)
+    %set-husk-var  (set-husk-var turf +.grit)
+    %set-husk-effect  (set-husk-effect turf +.grit)
+    %set-husk-collidable  (set-husk-collidable turf +.grit)
     ::
     %set-lunk  turf(lunk.deed lunk.grit)
       %set-dink

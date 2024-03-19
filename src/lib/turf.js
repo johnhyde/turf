@@ -63,6 +63,10 @@ export function fillEmptySpace(turf, formId) {
   }
 }
 
+export function getForm(turf, formId) {
+  return turf.skye[formId];
+}
+
 export function getShade(turf, shadeId) {
   const shade = turf.cave[shadeId];
   if (!shade) return null;
@@ -72,7 +76,7 @@ export function getShade(turf, shadeId) {
 export function getShadeWithForm(turf, shadeId) {
   const shade = getShade(turf, shadeId);
   if (!shade) return null;
-  const form = turf.skye[shade.formId];
+  const form = getForm(turf, shade.formId);
   if (!form) return null;
   return {
     ...shade,
@@ -92,13 +96,27 @@ export function getTile(turf, pos) {
 export function getTileWithForm(turf, pos) {
   const tile = getTile(turf, pos);
   if (!tile) return null;
-  const form = turf.skye[tile.formId];
+  const form = getForm(turf, tile.formId);
   if (!form) return null;
   return {
     ...tile,
     pos,
     form,
   };
+}
+
+export function getHusk(turf, huskId) {
+  if (typeof huskId == 'number') {
+    return getShade(turf, huskId);
+  }
+  return getTile(turf, huskId);
+}
+
+export function getHuskWithForm(turf, huskId) {
+  if (typeof huskId == 'number') {
+    return getShadeWithForm(turf, huskId);
+  }
+  return getTileWithForm(turf, huskId);
 }
 
 export function getShadesAtPos(turf, pos) {
@@ -171,7 +189,7 @@ export function getCollision(turf, pos) {
 }
 
 export function getEffectsByHusk(turf, shade) {
-  const form = turf.skye[shade.formId];
+  const form = getForm(turf, shade.formId);
   return getEffectsByThing({
     ...shade,
     form,

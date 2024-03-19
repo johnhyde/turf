@@ -9,6 +9,7 @@ import { Player } from "./player";
 import { Shade } from "./shade";
 import { Preview } from "./preview";
 import { Resizer } from "./resizer";
+import { TileIndicator } from "./tileIndicator";
 
 import voidUrl from 'assets/sprites/void.png';
 
@@ -367,6 +368,10 @@ export function startPhaser(_owner, _container) {
               state.updateWallsAroundPos(pos, true);
             }
             state.clearHuskToPlace();
+          } else {
+            if (state.editor.editing && state.editor.pointer && !gameObjects.length) {
+              state.selectTile(pos);
+            }
           }
         });
 
@@ -511,10 +516,11 @@ export function startPhaser(_owner, _container) {
           state.p.grid.map((col, i) => {
             col.map((space, j) => {
               const lastTileFormId = lastGrid[i] ? lastGrid[i][j]?.tile?.formId : undefined;
-              if (space.tile && space.tile.formId !== lastTileFormId) {
+              const lastTileVariation = lastGrid[i] ? lastGrid[i][j]?.tile?.variation : undefined;
+              if (space.tile && (space.tile.formId !== lastTileFormId || space.tile.variation !== lastTileVariation)) {
                 const pos = vec2(i, j);
                 // console.log('updating tile ', pos);
-                const gid = formIndexMap[spriteName(state.p.id, space.tile.formId, 0)];
+                const gid = formIndexMap[spriteName(state.p.id, space.tile.formId, space.tile.variation)];
                 tiles.putTileAt(gid, pos.x, pos.y);
               }
               space.shades.forEach((shadeId, i) => {
@@ -619,6 +625,7 @@ export function startPhaser(_owner, _container) {
     window.flats = flats = scene.add.container();
     window.stand = stand = scene.add.container();
     window.resizer = new Resizer(scene, turf.id);
+    window.tileIndicator = new TileIndicator(scene, turf.id);
     game.input.keyboard.preventDefault = false;
   }
 

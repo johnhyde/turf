@@ -2,10 +2,10 @@ import { createMemo, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused } from 'lib/utils';
-import { getShadeWithForm, isSpecialFormId } from 'lib/turf';
+import { getTile, getShadeWithForm, isSpecialFormId } from 'lib/turf';
 import Button from '@/Button';
 import FormEditor from '@/FormEditor';
-import ShadeEditor from '@/ShadeEditor';
+import HuskEditor from '@/HuskEditor';
 import FormSelect from '@/FormSelect';
 import FormInfo from '@/FormInfo';
 import MediumButton from '@/MediumButton';
@@ -47,6 +47,12 @@ export default function EditPane() {
   const selectedShade = createMemo(() => {
     if (!state.e) return undefined;
     return getShadeWithForm(state.e, state.editor.selectedShadeId);
+  });
+
+  const selectedTile = createMemo(() => {
+    if (!state.e) return undefined;
+    if (!state.editor.selectedTilePos) return undefined;
+    return getTile(state.e, state.editor.selectedTilePos);
   });
 
   const onKeyDown = (e) => {
@@ -145,7 +151,10 @@ export default function EditPane() {
         </div>
       </Show>
       <Show when={selectedShade()} keyed>
-        {(shade) => <ShadeEditor shade={shade} />}
+        {(shade) => <HuskEditor shade={shade} />}
+      </Show>
+      <Show when={selectedTile()} keyed>
+        {(tile) => <HuskEditor tile={tile} pos={state.editor.selectedTilePos} />}
       </Show>
       <div class="h-full overflow-y-auto">
         <For each={types}>

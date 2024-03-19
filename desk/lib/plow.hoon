@@ -617,6 +617,18 @@
               'trigger'^s+trigger.grit
               'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
           ==
+            %cycle-husk
+          (pairs ~['huskId'^(husk-id husk-id.grit) amount+(numb amt.grit)])
+            %set-husk-var
+          (pairs ~['huskId'^(husk-id husk-id.grit) variation+(numb variation.grit)])
+            %set-husk-effect
+          %-  pairs
+          :~  'huskId'^(husk-id husk-id.grit)
+              'trigger'^s+trigger.grit
+              'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
+          ==
+            %set-husk-collidable
+          (pairs ~['huskId'^(husk-id husk-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
           %set-lunk  (maybe-lunk lunk.grit)
             %set-dink
           %-  pairs
@@ -904,6 +916,10 @@
     ^-  [@t json]
     :-  (numbt portal-id)
     b+approved
+  ++  husk-id
+    |=  =^husk-id
+    ^-  json
+    ?@(husk-id (numb husk-id) (svec2 husk-id))
   ++  vec2
     |=  =^vec2
     ^-  json
@@ -1002,10 +1018,12 @@
     |=  =^husk
     ^-  (list [@t json])
     =,  husk
+    =/  collidable=(unit ?)  collidable
     :~  'formId'^(path form-id)
         variation+(numb variation)
         offset+(svec2 offset)
-        collidable+(fall (bind collidable |=(c=? b+c)) ~)
+        :: collidable+(fall (bind collidable |=(c=? b+c)) ~)
+        collidable+?~(collidable ~ b+u.collidable)
         effects+(pairs (turn ~(tap by effects) maybe-possible-effect))
     ==
   ++  shade-pairs
@@ -1184,6 +1202,10 @@
           cycle-shade+(ot ~['shadeId'^ni amount+ni])
           set-shade-var+(ot ~['shadeId'^ni variation+ni])
           set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
+          cycle-husk+(ot ~['huskId'^husk-id amount+ni])
+          set-husk-var+(ot ~['huskId'^husk-id variation+ni])
+          set-husk-effect+(ot ~['huskId'^husk-id trigger+(cork so trigger) effect+maybe-possible-effect])
+          set-husk-collidable+(ot ~['huskId'^husk-id collidable+bo:soft])
           approve-dink+(ot ~['portalId'^ni])
           :-  %create-bridge
           %-  ot
@@ -1297,6 +1319,12 @@
       |=  jon=json
       ^-  ^dir
       ;;(^dir (so jon))
+    ++  husk-id
+      |=  jon=json
+      ^-  ^husk-id
+      ?:  ?=([%o *] jon)
+        (svec2 jon)
+      (ni jon)
     ++  svec2
       |=  jon=json
       ^-  ^svec2

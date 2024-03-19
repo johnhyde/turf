@@ -1,5 +1,6 @@
 import { batch, createMemo, createSelector, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile } from "solid-js/store";
+import { getForm } from 'lib/turf';
 import { vec2, bind, input, jClone } from 'lib/utils';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
@@ -9,18 +10,21 @@ import FormInfo from '@/FormInfo';
 import VariationPicker from '@/VariationPicker';
 import ItemButton from '@/ItemButton';
 
-export default function ShadeEditor(props) {
+export default function HuskEditor(props) {
   const state = useState();
   const [newEffects, $newEffects] = createStore({});
-  const form = () => props.shade.form;
+  const isShade = () => !!props.shade;
+  const husk = () => props.shade || props.tile;
+  const pos = () => isShade() ? props.shade?.pos : props.pos;
+  const form = () => isShade() ? husk().form : getForm(state.e, husk().formId);
 
   function clearNewEffects() {
     $newEffects(reconcile({}));
   }
 
   const effects = createMemo(() => {
-    if (!props.shade) return {};
-    const merged = mergeProps(props.shade.form.seeds, props.shade.form.effects, props.shade.effects, newEffects);
+    if (!husk()) return {};
+    const merged = mergeProps(form().seeds, form().effects, husk().effects, newEffects);
     return mapValues(merged, (effect) => {
       if (typeof effect === 'string') {
         return { type: effect, arg: null };
@@ -36,14 +40,39 @@ export default function ShadeEditor(props) {
   function save() {
     batch(() => {
       Object.entries(effects()).forEach(([trigger, effect]) => {
-        state.setShadeEffect(
-          props.shade.id,
-          trigger,
-          effect.arg === null ? effect.type : effect,
-        );
+        effect = effect.arg === null ? effect.type : effect;
+        if (isShade()) {
+          state.setShadeEffect(husk().id, trigger, effect);
+        } else {
+          state.setTileEffect(pos(), trigger, effect);
+        }
       });
       clearNewEffects();
     });
+  }
+
+  function cycleHusk(amount) {
+    if (isShade()) {
+      state.cycleShade(husk().id, amount);
+    } else {
+      state.cycleTile(pos(), amount);
+    }
+  }
+
+  function setHuskVariation(variation) {
+    if (isShade()) {
+      state.setShadeVariation(husk().id, variation);
+    } else {
+      state.setTileVariation(pos(), variation);
+    }
+  }
+
+  function setHuskCollidable(collidable) {
+    if (isShade()) {
+      state.setShadeCollidable(husk().id, collidable);
+    } else {
+      state.setTileCollidable(pos(), collidable);
+    }
   }
 
   function cancel() {
@@ -51,39 +80,56 @@ export default function ShadeEditor(props) {
   }
 
   function deleteItem() {
-    state.delShade(props.shade.id);
+    if (isShade()) {
+      state.delShade(husk().id);
+    }
   }
 
   return (
-    <Show when={props.shade}>
+    <Show when={husk()}>
       <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
-        <FormInfo formId={props.shade.formId} />
+        <FormInfo formId={husk().formId} />
         <div class="my-2 border-t border-yellow-950"></div>
         <div class="mx-1">
           <div class="flex justify-center">
             <Show when={form().variations.length > 1} >
-              <SmallButton onClick={() => state.cycleShade(props.shade.id, form().variations.length - 1)}>
+              <SmallButton onClick={() => cycleHusk(form().variations.length - 1)}>
                 {"<"}
               </SmallButton>
             </Show>
             <div class="grow min-h-[64px] flex justify-center">
-              <ItemButton form={form()} variation={props.shade.variation} />
+              <ItemButton form={form()} variation={husk().variation} />
             </div>
             <Show when={form().variations.length > 1} >
-              <SmallButton onClick={() => state.cycleShade(props.shade.id)}>
+              <SmallButton onClick={[cycleHusk, 1]}>
                 {">"}
               </SmallButton>
             </Show>
           </div>
-          <Show when={form().variations.length > 1 || props.shade.variation >= form().variations.length}>
-            <VariationPicker type={form().type} variations={form().variations} variation={props.shade.variation} onSelect={(i) => state.setShadeVariation(props.shade.id, i)} />
+          <Show when={form().variations.length > 1 || husk().variation >= form().variations.length}>
+            <VariationPicker type={form().type} variations={form().variations} variation={husk().variation} onSelect={(i) => setHuskVariation(i)} />
           </Show>
           <p class="text-center">
-            Variation: {props.shade.variation + 1} of {form().variations.length}
+            Variation: {husk().variation + 1} of {form().variations.length}
           </p>
-          <p class="text-center">
-            Position: {props.shade.pos.x}x{props.shade.pos.y}
-          </p>
+          <div class="text-center">
+            Position: {pos().x}x{pos().y}
+            <Show when={isShade()}>
+              <br/>
+              <div class="text-sm -mt-1">
+                (click+drag to move)
+              </div>
+            </Show>
+          </div>
+          <div class="flex justify-center items-center gap-2">
+            <label for="collidable">
+              Blocks Movement:
+            </label>
+            <input type="checkbox" id="collidable"
+              checked={husk().collidable ?? form().collidable}
+              onInput={(e) => setHuskCollidable(e.currentTarget.checked)}
+            />
+          </div>
           <Show when={Object.entries(effects()).length > 0}>
             Effects:
             <Index each={Object.entries(effects())} >
@@ -96,7 +142,7 @@ export default function ShadeEditor(props) {
                       on {trigger()}: {effect().type}
                     </div>
                     <ArgInput
-                      shade={props.shade}
+                      shade={husk()}
                       type={effect().type} arg={effect().arg}
                       setArg={(arg) => setArg(trigger(), effect().type, arg)}
                     />
@@ -114,9 +160,11 @@ export default function ShadeEditor(props) {
                 Cancel
               </SmallButton>
             </Show>
-            <SmallButton onClick={deleteItem}>
-              Delete
-            </SmallButton>
+            <Show when={isShade()}>
+              <SmallButton onClick={deleteItem}>
+                Delete
+              </SmallButton>
+            </Show>
           </div>
         </div>
       </div>

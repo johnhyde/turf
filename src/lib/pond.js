@@ -4,7 +4,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
   clampToTurf, isInTurf, fillEmptySpace, getCollision, getEffectsByHusk,
-  generateHusk, jabBySpaces, getShade, delShade, delShadeFromSpace, delPortal,
+  generateHusk, jabBySpaces, getShade, delShade, getHusk, getForm, delShadeFromSpace, delPortal,
   getThingsAtPos, getEffectsByThing,
 } from 'lib/turf';
 import { vec2, vecToStr, jClone, turfIdToPath } from 'lib/utils';
@@ -155,7 +155,7 @@ const pondGrits = {
   },
   'del-form': (turf, arg) => {
     const { formId } = arg;
-    const form = turf.skye[formId];
+    const form = getForm(turf, formId);
     Object.entries(turf.cave).forEach(([shadeId, shade]) => {
       if (shade.formId === formId) delShade(turf, Number(shadeId));
     });
@@ -172,7 +172,7 @@ const pondGrits = {
     const { pos, formId, variation } = arg;
     if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
     if (pos.x >= turf.offset.x + turf.size.x || pos.y >= turf.offset.y + turf.size.y) return;
-    const formType = turf.skye[formId]?.type;
+    const formType = getForm(turf, formId)?.type;
     const newHusk = generateHusk(formId, variation);
     if (formType === 'tile') {
       jabBySpaces(turf, pos, space => space.tile = newHusk);
@@ -202,7 +202,7 @@ const pondGrits = {
     const { shadeId, amount } = arg;
     const shade = getShade(turf, shadeId);
     if (shade) {
-      const form = turf.skye[shade.formId];
+      const form = getForm(turf, shade.formId);
       if (form) {
         shade.variation = (shade.variation + amount) % form.variations.length;
       }
@@ -212,7 +212,7 @@ const pondGrits = {
     const { shadeId, variation } = arg;
     const shade = getShade(turf, shadeId);
     if (shade) {
-      const form = turf.skye[shade.formId];
+      const form = getForm(turf, shade.formId);
       if (form) {
         shade.variation = variation % form.variations.length;
       }
@@ -223,6 +223,40 @@ const pondGrits = {
     const shade = getShade(turf, shadeId);
     if (shade) {
       shade.effects[trigger] = effect;
+    }
+  },
+  'cycle-husk': (turf, arg) => {
+    const { huskId, amount } = arg;
+    const husk = getHusk(turf, huskId);
+    if (husk) {
+      const form = getForm(turf, husk.formId);
+      if (form) {
+        husk.variation = (husk.variation + amount) % form.variations.length;
+      }
+    }
+  },
+  'set-husk-var': (turf, arg) => {
+    const { huskId, variation } = arg;
+    const husk = getHusk(turf, huskId);
+    if (husk) {
+      const form = getForm(turf, husk.formId);
+      if (form) {
+        husk.variation = variation % form.variations.length;
+      }
+    }
+  },
+  'set-husk-effect': (turf, arg) => {
+    const { huskId, trigger, effect } = arg;
+    const husk = getHusk(turf, huskId);
+    if (husk) {
+      husk.effects[trigger] = effect;
+    }
+  },
+  'set-husk-collidable': (turf, arg) => {
+    const { huskId, collidable } = arg;
+    const husk = getHusk(turf, huskId);
+    if (husk) {
+      husk.collidable = collidable;
     }
   },
   'set-lunk': (turf, arg) => {
