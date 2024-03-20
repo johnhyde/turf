@@ -642,11 +642,14 @@ export function startPhaser(_owner, _container) {
         const tileData = spaces[posId]?.tile;
         if (tileData) tileData.pos = pos;
         if (tileData && tileObject) {
-          if (tileObject.texture.key !== (sprite = spriteName(turf.id, tileData.formId, tileData.variation))) {
-            tileObject.setTexture(sprite);
+          if (tileObject.shade.formId !== tileData.formId) {
+            tiles[posId].destroy();
+            tiles[posId] = createShade(tileData, pos, turf);
+          } else if (tileObject.shade.variation !== tileData.variation) {
+            tileObject.updateVariation(tileData.variation);
           }
-          const pos = vec2(tileData.pos).scale(tileFactor);
-          tileObject.setPosition(pos.x, pos.y);
+          const gamePos = vec2(tileData.pos).scale(tileFactor);
+          tiles[posId].setPosition(gamePos.x, gamePos.y);
         } else if (!tileData || !isInTurf(turf, tileData.pos)) {
           tiles[posId].destroy();
           delete tiles[posId];
@@ -674,8 +677,8 @@ export function startPhaser(_owner, _container) {
           shades[id].destroy();
           delete shades[id];
         } else {
-          if (shadeObject.texture.key !== (sprite = spriteName(turf.id, shadeData.formId, shadeData.variation))) {
-            shadeObject.setTexture(sprite);
+          if (shadeObject.shade.variation !== shadeData.variation) {
+            shadeObject.updateVariation(shadeData.variation);
           }
           const pos = vec2(shadeData.pos).scale(tileFactor);
           shadeObject.setPosition(pos.x, pos.y);

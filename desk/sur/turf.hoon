@@ -148,9 +148,10 @@
 ::   $@  png  anim
 :: +$  png  @t  :: base64 encoded from js frontend or relative path to sprite image
 :: +$  anim
-::   $:  type=?(%loop %once %pong %rand)
+::   $:  type=anim-type
 ::       frames=(list png)
 ::   ==
++$  anim-type  ?(%loop %once %pong %rand)
 :: +$  fx   (map trigger effect)
 :: +$  sfx  (map trigger effect-type)
 :: +$  pfx  (map trigger possible-effect)

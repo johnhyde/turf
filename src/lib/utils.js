@@ -420,7 +420,9 @@ export function sleep(ms) {
 }
 
 const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', {
+  willReadFrequently: true,
+});
 
 export function makeImage(url) {
   return new Promise((resolve, reject) => {
@@ -450,6 +452,46 @@ export function makeImage(url) {
   })
 }
 
+export function makeImageFromArray(arr, width, height) {
+  canvas.width = width;
+  canvas.height = height;
+
+  const idata = ctx.createImageData(width, height);
+  idata.data.set(arr);
+  ctx.putImageData(idata, 0, 0);
+  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let dataUrl = canvas.toDataURL();
+  const image = new Image();
+  image.src = dataUrl;
+  return {
+    image,
+    canvas,
+    imageData,
+    dataUrl,
+  };
+}
+
+const gifCanvas = document.createElement('canvas');
+const gifCtx = gifCanvas.getContext('2d', {
+  willReadFrequently: true,
+});
+export function convertGifFramesToDataUrls(frames) {
+  gifCanvas.width = frames[0].dims.width;
+  gifCanvas.height = frames[0].dims.height;
+  gifCtx.clearRect(0, 0, gifCanvas.width, gifCanvas.height);
+  const urls = [];
+  for (const frame of frames) {
+    const imageData = makeImageFromArray(frame.patch, frame.dims.width, frame.dims.height).imageData;
+    // gifCtx.putImageData(imageData, frame.dims.left, frame.dims.top);
+    gifCtx.drawImage(canvas, frame.dims.left, frame.dims.top);
+    urls.push(gifCanvas.toDataURL());
+    if (frame.disposalType === 2) {
+      gifCtx.clearRect(frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
+    }
+  }
+  return urls;
+}
+
 export async function tintImage(image, color) {
   const rgb = intToRGB(color);
   canvas.width = image.width;
@@ -475,35 +517,3 @@ export async function tintImage(image, color) {
     image.src = dataUrl;
   });
 }
-
-export function gifTest(url){ //unseen imports of parseGIF() and decompressFrames() from gifuct-js above ^^
-  let request=new XMLHttpRequest();
-  request.open("GET", url, true);
-  request.responseType = "arraybuffer"
-  request.onload = function(event) {
-    let arrayBuffer = request.response
-    if (arrayBuffer) {
-      let rawGifData = parseGIF(arrayBuffer)
-      let frames = decompressFrames(rawGifData, true)
-      let ancillaryCanvas = scene.textures.createCanvas('frames', frames[0].dims.width*frames.length, frames[0].dims.height)
-      let ancillaryContext = ancillaryCanvas.context
-      for (let i = 0; i<frames.length; i++){
-        let thisFramesImageData = ancillaryContext.createImageData(frames[i].dims.width, frames[i].dims.height)
-        thisFramesImageData.data.set(frames[i].patch)
-        ancillaryContext.putImageData(thisFramesImageData, frames[i].dims.width*i, 0)
-        ancillaryCanvas.add(i, 0, frames[i].dims.width*i, 0, frames[i].dims.width, frames[i].dims.height)
-      }
-      ancillaryCanvas.refresh()
-      scene.anims.create({
-        key:'animatedGif',
-        frames:scene.anims.generateFrameNumbers('frames', {start:1, end:frames.length}),
-        frameRate:Math.floor(1000/frames[0].delay),
-        repeat:-1,
-      })
-      let animatedGif = scene.add.sprite(200, 200, 'frames').play('animatedGif')
-    }
-  }
-  request.send(null);
-}
-
-window.gifTest = gifTest;

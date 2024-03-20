@@ -8,7 +8,7 @@ import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
 import Radio from '@/Radio';
 import Modal from '@/Modal';
-import VariationPicker from '@/VariationPicker';
+import ListItemPicker from '@/ListItemPicker';
 import VariationEditor from '@/VariationEditor';
 
 export default function FormEditor(props) {
@@ -194,10 +194,10 @@ export default function FormEditor(props) {
               </p>
               <div class="flex gap-2 items-center">
                 <span class="font-semibold">Variations</span>
-                <VariationPicker
-                  type={form().type}
-                  variations={form().variations}
-                  variation={currentVar()}
+                <ListItemPicker
+                  wall={form().type === 'wall'}
+                  items={form().variations}
+                  selected={currentVar()}
                   onSelect={$currentVar}
                   onAdd={addVariation}
                   editing
@@ -212,7 +212,7 @@ export default function FormEditor(props) {
                   offset={offset()}
                   $offset={setOffset}
                   onDel={() => delVariation(currentVar())}
-              />
+                />
               </Show>
             </div>
           </div>
