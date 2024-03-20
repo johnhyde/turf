@@ -1,6 +1,6 @@
 import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile, unwrap } from "solid-js/store";
-import { vec2, bind, input, autofocus, makeImage, isValidPath, jClone } from 'lib/utils';
+import { vec2, bind, input, autofocus, processImageFiles, isValidPath, jClone } from 'lib/utils';
 import { isSpecialFormId } from 'lib/turf';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
@@ -32,7 +32,15 @@ export default function FormEditor(props) {
     if (form() && !idValid()) return 'bg-red-200';
     return idClash() ? 'bg-orange-200' : '';
   }
-  const readyToSave = () => idValid() && form().variations.length && form().variations.every(v => v.sprite);
+  const readyToSave = () => {
+    if (!idValid()) return false;
+    return (form().variations.length && form().variations.every((v) => {
+      if (!v.sprite) return false;
+      if (typeof v.sprite === 'string') return true;
+      if (!v.sprite.frames) return false;
+      return v.sprite.frames.every(f => f);
+    }));
+  };
   const addFn = () => props.addFn ?? state.addForm.bind(state);
 
   function isValidFormId(id) {
@@ -88,6 +96,10 @@ export default function FormEditor(props) {
     });
   }
 
+  function setVariation(...args) {
+    $newForm('form', 'variations', currentVar(), ...args);
+  }
+
   function addVariation() {
     $newForm('form', 'variations', form().variations.length, {
       deep: 'back',
@@ -101,6 +113,27 @@ export default function FormEditor(props) {
     if (currentVar() >= form().variations.length) $currentVar(form().variations.length - 1);
   }
 
+  async function uploadFiles(e) {
+    const [frames, _errors] = await processImageFiles(e.target.files);
+    for (const f of frames) {
+      // if sprite is empty, overwrite rather than adding
+      $currentVar(form().variations.length - 1);
+      if (form().variations[currentVar()]?.sprite) {
+        addVariation();
+      }
+      if (typeof f === 'string') {
+        setVariation('sprite', f);
+      } else {
+        setVariation('sprite', {
+          type: 'loop',
+          frames: f,
+        });
+      }
+    };
+    uploader.value = '';
+  }
+
+  let uploader;
   return (
     <Show when={props.form?.form} keyed>
       <Modal
@@ -186,11 +219,11 @@ export default function FormEditor(props) {
               />
             </div>
           </div>
-          <div class="flex flex-col space-y-2 p-2">
+          <div class="max-w-md flex flex-col space-y-2 p-2">
             <p class="font-semibold">Image</p>
             <div class="flex flex-col space-y-2">
               <p>
-                Tiles are 32x32 pixels.
+                Tiles are 32x32 pixels. GIF uploads OK.
               </p>
               <div class="flex gap-2 items-center">
                 <span class="font-semibold">Variations</span>
@@ -202,13 +235,19 @@ export default function FormEditor(props) {
                   onAdd={addVariation}
                   editing
                 />
+                <div class="flex items-center space-x-2">
+                  <SmallButton onClick={() => uploader.click()}>
+                    Upload
+                  </SmallButton>
+                  <input type="file" accept="image/*" multiple onInput={uploadFiles} ref={uploader} class="hidden"/>
+                </div>
               </div>
               <Show when={form().variations[currentVar()]}>
                 <div class="border-b border-yellow-950" />
                 <VariationEditor
                   type={form().type}
                   var={form().variations[currentVar()]}
-                  $var={(...args) => $newForm('form', 'variations', currentVar(), ...args)}
+                  $var={setVariation}
                   offset={offset()}
                   $offset={setOffset}
                   onDel={() => delVariation(currentVar())}
@@ -216,12 +255,14 @@ export default function FormEditor(props) {
               </Show>
             </div>
           </div>
-          <div class="break-all">
-            {JSON.stringify(form(), (_, v) => {
-              if (typeof v === 'string') return v.substring(0,40);
-              return v;
-            }, 2)}
-          </div>
+          {/* {dev &&
+            <div class="break-all">
+              {JSON.stringify(form(), (_, v) => {
+                if (typeof v === 'string') return v.substring(0,40);
+                return v;
+              }, 2)}
+            </div>
+          } */}
         </div>
         <div class="flex justify-center space-x-2">
           <SmallButton onClick={save} disabled={!readyToSave()}>

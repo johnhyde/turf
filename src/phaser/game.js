@@ -44,9 +44,9 @@ async function loadImageUnsafe(id, url, config = {}) {
   // console.log("trying to load image: " + id)
   const changeColor = config.color !== undefined && game.renderer.type === Phaser.CANVAS;
   if (game.textures.exists(id)) {
-    const oldUrl = game.textures.get(id).source[0].source.src;
-    const newUrl = new URL(url[0], window.location).href
-    const urlChanged = oldUrl !== newUrl;
+    const oldUrls = game.textures.get(id).source.map(s => s.source.src).join(', ');
+    const newUrls = url.map(u => new URL(u, window.location).href).join(', ');
+    const urlChanged = oldUrls !== newUrls;
     if (urlChanged || changeColor) {
       game.textures.removeKey(id);
     } else {
@@ -98,12 +98,17 @@ async function loadImageUnsafe(id, url, config = {}) {
         resolve();
         return;
       }
-      const texture = game.textures.create(id, images, images[0].width, images[0].height);
+      const maxDims = vec2();
+      images.forEach((img) => {
+        maxDims.x = Math.max(maxDims.x, img.width);
+        maxDims.y = Math.max(maxDims.y, img.height);
+      });
+      const texture = game.textures.create(id, images, maxDims.x, maxDims.y);
       if (!texture) reject('could not create texture for: ' + url[0]);
       images.forEach((img, i) => {
-        texture.add(i, i, 0, 0, img.width, img.height);
+        texture.add(i, i, 0, 0, maxDims.x, maxDims.y);
         if (i === 0) {
-          texture.add('__BASE', i, 0, 0, img.width, img.height);
+          texture.add('__BASE', i, 0, 0, maxDims.x, maxDims.y);
         }
       })
       if (images.length === 1) {

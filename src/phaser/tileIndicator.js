@@ -37,7 +37,7 @@ export class TileIndicator extends Phaser.GameObjects.Container {
     return this.strokeWidth * this.scale;
   }
   get shade() {
-    if (this.s.editor.selectedShadeId) {
+    if (this.s.editor.selectedShadeId != null) {
       const shade = getShade(this.t, this.s.editor.selectedShadeId);
       if (shade) return shade;
     }

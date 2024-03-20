@@ -428,22 +428,29 @@ export function makeImage(url) {
   return new Promise((resolve, reject) => {
     try {
       const image = new Image();
-      image.onload = () => createImageBitmap(image).then((bitmap) => {
-        canvas.width = bitmap.width;
-        canvas.height = bitmap.height;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bitmap, 0, 0);
-        
-        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let dataUrl = canvas.toDataURL();
-        console.log('loaded ' + url, dataUrl);
-        resolve({
-          image,
-          bitmap,
-          imageData,
-          dataUrl,
-        });
-      });
+      image.onload = async () => {
+        let bitmap;
+        try {
+          bitmap = await createImageBitmap(image);
+        } catch (e) {
+          reject(e);
+        } finally {
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(bitmap, 0, 0);
+          
+          let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          let dataUrl = canvas.toDataURL();
+          console.log('loaded ' + url, dataUrl);
+          resolve({
+            image,
+            bitmap,
+            imageData,
+            dataUrl,
+          });
+        }
+      }
       image.onerror = reject;
       image.src = url;
     } catch (e) {
@@ -482,7 +489,6 @@ export function convertGifFramesToDataUrls(frames) {
   const urls = [];
   for (const frame of frames) {
     const imageData = makeImageFromArray(frame.patch, frame.dims.width, frame.dims.height).imageData;
-    // gifCtx.putImageData(imageData, frame.dims.left, frame.dims.top);
     gifCtx.drawImage(canvas, frame.dims.left, frame.dims.top);
     urls.push(gifCanvas.toDataURL());
     if (frame.disposalType === 2) {
@@ -490,6 +496,45 @@ export function convertGifFramesToDataUrls(frames) {
     }
   }
   return urls;
+}
+
+export async function processImageFiles(files) {
+  files = [...files]; // convert weird FilesList to array
+  const results = await Promise.all(files.map((file) => {
+    if (!file.type.startsWith("image/")) {
+      console.log('file not an image: ', file.type);
+      return [null, 'file not an image'];
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onError = () => {
+        console.log('could not import image: ', file.name);
+        resolve([null, 'could not import image: ' + file.name]);
+      };
+      if (file.type === 'image/gif') {
+        reader.onload = async (e) => {
+          const gif = parseGIF(e.target.result)
+          const frames = convertGifFramesToDataUrls(decompressFrames(gif, true));
+          resolve([frames, null]);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.onload = async (e) => {
+          const dataUrl = e.target.result;
+          try {
+            await makeImage(dataUrl);
+            resolve([dataUrl, null]);
+          } catch {
+            e.target.onError();
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }));
+  const frames = results.map(r => r[0]).filter(e => e);
+  const errors = results.map(r => r[1]).filter(e => e);
+  return [frames, errors];
 }
 
 export async function tintImage(image, color) {

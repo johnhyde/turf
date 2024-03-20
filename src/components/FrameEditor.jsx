@@ -1,7 +1,7 @@
 import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile } from "solid-js/store";
 import { parseGIF, decompressFrames } from 'gifuct-js';
-import { vec2, bind, input, autofocus, makeImage, convertGifFramesToDataUrls, jClone } from 'lib/utils';
+import { vec2, bind, input, autofocus, makeImage, convertGifFramesToDataUrls, processImageFiles, jClone } from 'lib/utils';
 import { useState } from 'stores/state.jsx';
 import SmallButton from '@/SmallButton';
 import Radio from '@/Radio';
@@ -12,11 +12,14 @@ export default function FrameEditor(props) {
   const [bmps, $bmps] = createStore({});
   const frame = () => props.frame || '';
   const spriteBmp = () => bmps[frame()];
-  const [file, $file] = createSignal(null);
   const [bmpError, $bmpError] = createSignal(false);
 
   createEffect(() => {
     if (props.frame) clearUpload();
+  });
+
+  createEffect(() => {
+    if (!spriteBmp() && frame()?.startsWith?.('data:')) loadSprite();
   });
 
   onCleanup(() => {
@@ -44,61 +47,33 @@ export default function FrameEditor(props) {
     }
   }
 
-  function uploadFile(e) {
-    const file = e.target.files[0];
-    $file(file);
-    $bmpError(false);
-    if (!file) {
-      setFrame('');
-    } else {
-      if (!file.type.startsWith("image/")) {
-        console.log('file not an image: ', file.type);
-        clearUpload();
-        return;
-      }
-
-      if (file.type === 'image/gif') {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const gif = parseGIF(e.target.result)
-          const frames = convertGifFramesToDataUrls(decompressFrames(gif, true));
-          // var frames = decompressFrames(gif, true).map((frame) => {
-          //   return makeImageFromArray(frame.patch, frame.dims.width, frame.dims.height).dataUrl;
-          // });
-          console.log(frames);
-          props.$sprite({
+  async function uploadFiles(e) {
+    let [frames, _errors] = await processImageFiles(e.target.files);
+    frames = frames.flat();
+    if (frames.length) {
+      if (frames.length === 1) {
+        setFrame(frames[0]);
+      } else {
+        props.$sprite((sprite) => {
+          if (sprite) {
+            if (typeof sprite === 'string') {
+              frames = [sprite, ...frames];
+            } else {
+              frames = [...sprite.frames, ...frames];
+            }
+          }
+          return {
             type: 'loop',
             frames,
-          });
-          // return gif;
-        };        
-        reader.onError = () => {
-          console.log('could not import image: ', file.name);
-          clearUpload();
-        };
-        reader.readAsArrayBuffer(file);
+          };
+        })
       }
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const dataUrl = e.target.result;
-        const imageStuff = await setSpriteBmp(dataUrl);
-        if (imageStuff && file.type !== 'image/gif') {
-          setFrame(dataUrl);
-        } else {
-          e.target.onError();
-        }
-      };
-      reader.onError = () => {
-        console.log('could not import image: ', file.name);
-        clearUpload();
-      };
-      reader.readAsDataURL(file);
     }
+    uploader.value = '';
   }
 
   function clearUpload() {
     uploader.value = '';
-    $file(null);
   }
 
   function onKeyDown(e) {
@@ -119,37 +94,39 @@ export default function FrameEditor(props) {
   let urlInput, uploader;
   return (
     <>
-      <SmallButton onClick={() => props.onDel?.()}>
-        Delete Frame
-      </SmallButton>
-      {!file() &&
-        <div class="flex items-center space-x-2">
-          <input
-            use:bind={[
-              () => file() ? '' : frame(),
-              (s) => { $bmpError(false); setFrame(s); }
-            ]}
-            placeholder="Image URL"
-            ref={urlInput}
-          />
+      <div class="w-full flex gap-2">
+        <Show when={props.frameCount <= 1 && props.frame}>
+          <SmallButton onClick={() => props.onAdd?.()} class="grow">
+            Add Frame
+          </SmallButton>
+        </Show>
+        <Show when={props.frameCount > 1 || props.frame}>
+          <SmallButton onClick={() => props.onDel?.()} class="grow">
+            {props.frameCount > 1 ? 'Delete' : 'Clear'} Frame
+          </SmallButton>
+        </Show>
+      </div>
+      <div class="flex items-center space-x-2">
+        <input
+          use:bind={[
+            () => file() ? '' : frame(),
+            (s) => { $bmpError(false); setFrame(s); }
+          ]}
+          placeholder="Image URL"
+          ref={urlInput}
+          class="rounded-md pl-1"
+        />
+        <Show when={!spriteBmp()}>
           <SmallButton onClick={loadSprite}>
             Load
           </SmallButton>
-        </div>
-      }
+        </Show>
+      </div>
       <div class="flex items-center space-x-2">
         <SmallButton onClick={() => uploader.click()}>
-          Upload
+          Upload Frames
         </SmallButton>
-        {file() && <>
-          <span>
-            {file().name}
-          </span>
-          <SmallButton onClick={clearUpload}>
-            x
-          </SmallButton>
-        </>}
-        <input type="file" onInput={uploadFile} ref={uploader} class="hidden"/>
+        <input type="file" accept="image/*" multiple onInput={uploadFiles} ref={uploader} class="hidden"/>
       </div>
       {bmpError() && <p>Could not load the image</p>}
       {/* {(props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)) &&
