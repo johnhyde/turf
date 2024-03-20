@@ -1276,7 +1276,8 @@
       |=  jon=json
       ^-  ^sprite
       ?:  ?=([%s *] jon)  (so jon)
-      *anim
+      %.  jon
+      (ot ~[type+(cork so anim-type) frames+(ar so)])
     ++  add-husk-spec
       |=  jon=json
       ^-  ^add-husk-spec

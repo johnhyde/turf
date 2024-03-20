@@ -1,160 +1,107 @@
 import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
 import { createStore, produce, reconcile } from "solid-js/store";
-import { vec2, bind, input, autofocus, makeImage, jClone } from 'lib/utils';
 import { useState } from 'stores/state.jsx';
 import SmallButton from '@/SmallButton';
 import Radio from '@/Radio';
-import OffsetInput from '@/OffsetInput';
+import ListItemPicker from '@/ListItemPicker';
+import FrameEditor from '@/FrameEditor';
 
 export default function VariationEditor(props) {
   const state = useState();
-  const [bmps, $bmps] = createStore({});
-  const sprite = () => props.var.sprite || '';
-  const spriteBmp = () => bmps[sprite()];
-  const [file, $file] = createSignal(null);
-  const [bmpError, $bmpError] = createSignal(false);
+  // const [frames, $frames] = createStore([]);
+  const [currentFrame, $currentFrame] = createSignal(0);
+  const simple = () => typeof props.var.sprite === 'string';
+  const frames = () => props.var.sprite?.frames || [props.var.sprite];
+  const $sprite = (...args) => props.$var('sprite', ...args);
+  const $deep = (deep) => props.$var('deep', deep);
+
+  // const framesMismatch = () => {
+  //   let maxDims;
+  //   frames().forEach((img) => {
+  //     if (!maxDims) maxDims = vec2()
+  //     maxDims.x = Math.max(maxDims.x, img.width);
+  //     maxDims.y = Math.max(maxDims.y, img.height);
+  //   });
+  // }
 
   createEffect(() => {
-    if (props.var) clearUpload();
+    if (props.var) $currentFrame(0);
   });
 
-  onCleanup(() => {
-    clearUpload();
-  });
-
-  function setSprite(url) {
-    props.$var('sprite', url);
-  }
-  
-  function setDeep(deep) {
-    props.$var('deep', deep);
-  }
-
-  function loadSprite() {
-    setSpriteBmp(sprite());
-  }
-
-  async function setSpriteBmp(url) {
-    try {
-      const imageStuff = await makeImage(url);
-      $bmps(url, imageStuff.bitmap);
-      return imageStuff;
-    } catch (e) {
-      console.error(e);
-      $bmps(url, null);
-      $bmpError(true);
-      return false;
-    }
-  }
-
-  function uploadFile(e) {
-    const file = e.target.files[0];
-    $file(file);
-    $bmpError(false);
-    if (!file) {
-      setSprite('');
+  function setFrame(frame, ...args) {
+    if (simple()) {
+      $sprite(...args);
     } else {
-      if (!file.type.startsWith("image/")) {
-        console.log('file not an image: ', file.type);
-        clearUpload();
-        return;
-      }
+      $sprite('frames', frame, ...args);
+    }
+  }
   
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const dataUrl = e.target.result;
-        const imageStuff = await setSpriteBmp(dataUrl);
-        if (imageStuff) {
-          setSprite(dataUrl);
-        } else {
-          e.target.onError();
-        }
-      };
-      reader.onError = () => {
-        console.log('could not import image: ', file.name);
-        clearUpload();
-      };
-      reader.readAsDataURL(file);
+  function addFrame() {
+    if (simple()) {
+      $sprite({
+        type: 'loop',
+        frames: frames(),
+      });
     }
+    $sprite('frames', frames().length, '');
+    $currentFrame(frames().length - 1);
   }
 
-  function clearUpload() {
-    uploader.value = '';
-    $file(null);
-  }
-
-  function onKeyDown(e) {
-    if (e.key === 'Enter') {
-      if (urlInput === document.activeElement) {
-        loadSprite();
-        e.stopPropagation();
+  function delFrame(index) {
+    if (simple()) {
+      $sprite('');
+    } else {
+      $sprite('frames', produce((frames) => frames.splice(index, 1)));
+      if (currentFrame() >= frames().length) $currentFrame(frames().length - 1);
+      if (frames().length === 1) {
+        $sprite(frames()[0]);
+      } else if (!frames().length) {
+        $sprite('');
       }
     }
   }
 
-  root.addEventListener('keydown', onKeyDown);
-  onCleanup(() => {
-    root.removeEventListener('keydown', onKeyDown);
-  });
-
-
-  let urlInput, uploader;
   return (
     <>
       <SmallButton onClick={() => props.onDel?.()}>
         Delete Variation
       </SmallButton>
-      {!file() &&
-        <div class="flex items-center space-x-2">
-          <input
-            use:bind={[
-              () => file() ? '' : sprite(),
-              (s) => { $bmpError(false); setSprite(s); }
-            ]}
-            placeholder="Image URL"
-            ref={urlInput}
-            class="rounded-md pl-1"
+      <Show when={frames().length > 1}>
+        <div class="flex gap-2 items-center">
+          <span class="font-semibold">Frames</span>
+          <ListItemPicker
+            items={frames()}
+            selected={currentFrame()}
+            onSelect={$currentFrame}
+            onAdd={addFrame}
+            editing
           />
-          <SmallButton onClick={loadSprite}>
-            Load
-          </SmallButton>
         </div>
-      }
-      <div class="flex items-center space-x-2">
-        <SmallButton onClick={() => uploader.click()}>
-          Upload
-        </SmallButton>
-        {file() && <>
-          <span>
-            {file().name}
-          </span>
-          <SmallButton onClick={clearUpload}>
-            x
-          </SmallButton>
-        </>}
-        <input type="file" onInput={uploadFile} ref={uploader} class="hidden"/>
-      </div>
-      {bmpError() && <p>Could not load the image</p>}
-      {/* {(props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)) &&
-        <p>
-          This image is bigger than 32x32 pixels.
-        </p>
-      } */}
-      {spriteBmp() &&
-        <>
-          <p class={'text-center rounded-md ' + (props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32) ? 'bg-red-200' : '')}>
-            {spriteBmp().width}x{spriteBmp().height}
+        <div>
+          <p class="break-word">
+            {/* Frame dimensions do not match. Some frames will be distorted. */}
+            If frame dimensions do not match,
+            {/* <br/> */}
+            some frames will be distorted.
           </p>
-          <OffsetInput
-            bitmap={spriteBmp()}
-            offset={props.offset}
-            $offset={props.$offset}
-          />
-        </>
-      }
+        </div>
+        {/* </Show> */}
+        <div class="border-b border-yellow-950" />
+      </Show>
+      <FrameEditor
+        frame={frames()?.[currentFrame()] || ''}
+        $frame={(...args) => setFrame(currentFrame(), ...args)}
+        frameCount={frames().length}
+        // sprite={props.var.sprite}
+        $sprite={(sprite) => $sprite(sprite)}
+        offset={props.offset}
+        $offset={props.$offset}
+        onAdd={addFrame}
+        onDel={() => delFrame(currentFrame())}
+      />
       <div>
         <p class="font-semibold">Relative to Player</p>
-        <Radio value={props.var.deep} $value={setDeep} items={[['flat', 'Under'], ['back', 'Behind'], ['fore', 'In Front']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
+        <Radio value={props.var.deep} $value={$deep} items={[['flat', 'Under'], ['back', 'Behind'], ['fore', 'In Front']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
       </div>
     </>
   );

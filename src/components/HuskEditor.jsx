@@ -7,7 +7,7 @@ import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
 import FormInfo from '@/FormInfo';
-import VariationPicker from '@/VariationPicker';
+import ListItemPicker from '@/ListItemPicker';
 import ItemButton from '@/ItemButton';
 
 export default function HuskEditor(props) {
@@ -107,7 +107,7 @@ export default function HuskEditor(props) {
             </Show>
           </div>
           <Show when={form().variations.length > 1 || husk().variation >= form().variations.length}>
-            <VariationPicker type={form().type} variations={form().variations} variation={husk().variation} onSelect={(i) => setHuskVariation(i)} />
+            <ListItemPicker wall={form().type === 'wall'} items={form().variations} selected={husk().variation} onSelect={(i) => setHuskVariation(i)} />
           </Show>
           <p class="text-center">
             Variation: {husk().variation + 1} of {form().variations.length}

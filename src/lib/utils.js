@@ -420,34 +420,121 @@ export function sleep(ms) {
 }
 
 const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', {
+  willReadFrequently: true,
+});
 
 export function makeImage(url) {
   return new Promise((resolve, reject) => {
     try {
       const image = new Image();
-      image.onload = () => createImageBitmap(image).then((bitmap) => {
-        canvas.width = bitmap.width;
-        canvas.height = bitmap.height;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(bitmap, 0, 0);
-        
-        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let dataUrl = canvas.toDataURL();
-        console.log('loaded ' + url, dataUrl);
-        resolve({
-          image,
-          bitmap,
-          imageData,
-          dataUrl,
-        });
-      });
+      image.onload = async () => {
+        let bitmap;
+        try {
+          bitmap = await createImageBitmap(image);
+        } catch (e) {
+          reject(e);
+        } finally {
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(bitmap, 0, 0);
+          
+          let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          let dataUrl = canvas.toDataURL();
+          console.log('loaded ' + url, dataUrl);
+          resolve({
+            image,
+            bitmap,
+            imageData,
+            dataUrl,
+          });
+        }
+      }
       image.onerror = reject;
       image.src = url;
     } catch (e) {
       reject(e);
     }
   })
+}
+
+export function makeImageFromArray(arr, width, height) {
+  canvas.width = width;
+  canvas.height = height;
+
+  const idata = ctx.createImageData(width, height);
+  idata.data.set(arr);
+  ctx.putImageData(idata, 0, 0);
+  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let dataUrl = canvas.toDataURL();
+  const image = new Image();
+  image.src = dataUrl;
+  return {
+    image,
+    canvas,
+    imageData,
+    dataUrl,
+  };
+}
+
+const gifCanvas = document.createElement('canvas');
+const gifCtx = gifCanvas.getContext('2d', {
+  willReadFrequently: true,
+});
+export function convertGifFramesToDataUrls(frames) {
+  gifCanvas.width = frames[0].dims.width;
+  gifCanvas.height = frames[0].dims.height;
+  gifCtx.clearRect(0, 0, gifCanvas.width, gifCanvas.height);
+  const urls = [];
+  for (const frame of frames) {
+    const imageData = makeImageFromArray(frame.patch, frame.dims.width, frame.dims.height).imageData;
+    gifCtx.drawImage(canvas, frame.dims.left, frame.dims.top);
+    urls.push(gifCanvas.toDataURL());
+    if (frame.disposalType === 2) {
+      gifCtx.clearRect(frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
+    }
+  }
+  return urls;
+}
+
+export async function processImageFiles(files) {
+  files = [...files]; // convert weird FilesList to array
+  const results = await Promise.all(files.map((file) => {
+    if (!file.type.startsWith("image/")) {
+      console.log('file not an image: ', file.type);
+      return [null, 'file not an image'];
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onError = () => {
+        console.log('could not import image: ', file.name);
+        resolve([null, 'could not import image: ' + file.name]);
+      };
+      if (file.type === 'image/gif') {
+        reader.onload = async (e) => {
+          const gif = parseGIF(e.target.result)
+          const frames = convertGifFramesToDataUrls(decompressFrames(gif, true));
+          resolve([frames, null]);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.onload = async (e) => {
+          const dataUrl = e.target.result;
+          try {
+            await makeImage(dataUrl);
+            resolve([dataUrl, null]);
+          } catch {
+            e.target.onError();
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }));
+  const frames = results.map(r => r[0]).filter(e => e);
+  const errors = results.map(r => r[1]).filter(e => e);
+  return [frames, errors];
 }
 
 export async function tintImage(image, color) {
@@ -475,35 +562,3 @@ export async function tintImage(image, color) {
     image.src = dataUrl;
   });
 }
-
-export function gifTest(url){ //unseen imports of parseGIF() and decompressFrames() from gifuct-js above ^^
-  let request=new XMLHttpRequest();
-  request.open("GET", url, true);
-  request.responseType = "arraybuffer"
-  request.onload = function(event) {
-    let arrayBuffer = request.response
-    if (arrayBuffer) {
-      let rawGifData = parseGIF(arrayBuffer)
-      let frames = decompressFrames(rawGifData, true)
-      let ancillaryCanvas = scene.textures.createCanvas('frames', frames[0].dims.width*frames.length, frames[0].dims.height)
-      let ancillaryContext = ancillaryCanvas.context
-      for (let i = 0; i<frames.length; i++){
-        let thisFramesImageData = ancillaryContext.createImageData(frames[i].dims.width, frames[i].dims.height)
-        thisFramesImageData.data.set(frames[i].patch)
-        ancillaryContext.putImageData(thisFramesImageData, frames[i].dims.width*i, 0)
-        ancillaryCanvas.add(i, 0, frames[i].dims.width*i, 0, frames[i].dims.width, frames[i].dims.height)
-      }
-      ancillaryCanvas.refresh()
-      scene.anims.create({
-        key:'animatedGif',
-        frames:scene.anims.generateFrameNumbers('frames', {start:1, end:frames.length}),
-        frameRate:Math.floor(1000/frames[0].delay),
-        repeat:-1,
-      })
-      let animatedGif = scene.add.sprite(200, 200, 'frames').play('animatedGif')
-    }
-  }
-  request.send(null);
-}
-
-window.gifTest = gifTest;
