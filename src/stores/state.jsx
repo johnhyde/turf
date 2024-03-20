@@ -559,6 +559,10 @@ export function getState() {
         $state('editor', 'selectedTilePos', pos);
       });
     },
+    deselectHusk() {
+      this.selectShade(null);
+      this.selectTile(null);
+    },
     selectTool(tool) {
       batch(() => {
         $state('editor', 'selectedTool', tool);
@@ -568,8 +572,7 @@ export function getState() {
         if (tool !== this.editor.tools.POINTER) {
           $state('editor', 'huskToPlace', null);
         }
-        this.selectShade(null);
-        this.selectTile(null);
+        this.deselectHusk();
       });
     },
     selectTab(tab) {

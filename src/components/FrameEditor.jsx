@@ -69,11 +69,11 @@ export default function FrameEditor(props) {
         })
       }
     }
-    uploader.value = '';
+    clearUpload();
   }
 
   function clearUpload() {
-    uploader.value = '';
+    if (uploader) uploader.value = '';
   }
 
   function onKeyDown(e) {
@@ -109,7 +109,7 @@ export default function FrameEditor(props) {
       <div class="flex items-center space-x-2">
         <input
           use:bind={[
-            () => file() ? '' : frame(),
+            frame,
             (s) => { $bmpError(false); setFrame(s); }
           ]}
           placeholder="Image URL"

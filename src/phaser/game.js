@@ -388,10 +388,14 @@ export function startPhaser(_owner, _container) {
             }
             state.clearHuskToPlace();
           } else {
-            if (state.editor.editing && state.editor.pointer && isInTurf(state.e, pos)) {
+            if (state.editor.editing && state.editor.pointer) {
               const tile = tiles[vecToStr(pos)];
               if (gameObjects.filter(o => o !== tile).length === 0) {
-                state.selectTile(pos);
+                if (isInTurf(state.e, pos)) {
+                  state.selectTile(pos);
+                } else {
+                  state.deselectHusk();
+                }
               }
             }
           }
@@ -636,7 +640,7 @@ export function startPhaser(_owner, _container) {
   }
 
   function initTiles(turf) {
-    console.log('init shades');
+    console.log('init tiles');
     if (turf) {
       const spaces = jClone(turf.spaces);
       const poses = uniq([...Object.keys(tiles), ...Object.keys(spaces)]);
@@ -656,8 +660,10 @@ export function startPhaser(_owner, _container) {
           const gamePos = vec2(tileData.pos).scale(tileFactor);
           tiles[posId].setPosition(gamePos.x, gamePos.y);
         } else if (!tileData || !isInTurf(turf, tileData.pos)) {
-          tiles[posId].destroy();
-          delete tiles[posId];
+          if (tiles[posId]) {
+            tiles[posId].destroy();
+            delete tiles[posId];
+          }
         } else {
           tiles[posId] = createShade(tileData, pos, turf);
         }
