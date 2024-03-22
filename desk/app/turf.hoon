@@ -4,10 +4,13 @@
 /%  mist-stirred-mark  %mist-stirred
 /%  pond-stir-mark  %pond-stir
 /%  pond-stirred-mark  %pond-stirred
+/%  closet-stir-mark  %closet-stir
 /$  c1  %json  %mist-stir
 /$  c2  %json  %pond-stir
 /$  c3  %mist-stirred  %json
 /$  c4  %pond-stirred  %json
+/$  c5  %json  %closet-stir
+/$  c6  %closet-stir  %json
 =/  pond-lake      (mk-lake pond)
 =/  mist-lake      (mk-lake mist)
 =/  res-pond       (response:poke pond-lake *)
@@ -252,6 +255,11 @@
     :: =^  cards  state  (stir-mist:hc mpath id fwave)
     :: cards^this
   ::
+      %closet-stir
+    ?>  =(our src):bowl
+    =/  stir  !<(skye-stir vase)
+    =^  cards  state  (stir-closet:hc grit.stir)
+    cards^this
       %mist-stir
     =/  stir  !<(stir:mist (fled vase))
     :: =/  target  ship.turf-id.stir
@@ -454,6 +462,11 @@
     =^  cards  state
       (give-mist-rock:hc path %.y)
     cards^this
+      [%closet *]
+    ?>  =(our src):bowl
+    :_  this
+    =/  =skye-stir  [%0 %set closet]
+    [%give %fact ~ %closet-stir !>(skye-stir)]~
   ==
 ++  on-leave
   |=  left=path
@@ -643,6 +656,14 @@
       [%poke %mist-stir !>([stir])]
   ==
 ::
+++  stir-closet
+  |=  grit=skye-grit
+  ^-  (quip card _state)
+  =.  closet  (wash-skye closet grit)
+  =^  cards  state  (give-mist dmpath %update-things-from-closet ~)
+  :-  :-  [%give %fact [/closet]~ %closet-stir !>(`skye-stir`[%0 grit])]
+      cards
+  state
 ++  stir-mist
   |=  [src=(unit ship) =stir:mist]
   ^-  (quip card _state)

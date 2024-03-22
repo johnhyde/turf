@@ -27,6 +27,30 @@
     ^-  thing
     :-  [form-id.goal 0 *husk-bits]
     u.form
+      %update-things-from-closet
+    :: look through things, update forms that are out of date and delete things that have no reference form in the closet anymore
+    :-  ~
+    :_  ~
+    =/  things  things.avatar.rock
+    =|  i=@ud
+    =|  =grits:mist
+    |-
+    ^-  grits:mist
+    ?~  things  grits
+    =*  ting  i.things
+    %=  $
+      i       +(i)
+      things  t.things
+        grits
+      ?:  !(~(has by closet) form-id.ting)
+        [[%del-thing i] grits]
+      =/  new-form  (~(got by closet) form-id.ting)
+      ?:  =(new-form form.ting)
+        grits
+      :_  grits
+      :+  %set-thing  i
+      ting(form new-form)
+    ==
       %port-offered
     :-  ~
     ?.  ?@  via.goal
@@ -753,7 +777,7 @@
       ::
         :-  %arg
         ?@  grit  ~
-        ?-  -.grit
+        ?-    -.grit
             %set-ctid
           (maybe-turf-id-path +.grit)
             %set-avatar
@@ -764,12 +788,31 @@
           (thing +.grit)
             %del-thing
           (numb +.grit)
+            %set-thing
+          %-  pairs
+          :~  index+(numb index.grit)
+              thing+(thing thing.grit)
+          ==
             %port-offered
           (port-offer +.grit)
             %accept-port-offer
           (turf-id-path +.grit)
             %reject-port-offer
           (turf-id-path +.grit)
+    ==  ==
+  ++  skye-grit
+    |=  grit=^skye-grit
+    ^-  json
+    %-  pairs
+    :~  :-  %type
+        s+-.grit
+      ::
+        :-  %arg
+        :: ?@  grit  ~
+        ?-  -.grit
+          %set       (frond 'skye' (skye skye.grit))
+          %add-form  (form-spec +.grit)
+          %del-form  (frond 'formId' (path form-id.grit))
     ==  ==
   ++  stir-ids
     |=  [ids=^stir-ids]
@@ -1248,7 +1291,23 @@
           reject-port-offer+pa-turf-id
           export-self+port-offer
       ==
+    ++  skye-stir
+      |=  jon=json
+      ^-  ^skye-stir
+      :-  %0
+      %.  jon
+      %-  of
+      :~  set+skye
+          add-form+form-spec
+          del-form+(ot ~['formId'^pa])
+      ==
     ::
+    ++  skye
+      |=  jon=json
+      ^-  ^skye
+      %.  jon
+      (op path-rule form)
+    ++  path-rule  ;~(pfix fas (more fas urs:ab))
     ++  form-spec
       |=  jon=json
       ^-  ^form-spec

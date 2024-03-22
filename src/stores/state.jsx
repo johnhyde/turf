@@ -29,6 +29,9 @@ export function getState() {
   const [state, $state] = createStore({
     ponds: {},
     mist: new Mist('/mist'),
+    get closet() {
+      return this.mist._closet;
+    },
     get currentTurfId() {
       return this.mist.vapor?.currentTurfId;
     },

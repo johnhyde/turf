@@ -2,7 +2,7 @@ import { createRoot, createEffect, createSignal, createMemo, on } from "solid-js
 import { useState } from 'stores/state';
 import isEqual from 'lodash/isEqual';
 import { vec2, roundV, dirs, sleep, now5, getTimeString, intToHex, cite, jClone } from 'lib/utils';
-import { spriteNameWithDir } from 'lib/turf';
+import { spriteNameWithDir, pickVariationWithDir } from 'lib/turf';
 
 
 export class Player extends Phaser.GameObjects.Container {
@@ -35,7 +35,9 @@ export class Player extends Phaser.GameObjects.Container {
     }
     this.loadPlayerSprites = load;
     this.avatar = new Phaser.GameObjects.Container(scene, 0, 0);
+    this.others = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.avatar);
+    this.add(this.others);
     const [walking, $walking] = createSignal(false);
     this.walking = walking, this.$walking = $walking;
     this.napping = createMemo(() => !this.walking() && this.p?.wake && (now5() - this.p.wake) > 5*60*1000);
@@ -73,6 +75,13 @@ export class Player extends Phaser.GameObjects.Container {
     return (vec2(this.dPos).scale(1/tileFactor) || this.tilePos).y + this.depthMod;
   }
 
+  effectiveVariation(thing) {
+    const variations = thing.form?.variations || [];
+    const variation = pickVariationWithDir(thing.form, this.dir);
+    if (variation === null) return null;
+    return variations[variation];
+  }
+
   setupEffects() {
     createRoot((dispose) => {
       this.dispose = dispose;
@@ -90,6 +99,7 @@ export class Player extends Phaser.GameObjects.Container {
         if (this.bodyImage && color && lastColor !== color) {
           if (game.renderer.type === Phaser.CANVAS) {
             this.recreateAvatar();
+            this.updateAnims();
           } else {
             this.bodyImage.setTint(color);
           }
@@ -127,6 +137,7 @@ export class Player extends Phaser.GameObjects.Container {
     await this.loadPlayerSprites(this.t);
     if (!(this.p && this.t && this.scene)) return; // regret to inform that these might disappear while we await the above
     this.avatar.removeAll(true);
+    this.others.removeAll(true);
     const frameRate = 7;
     const bodyDirs = [0, 1, 2, 3].map((dir) => spriteNameWithDir(this.t.id, avatar.body.thing.formId, avatar.body.thing.form, dirs[dir], this.patp));
     this.bodyImage = this.scene.make.sprite({ key: bodyDirs[dirs[this.dir]], frame: 0 });
@@ -181,7 +192,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.name = this.scene.make.text({ text: cite(this.patp), style: { fontSize: 8*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.name.setDisplayOrigin(this.name.width/2 - this.bodyImage.width*factor/2, playerOffset.y*factor + this.name.height);
-    this.add(this.name);
+    this.others.add(this.name);
     this.ping = this.scene.make.text({ text: '(ping)', style: { fontSize: 6*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never',
     '--webkit-font-smoothing': 'none' }});
     this.ping.setDisplayOrigin(0, playerOffset.y*factor + this.name.height + this.ping.height);
@@ -199,7 +210,7 @@ export class Player extends Phaser.GameObjects.Container {
     this.speechBubbleContainer = new Phaser.GameObjects.Container(this.scene, bubblePos.x, bubblePos.y);
     this.speechBubbleContainer.add(this.speechBubble);
     this.speechBubbleContainer.setDepth(100);
-    this.add(this.speechBubbleContainer);
+    this.others.add(this.speechBubbleContainer);
     this.speechBubble.setVisible(true);
     this.speechBubbleTextDisplay = this.scene.make.text({ text: this.speechBubbleText, style: { align: "left", fontSize: 4*factor + 'px', fontFamily: 'monospace', fontSmooth: 'never', '--webkit-font-smoothing': 'none', color: "black", wordWrap: { width: this.speechBubble.width*factor - 4*factor, useAdvancedWrap: true } } }); //the 4*factor is just an arbitrary, hand-tuned margin for the speech bubble outline width.
     this.speechBubbleTextDisplay.setMaxLines(4)
@@ -221,7 +232,7 @@ export class Player extends Phaser.GameObjects.Container {
     if (this.p) {
       if (this.napping()) {
         this.avatar.setAngle(90);
-        this.add(this.zzz);
+        this.others.add(this.zzz);
         this.zzz.setVisible(true);
       } else {
         this.avatar.setAngle(0);
@@ -258,6 +269,17 @@ export class Player extends Phaser.GameObjects.Container {
           }
         }
       });
+      this.things.forEach((sprite, i) => {
+        if (sprite.thing) {
+          const variation = this.effectiveVariation(sprite.thing);
+          if (variation) {
+            const layer = { flat: -2, back: -1, fore: 1 }[variation.deep] || 2;
+            const depth = (this.things.length * layer) + i;
+            sprite.setDepth(depth);
+          }
+        }
+      });
+      this.avatar.sort('depth');
     }
   }
 
@@ -454,7 +476,7 @@ export class Player extends Phaser.GameObjects.Container {
 
   onHover(pointer) {
     if (!this.isUs && !this.list.includes(this.ping)) {
-      this.add(this.ping);
+      this.others.add(this.ping);
       this.ping.setVisible(true);
     }
     const text = (this.isKickable && this.kickMode) ? '(kick)' : '(ping)';

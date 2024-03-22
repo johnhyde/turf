@@ -21,6 +21,7 @@ export default function FormEditor(props) {
   const formId = () => formDef.formId;
   const form = () => formDef.form;
   const offset = () => form().offset;
+  const notGarb = () => form()?.type !== 'garb';
   const [idValid, $idValid] = createSignal(null);
   const [currentVar, $currentVar] = createSignal(0);
   const idChanged = () => props.editing && formId() !== props.form?.formId;
@@ -67,13 +68,13 @@ export default function FormEditor(props) {
     props.$form(reconcile({}));
   }
 
-  // function deleteForm() {
-  //   addFn()(
-  //     undefined,
-  //     props.form?.formId
-  //   );
-  //   cancel();
-  // }
+  function deleteForm() {
+    addFn()(
+      undefined,
+      props.form?.formId
+    );
+    cancel();
+  }
 
   function setFormId(id) {
     id = id.trim();
@@ -102,7 +103,7 @@ export default function FormEditor(props) {
 
   function addVariation() {
     $newForm('form', 'variations', form().variations.length, {
-      deep: 'back',
+      deep: (form().type === 'garb') ? 'fore' : 'back',
       sprite: '',
     });
     $currentVar(form().variations.length - 1);
@@ -176,16 +177,18 @@ export default function FormEditor(props) {
                 </p>
               }
             </div>
-            <div class="flex gap-2">
-              <span class="font-semibold">Type</span>
-              <Radio value={form()?.type} $value={setType} items={[['tile', 'Tile'], ['item', 'Item'], ['wall', 'Wall']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
-            </div>
+            <Show when={notGarb()}>
+              <div class="flex gap-2">
+                <span class="font-semibold">Type</span>
+                <Radio value={form()?.type} $value={setType} items={[['tile', 'Tile'], ['item', 'Item'], ['wall', 'Wall']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
+              </div>
+            </Show>
             <div class="flex gap-2">
               <span class="font-semibold">Offset</span>
               <div>
                 <span class="mr-1">x:</span>
                 <input type="number"
-                  class="rounded-md pl-1"
+                  class="rounded-md pl-1 w-12"
                   min={-tileSize}
                   // todo: figure out some way to do this again?
                   // but there an be many bmps of different size
@@ -199,7 +202,7 @@ export default function FormEditor(props) {
               <div>
                 <span class="mr-1">y:</span>
                 <input type="number"
-                  class="rounded-md pl-1"
+                  class="rounded-md pl-1 w-12"
                   min={-tileSize}
                   // max={spriteBmp()?.height || 0}
                   max="99"
@@ -209,15 +212,17 @@ export default function FormEditor(props) {
                   ]} />
               </div>
             </div>
-            <div class="flex items-center">
-              <label for="collidable" class="font-semibold mr-2">
-                Blocks Movement
-              </label>
-              <input type="checkbox" id="collidable"
-                checked={form()?.collidable}
-                onInput={(e) => $newForm('form', 'collidable', e.currentTarget.checked)}
-              />
-            </div>
+            <Show when={notGarb()}>
+              <div class="flex items-center">
+                <label for="collidable" class="font-semibold mr-2">
+                  Blocks Movement
+                </label>
+                <input type="checkbox" id="collidable"
+                  checked={form()?.collidable}
+                  onInput={(e) => $newForm('form', 'collidable', e.currentTarget.checked)}
+                />
+              </div>
+            </Show>
           </div>
           <div class="max-w-md flex flex-col space-y-2 p-2">
             <p class="font-semibold">Image</p>
@@ -271,6 +276,11 @@ export default function FormEditor(props) {
           <SmallButton onClick={cancel}>
             Cancel
           </SmallButton>
+          <Show when={props.editing}>
+            <SmallButton onClick={deleteForm}>
+              Delete
+            </SmallButton>
+          </Show>
         </div>
       </Modal>
     </Show>

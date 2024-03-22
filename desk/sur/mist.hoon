@@ -32,6 +32,7 @@
       [%set-color color=@ux]
       [%add-thing =thing]
       [%del-thing index=@ud]
+      [%set-thing index=@ud =thing]
       [%port-offered port-offer]
       [%accept-port-offer for=turf-id]
       [%reject-port-offer for=turf-id]
@@ -42,6 +43,7 @@
   $+  mist-goal
   $%  grit
       [%add-thing-from-closet =form-id]
+      [%update-things-from-closet ~]
       [%port-accepted for=turf-id]
       [%port-rejected for=turf-id]
       [%kicked for=turf-id]
@@ -84,6 +86,7 @@
     %set-color  core(color.body.avatar color.grit)
     %add-thing  core(things.avatar (snoc things.avatar thing.grit))
     %del-thing  core(things.avatar (oust [index.grit 1] things.avatar))
+    %set-thing  core(things.avatar (snap things.avatar index.grit thing.grit))
     %port-offered  core(port-offer `+.grit, ttid ~)
     %accept-port-offer  core(ttid `for.grit, port-offer ~)
       %reject-port-offer

@@ -1,5 +1,6 @@
 import { createSelector, createMemo } from 'solid-js';
 import ItemButton from '@/ItemButton';
+import SmallButton from '@/SmallButton';
 
 export default function FormSelect(props) {
   const isSelected = createSelector(() => props.selectedId);
@@ -25,8 +26,18 @@ export default function FormSelect(props) {
             props.select(id(), i());
           }
           return (
-            <div>
-              <ItemButton onClick={onSelect} selected={isSelected(id())} form={form()} background={props.background} />
+            <div class="relative group">
+              <ItemButton onClick={onSelect} selected={isSelected(id())} form={form()} bgImage={props.bgImage} />
+              <div class="absolute top-0 left-0 w-full h-full z-[15] flex flex-wrap gap-1 justify-center items-center pointer-events-none invisible group-hover:visible">
+                <For each={props.buttons}>
+                  {([label, buttonName]) => (
+                    <SmallButton onClick={() => props.onButton?.(buttonName, id(), i())} class="pointer-events-auto !bg-[#A1620780]">
+                    {/* A16207 */}
+                      {label}
+                    </SmallButton>
+                  )}
+                </For>
+              </div>
             </div>
           );
         }}

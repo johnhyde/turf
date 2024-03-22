@@ -89,6 +89,8 @@ export default function VariationEditor(props) {
         <div class="border-b border-yellow-950" />
       </Show>
       <FrameEditor
+        type={props.type}
+        deep={props.var.deep}
         frame={frames()?.[currentFrame()] || ''}
         $frame={(...args) => setFrame(currentFrame(), ...args)}
         frameCount={frames().length}

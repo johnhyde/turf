@@ -208,4 +208,22 @@
 ::   $:  =config:vita-client
 ::       closet=skye
 ::   ==
+::
++$  skye-stir
+  $:  %0
+      grit=skye-grit
+  ==
++$  skye-grit
+  $%  [%set =skye]
+      [%add-form form-spec]
+      [%del-form =form-id]
+  ==
+++  wash-skye
+  |=  [sky=skye grit=skye-grit]
+  ^-  skye
+  ?-  -.grit
+    %set  sky
+    %add-form  (~(put by sky) form-id.grit form.grit)
+    %del-form  (~(del by sky) form-id.grit)
+  ==
 --

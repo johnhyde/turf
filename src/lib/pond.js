@@ -71,6 +71,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
 
     this._grid = createMemo(() => {
       if (!this.ether) return null;
+      if (!this.ether.offset) return null;
       return getTurfGrid(this.ether);
     });
     this.sub = null;

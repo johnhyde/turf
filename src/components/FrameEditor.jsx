@@ -140,6 +140,8 @@ export default function FrameEditor(props) {
             {spriteBmp().width}x{spriteBmp().height}
           </p>
           <OffsetInput
+            type={props.type}
+            deep={props.deep}
             bitmap={spriteBmp()}
             offset={props.offset}
             $offset={props.$offset}

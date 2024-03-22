@@ -7,6 +7,7 @@ import {
 } from 'lib/turf';
 import { hexToInt, vec2, vecToStr, jClone } from 'lib/utils';
 import { getPool } from 'lib/pool';
+import { Skye } from 'lib/skye';
 
 export class Mist { // we use a class so we can put it inside a store without getting proxied
   constructor(id, options = {}) {
@@ -31,6 +32,7 @@ export class Mist { // we use a class so we can put it inside a store without ge
     const [local, { mutate, refetch }] = createResource(api.getLocal);
     this._local = local;
     this.refetchLocal = refetch;
+    this._closet = new Skye('/closet', 'closet-stir');
 
     this.sub = null;
     this.subscribe();
@@ -49,7 +51,8 @@ export class Mist { // we use a class so we can put it inside a store without ge
   }
 
   get closet() {
-    return this._local().closet;
+    // return this._local().closet;
+    return this._closet.skye;
   }
 
   // returns true/false whether we attempted to send the wave or not
@@ -151,6 +154,9 @@ const mistGrits = {
   },
   'del-thing': (mist, index) => {
     mist.avatar.things.splice(index, 1);
+  },
+  'set-thing': (mist, { index, thing }) => {
+    mist.avatar.things[index] = thing;
   },
   'port-offered': (mist, portOffer) => {
     mist.portOffer = portOffer;

@@ -289,6 +289,12 @@ export function spriteName(turfId, id, variation, patp='') {
 }
 
 export function spriteNameWithDir(turfId, id, form, dir = dir.DOWN, patp='') {
+  const variation = pickVariationWithDir(form, dir);
+  if (variation === null) return null;
+  return spriteName(turfId, id, variation, patp);
+}
+
+export function pickVariationWithDir(form, dir = dir.DOWN) {
   let variation = dirs[dir];
   const len = form.variations.length;
   if (len === 3) {
@@ -296,8 +302,7 @@ export function spriteNameWithDir(turfId, id, form, dir = dir.DOWN, patp='') {
   } else if (len === 2) {
     if (variation === 2) return null; // don't display
   }
-  variation = variation % form.variations.length;
-  return spriteName(turfId, id, variation, patp);
+  return variation % form.variations.length;
 }
 
 export const specialFormIds = ['/portal', '/portal/house', '/gate'];
