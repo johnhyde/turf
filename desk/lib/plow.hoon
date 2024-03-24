@@ -1306,8 +1306,7 @@
       |=  jon=json
       ^-  ^skye
       %.  jon
-      (op path-rule form)
-    ++  path-rule  ;~(pfix fas (more fas urs:ab))
+      (op stap form)
     ++  form-spec
       |=  jon=json
       ^-  ^form-spec
