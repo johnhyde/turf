@@ -143,7 +143,7 @@
     s(skye-reset +(skye-reset.s), |4 |4.state-0)
   --
 ::
-::  The SSS skye will give your agent pokes with the following marks:
+::  The SSS library will give your agent pokes with the following marks:
 ::
 ::  - %sss-on-rock
 ::    Received whenever a state you're subscribed to has updated.
