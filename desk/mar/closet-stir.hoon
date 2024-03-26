@@ -1,5 +1,5 @@
 /-  *turf
-/+  *plow
+/+  enjs=turf-enjs, dejs=turf-dejs
 |_  stir=skye-stir
   ++  grow
     |%

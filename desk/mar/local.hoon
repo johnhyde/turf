@@ -1,5 +1,5 @@
-/-  mist, turf
-/+  *sss, *plow
+/-  turf
+/+  enjs=turf-enjs
 |_  loc=local
   ++  grow
     |%

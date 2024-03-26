@@ -15,7 +15,7 @@
 +$  tl-br  [tl=svec2 br=svec2]
 ::
 +$  turf
-  $+  turf
+  $+  turf-2
   $:  =ephemera
       =deed
       =plot
@@ -45,9 +45,9 @@
   ==
 ::
 +$  deed
-  :: $:  =invites
-  $:  name=$~('Main Turf' @t)
-      =invites
+  :: $:  name=@t
+  $:  =invites
+      :: =invites
       =perms
       =portals
       =port-reqs

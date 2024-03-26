@@ -1,5 +1,5 @@
 /-  pond, turf
-/+  *sss, *plow
+/+  enjs=turf-enjs
 |_  strd=stirred:pond
   ++  grow
     |%

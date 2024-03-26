@@ -471,6 +471,12 @@
   =/  form  (get-form turf form-id.husk)
   ?~  form  %.n
   collidable.u.form
+++  is-thing-collidable
+  |=  [=turf =thing]
+  ^-  ?
+  ?^  collidable.thing
+    u.collidable.thing
+  collidable.form.thing
 ::
 ++  get-shades
   |=  [=turf pos=svec2]

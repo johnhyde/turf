@@ -1,38 +1,32 @@
-/-  *turf, mild=mist-0
+/-  *turf-2
 /+  *turf
 =<
 |%
 ++  name  %mist
 +$  rock  ^rock
-+$  vock  ^vock
-+$  grit  ^grit
-+$  vrit  ^vrit
 +$  goal  ^goal
-+$  foam  ^foam  :: from sur/turf
-+$  voam  foam-all
-++  urck  ^urck
-++  ugrt  ^ugrt
-++  ufam  foam
++$  foam  ^foam  :: from lib/turf
++$  foam-all  ^foam-all
++$  grit  ^grit
 ++  wash  wash-grit
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
-+$  rock  $+  mist-rock  [%1 =stir-ids core]
-+$  rock-v  _-:*rock
++$  rock
+  $+  mist-rock
+  $:  =stir-ids
+      core
+  ==
 +$  core
   $:  ctid=(unit turf-id)  :: current turf-id
       ttid=(unit turf-id)  :: target turf-id
       port-offer=(unit port-offer)
       =avatar
   ==
-+$  vock
-  $^  rock:mild  rock
-+$  grit  $+  mist-grit  [cur-grit-v cur-grit]
-+$  vrit
-  $@   grit:mild
-  $%(grit:mild grit)
-+$  cur-grit-v  rock-v
-+$  cur-grit
++$  grits  (list grit)
++$  grit
+  $+  mist-grit
+  $@  %clear-port-offer
   $%  [%set-ctid turf-id=(unit turf-id)]
       [%set-avatar =avatar]
       [%set-color color=@ux]
@@ -42,25 +36,12 @@
       [%port-offered port-offer]
       [%accept-port-offer for=turf-id]
       [%reject-port-offer for=turf-id]
-      [%clear-port-offer ~]
-  ==
-+$  grits  (list grit)
-+$  cur-grits  (list cur-grit)
-::
-+$  stir
-  $:  mpath=mist-path
-      id=stir-id
-      =goals
   ==
 ::
-+$  stirred
-    $%  [what=%rock =rock]
-        [what=%wave id=stir-id =grits]
-    ==
-::
++$  goals  (list goal)
 +$  goal
   $+  mist-goal
-  $%  cur-grit
+  $%  grit
       [%add-thing-from-closet =form-id]
       [%update-things-from-closet ~]
       [%port-accepted for=turf-id]
@@ -68,8 +49,17 @@
       [%kicked for=turf-id]
       [%export-self port-offer]
   ==
-+$  goals  (list goal)
-:: 
+:: ::
++$  stir
+  $:  mpath=mist-path
+      id=stir-id
+      =goals
+  ==
++$  stirred
+    $%  [what=%rock =rock]
+        [what=%wave id=stir-id =grits]
+    ==
+::
 +$  roar
   $%  [%port-offer-accept port-offer]
       [%port-offer-reject of=turf-id from=portal-id]
@@ -79,14 +69,17 @@
 +$  roars  (list roar)
 ::
 ++  wash-grit
-  |=  [=rock foam * grit=cur-grit]
+  |=  [=rock foam =grit]
   ^-  ^rock
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))
-  :+  -.rock  stir-ids.rock
+  :-  stir-ids.rock
   ^-  core
-  =*  core  +>.rock
+  =*  core  +.rock
   =*  avatar  avatar.rock
+  ?@  grit
+    :: %clear-port-offer
+    core(ttid ~, port-offer ~)
   ?-  -.grit
     %set-ctid  core(ctid turf-id.grit)
     %set-avatar  core(avatar avatar.grit)
@@ -104,36 +97,5 @@
     =?  ttid.core  =(`for.grit ttid.core)
       ~
     core
-    %clear-port-offer  core(ttid ~, port-offer ~)
   ==
-::
-:: upgrades
-++  urck
-  |=  rock=vock
-  ^-  ^rock
-  ?-  -.rock
-    rock-v   rock
-    $@(~ ^)  (rock-to-next rock)
-  ==
-++  rock-to-next
-  |=  =rock:mild
-  :-  *rock-v
-  :-  stir-ids.rock
-  +.rock
-::
-++  ugrt
-  |=  g=vrit
-  ^-  grit
-  ?-  g
-    [cur-grit-v *]  g
-    *               (grit-to-next g)
-  ==
-++  grit-to-next
-  |=  [g=grit:mild]
-  ^-  grit
-  :: =/  grit  +.g
-  :-  *cur-grit-v
-  ?@  g
-    clear-port-offer+~
-  g
 --

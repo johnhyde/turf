@@ -10,26 +10,23 @@
   |%
   ++  name  name:pool
   +$  rock  rock:pool
-  +$  wave  [foam=foam-all:pool grits=(list grit:pool)]
+  +$  vock  vock:pool
+  +$  wave  [=foam:pool grits=(list grit:pool)]
+  +$  vave  [foam=voam:pool grits=(list vrit:pool)]
+  ++  urck  urck:pool
+  ++  uwve
+    |=  =vave
+    ^-  wave
+    :-  (ufam:pool foam.vave)
+    (turn grits.vave ugrt:pool)
   ++  wash
     |=  [=rock =wave]
     ^-  ^rock
     ?~  grits.wave  rock
     %=  $
-      rock  (wash:pool rock (foam:pool foam.wave) i.grits.wave)
+      rock  (wash:pool rock foam.wave i.grits.wave)
       grits.wave  t.grits.wave
     ==
-  --
-++  mk-lake-1
-  |.
-  |%
-  ++  name  %hm
-  +$  rock  ~
-  +$  wave  ~
-  ++  wash
-    |=  [=rock =wave]
-    ^-  ^rock
-    ~
   --
 ++  de
   |*  =(pool)

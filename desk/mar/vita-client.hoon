@@ -1,4 +1,4 @@
-/+  vita-client, *plow
+/+  vita-client, dejs=turf-dejs
 |_  act=action:vita-client
   ++  grow
     |%

@@ -1,5 +1,5 @@
-/-  pond, turf
-/+  *sss, *plow
+/-  turf
+/+  dejs=turf-dejs
 |_  tid=turf-id:turf
   ++  grow
     |%

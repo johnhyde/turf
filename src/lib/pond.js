@@ -199,33 +199,33 @@ const pondGrits = {
       jabBySpaces(turf, pos, space => space.shades.unshift(shadeId));
     }
   },
-  'cycle-shade': (turf, arg) => {
-    const { shadeId, amount } = arg;
-    const shade = getShade(turf, shadeId);
-    if (shade) {
-      const form = getForm(turf, shade.formId);
-      if (form) {
-        shade.variation = (shade.variation + amount) % form.variations.length;
-      }
-    }
-  },
-  'set-shade-var': (turf, arg) => {
-    const { shadeId, variation } = arg;
-    const shade = getShade(turf, shadeId);
-    if (shade) {
-      const form = getForm(turf, shade.formId);
-      if (form) {
-        shade.variation = variation % form.variations.length;
-      }
-    }
-  },
-  'set-shade-effect': (turf, arg) => {
-    const { shadeId, trigger, effect } = arg;
-    const shade = getShade(turf, shadeId);
-    if (shade) {
-      shade.effects[trigger] = effect;
-    }
-  },
+  // 'cycle-shade': (turf, arg) => {
+  //   const { shadeId, amount } = arg;
+  //   const shade = getShade(turf, shadeId);
+  //   if (shade) {
+  //     const form = getForm(turf, shade.formId);
+  //     if (form) {
+  //       shade.variation = (shade.variation + amount) % form.variations.length;
+  //     }
+  //   }
+  // },
+  // 'set-shade-var': (turf, arg) => {
+  //   const { shadeId, variation } = arg;
+  //   const shade = getShade(turf, shadeId);
+  //   if (shade) {
+  //     const form = getForm(turf, shade.formId);
+  //     if (form) {
+  //       shade.variation = variation % form.variations.length;
+  //     }
+  //   }
+  // },
+  // 'set-shade-effect': (turf, arg) => {
+  //   const { shadeId, trigger, effect } = arg;
+  //   const shade = getShade(turf, shadeId);
+  //   if (shade) {
+  //     shade.effects[trigger] = effect;
+  //   }
+  // },
   'cycle-husk': (turf, arg) => {
     const { huskId, amount } = arg;
     const husk = getHusk(turf, huskId);

@@ -1,5 +1,5 @@
-/-  pond, turf
-/+  *sss, *plow
+/-  pond
+/+  dejs=turf-dejs
 |_  stir=stir:pond
   ++  grow
     |%

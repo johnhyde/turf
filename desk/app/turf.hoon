@@ -100,14 +100,16 @@
   =/  old-reset  !<(@ud (slot 6 old-state))
   =+  :-  cards-0=`(list card)`~
       ?.  =(old-reset reset)  ~&('reseting %turf state' old=state)
+      :: ~&  'i am a fool?'
       old=!<(versioned-state old-state)
+
   =*  quolp  -
   =?  quolp  ?=(%0 -.old)
     (state-0-to-1 cards-0 old)
   :: =/  old  *current-state
   ?>  ?=(_-:*current-state -.old)
   =.  state  old
-  =^  upgrade-cards  state  (upgrade:hc)
+  :: =^  upgrade-cards  state  (upgrade:hc)
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
@@ -131,7 +133,7 @@
   =/  ted-cards  (start-nap-patrol:hc nap-patrol-interval nap-patrol-cutoff)
   :_  this
   ;:  weld
-      cards-0  upgrade-cards
+      cards-0  ::upgrade-cards
       cards-1  cards-2
       vita-cards  ted-cards  kick-all-subs:hc
   ==
@@ -285,8 +287,8 @@
   ::
       %pond-goal
     ?>  =(our src):bowl
-    =/  goal  !<(cur-goal:pond vase)
-    =/  stir  [dtid:hc ~ [*cur-goal-v:pond goal]~]
+    =/  goal  !<(goal:pond vase)
+    =/  stir  [dtid:hc ~ [goal]~]
     =^  cards  state  (stir-pond:hc `src.bowl stir)
     cards^this
   ::
@@ -307,7 +309,7 @@
     =/  ted-cards  (patrol-nappers:hc nap-patrol-interval nap-patrol-cutoff)
     ?~  uturf  ted-cards^this
     =*  turf  u.uturf
-    =/  goals=cur-goals:pond
+    =/  =goals:pond
       %+  murn  ~(tap by players.ephemera.turf)
       |=  [=ship =player]
       ^-  (unit cur-grit:pond)
@@ -585,7 +587,7 @@
   ^-  (unit turf)
   =/  urok  (default-rock)
   ?~  urok  ~
-  ?.  ?=(current-rock-v:pond -.u.urok)  ~
+  :: ?.  ?=(rock-v:pond -.u.urok)  ~
   turf.u.urok
 ++  default-turf-exists
   |.
@@ -607,13 +609,13 @@
     ?:  (default-mist-exists)  `state
     init-default-mist
   (weld cards more-cards)^state
-++  upgrade
-  |.
-  ^-  (quip card _state)
-  :: todo: upgrade mist and go through all turfs
-  =^  cards  state  (give-pond-goal dtid [%upgrade ~])
-  :: =.  pub-turf  (wipe:du-pond dppath)  :: todo: should we wipe? does it matter?
-  cards^state
+:: ++  upgrade
+::   |.
+::   ^-  (quip card _state)
+::   :: todo: upgrade mist and go through all turfs
+::   =^  cards  state  (give-pond-goal dtid [%upgrade ~])
+::   :: =.  pub-turf  (wipe:du-pond dppath)  :: todo: should we wipe? does it matter?
+::   cards^state
 ::
 ++  turf-exists
   |=  id=turf-id
@@ -630,12 +632,12 @@
   ^-  ^local
   [config closet]
 ++  pond-stir-card
-  |=  [=turf-id goal=cur-goal:pond]
+  |=  [=turf-id =goal:pond]
   ^-  card
   =/  stir=stir:pond
     :*  turf-id
         ~
-        [*cur-goal-v:pond goal]~
+        [goal]~
     ==
   :*  %pass  /pond-stir  %agent
       [ship.turf-id %turf]
@@ -885,12 +887,12 @@
   :: ~&  "end of stir pond. stir: {<goal>} pub-pond wyt: {<~(wyt by +.pub-pond)>}"
   [:(weld ssio-cards cards roar-cards) state] :: cards before roar-cards in case we poke ourselves
 ++  give-pond
-  |=  [=turf-id goals=cur-goals:pond]
+  |=  [=turf-id =goals:pond]
   ^-  (quip card _state)
   :: ~&  "trying to give pond. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  (stir-pond ~ turf-id ~ (turn goals (lead *cur-goal-v:pond)))
+  (stir-pond ~ turf-id ~ goals)
 ++  give-pond-goal
-  |=  [=turf-id goal=cur-goal:pond]
+  |=  [=turf-id =goal:pond]
   (give-pond turf-id [goal]~)
 ++  give-pond-rock
   |=  [id=turf-id on-watch=?]
@@ -944,7 +946,7 @@
   ^-  (quip card _state)
   =/  rock  (default-rock)
   ?~  rock  `state
-  ?.  ?=(current-rock-v:pond -.u.rock)  `state
+  :: ?.  ?=(rock-v:pond -.u.rock)  `state
   ?~  turf.u.rock  `state
   =*  turf  u.turf.u.rock
   %+  give-pond-goal   dtid
