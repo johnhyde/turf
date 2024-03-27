@@ -159,7 +159,7 @@ function createShade(shade, id, turf) {
     });
     sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
     if (shade.formId === '/portal') {
-      const state = useState();
+      // const state = useState();
       createEffect(() => {
         shade = state.e?.cave?.[id];
         if (shade) {

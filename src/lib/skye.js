@@ -15,9 +15,7 @@ export class Skye { // we use a class so we can put it inside a store without ge
 
   async subscribe() {
     const onErr = () => {};
-    const onQuit = () => {
-      this.subscribe();
-    };
+    const onQuit = () => {};
     const onGrit = (grit) => {
       this.wash(grit);
     };

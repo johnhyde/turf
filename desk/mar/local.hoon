@@ -1,4 +1,4 @@
-/-  turf
+/-  *turf
 /+  enjs=turf-enjs
 |_  loc=local
   ++  grow

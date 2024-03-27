@@ -63,9 +63,7 @@ export class Mist { // we use a class so we can put it inside a store without ge
 
   async subscribe() {
     const onMistErr = () => {};
-    const onMistQuit = () => {
-      this.subscribe();
-    };
+    const onMistQuit = () => {};
     this.sub = await api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
   }
   async unsubscribe() {

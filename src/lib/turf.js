@@ -70,7 +70,7 @@ export function getForm(turf, formId) {
 export function getShade(turf, shadeId) {
   const shade = turf.cave[shadeId];
   if (!shade) return null;
-  return shade
+  return shade;
 }
 
 export function getShadeWithForm(turf, shadeId) {

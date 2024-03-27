@@ -109,9 +109,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
   async subscribe() {
     if (this.sub === null) {
       const onPondErr = () => {};
-      const onPondQuit = () => {
-        this.subscribe();
-      };
+      const onPondQuit = () => {};
       this.sub = api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
       return this.sub
     } else {
@@ -500,7 +498,7 @@ const filters = {
         arg: shade,
       });
     }
-    if (!shadeExists) {
+    if (!portalExists) {
       goals.push({
         type: 'add-portal',
         arg: {
@@ -512,9 +510,9 @@ const filters = {
     goals = [
       ...goals,
       {
-        type: 'set-shade-effect',
+        type: 'set-husk-effect',
         arg: {
-          shadeId,
+          huskId: shadeId,
           trigger,
           effect: {
             type: 'port',
@@ -522,7 +520,7 @@ const filters = {
           },
         },
       },
-      { // TODO: don't add this here, but in a filter on 'set-shade-effect'
+      { // TODO: don't add this here, but in a filter on 'set-husk-effect'
         type: 'add-shade-to-portal',
         arg: {
           from: portalId,
