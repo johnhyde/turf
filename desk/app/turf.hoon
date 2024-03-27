@@ -62,7 +62,7 @@
 %-  agent:dbug
 =|  current-state
 =*  state  -
-:: %+  verb  &
+%+  verb  &
 ^-  agent:gall
 =<
 |_  =bowl:gall
@@ -507,11 +507,11 @@
   ^-  (quip card _this)
   ?>  ?=(%poke-ack -.sign)
   :: ?~  p.sign  `this
-  :: %-  %-  slog
-  ::     ^-  tang
-  ::     :-  leaf+"poke-ack from {<src.bowl>} on wire {<wire>}"
-  ::     ?~  p.sign  ~
-  ::     u.p.sign
+  %-  %-  slog
+      ^-  tang
+      :-  leaf+"poke-ack from {<src.bowl>} on wire {<wire>}"
+      ?~  p.sign  ~
+      u.p.sign
   ?+    wire  (on-agent:def wire sign)
       [~ %sss %on-rock @ @ @ pond-path]
     =.  sub-pond  (chit:da-pond |3:wire sign)
