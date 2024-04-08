@@ -33,13 +33,12 @@ function getTurfGrid(turf) {
 export class Pond { // we use a class so we can put it inside a store without getting proxied
   constructor(id, options = {}) {
     this.id = id;
-    const [isNew, $isNew] = createSignal(false);
-    this.isNew = isNew;
-    this.$isNew = $isNew;
+    [this.isNew, this.$isNew] = createSignal(false);
+    [this.error, this.$error] = createSignal();
     options = {
       ...options,
       onErr: () =>  window.dispatchEvent(new PondEvent('err', null, id)),
-      onNew: () => $isNew(true),
+      onNew: () => this.$isNew(true),
       onNewGrits: (grits) => {
         grits.forEach((grit) => window.dispatchEvent(new PondEvent('grit', grit, id)));
       },
@@ -48,6 +47,12 @@ export class Pond { // we use a class so we can put it inside a store without ge
       },
       onNewRoars: (roars) => {
         roars.forEach((roar) => window.dispatchEvent(new PondEvent('roar', roar, id)));
+      },
+      onFuture: () => {
+        this.$error('future');
+      },
+      onUnavailable: () => {
+        this.$error('unavailable');
       },
       preFilters,
       filters,
@@ -92,6 +97,14 @@ export class Pond { // we use a class so we can put it inside a store without ge
 
   get new() {
     return this.isNew();
+  }
+
+  get future() {
+    return this.error() === 'future';
+  }
+
+  get unavailable() {
+    return this.error() === 'unavailable';
   }
 
   markNotNew() {

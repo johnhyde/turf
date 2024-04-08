@@ -85,8 +85,11 @@
   ==
 ::
 +$  stirred
-  $%  [what=%rock =rock]
+  $%  [what=%unavailable ~]
+      [what=%future ~]
+      [what=%rock =rock]
       [what=%wave foam =grits]
+
   ==
 ::  let's us create a shade and/or portal
 ::  and link them in one transaction

@@ -5,12 +5,7 @@
     |%
     ++  noun  strd
     ++  json
-      ^-  ^json
-      ?:  ?=(%rock what.strd)
-        (pond-rock:enjs rock.strd)
-      %+  pond-wave:enjs
-        [*cur-foam-v:turf id.strd src.strd wen.strd]
-      grits.strd
+      (pond-stirred:enjs strd)
     --
   ++  grab
     |%

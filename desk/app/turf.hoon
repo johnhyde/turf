@@ -1,5 +1,7 @@
 /-  *turf, pond, mist, hark
 /+  *turf, *sss, *ssio, *plow, default-agent, dbug, verb, agentio, vita-client
+/%  sss-mist-mark  %sss-mist
+/%  sss-pond-mark  %sss-pond
 /%  mist-stir-mark  %mist-stir
 /%  mist-stirred-mark  %mist-stirred
 /%  pond-stir-mark  %pond-stir
@@ -62,7 +64,7 @@
 %-  agent:dbug
 =|  current-state
 =*  state  -
-%+  verb  &
+:: %+  verb  &
 ^-  agent:gall
 =<
 |_  =bowl:gall
@@ -320,31 +322,6 @@
     =^  cards  state  (give-pond:hc turf-id goals)
     (weld cards ted-cards)^this
   ::
-
-      %join-turf  !!
-    :: ?>  =(our src):bowl
-    :: =/  tid  !<((unit turf-id) vase)
-    :: =/  ctid  (ctid:hc)
-    :: ?:  =(tid ctid)  `this
-    :: =/  cards-1=(list card)
-    ::   ?~  ctid  ~
-    ::   =/  exit-stir
-    ::     :*  u.ctid
-    ::         ~
-    ::         [%del-player our.bowl]~
-    ::     ==
-    ::   [%pass /exit-turf %agent [ship.u.ctid %turf] %poke [%pond-stir !>(exit-stir)]]~
-    :: =^  cards-2  state
-    ::   (give-mist:hc dmpath set-ctid+tid)
-    :: =/  cards-3=(list card)
-    ::   ?~  tid  ~
-    ::   =/  join-stir
-    ::     :*  u.tid
-    ::         ~
-    ::         [%join-player our.bowl avatar:(need (default-mist:hc))]~
-    ::     ==
-    ::   [%pass /join-turf %agent [ship.u.tid %turf] %poke [%pond-stir !>(join-stir)]]~
-    :: :(weld cards-1 cards-2 cards-3)^this
   ::
   :: Boilerplate
   ::
@@ -363,9 +340,10 @@
           [%rock rock.msg]
         [%wave (foam foam.u.wave.msg) grits.u.wave.msg]
       =/  give-paths=(list path)  [this-turf-path]~
-      =?  give-paths  =((ctid:hc) `this-turf-id)
-        :: ???
-        [/pond give-paths]
+      :: ???
+      :: =?  give-paths  =((ctid:hc) `this-turf-id)
+      ::   :: ???
+      ::   [/pond give-paths]
       :_  this
       [%give %fact give-paths %pond-stirred !>(stirred)]~
         ::
@@ -414,12 +392,15 @@
       %sss-pond
     =/  res  !<(into:da-pond (fled vase))
     =^  cards  sub-pond  (apply:da-pond res)
+    :: ~?  ?=(%future what.res)  'turf too advanced! retreat!'
     :: ~&  >  "got sss-pond from {<src.bowl>}: {<res>}"
-    [cards this]
+    :_  this
+    [(give-pond-future:hc (ship-ppath-to-turf-id src.bowl path.res)) cards]
   ::
       %sss-mist
     =/  res  !<(into:da-mist (fled vase))
     =^  cards  sub-mist  (apply:da-mist res)
+    :: ~?  ?=(%future what.res)  'mist too advanced! retreat!'
     :: ~&  >  "sub-mist is: {<read:da-mist>}"
     [cards this]
   ::
@@ -431,7 +412,11 @@
       %sss-surf-fail
     =/  msg  !<($%(fail:da-pond fail:da-mist) (fled vase))
     ~&  >>>  "not allowed to surf on {<msg>}!"
-    `this
+    ?+    -.msg  `this
+        [%pond *]
+      :_  this
+      ~[(give-pond-unavailable:hc (ship-ppath-to-turf-id +<.msg -.msg))]
+    ==
   ==
 ++  on-watch
   |=  =path
@@ -507,11 +492,11 @@
   ^-  (quip card _this)
   ?>  ?=(%poke-ack -.sign)
   :: ?~  p.sign  `this
-  %-  %-  slog
-      ^-  tang
-      :-  leaf+"poke-ack from {<src.bowl>} on wire {<wire>}"
-      ?~  p.sign  ~
-      u.p.sign
+  :: %-  %-  slog
+  ::     ^-  tang
+  ::     :-  leaf+"poke-ack from {<src.bowl>} on wire {<wire>}"
+  ::     ?~  p.sign  ~
+  ::     u.p.sign
   ?+    wire  (on-agent:def wire sign)
       [~ %sss %on-rock @ @ @ pond-path]
     =.  sub-pond  (chit:da-pond |3:wire sign)
@@ -909,8 +894,16 @@
   =/  =stirred:pond  [%rock rock]
   =/  give-paths
     ?:  on-watch  ~
-    [path.id]~
+    [(turf-id-to-path id)]~
   [%give %fact give-paths %pond-stirred !>(stirred)]~
+++  give-pond-future
+  |=  id=turf-id
+  ^-  card
+  [%give %fact [(turf-id-to-path id)]~ %pond-stirred !>(future+~)]
+++  give-pond-unavailable
+  |=  id=turf-id
+  ^-  card
+  [%give %fact [(turf-id-to-path id)]~ %pond-stirred !>(unavailable+~)]
 ++  give-mist-rock
   |=  [mpath=mist-path on-watch=?]
   ^-  (quip card _state)

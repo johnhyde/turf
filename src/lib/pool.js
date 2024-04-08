@@ -122,6 +122,10 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           } else {
             this.updatePulses(noop, id, src, wen, grits);
           }
+        } else if (res.hasOwnProperty('future')) {
+          options.onFuture?.();
+        } else if (res.hasOwnProperty('unavailable')) {
+          options.onUnavailable?.();
         } else {
           console.error('Pool response not a rock or wave???', res);
         }

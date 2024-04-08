@@ -28,9 +28,17 @@
     $:  path=paths
         =dude
         $%  [what=%tomb ~]
+            [what=%future ~]
             [what=%rock =aeon rock=vock:lake]
             [what=%wave =aeon wave=vave:lake]
     ==  ==
+  ++  unknown-response
+    |*  paths=mold
+    $:  path=paths
+        =dude
+        what=?(%tomb %rock %wave)
+        *
+    ==
   ++  on-rock
     |*  [=(lake) paths=mold]
     $:  path=paths

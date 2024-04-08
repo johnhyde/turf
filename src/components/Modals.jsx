@@ -63,25 +63,53 @@ export default function Modals() {
         }}
       </Show>
       <Show when={state.m && (!state.e || !state.player)} keyed>
-        <Modal class="bg-teal-700 text-slate-100 w-96">
-          <p class="text-xl mb-4 text-center">
-            {state.c.id ? `Teleporting to ${state.c.name}...` : 'You are in the void, not present in any turf'}
-          </p>
-          {state.c.id && (
-              <p class="mb-2">
-            {!state.e ?
-              'If this takes a long time, it may be because the host is offline.'
-            :
-              'Connected! Waiting for the latest update...'
-            }
+        <Switch>
+          <Match when={state.p?.error?.()}>
+            <Modal class="bg-orange-700 text-slate-100 w-96">
+              <Switch>
+                <Match when={state.p?.unavailable}>
+                  <p class="text-xl mb-4 text-center">
+                    {state.c.name} is not available
+                  </p>
+                </Match>
+                <Match when={state.p?.future}>
+                  <p class="text-xl mb-4 text-center">
+                    {state.c.name} is running a newer version of Turf
+                  </p>
+                  <p class="mb-2">
+                    You won't be able to visit until you get the latest software update from ~pandux
+                  </p>
+                </Match>
+              </Switch>
+              <div class="flex w-full justify-center mt-4 space-x-4">
+                <button use:autofocus class="bg-orange-800 rounded-lg px-4 py-2" onClick={goHome}>
+                  Go Home {state.c.id ? 'Instead' : ''}
+                </button>
+              </div>
+            </Modal>
+          </Match>
+          <Match when={!state.p?.error?.()}>
+            <Modal class="bg-teal-700 text-slate-100 w-96">
+              <p class="text-xl mb-4 text-center">
+                {state.c.id ? `Teleporting to ${state.c.name}...` : 'You are in the void, not present in any turf'}
               </p>
-          )}
-          <div class="flex w-full justify-center mt-4 space-x-4">
-            <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={goHome}>
-              Go Home {state.c.id ? 'Instead' : ''}
-            </button>
-          </div>
-        </Modal>
+              {state.c.id && (
+                  <p class="mb-2">
+                {!state.e ?
+                  'If this takes a long time, it may be because the host is offline.'
+                :
+                  'Connected! Waiting for the latest update...'
+                }
+                  </p>
+              )}
+              <div class="flex w-full justify-center mt-4 space-x-4">
+                <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={goHome}>
+                  Go Home {state.c.id ? 'Instead' : ''}
+                </button>
+              </div>
+            </Modal>
+          </Match>
+        </Switch>
       </Show>
       <Show when={state.thisIsUs && state.p?.new} keyed>
         <Modal class="bg-teal-700 text-slate-100" onClose={optOut}>

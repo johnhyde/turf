@@ -19,7 +19,14 @@
     --
   ++  grab
     |%
-    ++  noun  (response:poke lake *)
+    ++  noun
+      |=  n=$~(*(response:poke lake *) *)
+      ^-  (response:poke lake *)
+      =/  ures  (mole |.(((response:poke lake *) n)))
+      ?~  ures
+        =/  unres  ((unknown-response:poke *) n)
+        [path.unres dude.unres %future ~]
+      u.ures
     --
   ++  grad  %noun
   --
@@ -111,6 +118,7 @@
     =*  current  [src.bowl dude.res path.res]
     :: ~?  ?=(~ (~(get by sub) current))
     ::   "key {<current>} not found in sub {<sub>}"
+    ?:  ?=(%future what.res)  `0/(~(del by sub) current)
     =/  old=flow  (fall (~(got by sub) current) *flow)
     ?:  ?=(%tomb what.res)
       =/  =flow  old(stale &)
@@ -384,8 +392,10 @@
     |=  [payload=_|2:*(response:poke lake paths) =ship =dude path=paths]
     ^-  card:agent:gall
     =*  mark  (cat 3 %sss- name:lake)
+    :: ?:  ?=(%future what.payload)  ~&('this should never happen' *card:agent:gall)
+    ~?  ?=(%future what.payload)  'this should never happen. if you see this in dojo, please tell ~midlev-mindyr'
     =/  callback=^path
-      ?:  ?=(%tomb what.payload)  (zoom tomb-response/(scot %p ship)^dude^path)
+      ?:  ?=(?(%tomb %future) what.payload)  (zoom tomb-response/(scot %p ship)^dude^path)
       (zoom scry-response/(scot %p ship)^dude^(scot %ud aeon.payload)^path)
     :*  %pass   callback
         %agent  [ship dude]

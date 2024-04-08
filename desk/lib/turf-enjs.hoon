@@ -2,6 +2,21 @@
 /+  *turf, *plow, vita-client
 =,  enjs:format
 |%
+++  pond-stirred
+  |=  strd=stirred:pond
+  ^-  json
+  ?-    what.strd
+      %unavailable
+    (frond 'unavailable' ~)
+      %future
+    (frond 'future' ~)
+      %rock
+    (pond-rock rock.strd)
+      %wave
+    %+  pond-wave
+      [*cur-foam-v id.strd src.strd wen.strd]
+    grits.strd
+  ==
 ++  pond-rock
   |=  =rock:pond
   ^-  json
