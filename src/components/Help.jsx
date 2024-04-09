@@ -190,13 +190,13 @@ export default function Help() {
       </div>
       <div class="border-t border-yellow-50"></div>
       <p>
-        Turf is in Season 0: Beta Testing Testing. Anything you create will likely be wiped away in a future version.
+        Turf is in Season 0: Beta Testing. Things might break from time to time, but everything you make will be preserved in future versions.
       </p>
       <p>
         You are currently opted {state.mist.config.enabled ? 'in to' : 'out of' } daily usage tracking. When enabled, Turf tells {state.mist.config.vitaParent} whether you used the app once per day.
       </p>
       <p>
-        Sharing your data helps us get funding to keep improving Turf.
+        Sharing your data helps us know whether people find the app engaging.
       </p>
       <p class="w-full text-center">
         <button

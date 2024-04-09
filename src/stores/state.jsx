@@ -36,7 +36,8 @@ export function getState() {
       return this.mist.vapor?.currentTurfId;
     },
     get player() {
-      const player = this.e?.players[our];
+      if (!this.e) return null;
+      const player = this.e.players?.[our];
       if (!player) return null;
       return player;
     },

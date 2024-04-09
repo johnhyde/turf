@@ -391,11 +391,13 @@
   ::
       %sss-pond
     =/  res  !<(into:da-pond (fled vase))
-    =^  cards  sub-pond  (apply:da-pond res)
-    :: ~?  ?=(%future what.res)  'turf too advanced! retreat!'
     :: ~&  >  "got sss-pond from {<src.bowl>}: {<res>}"
+    =^  cards  sub-pond  (apply:da-pond res)
     :_  this
-    [(give-pond-future:hc (ship-ppath-to-turf-id src.bowl path.res)) cards]
+    ?.  ?=(%future what.res)  cards
+    ~&  'turf too advanced! retreat!'
+    :_  cards
+    (give-pond-future:hc (ship-ppath-to-turf-id src.bowl path.res))
   ::
       %sss-mist
     =/  res  !<(into:da-mist (fled vase))

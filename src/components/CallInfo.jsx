@@ -272,7 +272,7 @@ export default function CallInfo(props) {
         </Modal>
       </Portal>
     :
-    <div class="min-h-0 flex flex-col pointer-events-none">
+    <div class="relative z-30 min-h-0 flex flex-col pointer-events-none">
       {contents}
     </div>
   };

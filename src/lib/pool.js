@@ -286,6 +286,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
     // returns false if goal is rejected
     // otherwise, returns {goals, grits}
     filterGoals(rock, goals, apply = false) {
+      if (!rock) return false;
       let [temp, $temp] = [rock, this.updateFake.bind(this)];
       if (!apply) [temp, $temp] = createStore(hydrate(cloneDeep(rock)));
       goals = goals.map(g => this.preFilterGoal(temp, g)).filter(g => g);

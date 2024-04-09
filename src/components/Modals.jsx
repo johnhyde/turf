@@ -66,7 +66,11 @@ export default function Modals() {
         <Switch>
           <Match when={state.p?.error?.()}>
             <Modal class="bg-orange-700 text-slate-100 w-96">
-              <Switch>
+              <Switch fallback={
+                <p class="text-xl mb-4 text-center">
+                  Unknown error in teleporting to {state.c.name}: {state.p.error()}
+                </p>
+              }>
                 <Match when={state.p?.unavailable}>
                   <p class="text-xl mb-4 text-center">
                     {state.c.name} is not available
@@ -152,7 +156,7 @@ export default function Modals() {
               When enabled, Turf sends at most one message per day to {state.mist.config.vitaParent}, saying that you used app.
             </p>
             <p class="italic">
-              Please consider opting in—this gives us the data we need to get funding to keep improving Turf.
+              Please consider opting in—it's very helpful to know whether people find the app engaging.
             </p>
             <div class="flex w-full justify-center my-4 space-x-4">
               <button use:autofocus class="bg-teal-800 rounded-lg px-4 py-2" onClick={optIn}>
