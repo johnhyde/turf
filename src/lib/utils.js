@@ -201,7 +201,11 @@ export function stripPathPrefix(path) {
 }
 
 export function turfIdToPath(turfId) {
-  return '/pond/' + turfId.ship + (turfId.path !== '/' ? turfId.path : '');
+  return '/pond/' + turfIdToName(turfId);
+}
+
+export function turfIdToName(turfId) {
+  return turfId.ship + (turfId.path !== '/' ? turfId.path : '');
 }
 
 export function truncateString(str, maxLength) {

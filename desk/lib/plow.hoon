@@ -382,12 +382,12 @@
     =/  will-be-colliding  (get-collidable turf pos)
     ?:  &(will-be-colliding !player-colliding)
       :: todo: get bump effects
-      =/  bump=[=roars =goals:pond]  (pull-trigger turf ship.goal %bump pos.u.player)
+      =/  bump=[=roars =goals:pond]  (pull-trigger-at-pos turf ship.goal %bump pos.u.player)
       [roars.bump ~ goals.bump]
     ::  todo merge with identical code in %tele
     ?:  =(pos pos.u.player)  ``~
-    =/  leave=[roars goals:pond]  (pull-trigger turf ship.goal %leave pos.u.player)
-    =/  step=[roars goals:pond]  (pull-trigger turf ship.goal %step pos)
+    =/  leave=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %leave pos.u.player)
+    =/  step=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %step pos)
     :-  (weld -.leave -.step)
     :-  [goal(pos pos)]~
     (weld +.leave +.step)
@@ -399,8 +399,8 @@
     =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
     ::  todo merge with identical code in %move
     ?:  =(pos pos.u.player)  ``~
-    =/  leave=[roars goals:pond]  (pull-trigger turf ship.goal %leave pos.u.player)
-    =/  step=[roars goals:pond]  (pull-trigger turf ship.goal %step pos)
+    =/  leave=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %leave pos.u.player)
+    =/  step=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %step pos)
     :-  (weld -.leave -.step)
     :-  [goal(pos pos)]~
     (weld +.leave +.step)
@@ -510,8 +510,11 @@
       %call
     :_  `~
     [%host-call (~(put in ships.goal) src.bowl) ~]~
+      ?(%click %interact)
+    =+  (pull-trigger-on-shade turf src.bowl -.goal shade-id.goal)
+    [roars ~ goals]
   ==
-++  pull-trigger
+++  pull-trigger-at-pos
   |=  [=turf =ship =trigger pos=svec2]
   ^-  [=roars:pond =goals:pond]
   =/  things  (get-things turf pos)
@@ -528,6 +531,17 @@
   =/  res  (apply-effect turf ship effect husk-id)
   :-  (weld roars roars.res)
   (weld goals goals.res)
+++  pull-trigger-on-shade
+  |=  [=turf =ship =trigger =shade-id]
+  ^-  [=roars:pond =goals:pond]
+  =/  thing  (get-thing-by-shade-id turf shade-id)
+  ?~  thing  `~
+  =/  effect  (get-effect u.thing trigger)
+  ?~  effect  `~
+  ?:  &(?=(%bump trigger) !(is-thing-collidable turf u.thing))
+    `~
+  =/  res  (apply-effect turf ship u.effect shade-id)
+  [roars.res goals.res]
 ++  apply-effect
   |=  [=turf =ship =effect =husk-id]
   ^-  [=roars:pond =goals:pond]

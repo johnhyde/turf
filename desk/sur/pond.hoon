@@ -104,6 +104,9 @@
   $%  cur-grit
       [%call ships=(set ship) ~]
       [%send-chat from=ship text=cord]
+      [%click =shade-id]
+      [%interact =shade-id]
+      ::
       [%join-player =ship =avatar]
       [%approve-dink =portal-id]
       create-bridge-goal

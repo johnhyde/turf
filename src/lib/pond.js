@@ -1,13 +1,26 @@
-import { createMemo, createSignal } from "solid-js";
-import { produce, reconcile } from "solid-js/store";
+import { createMemo, createSignal } from 'solid-js';
+import { produce, reconcile } from 'solid-js/store';
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
 import {
-  clampToTurf, isInTurf, fillEmptySpace, getCollision, getEffectsByHusk,
-  generateHusk, jabBySpaces, getShade, delShade, getHusk, getForm, delShadeFromSpace, delPortal,
-  getThingsAtPos, getEffectsByThing,
+  clampToTurf,
+  delPortal,
+  delShade,
+  delShadeFromSpace,
+  fillEmptySpace,
+  generateHusk,
+  getCollision,
+  getEffectsByHusk,
+  getEffectsByThing,
+  getForm,
+  getHusk,
+  getShade,
+  getShadeWithForm,
+  getThingsAtPos,
+  isInTurf,
+  jabBySpaces,
 } from 'lib/turf';
-import { vec2, vecToStr, jClone, turfIdToPath } from 'lib/utils';
+import { jClone, turfIdToPath, vec2, vecToStr } from 'lib/utils';
 import { getPool } from 'lib/pool';
 
 function getTurfGrid(turf) {
@@ -37,16 +50,23 @@ export class Pond { // we use a class so we can put it inside a store without ge
     [this.error, this.$error] = createSignal();
     options = {
       ...options,
-      onErr: () =>  window.dispatchEvent(new PondEvent('err', null, id)),
+      onErr: () => window.dispatchEvent(new PondEvent('err', null, id)),
       onNew: () => this.$isNew(true),
       onNewGrits: (grits) => {
-        grits.forEach((grit) => window.dispatchEvent(new PondEvent('grit', grit, id)));
+        grits.forEach((grit) => {
+          console.log('dispatching pond grit event', grit);
+          window.dispatchEvent(new PondEvent('grit', grit, id));
+        });
       },
       onNewFakeGrits: (grits) => {
-        grits.forEach((grit) => window.dispatchEvent(new PondEvent('fakeGrit', grit, id)));
+        grits.forEach((grit) =>
+          window.dispatchEvent(new PondEvent('fakeGrit', grit, id))
+        );
       },
       onNewRoars: (roars) => {
-        roars.forEach((roar) => window.dispatchEvent(new PondEvent('roar', roar, id)));
+        roars.forEach((roar) =>
+          window.dispatchEvent(new PondEvent('roar', roar, id))
+        );
       },
       onFuture: () => {
         this.$error('future');
@@ -57,17 +77,17 @@ export class Pond { // we use a class so we can put it inside a store without ge
       preFilters,
       filters,
     };
-    const wash = (update, grits,  ...args) => {
+    const wash = (update, grits, ...args) => {
       update((turf) => {
         if (!turf?.id) return { ...turf, id };
         return turf;
       });
       washTurf(update, grits, ...args);
-    }
+    };
     const hydrate = (rock) => {
       if (rock) rock.id = id;
       return js.turf(rock);
-    }
+    };
     const apiSendWave = (...args) => {
       return api.sendPondWave(id, ...args);
     };
@@ -123,8 +143,13 @@ export class Pond { // we use a class so we can put it inside a store without ge
     if (this.sub === null) {
       const onPondErr = () => {};
       const onPondQuit = () => {};
-      this.sub = api.subscribeToPool(this.id, this._.onRes.bind(this._), onPondErr, onPondQuit);
-      return this.sub
+      this.sub = api.subscribeToPool(
+        this.id,
+        this._.onRes.bind(this._),
+        onPondErr,
+        onPondQuit,
+      );
+      return this.sub;
     } else {
       const oldSub = await this.sub;
       if (this.sub && !api.api.outstandingSubscriptions.has(oldSub)) {
@@ -142,7 +167,7 @@ export class Pond { // we use a class so we can put it inside a store without ge
     }
   }
 
-  async destroy() {
+  destroy() {
     return this.unsubscribe();
   }
 }
@@ -183,17 +208,24 @@ const pondGrits = {
   'add-husk': (turf, arg) => {
     const { pos, formId, variation } = arg;
     if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
-    if (pos.x >= turf.offset.x + turf.size.x || pos.y >= turf.offset.y + turf.size.y) return;
+    if (
+      pos.x >= turf.offset.x + turf.size.x ||
+      pos.y >= turf.offset.y + turf.size.y
+    ) return;
     const formType = getForm(turf, formId)?.type;
     const newHusk = generateHusk(formId, variation);
     if (formType === 'tile') {
-      jabBySpaces(turf, pos, space => space.tile = newHusk);
+      jabBySpaces(turf, pos, (space) => space.tile = newHusk);
     } else if (formType == 'wall' || formType == 'item') {
-      jabBySpaces(turf, pos, space => space.shades.unshift(turf.stuffCounter));
+      jabBySpaces(
+        turf,
+        pos,
+        (space) => space.shades.unshift(turf.stuffCounter),
+      );
       turf.cave[turf.stuffCounter] = {
         pos,
         ...newHusk,
-      }
+      };
       turf.stuffCounter++;
     }
   },
@@ -207,7 +239,7 @@ const pondGrits = {
       const oldPos = shade.pos;
       shade.pos = pos;
       delShadeFromSpace(turf, shadeId, oldPos);
-      jabBySpaces(turf, pos, space => space.shades.unshift(shadeId));
+      jabBySpaces(turf, pos, (space) => space.shades.unshift(shadeId));
     }
   },
   // 'cycle-shade': (turf, arg) => {
@@ -287,7 +319,7 @@ const pondGrits = {
       shadeId: null,
       for: arg.for,
       at: arg.at,
-    }
+    };
     turf.stuffCounter++;
   },
   'del-portal': (turf, arg) => {
@@ -312,7 +344,7 @@ const pondGrits = {
       const { fullFx, huskFx, formFx } = getEffectsByHusk(turf, shade);
       Object.entries(fullFx).forEach(([trigger, effect]) => {
         if (effect?.type === 'port' && effect?.arg === portalId) {
-          shade[trigger] = 'port';
+          shade.effects[trigger] = 'port';
         }
       });
     }
@@ -323,8 +355,8 @@ const pondGrits = {
     }
   },
   'chat': (turf, arg) => {
-      turf.chats.unshift(arg);
-      turf.chats = turf.chats.slice(0, 20);
+    turf.chats.unshift(arg);
+    turf.chats = turf.chats.slice(0, 20);
   },
   'move': (turf, arg) => {
     const player = turf.players[arg.ship];
@@ -382,7 +414,7 @@ const pondGrits = {
     if (!turf.portRecs[from]) {
       return;
     }
-    turf.portRecs[from] = turf.portRecs[from].filter(s => s !== ship);
+    turf.portRecs[from] = turf.portRecs[from].filter((s) => s !== ship);
   },
   'del-port-recs': (turf, from) => {
     delete turf.portRecs[from];
@@ -441,7 +473,9 @@ export function _washTurf(grit) {
             pondGrits[grit.type](turf, grit.arg);
             js.turf(turf);
           } else {
-            console.warn(`Could not apply grit of type: ${grit.type} to ${turf} turf`);
+            console.warn(
+              `Could not apply grit of type: ${grit.type} to ${turf} turf`,
+            );
           }
         } else {
           console.warn(`Could not process grit of type: ${grit.type}`);
@@ -468,9 +502,13 @@ const preFilters = {
     if (!isInTurf(turf, pos)) return false;
     const currentSpace = turf.spaces[vecToStr(pos)];
     const currentTile = currentSpace?.tile;
-    const currentShades = (currentSpace?.shades || []).map(sid => turf.cave[sid]).filter(s => s);
+    const currentShades = (currentSpace?.shades || []).map((sid) =>
+      turf.cave[sid]
+    ).filter((s) => s);
     const tileAlreadyHere = currentTile?.formId === formId;
-    const shadeAlreadyHere = currentShades.some((shade) => shade.formId === formId);
+    const shadeAlreadyHere = currentShades.some((shade) =>
+      shade.formId === formId
+    );
     if (!tileAlreadyHere && !shadeAlreadyHere) {
       return goal;
     }
@@ -554,7 +592,7 @@ const filters = {
         from: goal.arg.from,
         at: Date.now(),
         text: goal.arg.text,
-      }
+      },
     }];
   },
   'move': (turf, goal) => {
@@ -567,8 +605,8 @@ const filters = {
     if (willBeColliding && !playerColliding) return [];
     if (newPos.equals(player.pos)) return [];
     goal.arg.pos = newPos;
-    const leave = pullTrigger(turf, ship, 'leave', player.pos);
-    const step = pullTrigger(turf, ship, 'step', newPos);
+    const leave = pullTriggerAtPos(turf, ship, 'leave', player.pos);
+    const step = pullTriggerAtPos(turf, ship, 'step', newPos);
     return {
       roars: [...leave.roars, ...step.roars],
       grits: [goal],
@@ -582,8 +620,8 @@ const filters = {
     const newPos = clampToTurf(turf, pos);
     if (newPos.equals(player.pos)) return [];
     goal.arg.pos = newPos;
-    const leave = pullTrigger(turf, ship, 'leave', player.pos);
-    const step = pullTrigger(turf, ship, 'step', newPos);
+    const leave = pullTriggerAtPos(turf, ship, 'leave', player.pos);
+    const step = pullTriggerAtPos(turf, ship, 'step', newPos);
     return {
       roars: [...leave.roars, ...step.roars],
       grits: [goal],
@@ -602,22 +640,43 @@ const filters = {
           from,
           for: turfIdToPath(portal.for),
           at: portal.at,
-        }
+        },
       }],
       grits: [goal],
       goals: [],
     };
   },
+  'click': (turf, goal) => {
+    const click = pullTriggerOnShade(turf, our, 'click', goal.arg.shadeId);
+    return {
+      ...click,
+      grits: [],
+    };
+  },
+  'interact': (turf, goal) => {
+    const interact = pullTriggerOnShade(
+      turf,
+      our,
+      'interact',
+      goal.arg.shadeId,
+    );
+    return {
+      ...interact,
+      grits: [],
+    };
+  },
 };
 
-function pullTrigger(turf, ship, trigger, pos) {
+function pullTriggerAtPos(turf, ship, trigger, pos) {
   const things = getThingsAtPos(turf, pos);
-  const effectsMap = things.map(getEffectsByThing);
+  const effectsMap = things.map((
+    thing,
+  ) => [thing.id || pos, getEffectsByThing(thing)]);
   let roars = [], goals = [];
-  effectsMap.forEach((effects) => {
+  effectsMap.forEach(([huskId, effects]) => {
     const effect = effects.fullFx[trigger];
     if (effect && effect.type) {
-      const res = applyEffect(turf, ship, effect);
+      const res = applyEffect(turf, ship, effect, huskId);
       roars = [...roars, ...res.roars];
       goals = [...goals, ...res.goals];
     }
@@ -628,9 +687,26 @@ function pullTrigger(turf, ship, trigger, pos) {
   };
 }
 
-function applyEffect(turf, ship, effect) {
+function pullTriggerOnShade(turf, ship, trigger, shadeId) {
+  let roars = [], goals = [];
+  const thing = getShadeWithForm(turf, shadeId);
+  if (!thing) return { roars, goals };
+  const effects = getEffectsByThing(thing);
+  const effect = effects.fullFx[trigger];
+  if (effect && effect.type) {
+    const res = applyEffect(turf, ship, effect, shadeId);
+    roars = [...roars, ...res.roars];
+    goals = [...goals, ...res.goals];
+  }
+  return {
+    roars,
+    goals,
+  };
+}
+
+function applyEffect(turf, ship, effect, huskId) {
   switch (effect.type) {
-    case 'port':
+    case 'port': {
       const portal = turf.portals[effect.arg];
       if (!portal || !portal.at) return { roars: [], goals: [] };
       return {
@@ -640,7 +716,8 @@ function applyEffect(turf, ship, effect) {
           arg: { ship, from: effect.arg },
         }],
       };
-    case 'jump':
+    }
+    case 'jump': {
       return {
         roars: [],
         goals: [{
@@ -648,7 +725,18 @@ function applyEffect(turf, ship, effect) {
           arg: { ship, pos: effect.arg },
         }],
       };
-    default:
+    }
+    default: {
+      return {
+        roars: [{
+          type: 'effect-' + effect.type,
+          arg: effect.arg,
+          ship,
+          huskId,
+        }],
+        goals: [],
+      };
+    }
   }
 }
 
@@ -674,7 +762,10 @@ const js = {
         const value = obj[key];
         // Recursively iterate through nested objects and arrays
         if (typeof value === 'object' && value !== null) {
-          if (Object.keys(value).sort().join() == 'x,y' && value.constructor.name == 'Object') {
+          if (
+            Object.keys(value).sort().join() == 'x,y' &&
+            value.constructor.name == 'Object'
+          ) {
             obj[key] = this.vec2(value);
           } else {
             this.deepVec2(value);

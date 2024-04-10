@@ -58,6 +58,8 @@
       add-invite+(ot ~[id+so name+so till+di])
       del-invite+(ot ~[id+so])
       call+(cork (ot ~[ships+(cork (ar shp) silt)]) (late ~))
+      click+(ot ~['shadeId'^ni])
+      interact+(ot ~['shadeId'^ni])
   ==
 ::
 ++  mist-stir

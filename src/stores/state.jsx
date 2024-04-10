@@ -1,15 +1,29 @@
-import { createSignal, createContext, createEffect, createMemo, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
+import {
+  batch,
+  createContext,
+  createEffect,
+  createMemo,
+  createSignal,
+  getOwner,
+  mergeProps,
+  runWithOwner,
+  useContext,
+} from 'solid-js';
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
-import { vec2, flattenGrid, hexToInt, vecToStr } from 'lib/utils';
-import { getWallsAtPos, getWallVariationAtPos, getEffectsByHusk } from 'lib/turf';
+import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils';
+import {
+  getEffectsByHusk,
+  getWallsAtPos,
+  getWallVariationAtPos,
+} from 'lib/turf';
 import { Pond } from 'lib/pond';
 import { Mist } from 'lib/mist';
 
 export const StateContext = createContext();
 
 export const lsKeys = {
-  get SOUND_ON () {
+  get SOUND_ON() {
     return our + '/turf/soundOn';
   },
 };
@@ -79,7 +93,7 @@ export function getState() {
     get huskToPlace() {
       return this.editor.huskToPlace;
     },
-    lab:  {
+    lab: {
       get editing() {
         return selectedTab() === 'lab';
       },
@@ -127,7 +141,7 @@ export function getState() {
         },
         get peers() { // people no more than two spaces away
           return peers();
-        }
+        },
       };
       return current;
     },
@@ -158,7 +172,9 @@ export function getState() {
   });
 
   portals = createMemo(() => {
-    const sort = (p1, p2) => { return p1.id - p2.id; };
+    const sort = (p1, p2) => {
+      return p1.id - p2.id;
+    };
     const portalsDraft = [];
     const portalsTo = [];
     const portalsFrom = [];
@@ -170,9 +186,11 @@ export function getState() {
     Object.entries(state.e?.portals || {}).forEach(([portalId, portal]) => {
       const portalObj = {
         id: Number.parseInt(portalId),
-        ...portal
+        ...portal,
       };
-      if (portal.shadeId !== undefined && state.e.lunk?.shadeId === portal.shadeId) {
+      if (
+        portal.shadeId !== undefined && state.e.lunk?.shadeId === portal.shadeId
+      ) {
         lunk = portalObj;
         return;
       }
@@ -181,7 +199,9 @@ export function getState() {
       let dest;
       if (isDink) {
         if (portal.at === null) {
-          console.error(`Portal #${portalId} is supposedly a dink, but has null "at"`);
+          console.error(
+            `Portal #${portalId} is supposedly a dink, but has null "at"`,
+          );
         } else {
           portalObj.approved = dinkApproved;
         }
@@ -280,7 +300,7 @@ export function getState() {
       if (pond) {
         return pond.sendWave(type, arg, id);
       } else {
-        return api.sendPondWave(ourPond, [{ type, arg, }]);
+        return api.sendPondWave(ourPond, [{ type, arg }]);
       }
     },
     sendMistWave(type, arg, id) {
@@ -347,7 +367,7 @@ export function getState() {
         isLunk,
         pos,
         formId,
-        variation: Number.parseInt(variation)
+        variation: Number.parseInt(variation),
       });
     },
     delShade(shadeId) {
@@ -431,29 +451,41 @@ export function getState() {
         const walls = getWallsAtPos(this.e, pos, formId);
         if (!walls.length) return;
         if (formId) {
-          const variation = getWallVariationAtPos(this.e, pos, orFlags, andFlags, formId);
+          const variation = getWallVariationAtPos(
+            this.e,
+            pos,
+            orFlags,
+            andFlags,
+            formId,
+          );
           walls.forEach((wall) => this.setShadeVariation(wall.id, variation));
         } else {
           walls.forEach((wall) => {
-            const variation = getWallVariationAtPos(this.e, pos, orFlags, andFlags, wall.formId);
+            const variation = getWallVariationAtPos(
+              this.e,
+              pos,
+              orFlags,
+              andFlags,
+              wall.formId,
+            );
             this.setShadeVariation(wall.id, variation);
           });
         }
       });
     },
     updateWallsAroundPos(pos, updateCenter = false, ignoredWalls = []) {
-      ignoredWalls = ignoredWalls.map(id => Number(id));
+      ignoredWalls = ignoredWalls.map((id) => Number(id));
       const walls = getWallsAtPos(this.e, pos);
-      const mustIgnore = walls.some(w => ignoredWalls.includes(Number(w.id)));
+      const mustIgnore = walls.some((w) => ignoredWalls.includes(Number(w.id)));
       if (mustIgnore) {
         walls.forEach((wall) => {
           const n = ignoredWalls.includes(Number(wall.id));
           const y = !n;
           const poses = [
-            [vec2(pos).add(vec2( 1,  0)), y ? 8 : 0, n ?  7 : 15],
-            [vec2(pos).add(vec2(-1,  0)), y ? 2 : 0, n ? 13 : 15],
-            [vec2(pos).add(vec2( 0,  1)), y ? 4 : 0, n ? 11 : 15],
-            [vec2(pos).add(vec2( 0, -1)), y ? 1 : 0, n ? 14 : 15],
+            [vec2(pos).add(vec2(1, 0)), y ? 8 : 0, n ? 7 : 15],
+            [vec2(pos).add(vec2(-1, 0)), y ? 2 : 0, n ? 13 : 15],
+            [vec2(pos).add(vec2(0, 1)), y ? 4 : 0, n ? 11 : 15],
+            [vec2(pos).add(vec2(0, -1)), y ? 1 : 0, n ? 14 : 15],
           ];
           if (y && updateCenter) {
             poses.push([vec2(pos), 0, 15]);
@@ -462,10 +494,10 @@ export function getState() {
         });
       } else {
         const poses = [
-          [vec2(pos).add(vec2( 1,  0)), 0, 15],
-          [vec2(pos).add(vec2(-1,  0)), 0, 15],
-          [vec2(pos).add(vec2( 0,  1)), 0, 15],
-          [vec2(pos).add(vec2( 0, -1)), 0, 15],
+          [vec2(pos).add(vec2(1, 0)), 0, 15],
+          [vec2(pos).add(vec2(-1, 0)), 0, 15],
+          [vec2(pos).add(vec2(0, 1)), 0, 15],
+          [vec2(pos).add(vec2(0, -1)), 0, 15],
         ];
         if (walls.length && updateCenter) {
           poses.push([vec2(pos), 0, 15]);
@@ -475,11 +507,24 @@ export function getState() {
     },
     huskInteract(husk) {
       if (this.e && husk) {
+        // this.sendPondWave('husk-interact', {
+        //   huskId: id or pos,
+        // });
         const effects = getEffectsByHusk(this.e, husk).fullFx;
         if (effects.interact?.type === 'read') {
           this.displayText(effects.interact.arg);
         }
       }
+    },
+    shadeInteract(shadeId) {
+      this.sendPondWave('interact', {
+        shadeId: Number(shadeId),
+      });
+    },
+    shadeClick(shadeId) {
+      this.sendPondWave('click', {
+        shadeId: Number(shadeId),
+      });
     },
     displayText(text) {
       $state('text', text);
@@ -489,7 +534,7 @@ export function getState() {
         portalId: Number(portalId),
       });
     },
-    createBridge(shade, portal, trigger='step') {
+    createBridge(shade, portal, trigger = 'step') {
       if (typeof shade === 'object') {
         shade = {
           isLunk: false,
@@ -500,7 +545,8 @@ export function getState() {
       }
       this.sendPondWave('create-bridge', {
         shade,
-        trigger, portal,
+        trigger,
+        portal,
       });
     },
     createPortal(ship, path) {
@@ -538,9 +584,10 @@ export function getState() {
       return this.sendPondWave('call', { ships: peers });
     },
 
-
     setScaleLog(scaleLog) {
-      scaleLog = state.editor.editing ? scaleLog : Math.min(1, Number(scaleLog));
+      scaleLog = state.editor.editing
+        ? scaleLog
+        : Math.min(1, Number(scaleLog));
       $state('scaleLog', Math.max(-1, scaleLog));
       // $state('scaleLog', Math.max(-1, Number(scaleLog)));
     },
@@ -581,8 +628,10 @@ export function getState() {
     },
     selectTab(tab) {
       batch(() => {
-        if (state.selectedTab === state.tabs.LAB &&
-          state.selectedTab !== tab) {
+        if (
+          state.selectedTab === state.tabs.LAB &&
+          state.selectedTab !== tab
+        ) {
           this.setScaleLog(1);
         }
         $state('selectedTab', tab);
@@ -642,12 +691,12 @@ export function getState() {
     },
     removeNotification(notification) {
       $state('notifications', (notifs) => {
-        return notifs.filter(n => n !== notification);
+        return notifs.filter((n) => n !== notification);
       });
     },
     setGameLoaded() {
       $state('gameLoaded', true);
-    }
+    },
   });
 
   createEffect(() => {
@@ -687,6 +736,11 @@ export function getState() {
       });
     }, 200);
   });
+  window.addEventListener('pond-roar-effect-read', ({ roar, turfId }) => {
+    setTimeout(() => {
+      _state.displayText(roar.arg);
+    }, 200);
+  });
   window.addEventListener('pond-err', ({ _, turfId }) => {
     _state.clearTurf(turfId);
     _state.mist.enterVoid();
@@ -709,4 +763,6 @@ export function StateProvider(props) {
   );
 }
 
-export function useState() { return useContext(StateContext); }
+export function useState() {
+  return useContext(StateContext);
+}

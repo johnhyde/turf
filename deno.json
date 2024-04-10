@@ -1,0 +1,10 @@
+{
+  "lint": {
+    "rules": {
+      "exclude": ["no-window", "no-window-prefix",  "import-prefix-missing"]
+    }
+  },
+  "fmt": {
+    "singleQuote": true
+  }
+}
