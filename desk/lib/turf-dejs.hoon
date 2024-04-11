@@ -115,9 +115,21 @@
       variations+(ar luuk)
       offset+svec2
       collidable+bo
-      effects+|=(json *fx)
-      seeds+|=(json *sfx)
+      effects+fx
+      seeds+sfx
   ==
+++  fx
+  |=  jon=json
+  ^-  ^fx
+  ;;  ^fx
+  %.  jon
+  (om effect)
+++  sfx
+  |=  jon=json
+  ^-  ^sfx
+  ;;  ^sfx
+  %.  jon
+  (om effect-type)
 ++  luuk
   |=  jon=json
   ^-  ^luuk

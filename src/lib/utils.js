@@ -1,11 +1,11 @@
 import { decToUd, udToDec, unixToDa } from '@urbit/api';
-import { hex2patp, patp2hex, patp } from 'urbit-ob';
+import { hex2patp, patp, patp2hex } from 'urbit-ob';
 import { createRenderEffect, createSignal } from 'solid-js';
-import { parseGIF, decompressFrames } from 'gifuct-js';
+import { decompressFrames, parseGIF } from 'gifuct-js';
 
 const Vector2 = Phaser.Math.Vector2;
 
-/** 
+/**
  * Create a 2d vector, can take another Vector2 to copy, 2 scalars, or 1 scalar
  * @param {Number} [x=0]
  * @param {Number} [y=0]
@@ -17,7 +17,10 @@ const Vector2 = Phaser.Math.Vector2;
  * b = vec2();         // set b to (0, 0)
  * @memberof Utilities
  */
-export const vec2 = (x=0, y)=> x.x == undefined ? new Vector2(Number(x), y == undefined? Number(x) : Number(y)) : new Vector2(Number(x.x), Number(x.y));
+export const vec2 = (x = 0, y) =>
+  x.x == undefined
+    ? new Vector2(Number(x), y == undefined ? Number(x) : Number(y))
+    : new Vector2(Number(x.x), Number(x.y));
 window.vec2 = vec2;
 
 export function minV(a, b) {
@@ -39,32 +42,33 @@ export function roundV(v) {
 }
 
 export function equalsV(a, b) {
-  a = vec2(a); b = vec2(b);
+  a = vec2(a);
+  b = vec2(b);
   return a.x === b.x && a.y === b.y;
 }
 
 export function swapAxes(array2d) {
   if (!array2d || array2d.length === 0) return [];
-  return array2d[0].map((_, colIndex) => array2d.map(row => row[colIndex]));
+  return array2d[0].map((_, colIndex) => array2d.map((row) => row[colIndex]));
 }
 
 export function flattenGrid(array2d) {
   return swapAxes(array2d).flat();
 }
 
-export function near(a, b, epsilon=1e-2) {
+export function near(a, b, epsilon = 1e-2) {
   return Math.abs(a - b) <= epsilon;
 }
 
 export function nearestPow2(x) {
-  return Math.pow(2, Math.round(Math.log(x)/0.6931471805599453)) // 0.693... being Math.log(2)
+  return Math.pow(2, Math.round(Math.log(x) / 0.6931471805599453)); // 0.693... being Math.log(2)
 }
 
-export function pixelsToTiles(pixels, tileSize=32) {
+export function pixelsToTiles(pixels, tileSize = 32) {
   pixels = vec2(pixels);
   return vec2(
-    Math.floor(pixels.x/(factor*tileSize)),
-    Math.floor(pixels.y/(factor*tileSize)),
+    Math.floor(pixels.x / (factor * tileSize)),
+    Math.floor(pixels.y / (factor * tileSize)),
   );
 }
 
@@ -81,7 +85,7 @@ export const dirs = {
   'right': 1,
   'up': 2,
   'left': 3,
-}
+};
 
 export function getDirFromVec(v) {
   let dir = dirs.DOWN;
@@ -93,8 +97,12 @@ export function getDirFromVec(v) {
 }
 
 export function uuidv4() {
-  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(
+    /[018]/g,
+    (c) =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(
+        16,
+      ),
   );
 }
 
@@ -258,7 +266,6 @@ export function getTimeString(ms) {
   }
 }
 
-
 /** Random global functions
  *  @namespace Random */
 
@@ -267,32 +274,36 @@ export function getTimeString(ms) {
  *  @param {Number} [valueB=0]
  *  @return {Number}
  *  @memberof Random */
-export const rand = (a=1, b=0)=> b + (a-b)*Math.random();
+export const rand = (a = 1, b = 0) => b + (a - b) * Math.random();
 
 /** Returns a floored random value the two values passed in
  *  @param {Number} [valueA=1]
  *  @param {Number} [valueB=0]
  *  @return {Number}
  *  @memberof Random */
-export const randInt = (a=1, b=0)=> rand(a,b)|0;
+export const randInt = (a = 1, b = 0) => rand(a, b) | 0;
 
 /** Randomly returns either -1 or 1
  *  @return {Number}
  *  @memberof Random */
-export const randSign = ()=> (rand(2)|0) * 2 - 1;
+export const randSign = () => (rand(2) | 0) * 2 - 1;
 
 /** Returns a random Vector2 within a circular shape
  *  @param {Number} [radius=1]
  *  @param {Number} [minRadius=0]
  *  @return {Vector2}
  *  @memberof Random */
-export const randInCircle = (radius=1, minRadius=0)=> radius > 0 ? randVector(radius * rand(minRadius / radius, 1)**.5) : new Vector2;
+export const randInCircle = (radius = 1, minRadius = 0) =>
+  radius > 0
+    ? randVector(radius * rand(minRadius / radius, 1) ** .5)
+    : new Vector2();
 
 /** Returns a random Vector2 with the passed in length
  *  @param {Number} [length=1]
  *  @return {Vector2}
  *  @memberof Random */
-export const randVector = (length=1)=> new Vector2(length, 0).rotate(rand(2*PI));
+export const randVector = (length = 1) =>
+  new Vector2(length, 0).rotate(rand(2 * PI));
 
 /** Returns a random color between the two passed in colors, combine components if linear
  *  @param {Color}   [colorA=new Color(1,1,1,1)]
@@ -312,11 +323,12 @@ let randSeed = 1;
  *  @param {Number} [valueB=0]
  *  @return {Number}
  *  @memberof Random */
-export const randSeeded = (a=1, b=0)=>
-{
-    randSeed ^= randSeed << 13; randSeed ^= randSeed >>> 17; randSeed ^= randSeed << 5; // xorshift
-    return b + (a-b) * abs(randSeed % 1e9) / 1e9;
-}
+export const randSeeded = (a = 1, b = 0) => {
+  randSeed ^= randSeed << 13;
+  randSeed ^= randSeed >>> 17;
+  randSeed ^= randSeed << 5; // xorshift
+  return b + (a - b) * abs(randSeed % 1e9) / 1e9;
+};
 
 export const Random = {
   rand,
@@ -326,13 +338,13 @@ export const Random = {
   randVector,
   // randColor,
   randSeeded,
-}
+};
 
 function calcMaxHeight(n, r, v, a) {
-  const c = Math.ceil(n/r);
-  const mw1 = a/c;
-  const mh1 = mw1/v;
-  const mh2 = 1/r; 
+  const c = Math.ceil(n / r);
+  const mw1 = a / c;
+  const mh1 = mw1 / v;
+  const mh2 = 1 / r;
   return Math.min(mh1, mh2);
 }
 
@@ -352,7 +364,7 @@ export function calcRowsColsRig(n, v, a) {
       rows = r;
     }
   });
-  const cols = Math.ceil(n/rows);
+  const cols = Math.ceil(n / rows);
   console.log('just calculated rows and cols', rows, cols);
   return [rows, cols, biggest];
 }
@@ -373,10 +385,10 @@ export function calcCellDims(n, v, aw, ah, gap = 0) {
 
 export function bind(el, accessor) {
   const [s, set] = accessor();
-  el.addEventListener("input", (e) => set(e.currentTarget.value));
+  el.addEventListener('input', (e) => set(e.currentTarget.value));
   createRenderEffect(() => {
     el.value = s();
-  }); 
+  });
 }
 
 export function autofocus(el, _) {
@@ -395,16 +407,18 @@ export function input(el, callbacks) {
     el.blur();
   }
   el.addEventListener('focus', (e) => {
-    game.input.keyboard.enabled = false;
-    game.canvas.addEventListener('click', blur);
-    const { onFocus } = callbacks();
-    if (onFocus) onFocus(e);
-  });
-  el.addEventListener('blur', (e) => {
-    game.input.keyboard.enabled = true;
-    game.canvas.removeEventListener('click', blur);
-    const { onBlur } = callbacks();
-    if (onBlur) onBlur(e);
+    if (game.input.keyboard.enabled) {
+      game.input.keyboard.enabled = false;
+      game.canvas.addEventListener('click', blur);
+      const { onFocus } = callbacks();
+      if (onFocus) onFocus(e);
+      el.addEventListener('blur', (e) => {
+        game.input.keyboard.enabled = true;
+        game.canvas.removeEventListener('click', blur);
+        const { onBlur } = callbacks();
+        if (onBlur) onBlur(e);
+      }, { once: true });
+    }
   });
 }
 
@@ -416,11 +430,12 @@ export function createNow(interval) {
 export const now5 = createNow(5000);
 
 export function isTextInputFocused() {
-  return document.activeElement.tagName == 'TEXTAREA' || document.activeElement.tagName == 'INPUT';
+  return document.activeElement.tagName == 'TEXTAREA' ||
+    document.activeElement.tagName == 'INPUT';
 }
 
 export function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const canvas = document.createElement('canvas');
@@ -443,7 +458,7 @@ export function makeImage(url) {
           canvas.height = bitmap.height;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(bitmap, 0, 0);
-          
+
           let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           let dataUrl = canvas.toDataURL();
           console.log('loaded ' + url, dataUrl);
@@ -454,13 +469,13 @@ export function makeImage(url) {
             dataUrl,
           });
         }
-      }
+      };
       image.onerror = reject;
       image.src = url;
     } catch (e) {
       reject(e);
     }
-  })
+  });
 }
 
 export function makeImageFromArray(arr, width, height) {
@@ -492,11 +507,18 @@ export function convertGifFramesToDataUrls(frames) {
   gifCtx.clearRect(0, 0, gifCanvas.width, gifCanvas.height);
   const urls = [];
   for (const frame of frames) {
-    const imageData = makeImageFromArray(frame.patch, frame.dims.width, frame.dims.height).imageData;
+    const imageData =
+      makeImageFromArray(frame.patch, frame.dims.width, frame.dims.height)
+        .imageData;
     gifCtx.drawImage(canvas, frame.dims.left, frame.dims.top);
     urls.push(gifCanvas.toDataURL());
     if (frame.disposalType === 2) {
-      gifCtx.clearRect(frame.dims.left, frame.dims.top, frame.dims.width, frame.dims.height);
+      gifCtx.clearRect(
+        frame.dims.left,
+        frame.dims.top,
+        frame.dims.width,
+        frame.dims.height,
+      );
     }
   }
   return urls;
@@ -505,7 +527,7 @@ export function convertGifFramesToDataUrls(frames) {
 export async function processImageFiles(files) {
   files = [...files]; // convert weird FilesList to array
   const results = await Promise.all(files.map((file) => {
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith('image/')) {
       console.log('file not an image: ', file.type);
       return [null, 'file not an image'];
     }
@@ -517,8 +539,10 @@ export async function processImageFiles(files) {
       };
       if (file.type === 'image/gif') {
         reader.onload = async (e) => {
-          const gif = parseGIF(e.target.result)
-          const frames = convertGifFramesToDataUrls(decompressFrames(gif, true));
+          const gif = parseGIF(e.target.result);
+          const frames = convertGifFramesToDataUrls(
+            decompressFrames(gif, true),
+          );
           resolve([frames, null]);
         };
         reader.readAsArrayBuffer(file);
@@ -536,8 +560,8 @@ export async function processImageFiles(files) {
       }
     });
   }));
-  const frames = results.map(r => r[0]).filter(e => e);
-  const errors = results.map(r => r[1]).filter(e => e);
+  const frames = results.map((r) => r[0]).filter((e) => e);
+  const errors = results.map((r) => r[1]).filter((e) => e);
   return [frames, errors];
 }
 
@@ -551,9 +575,9 @@ export async function tintImage(image, color) {
   const data = imageData.data;
   for (let i = 0; i < data.length; i += 4) {
     const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-    data[i] = (rgb.red * data[i])/256; // red
-    data[i + 1] = (rgb.green * data[i + 1])/256; // green
-    data[i + 2] = (rgb.blue * data[i + 2])/256; // blue
+    data[i] = (rgb.red * data[i]) / 256; // red
+    data[i + 1] = (rgb.green * data[i + 1]) / 256; // green
+    data[i + 2] = (rgb.blue * data[i + 2]) / 256; // blue
   }
   ctx.putImageData(imageData, 0, 0);
   let dataUrl = canvas.toDataURL();

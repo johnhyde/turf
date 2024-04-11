@@ -354,9 +354,13 @@ export function getState() {
       if (form) return this.sendPondWave('add-form', form);
     },
     delForm(formId) {
-      return this.sendPondWave('del-form', {
-        formId,
-      });
+      if (
+        window.confirm(`Do you want to permanently delete the item: ${formId}?`)
+      ) {
+        return this.sendPondWave('del-form', {
+          formId,
+        });
+      }
     },
     async importForm(form, delFormId) {
       if (delFormId) await this.sendOurPondWave({ formId: delFormId });

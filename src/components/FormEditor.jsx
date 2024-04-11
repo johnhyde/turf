@@ -1,15 +1,31 @@
-import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
-import { createStore, produce, reconcile, unwrap } from "solid-js/store";
-import { vec2, bind, input, autofocus, processImageFiles, isValidPath, jClone } from 'lib/utils';
-import { isSpecialFormId } from 'lib/turf';
+import {
+  batch,
+  createEffect,
+  createMemo,
+  createSignal,
+  mergeProps,
+  onCleanup,
+} from 'solid-js';
+import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
+import {
+  autofocus,
+  bind,
+  input,
+  isValidPath,
+  jClone,
+  processImageFiles,
+  vec2,
+} from 'lib/utils.js';
+import { isSpecialFormId } from 'lib/turf.js';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
-import Heading from '@/Heading';
-import SmallButton from '@/SmallButton';
-import Radio from '@/Radio';
-import Modal from '@/Modal';
-import ListItemPicker from '@/ListItemPicker';
-import VariationEditor from '@/VariationEditor';
+import Heading from '@/Heading.jsx';
+import SmallButton from '@/SmallButton.jsx';
+import Radio from '@/Radio.jsx';
+import Modal from '@/Modal.jsx';
+import EffectsEditor from '@/EffectsEditor.jsx';
+import ListItemPicker from '@/ListItemPicker.jsx';
+import VariationEditor from '@/VariationEditor.jsx';
 
 export default function FormEditor(props) {
   const state = useState();
@@ -21,6 +37,20 @@ export default function FormEditor(props) {
   const formId = () => formDef.formId;
   const form = () => formDef.form;
   const offset = () => form().offset;
+  const effects = () => {
+    if (!form()) return {};
+    const merged = mergeProps(
+      form().seeds,
+      form().effects,
+    );
+    return mapValues(merged, (effect) => {
+      if (typeof effect === 'string') {
+        return { type: effect, arg: null };
+      }
+      return effect;
+    });
+  };
+  const $effects = (...args) => $newForm('form', 'effects', ...args);
   const notGarb = () => form()?.type !== 'garb';
   const [idValid, $idValid] = createSignal(null);
   const [currentVar, $currentVar] = createSignal(0);
@@ -28,18 +58,18 @@ export default function FormEditor(props) {
   const idClash = () => {
     if (props.editing && !idChanged()) return false;
     return !!(props.skye && formId() && props.skye[formId()]);
-  }
+  };
   const idInputColor = () => {
     if (form() && !idValid()) return 'bg-red-200';
     return idClash() ? 'bg-orange-200' : '';
-  }
+  };
   const readyToSave = () => {
     if (!idValid()) return false;
     return (form().variations.length && form().variations.every((v) => {
       if (!v.sprite) return false;
       if (typeof v.sprite === 'string') return true;
       if (!v.sprite.frames) return false;
-      return v.sprite.frames.every(f => f);
+      return v.sprite.frames.every((f) => f);
     }));
   };
   const addFn = () => props.addFn ?? state.addForm.bind(state);
@@ -54,11 +84,28 @@ export default function FormEditor(props) {
   });
 
   function save() {
+    const seeds = {}, fx = {};
+    Object.entries(effects()).forEach(([trigger, effect]) => {
+      if (trigger === '') return;
+      if (!effect) return;
+      if (effect.arg === null) {
+        seeds[trigger] = effect.type;
+      } else {
+        fx[trigger] = effect;
+      }
+    });
     if (readyToSave()) {
       $newForm('form', 'offset', (offset) => vec2(offset));
       addFn()(
-        jClone(formDef),
-        idChanged() ? props.form?.formId : undefined
+        {
+          formId: formId(),
+          form: {
+            ...jClone(form()),
+            seeds,
+            effects: jClone(fx),
+          },
+        },
+        idChanged() ? props.form?.formId : undefined,
       );
       cancel();
     }
@@ -71,7 +118,7 @@ export default function FormEditor(props) {
   function deleteForm() {
     addFn()(
       undefined,
-      props.form?.formId
+      props.form?.formId,
     );
     cancel();
   }
@@ -111,7 +158,9 @@ export default function FormEditor(props) {
 
   function delVariation(index) {
     $newForm('form', 'variations', produce((vars) => vars.splice(index, 1)));
-    if (currentVar() >= form().variations.length) $currentVar(form().variations.length - 1);
+    if (currentVar() >= form().variations.length) {
+      $currentVar(form().variations.length - 1);
+    }
   }
 
   async function uploadFiles(e) {
@@ -130,7 +179,7 @@ export default function FormEditor(props) {
           frames: f,
         });
       }
-    };
+    }
     uploader.value = '';
   }
 
@@ -138,26 +187,26 @@ export default function FormEditor(props) {
   return (
     <Show when={props.form?.form} keyed>
       <Modal
-        class="top-0 left-0 !max-w-full flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700"
+        class='top-0 left-0 !max-w-full flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'
         onClose={cancel}
       >
-        <div class="flex">
-          <div class="flex flex-col space-y-2 p-2">
+        <div class='flex'>
+          <div class='flex flex-col space-y-2 p-2'>
             <div>
-              <p class="font-semibold">
+              <p class='font-semibold'>
                 Item Name
               </p>
               <input
                 use:bind={[
                   () => form()?.name,
-                  (s) => $newForm('form', 'name', s)
+                  (s) => $newForm('form', 'name', s),
                 ]}
                 use:autofocus
-                class="rounded-input"
+                class='rounded-input'
               />
             </div>
             <div>
-              <p class="font-semibold">Item ID</p>
+              <p class='font-semibold'>Item ID</p>
               <input
                 use:bind={[
                   formId,
@@ -167,71 +216,91 @@ export default function FormEditor(props) {
                 placeholder='/item/identifier'
               />
               {idValid() && idClash() &&
-                <p>
-                  ID in use: {props.skye[formId()].name}
-                </p>
-              }
+                (
+                  <p>
+                    ID in use: {props.skye[formId()].name}
+                  </p>
+                )}
               {idChanged() && props.form?.formId &&
-                <p>
-                  ID will be changed from {props.form.formId}
-                </p>
-              }
+                (
+                  <p>
+                    ID will be changed from {props.form.formId}
+                  </p>
+                )}
             </div>
             <Show when={notGarb()}>
-              <div class="flex gap-2">
-                <span class="font-semibold">Type</span>
-                <Radio value={form()?.type} $value={setType} items={[['tile', 'Tile'], ['item', 'Item'], ['wall', 'Wall']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
+              <div class='flex gap-2'>
+                <span class='font-semibold'>Type</span>
+                <Radio
+                  value={form()?.type}
+                  $value={setType}
+                  items={[['tile', 'Tile'], ['item', 'Item'], ['wall', 'Wall']]}
+                  bg='border border-yellow-950'
+                  bgActive='border border-yellow-950 bg-yellow-600'
+                />
               </div>
             </Show>
-            <div class="flex gap-2">
-              <span class="font-semibold">Offset</span>
+            <div class='flex gap-2'>
+              <span class='font-semibold'>Offset</span>
               <div>
-                <span class="mr-1">x:</span>
-                <input type="number"
-                  class="rounded-md pl-1 w-12"
+                <span class='mr-1'>x:</span>
+                <input
+                  type='number'
+                  class='rounded-md pl-1 w-12'
                   min={-tileSize}
                   // todo: figure out some way to do this again?
                   // but there an be many bmps of different size
                   // max={spriteBmp()?.width || 0}
-                  max="99"
+                  max='99'
                   use:bind={[
                     () => form()?.offset?.x,
                     (s) => $newForm('form', 'offset', 'x', Number(s)),
-                  ]} />
+                  ]}
+                />
               </div>
               <div>
-                <span class="mr-1">y:</span>
-                <input type="number"
-                  class="rounded-md pl-1 w-12"
+                <span class='mr-1'>y:</span>
+                <input
+                  type='number'
+                  class='rounded-md pl-1 w-12'
                   min={-tileSize}
                   // max={spriteBmp()?.height || 0}
-                  max="99"
+                  max='99'
                   use:bind={[
                     () => form()?.offset?.y,
                     (s) => $newForm('form', 'offset', 'y', Number(s)),
-                  ]} />
+                  ]}
+                />
               </div>
             </div>
             <Show when={notGarb()}>
-              <div class="flex items-center">
-                <label for="collidable" class="font-semibold mr-2">
+              <div class='flex items-center'>
+                <label for='collidable' class='font-semibold mr-2'>
                   Blocks Movement
                 </label>
-                <input type="checkbox" id="collidable"
+                <input
+                  type='checkbox'
+                  id='collidable'
                   checked={form()?.collidable}
-                  onInput={(e) => $newForm('form', 'collidable', e.currentTarget.checked)}
+                  onInput={(e) =>
+                    $newForm('form', 'collidable', e.currentTarget.checked)}
                 />
               </div>
+              <EffectsEditor
+                effects={effects()}
+                $effects={$effects}
+                allowSeeds
+              />
             </Show>
           </div>
-          <div class="max-w-md flex flex-col space-y-2 p-2">
-            <p class="font-semibold">Image</p>
-            <div class="flex flex-col space-y-2">
+          <div class='max-w-md flex flex-col space-y-2 p-2'>
+            <p class='font-semibold'>Image</p>
+            <div class='flex flex-col space-y-2'>
               <p>
                 Tiles are 32x32 pixels. GIF uploads OK.
               </p>
-              <div class="flex gap-2 items-center">
-                <span class="font-semibold">Variations</span>
+              <div class='flex gap-2 items-center'>
+                <span class='font-semibold'>Variations</span>
                 <ListItemPicker
                   wall={form().type === 'wall'}
                   items={form().variations}
@@ -240,15 +309,22 @@ export default function FormEditor(props) {
                   onAdd={addVariation}
                   editing
                 />
-                <div class="flex items-center space-x-2">
+                <div class='flex items-center space-x-2'>
                   <SmallButton onClick={() => uploader.click()}>
                     Upload
                   </SmallButton>
-                  <input type="file" accept="image/*" multiple onInput={uploadFiles} ref={uploader} class="hidden"/>
+                  <input
+                    type='file'
+                    accept='image/*'
+                    multiple
+                    onInput={uploadFiles}
+                    ref={uploader}
+                    class='hidden'
+                  />
                 </div>
               </div>
               <Show when={form().variations[currentVar()]}>
-                <div class="border-b border-yellow-950" />
+                <div class='border-b border-yellow-950' />
                 <VariationEditor
                   type={form().type}
                   var={form().variations[currentVar()]}
@@ -260,16 +336,18 @@ export default function FormEditor(props) {
               </Show>
             </div>
           </div>
-          {/* {dev &&
+          {
+            /* {dev &&
             <div class="break-all">
               {JSON.stringify(form(), (_, v) => {
                 if (typeof v === 'string') return v.substring(0,40);
                 return v;
               }, 2)}
             </div>
-          } */}
+          } */
+          }
         </div>
-        <div class="flex justify-center space-x-2">
+        <div class='flex justify-center space-x-2'>
           <SmallButton onClick={save} disabled={!readyToSave()}>
             Save
           </SmallButton>
@@ -285,4 +363,4 @@ export default function FormEditor(props) {
       </Modal>
     </Show>
   );
-};
+}

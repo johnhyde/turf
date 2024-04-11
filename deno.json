@@ -1,4 +1,12 @@
 {
+  "imports": {
+    "@/": "./src/components/",
+    "lib/": "./src/lib/",
+    "css/": "./src/css/",
+    "stores/": "./src/stores/",
+    "assets/": "./src/assets/",
+    "vendor/": "./src/vendor/"
+  },
   "lint": {
     "rules": {
       "exclude": ["no-window", "no-window-prefix",  "import-prefix-missing"]
@@ -6,5 +14,6 @@
   },
   "fmt": {
     "singleQuote": true
-  }
+  },
+  "nodeModulesDir": true
 }

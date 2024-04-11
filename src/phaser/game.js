@@ -10,7 +10,7 @@ import {
 } from 'solid-js';
 import { unwrap } from 'solid-js/store';
 import uniq from 'lodash/uniq';
-import { useState } from 'stores/state';
+import { useState } from 'stores/state.jsx';
 import {
   jClone,
   near,
@@ -19,28 +19,30 @@ import {
   swapAxes,
   tintImage,
   truncateString,
+  turfIdToName,
   vec2,
   vecToStr,
-} from 'lib/utils';
+} from 'lib/utils.js';
 import {
   getEffectsByHusk,
+  getEffectsByShadeId,
   getShadeWithForm,
   getSpace,
   getWallVariationAtPos,
   isInTurf,
-} from 'lib/turf';
+} from 'lib/turf.js';
 import {
   extractPlayerSprites,
   extractSkyeSprites,
   extractSkyeTileSprites,
   spriteName,
   spriteNameWithDir,
-} from 'lib/turf';
-import { Player } from './player';
-import { Shade } from './shade';
-import { Preview } from './preview';
-import { Resizer } from './resizer';
-import { TileIndicator } from './tileIndicator';
+} from 'lib/turf.js';
+import { Player } from './player.js';
+import { Shade } from './shade.js';
+import { Preview } from './preview.js';
+import { Resizer } from './resizer.js';
+import { TileIndicator } from './tileIndicator.js';
 
 import voidUrl from 'assets/sprites/void.png';
 
@@ -186,12 +188,14 @@ function createShade(shade, id, turf) {
   const index = siblings.length - i - 1; // reverse since bottom/first is most recent
   const indexDepthMod = isShade ? index / 1000 : 0;
   let sprite = new Shade(scene, shade, turf, indexDepthMod);
+  if (isShade) sprite.id = id;
   const { formId } = shade;
   if (!sprite.active) {
     console.error('Could not create shade', formId);
     return;
   }
   if (isShade) {
+    sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
     createEffect(() => {
       shade = state.e?.cave?.[id];
       if (shade) {
@@ -212,7 +216,6 @@ function createShade(shade, id, turf) {
         }
       }
     });
-    sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
     if (shade.formId === '/portal') {
       // const state = useState();
       createEffect(() => {
@@ -313,10 +316,12 @@ function createShade(shade, id, turf) {
       const effects = getEffectsByHusk(state.e, shade).fullFx;
       if (effects.interact?.type === 'read') {
         addText(effects.interact.arg);
+      } else if (effects.click?.type === 'read') {
+        addText(effects.click.arg);
       } else if (effects.step?.type === 'port') {
         const portal = state.e.portals[effects.step.arg];
         if (portal) {
-          addText(portal.for.ship);
+          addText(turfIdToName(portal.for));
         }
       }
     }
@@ -413,10 +418,8 @@ export function startPhaser(_owner, _container) {
         const thickness = 2;
         const alpha = 1;
         let draw = false;
-        function mapEdit(pointer) {
+        function mapEdit(pos) {
           if (state.c.selectedForm) {
-            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
-            // console.log(`pointer event - adding husk: ${pointer.worldX}x${pointer.worldY}`)
             if (state.c.selectedForm.type === 'wall') {
               const variation = getWallVariationAtPos(
                 state.e,
@@ -436,18 +439,20 @@ export function startPhaser(_owner, _container) {
             }
           }
         }
-        this.input.on('pointerdown', (pointer) => {
-          mapEdit(pointer);
-        });
-
-        this.input.on('pointerup', (pointer, gameObjects) => {
+        this.input.on('pointerdown', (pointer, gameObjects) => {
           const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+          mapEdit(pos);
           if (
             ![state.tabs.EDITOR, state.tabs.TOWN, state.tabs.PORTALS].includes(
               state.selectedTab,
             )
           ) {
-            if (!(gameObjects[0] instanceof Player)) {
+            const clickConsumed = gameObjects.some((obj) => {
+              if (obj instanceof Player) return true;
+              return !!getEffectsByShadeId(state.e, obj.id)
+                .fullFx?.['click']?.arg;
+            });
+            if (!clickConsumed) {
               player?.moveTo?.(pos);
             }
           }
@@ -462,13 +467,8 @@ export function startPhaser(_owner, _container) {
               } else {
                 state.addHusk(pos, shade.formId, shade.variation, shade.isLunk);
               }
-            } else {
-              const oldPos = state.e?.cave?.[state.huskToPlace.shade]?.pos;
-              state.moveShade(state.huskToPlace.shade, pos);
-              if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
-              state.updateWallsAroundPos(pos, true);
+              state.clearHuskToPlace();
             }
-            state.clearHuskToPlace();
           } else {
             if (state.editor.editing && state.editor.pointer) {
               const tile = tiles[vecToStr(pos)];
@@ -480,6 +480,20 @@ export function startPhaser(_owner, _container) {
                 }
               }
             }
+          }
+        });
+
+        this.input.on('pointerup', (pointer, _gameObjects) => {
+          if (
+            state.editor.huskToPlace &&
+            typeof state.huskToPlace.shade !== 'object'
+          ) {
+            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+            const oldPos = state.e?.cave?.[state.huskToPlace.shade]?.pos;
+            state.moveShade(state.huskToPlace.shade, pos);
+            if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
+            state.updateWallsAroundPos(pos, true);
+            state.clearHuskToPlace();
           }
         });
 

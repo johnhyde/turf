@@ -1,4 +1,4 @@
-import { vec2, minV, maxV, uuidv4, dirs, vecToStr, jClone } from 'lib/utils';
+import { dirs, jClone, maxV, minV, uuidv4, vec2, vecToStr } from 'lib/utils';
 
 export function generateHusk(formId, variation = 0) {
   return {
@@ -55,7 +55,7 @@ export function fillEmptySpace(turf, formId) {
         turf.spaces[pos] = {
           tile,
           shades: [],
-        }
+        };
       } else if (!turf.spaces[pos].tile) {
         turf.spaces[pos].tile = tile;
       }
@@ -122,7 +122,9 @@ export function getHuskWithForm(turf, huskId) {
 export function getShadesAtPos(turf, pos) {
   const shades = getSpace(turf, pos)?.shades;
   if (!shades) return [];
-  return shades.map(sid => getShadeWithForm(turf, sid)).filter(shade => shade);
+  return shades.map((sid) => getShadeWithForm(turf, sid)).filter((shade) =>
+    shade
+  );
 }
 
 export function getThingsAtPos(turf, pos) {
@@ -133,11 +135,11 @@ export function getThingsAtPos(turf, pos) {
 }
 
 export function getShadesAtPosByFormId(turf, pos, formId) {
-  return getShadesAtPos(turf, pos).filter(shade => shade.formId === formId);
+  return getShadesAtPos(turf, pos).filter((shade) => shade.formId === formId);
 }
 
 export function getShadesAtPosByType(turf, pos, type) {
-  return getShadesAtPos(turf, pos).filter(shade => shade.form.type === type);
+  return getShadesAtPos(turf, pos).filter((shade) => shade.form.type === type);
 }
 
 export function getWallsAtPos(turf, pos, formId) {
@@ -145,7 +147,13 @@ export function getWallsAtPos(turf, pos, formId) {
   return getShadesAtPosByType(turf, pos, 'wall');
 }
 
-export function getWallVariationAtPos(turf, pos, orFlags = 0, andFlags = 15, formId) {
+export function getWallVariationAtPos(
+  turf,
+  pos,
+  orFlags = 0,
+  andFlags = 15,
+  formId,
+) {
   const down = getWallsAtPos(turf, vec2(pos).add(vec2(0, 1)), formId);
   const right = getWallsAtPos(turf, vec2(pos).add(vec2(1, 0)), formId);
   const up = getWallsAtPos(turf, vec2(pos).add(vec2(0, -1)), formId);
@@ -188,6 +196,12 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
+export function getEffectsByShadeId(turf, shadeId) {
+  const shade = getShade(turf, shadeId);
+  if (!shade) return { fullFx: {}, huskFx: {}, formFx: {} };
+  return getEffectsByHusk(turf, shade);
+}
+
 export function getEffectsByHusk(turf, shade) {
   const form = getForm(turf, shade.formId);
   return getEffectsByThing({
@@ -197,11 +211,13 @@ export function getEffectsByHusk(turf, shade) {
 }
 
 export function getEffectsByThing(thing) {
-  if (!thing.form) return {
-    fullFx: thing.effects,
-    huskFx: thing.effects,
-    formFx: {},
-  };
+  if (!thing.form) {
+    return {
+      fullFx: thing.effects,
+      huskFx: thing.effects,
+      formFx: {},
+    };
+  }
   const formFx = Object.assign({}, thing.form.seeds, thing.form.effects);
   const fullFx = Object.assign({}, formFx, thing.effects);
   return {
@@ -214,7 +230,7 @@ export function getEffectsByThing(thing) {
 export function delShade(turf, shadeId) {
   const shade = getShade(turf, shadeId);
   if (shade) {
-    delShadeFromSpace(turf, shadeId, shade.pos)
+    delShadeFromSpace(turf, shadeId, shade.pos);
     delete turf.cave[shadeId];
   }
 }
@@ -240,7 +256,7 @@ export function burnBridge(turf, portalId) {
 export function extractSkyeSprites(turfId, skye) {
   const sprites = {};
   Object.entries(skye).forEach(([formId, form]) => {
-      addFormSprites(turfId, sprites, form, formId);
+    addFormSprites(turfId, sprites, form, formId);
   });
   return sprites;
 }
@@ -269,13 +285,15 @@ function addFormSprites(turfId, sprites, form, formId, patp, config = {}) {
 }
 
 function addThingSprites(turfId, sprites, thing, patp, config = {}) {
-  addFormSprites(turfId, sprites, thing.form, thing.formId, patp, config)
+  addFormSprites(turfId, sprites, thing.form, thing.formId, patp, config);
 }
 
 export function extractPlayerSprites(turfId, players) {
   const sprites = {};
   Object.entries(players).forEach(([patp, player]) => {
-    addThingSprites(turfId, sprites, player.avatar.body.thing, patp, { color: player.avatar.body.color });
+    addThingSprites(turfId, sprites, player.avatar.body.thing, patp, {
+      color: player.avatar.body.color,
+    });
     player.avatar.things.forEach((thing) => {
       addThingSprites(turfId, sprites, thing, patp);
     });
@@ -283,12 +301,13 @@ export function extractPlayerSprites(turfId, players) {
   return sprites;
 }
 
-export function spriteName(turfId, id, variation, patp='') {
+export function spriteName(turfId, id, variation, patp = '') {
   // return turfId.replace(/\/(pond\/)?/g, '-') + patp + id.replace(/\//g, '-') + '_' + (variation || '0');
-  return turfId.replace(/\//g, '-') + patp + id.replace(/\//g, '-') + '_' + (variation || '0');
+  return turfId.replace(/\//g, '-') + patp + id.replace(/\//g, '-') + '_' +
+    (variation || '0');
 }
 
-export function spriteNameWithDir(turfId, id, form, dir = dir.DOWN, patp='') {
+export function spriteNameWithDir(turfId, id, form, dir = dir.DOWN, patp = '') {
   const variation = pickVariationWithDir(form, dir);
   if (variation === null) return null;
   return spriteName(turfId, id, variation, patp);
@@ -307,5 +326,5 @@ export function pickVariationWithDir(form, dir = dir.DOWN) {
 
 export const specialFormIds = ['/portal', '/portal/house', '/gate'];
 export function isSpecialFormId(formId) {
-    return specialFormIds.includes(formId);
+  return specialFormIds.includes(formId);
 }

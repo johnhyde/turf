@@ -87,10 +87,10 @@ export default function EffectsEditor(props) {
                     </div>
                   </div>
                   <ArgInput
-                    shade={husk()}
                     type={effect().type}
                     arg={effect().arg}
                     $arg={(arg) => setArg(trigger(), effect().type, arg)}
+                    allowSeeds={props.allowSeeds}
                   />
                 </div>
               </Show>
@@ -227,9 +227,11 @@ function ArgInput(props) {
                     />
                   </Match>
                 </Switch>
-                <SmallButton class='hidden' onClick={[props.$arg, null]}>
-                  x
-                </SmallButton>
+                <Show when={props.allowSeeds}>
+                  <SmallButton onClick={[props.$arg, null]}>
+                    x
+                  </SmallButton>
+                </Show>
               </>
             )}
         </div>
