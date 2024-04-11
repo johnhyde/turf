@@ -1,8 +1,8 @@
 /* @refresh reload */
 import { render } from 'solid-js/web';
-import { Router } from "@solidjs/router";
-import { createRoot } from "solid-js";
-import Phaser from "phaser";
+import { Router } from '@solidjs/router';
+import { createRoot } from 'solid-js';
+import Phaser from 'phaser';
 
 import 'css/reset.css';
 import 'css/index.css';
@@ -33,13 +33,15 @@ if (import.meta.hot) {
 }
 
 let violated = false;
-document.addEventListener("securitypolicyviolation", (e) => {
+document.addEventListener('securitypolicyviolation', (e) => {
   console.log(e.blockedURI);
   console.log(e.violatedDirective);
   console.log(e.originalPolicy);
   if (!violated) {
     violated = true;
-    alert("Turf is being blocked by a Content Security Policy. Please DM ~midlev-mindyr about this, and in the meantime: consider using a browser extension like 'Disable Content-Security-Policy' to work around this.");
+    alert(
+      "Turf is being blocked by a Content Security Policy. Please DM ~midlev-mindyr about this, and in the meantime: consider using a browser extension like 'Disable Content-Security-Policy' to work around this.",
+    );
   }
 });
 
@@ -51,4 +53,3 @@ render(() => {
     </Router>
   );
 }, root);
-

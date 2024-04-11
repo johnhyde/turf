@@ -42,6 +42,7 @@ import { Player } from './player.js';
 import { Shade } from './shade.js';
 import { Preview } from './preview.js';
 import { Resizer } from './resizer.js';
+import { ButtonHint } from './buttonHint.js';
 import { TileIndicator } from './tileIndicator.js';
 
 import voidUrl from 'assets/sprites/void.png';
@@ -52,12 +53,6 @@ var game, scene, cam, cursors, keys = {}, player, earth, flats, stand, preview;
 var formIndexMap, players = {}, tiles = {}, shades = {};
 window.tiles = tiles;
 window.shades = shades;
-const factor = 8;
-const tileSize = 32;
-const tileFactor = factor * tileSize;
-window.factor = factor;
-window.tileSize = tileSize;
-window.tileFactor = tileFactor;
 
 function addGritListener(eventName, handler) {
   window.addEventListener(eventName, handler, {
@@ -253,6 +248,8 @@ function createShade(shade, id, turf) {
           fontFamily: 'monospace',
           fontSmooth: 'never',
           '--webkit-font-smoothing': 'none',
+          strokeThickness: 1.5 * factor,
+          stroke: '#000',
         },
       });
       textObj.x = sprite.x;
@@ -734,6 +731,7 @@ export function startPhaser(_owner, _container) {
     window.flats = flats = scene.add.container();
     window.stand = stand = scene.add.container();
     window.resizer = new Resizer(scene, turf.id);
+    window.buttonHint = new ButtonHint(scene, turf.id);
     window.tileIndicator = new TileIndicator(scene, turf.id);
     game.input.keyboard.preventDefault = false;
   }

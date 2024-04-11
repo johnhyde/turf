@@ -5,20 +5,26 @@ import {
   createSignal,
   on,
 } from 'solid-js';
-import { useState } from 'stores/state';
+import { useState } from 'stores/state.jsx';
 import isEqual from 'lodash/isEqual';
 import {
   cite,
+  defaultTextStyles,
   dirs,
   getTimeString,
   intToHex,
   jClone,
   now5,
   roundV,
+  shiftVInDir,
   sleep,
   vec2,
-} from 'lib/utils';
-import { pickVariationWithDir, spriteNameWithDir } from 'lib/turf';
+} from 'lib/utils.js';
+import {
+  getShadesAtPos,
+  pickVariationWithDir,
+  spriteNameWithDir,
+} from 'lib/turf.js';
 
 export class Player extends Phaser.GameObjects.Container {
   constructor(scene, turfId, patp, load) {
@@ -43,8 +49,15 @@ export class Player extends Phaser.GameObjects.Container {
       this.depthMod = 0.55;
       this.keys = {
         ...scene.input.keyboard.createCursorKeys(),
-        ...scene.input.keyboard.addKeys({ w: 'W', a: 'A', s: 'S', d: 'D' }),
+        ...scene.input.keyboard.addKeys({
+          w: 'W',
+          a: 'A',
+          s: 'S',
+          d: 'D',
+          x: 'X',
+        }),
       };
+      this.keys.x.addListener('down', () => this.interact());
       // set lerp to 1 here to avoid weird jerking, set to 0.2 when we're ready
       this.cam.startFollow(
         this,
@@ -245,9 +258,7 @@ export class Player extends Phaser.GameObjects.Container {
       text: cite(this.patp),
       style: {
         fontSize: 8 * factor + 'px',
-        fontFamily: 'monospace',
-        fontSmooth: 'never',
-        '--webkit-font-smoothing': 'none',
+        ...defaultTextStyles,
       },
     });
     this.name.setDisplayOrigin(
@@ -259,9 +270,7 @@ export class Player extends Phaser.GameObjects.Container {
       text: '(ping)',
       style: {
         fontSize: 6 * factor + 'px',
-        fontFamily: 'monospace',
-        fontSmooth: 'never',
-        '--webkit-font-smoothing': 'none',
+        ...defaultTextStyles,
       },
     });
     this.ping.setDisplayOrigin(
@@ -274,9 +283,7 @@ export class Player extends Phaser.GameObjects.Container {
       text: '(zzz)',
       style: {
         fontSize: 6 * factor + 'px',
-        fontFamily: 'monospace',
-        fontSmooth: 'never',
-        '--webkit-font-smoothing': 'none',
+        ...defaultTextStyles,
       },
     });
     this.zzz.setDisplayOrigin(0, playerOffset.y * factor - this.zzz.height / 2);
@@ -302,12 +309,11 @@ export class Player extends Phaser.GameObjects.Container {
     this.speechBubbleTextDisplay = this.scene.make.text({
       text: this.speechBubbleText,
       style: {
+        ...defaultTextStyles,
         align: 'left',
         fontSize: 4 * factor + 'px',
-        fontFamily: 'monospace',
-        fontSmooth: 'never',
-        '--webkit-font-smoothing': 'none',
         color: 'black',
+        stroke: 'white',
         wordWrap: {
           width: this.speechBubble.width * factor - 4 * factor,
           useAdvancedWrap: true,
@@ -579,6 +585,14 @@ export class Player extends Phaser.GameObjects.Container {
       this.zzz.setText('');
     }
     this.centerText(this.zzz);
+  }
+
+  interact() {
+    if (this.isUs) {
+      const interactPos = shiftVInDir(vec2(this.tilePos), this.dir);
+      const shades = getShadesAtPos(this.s.e, interactPos);
+      shades.forEach((shade) => this.s.shadeInteract(shade.id));
+    }
   }
 
   onClick(pointer) {

@@ -96,6 +96,23 @@ export function getDirFromVec(v) {
   return dir;
 }
 
+export function shiftVInDir(v, dir) {
+  switch (dir) {
+    case dirs.DOWN: {
+      return v.add(vec2(0, 1));
+    }
+    case dirs.RIGHT: {
+      return v.add(vec2(1, 0));
+    }
+    case dirs.UP: {
+      return v.add(vec2(0, -1));
+    }
+    case dirs.LEFT: {
+      return v.add(vec2(-1, 0));
+    }
+  }
+}
+
 export function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(
     /[018]/g,
@@ -129,6 +146,15 @@ export function intToRGB(decimal) {
     blue: decimal & 0xff,
   };
 }
+
+export const defaultTextStyles = {
+  fontFamily: 'monospace',
+  fontSmooth: 'never',
+  '--webkit-font-smoothing': 'none',
+  color: 'white',
+  strokeThickness: 1.5 * factor,
+  stroke: 'black',
+};
 
 export function vecToStr(vec) {
   return vec.x + ',' + vec.y;

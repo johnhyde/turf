@@ -9,7 +9,7 @@
       content="
         default-src * 'unsafe-eval' 'unsafe-inline';
         connect-src 'self' https://turf.metered.live;
-        font-src 'self';
+        font-src 'self' data:;
         img-src * data:; 
     ">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -27,6 +27,11 @@
 
     <!-- <script src="//cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script> -->
     <!-- <script src="//cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script> -->
+    <script>
+      window.factor = 8;
+      window.tileSize = 32;
+      window.tileFactor = factor * tileSize;
+    </script>
     <script src="/src/index.jsx" type="module"></script>
   </body>
 </html>
