@@ -87,7 +87,7 @@ if [ -z "$WATCH_MODE" ]; then
     lensa 'hood' "+hood/commit %$DESK"
 
     if [ "$GLOBBER" ]; then
-        lensd '-garden!make-glob %globber /turf'
+        lensd '-landscape!make-glob %globber /turf'
         GLOBS="$PIER/.urb/put"
         GLOB=$(ls -t $GLOBS | head -1)
         TARGET_GLOBS="$cdir"/../globs/
