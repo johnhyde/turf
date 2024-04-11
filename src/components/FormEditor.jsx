@@ -286,11 +286,16 @@ export default function FormEditor(props) {
                     $newForm('form', 'collidable', e.currentTarget.checked)}
                 />
               </div>
-              <EffectsEditor
-                effects={effects()}
-                $effects={$effects}
-                allowSeeds
-              />
+              <div>
+                <label class='font-semibold mr-2'>
+                  Effects
+                </label>
+                <EffectsEditor
+                  effects={effects()}
+                  $effects={$effects}
+                  allowSeeds
+                />
+              </div>
             </Show>
           </div>
           <div class='max-w-md flex flex-col space-y-2 p-2'>

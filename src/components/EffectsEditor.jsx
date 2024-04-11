@@ -66,32 +66,37 @@ export default function EffectsEditor(props) {
 
             return (
               <Show when={effect() != null}>
-                <div class='py-2'>
-                  <div class='relative flex flex-wrap items-center gap-1 mb-1'>
-                    <SmallButton
-                      onClick={clearEffect}
-                      class='absolute top-0 right-0'
-                    >
-                      x
-                    </SmallButton>
-                    <div class='flex gap-1 items-center'>
-                      <span>on</span>
-                      <TriggerSelector
-                        trigger={trigger()}
-                        $trigger={$trigger}
-                      />
+                <div class='py-2 flex gap-2 items-start'>
+                  <div>
+                    <div class='flex flex-wrap items-center gap-1 mb-1'>
+                      <div class='flex gap-1 items-center'>
+                        <span>on</span>
+                        <TriggerSelector
+                          trigger={trigger()}
+                          $trigger={$trigger}
+                        />
+                      </div>
+                      <div class='flex gap-1 items-center'>
+                        <span>do</span>
+                        <EffectTypeSelector
+                          type={effect().type}
+                          $type={$type}
+                        />
+                      </div>
                     </div>
-                    <div class='flex gap-1 items-center'>
-                      <span>do</span>
-                      <EffectTypeSelector type={effect().type} $type={$type} />
-                    </div>
+                    <ArgInput
+                      type={effect().type}
+                      arg={effect().arg}
+                      $arg={(arg) => setArg(trigger(), effect().type, arg)}
+                      allowSeeds={props.allowSeeds}
+                    />
                   </div>
-                  <ArgInput
-                    type={effect().type}
-                    arg={effect().arg}
-                    $arg={(arg) => setArg(trigger(), effect().type, arg)}
-                    allowSeeds={props.allowSeeds}
-                  />
+                  <SmallButton
+                    onClick={clearEffect}
+                    class=''
+                  >
+                    x
+                  </SmallButton>
                 </div>
               </Show>
             );
