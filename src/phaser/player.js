@@ -313,7 +313,7 @@ export class Player extends Phaser.GameObjects.Container {
         align: 'left',
         fontSize: 4 * factor + 'px',
         color: 'black',
-        stroke: 'white',
+        strokeWidth: 0,
         wordWrap: {
           width: this.speechBubble.width * factor - 4 * factor,
           useAdvancedWrap: true,
