@@ -18,7 +18,7 @@
         players.ephemera    (~(put by players.ephemera.turf) our (new-player mid-pos av))
         lunk.deed      `[0 %.n]
       ==
-    =.  turf  (add-husk turf [mid-pos /gate 0])
+    =.  turf  (add-shade turf [mid-pos /gate 0])
     turf
   ++  default-skye
     ^-  skye
@@ -478,39 +478,40 @@
     u.collidable.thing
   collidable.form.thing
 ::
+++  get-shade-ids
+  |=  [=turf pos=svec2]
+  ^-  (list shade-id)
+  =/  space  (get-space spaces.plot.turf pos)
+  ?~  tile.space
+    shades.space
+  [u.tile.space shades.space]
 ++  get-shades
   |=  [=turf pos=svec2]
   ^-  (list [shade-id shade])
-  =/  space  (get-space spaces.plot.turf pos)
-  =/  shades  shades.space
-  %+  murn  shades
+  =/  shade-ids  (get-shade-ids turf pos)
+  %+  murn  shade-ids
   |=  id=shade-id
   =/  shade  (~(get by cave.plot.turf) id)
   ?~  shade  ~
   `[id u.shade]
 ++  get-things
   |=  [=turf pos=svec2]
-  ^-  (list [husk-id thing])
-  =/  space  (get-space spaces.plot.turf pos)
-  =/  husks=(list [husk-id husk])
+  ^-  (list [shade-id thing])
+  =/  shades=(list [shade-id shade])
     (turn (get-shades turf pos) |=([id=shade-id =shade] [id +.shade]))
-  =.  husks  ?~(tile.space husks [[pos u.tile.space] husks])
-  %+  murn  husks
-  |=  [=husk-id =husk]
-  =/  form  (get-form turf form-id.husk)
+  %+  murn  shades
+  |=  [=shade-id =shade]
+  =/  form  (get-form turf form-id.shade)
   ?~  form  ~
-  `[husk-id husk u.form]
+  `[shade-id shade u.form]
 ::
 ++  get-collidable
   |=  [=turf pos=svec2]
   ^-  ?
-  =/  space  (get-space spaces.plot.turf pos)
-  ?:  &(?=(^ tile.space) (is-husk-collidable turf u.tile.space))
-    %.y
-  =/  shades  shades.space
+  =/  shade-ids  (get-shade-ids turf pos)
   |-  ^-  ?
-  ?~  shades  %.n
-  =/  shade  (~(get by cave.plot.turf) i.shades)
+  ?~  shade-ids  %.n
+  =/  shade  (~(get by cave.plot.turf) i.shade-ids)
   ?:  &(?=(^ shade) (is-husk-collidable turf +.u.shade))
     %.y
   $(shades t.shades)
@@ -587,40 +588,24 @@
     %+  roll  del.shades
     |=  [[=shade-id pos=svec2] =_turf]
     (del-shade-from-space turf shade-id pos)
-  =?    spaces.plot.turf
-      :: if form is null it might have been a tile
-      |(?=(~ form) ?=(%tile type.form)) 
-    %-  ~(run by spaces.plot.turf)
-    |=  =space
-    ?~  tile.space  space
-    ?.  =(form-id form-id.u.tile.space)
-      space
-    space(tile ~)
   turf
 ::
 :: resets husk-bits for tile - [offset collidable effects]
 :: does not verify form
-++  add-tile
-  |=  [=turf spec=husk-spec]
-  ^-  ^turf
-  =,  spec
-  =/  new-husk=husk
-    [form-id variation *husk-bits]
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
-  space(tile `new-husk)
-++  del-tile
-  |=  [=turf pos=svec2]
-  ^-  ^turf
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
-  space(tile ~)
+:: ++  del-tile
+::   |=  [=turf pos=svec2]
+::   ^-  ^turf
+::   %^  jab-by-spaces  turf  pos
+::   |=  =space  ^-  _space
+::   space(tile ~)
 ::
-:: does not verify form
 ++  add-shade
   |=  [=turf spec=husk-spec]
   ^-  ^turf
   =,  spec
+  =/  form-type  (get-form-type turf form-id)
+  ?~  form-type  turf
+  ?.  ?=(space-form-type u.form-type)  turf
   =*  stuff-counter  stuff-counter.plot.turf
   =/  new-husk=husk
     [form-id variation *husk-bits]
@@ -631,19 +616,11 @@
   =.  turf
     %^  jab-by-spaces  turf  pos
     |=  =space  ^-  _space
+    ?:  =(%tile u.form-type)
+      space(tile `stuff-counter)
     space(shades [stuff-counter shades.space])
   =.  stuff-counter  +(stuff-counter)
   turf
-++  add-husk  :: verifies form
-  |=  [=turf spec=husk-spec]
-  ^-  ^turf
-  =,  spec
-  =/  form-type  (get-form-type turf form-id)
-  ?~  form-type  turf
-  ?.  ?=(space-form-type u.form-type)  turf
-  ?:  =(%tile u.form-type)
-    (add-tile turf spec)
-  (add-shade turf spec)
 ::
 ++  del-shade
   |=  [=turf id=shade-id]
@@ -658,6 +635,8 @@
   ^-  ^turf
   %^  jab-by-spaces  turf  pos
   |=  =space
+  =?  space  =(tile.space `id)
+    space(tile ~)
   space(shades (skip shades.space |=(sid=@ =(sid id))))
 ::
 ++  move-shade
@@ -665,6 +644,9 @@
   ^-  ^turf
   =/  shade  (~(gut by cave.plot.turf) id ~)
   ?~  shade  turf
+  =/  form-type  (get-form-type turf form-id.shade)
+  ?~  form-type  turf
+  ?.  ?=(space-form-type u.form-type)  turf
   =/  old-pos  pos.shade
   =.  cave.plot.turf
     %+  ~(put by cave.plot.turf)  id
@@ -672,6 +654,8 @@
   =.  turf  (del-shade-from-space turf id old-pos)
   %^  jab-by-spaces  turf  pos
   |=  =space  ^-  _space
+  ?:  =(%tile u.form-type)
+    space(tile `id)
   space(shades [id shades.space])
 ::
 ++  cycle-shade
@@ -680,43 +664,12 @@
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  _shade
   shade(variation (mod (add amt variation.shade) (lent variations.form)))
-++  cycle-tile
-  |=  [=turf pos=svec2 amt=@ud]
-  ^-  ^turf
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
-  ?~  tile.space  space
-  =*  tile  u.tile.space
-  =/  form  (get-form turf form-id.tile)
-  ?~  form  space
-  =.  variation.tile  (mod (add amt variation.tile) (lent variations.u.form))
-  space
-++  cycle-husk
-  |=  [=turf =husk-id amt=@ud]
-  ^-  ^turf
-  ?@  husk-id  (cycle-shade turf husk-id amt)
-  (cycle-tile turf husk-id amt)
 ++  set-shade-var
   |=  [=turf id=shade-id variation=@ud]
   ^-  ^turf
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  _shade
   shade(variation (mod variation (lent variations.form)))
-++  set-tile-var
-  |=  [=turf pos=svec2 variation=@ud]
-  ^-  ^turf
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
-  ?~  tile.space  space
-  =/  form  (get-form turf form-id.u.tile.space)
-  ?~  form  space
-  =.  variation.u.tile.space  (mod variation (lent variations.u.form))
-  space
-++  set-husk-var
-  |=  [=turf =husk-id variation=@ud]
-  ^-  ^turf
-  ?@  husk-id  (set-shade-var turf husk-id variation)
-  (set-tile-var turf husk-id variation)
 ++  set-shade-effect
   |=  [=turf id=shade-id =trigger effect=(unit possible-effect)]
   ^-  ^turf
@@ -726,39 +679,12 @@
       effects
     (~(put by effects.shade) trigger effect)
   ==
-++  set-tile-effect
-  |=  [=turf pos=svec2 =trigger effect=(unit possible-effect)]
-  ^-  ^turf
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
-  ?~  tile.space  space
-  =.  effects.u.tile.space
-    (~(put by effects.u.tile.space) trigger effect)
-  space
-++  set-husk-effect
-  |=  [=turf =husk-id =trigger effect=(unit possible-effect)]
-  ^-  ^turf
-  ?@  husk-id  (set-shade-effect turf husk-id trigger effect)
-  (set-tile-effect turf husk-id trigger effect)
 ++  set-shade-collidable
   |=  [=turf id=shade-id collidable=(unit ?)]
   ^-  ^turf
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  _shade
   shade(collidable collidable)
-++  set-tile-collidable
-  |=  [=turf pos=svec2 collidable=(unit ?)]
-  ^-  ^turf
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
-  ?~  tile.space  space
-  =.  collidable.u.tile.space  collidable
-  space
-++  set-husk-collidable
-  |=  [=turf =husk-id collidable=(unit ?)]
-  ^-  ^turf
-  ?@  husk-id  (set-shade-collidable turf husk-id collidable)
-  (set-tile-collidable turf husk-id collidable)
 ++  add-portal
   |=  [=turf for=turf-id at=(unit portal-id)]
   ^-  ^turf

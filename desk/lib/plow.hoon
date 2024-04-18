@@ -105,7 +105,7 @@
     ==
   =*  turf  u.uturf
   ?+    -.goal  `~[goal]~
-      %add-husk
+      %add-shade
     :-  ~
     :-  [goal]~
     ?.  is-lunk.goal  ~
@@ -127,9 +127,8 @@
       %move-shade
     =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
     `~[goal(pos pos)]~
-      %set-husk-effect
-    ?^  husk-id.goal  `~[goal]~  :: todo: properly support tile portals
-    =/  shade-fx  (get-effects-by-shade-id turf husk-id.goal)
+      %set-shade-effect
+    =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
     ?~  shade-fx  ``~
     =,  u.shade-fx
     =/  og-effect  (~(get by full-fx) trigger.goal) 
@@ -153,19 +152,19 @@
         ?~  add-portal-id  ~
         ?:  (~(has by portal-counts) u.add-portal-id)
           ~
-        [%add-shade-to-portal u.add-portal-id husk-id.goal]~
+        [%add-shade-to-portal u.add-portal-id shade-id.goal]~
       ^-  goals:pond
       ?~  del-portal-id  ~
       =/  count  (~(gut by portal-counts) u.del-portal-id 0)
       ?:  (gth count 1)  ~
-      [%del-shade-from-portal u.del-portal-id husk-id.goal]~
+      [%del-shade-from-portal u.del-portal-id shade-id.goal]~
     [~ [goal]~ goals]
     ::
     ::   %add-lunk
     :: ?:  &(top !=(our src):bowl)  ``~
     :: :-  ~
     :: :-  ~
-    :: :~  [%add-husk +.goal]
+    :: :~  [%add-shade +.goal]
     ::     [%set-lunk `[stuff-counter.plot.turf %.n]]
     :: ==
       %set-lunk
@@ -178,7 +177,7 @@
         ?~  shade  ~
         ?.  =(1 variation.shade)  ~
         :: active lunk is being 
-        [%set-husk-var shade-id.u.lunk.deed.turf 0]~
+        [%set-shade-var shade-id.u.lunk.deed.turf 0]~
       =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk.goal ~)
       ?~  shade  ~  :: todo cancel goal in this case
       ?.  =(/gate (scag 1 form-id.shade))  ~
@@ -187,7 +186,7 @@
       ::  Because variation 0 is for unapproved
       ::  and variation 1 is for an approved lunk
       ?.  =(approved.u.lunk.goal variation.shade)  ~
-      [%set-husk-var shade-id.u.lunk.goal `@`!approved.u.lunk.goal]~
+      [%set-shade-var shade-id.u.lunk.goal `@`!approved.u.lunk.goal]~
     [~ [goal]~ goals]
       %approve-dink
     ?.  (portal-is-dink turf portal-id.goal)  ``~
@@ -199,7 +198,7 @@
     ::
       %create-bridge
     :: $:  %create-bridge
-    ::     shade=?(shade-id add-add-husk-spec) 
+    ::     shade=?(shade-id add-shade-spec) 
     ::     =trigger
     ::     portal=?(portal-id turf-id)
     :: ==
@@ -230,9 +229,9 @@
     =/  =goals:pond
       %+  murn
         ^-  (list (unit cur-grit:pond))
-        :~  ?@(shade.goal ~ `[%add-husk shade.goal])
+        :~  ?@(shade.goal ~ `[%add-shade shade.goal])
             ?@(portal.goal ~ `[%add-portal portal.goal ~])
-            `[%set-husk-effect shade-id trigger.goal `port+portal-id]
+            `[%set-shade-effect shade-id trigger.goal `port+portal-id]
         ==
       same
     ``goals
@@ -518,17 +517,17 @@
   |=  [=turf =ship =trigger pos=svec2]
   ^-  [=roars:pond =goals:pond]
   =/  things  (get-things turf pos)
-  =/  effects=(list [husk-id effect])
+  =/  effects=(list [shade-id effect])
     %+  murn  things
-    |=  [=husk-id =thing]
+    |=  [=shade-id =thing]
     =/  effect  (get-effect thing trigger)
     ?~  effect  ~
     ?:  &(?=(%bump trigger) !(is-thing-collidable turf thing))
       ~
-    `[husk-id u.effect]
+    `[shade-id u.effect]
   %+  roll  effects
-  |=  [[=husk-id =effect] =roars:pond =goals:pond]
-  =/  res  (apply-effect turf ship effect husk-id)
+  |=  [[=shade-id =effect] =roars:pond =goals:pond]
+  =/  res  (apply-effect turf ship effect shade-id)
   :-  (weld roars roars.res)
   (weld goals goals.res)
 ++  pull-trigger-on-shade
@@ -543,7 +542,7 @@
   =/  res  (apply-effect turf ship u.effect shade-id)
   [roars.res goals.res]
 ++  apply-effect
-  |=  [=turf =ship =effect =husk-id]
+  |=  [=turf =ship =effect =shade-id]
   ^-  [=roars:pond =goals:pond]
   ?+    -.effect  `~
       %port

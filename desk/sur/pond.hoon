@@ -1,5 +1,5 @@
 /-  *turf
-/-  pold=pond-old
+/-  pold=pond-3
 /+  *turf
 =<
 |%
@@ -17,7 +17,7 @@
 ++  wash  wash-grit
 --
 |%
-+$  rock  $+  pond-rock  [%3 =stir-ids turf=(unit turf)]
++$  rock  $+  pond-rock  [%4 =stir-ids turf=(unit turf)]
 +$  rock-v  _-:*rock
 +$  vock
   :: $%  [%future ~]
@@ -34,16 +34,18 @@
       [%wake ~]
       [%set-turf =turf]
       [%del-turf ~]
+      [%set-name name=@t]
+      [%set-back back=background]
       [%size-turf off-size]
       [%add-form form-spec]
       [%del-form =form-id]
-      [%add-husk add-husk-spec]
+      [%add-shade add-shade-spec]
       [%del-shade =shade-id]
       [%move-shade =shade-id pos=svec2]
-      [%cycle-husk =husk-id amt=@ud]
-      [%set-husk-var =husk-id variation=@ud]
-      [%set-husk-effect =husk-id =trigger effect=(unit possible-effect)]
-      [%set-husk-collidable =husk-id collidable=(unit ?)]
+      [%cycle-shade =shade-id amt=@ud]
+      [%set-shade-var =shade-id variation=@ud]
+      [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
+      [%set-shade-collidable =shade-id collidable=(unit ?)]
       [%set-lunk lunk=(unit lunk)]
       [%set-dink =portal-id approved=?]
       [%del-dink =portal-id]
@@ -95,7 +97,7 @@
 ::  and link them in one transaction
 +$  create-bridge-goal
   $:  %create-bridge
-      shade=?(shade-id add-husk-spec) 
+      shade=?(shade-id add-shade-spec) 
       =trigger
       portal=?(portal-id turf-id)
       :: link=(unit ?(%lunk %dink))
@@ -158,139 +160,141 @@
     %+  ~(jab by players)  u.src
     |=  =player
     player(wake wen)
-  ?-    -.grit
+  ?-  -.grit
     ?(%noop %wake)  turf
     ::
-      %size-turf
-    =.  turf  %=  turf
-        offset.plot  offset.grit
-        size.plot  size.grit
-        ::
-          players.ephemera
-        %-  ~(run by players)
-        |=  =player
-        player(pos (clamp-pos pos.player offset.grit size.grit))
-      ==
-    (fill-empty-space turf /grass)
+    %set-name  turf(name.deed name.grit)
+    %set-back  turf(back.plot back.grit)
+    %size-turf
+      =.  turf  %=  turf
+          offset.plot  offset.grit
+          size.plot  size.grit
+          ::
+            players.ephemera
+          %-  ~(run by players)
+          |=  =player
+          player(pos (clamp-pos pos.player offset.grit size.grit))
+        ==
+      (fill-empty-space turf /grass)
     ::
     %add-form  (add-form turf +.grit)
     %del-form  (del-form turf form-id.grit)
-    %add-husk  (add-husk turf +>.grit)
+    %add-shade  (add-shade turf +>.grit)
     %del-shade  (del-shade turf +.grit)
     %move-shade  (move-shade turf +.grit)
-    %cycle-husk  (cycle-husk turf +.grit)
-    %set-husk-var  (set-husk-var turf +.grit)
-    %set-husk-effect  (set-husk-effect turf +.grit)
-    %set-husk-collidable  (set-husk-collidable turf +.grit)
+    %cycle-shade  (cycle-shade turf +.grit)
+    %set-shade-var  (set-shade-var turf +.grit)
+    %set-shade-effect  (set-shade-effect turf +.grit)
+    %set-shade-collidable  (set-shade-collidable turf +.grit)
     ::
     %set-lunk  turf(lunk.deed lunk.grit)
-      %set-dink
-    =.  dinks.deed.turf
-      (~(put by dinks.deed.turf) portal-id.grit approved.grit)
-    turf
-      %del-dink
-    =.  dinks.deed.turf
-      (~(del by dinks.deed.turf) portal-id.grit)
-    turf
+    %set-dink
+      =.  dinks.deed.turf
+        (~(put by dinks.deed.turf) portal-id.grit approved.grit)
+      turf
+    %del-dink
+      =.  dinks.deed.turf
+        (~(del by dinks.deed.turf) portal-id.grit)
+      turf
     %add-portal  (add-portal turf for.grit at.grit)
     %del-portal  (del-portal turf from.grit)
-      %add-shade-to-portal
-    %^  jab-by-portals  turf  from.grit
-    |=  =portal
-    portal(shade-id `shade-id.grit)
-      %del-shade-from-portal
-    %^  jab-by-portals  turf  from.grit
-    |=  =portal
-    ?.  =(shade-id.portal `shade-id.grit)
-      portal
-    portal(shade-id ~)
-      %del-portal-from-shade
-    ?.  (~(has by cave.plot.turf) shade-id.grit)
+    %add-shade-to-portal
+      %^  jab-by-portals  turf  from.grit
+      |=  =portal
+      portal(shade-id `shade-id.grit)
+    %del-shade-from-portal
+      %^  jab-by-portals  turf  from.grit
+      |=  =portal
+      ?.  =(shade-id.portal `shade-id.grit)
+        portal
+      portal(shade-id ~)
+    %del-portal-from-shade
+      ?.  (~(has by cave.plot.turf) shade-id.grit)
+        turf
+      =.  cave.plot.turf
+        %+  ~(jab by cave.plot.turf)  shade-id.grit
+        |=  =shade
+        =+  (get-effects-by-shade turf shade)
+        =/  overrides
+          %-  malt
+          %+  murn  ~(tap by full-fx)
+          |=  [=trigger eff=(unit possible-effect)]
+          ^-  (unit [_trigger _eff])
+          ?~  eff  ~
+          ?@  u.eff  ~
+          ?.  ?=(%port -.u.eff)  ~
+          ?.  =(portal-id.u.eff portal-id.grit)
+            ~
+          `[trigger `%port]
+        shade(effects (~(uni by husk-fx) overrides))
       turf
-    =.  cave.plot.turf
-      %+  ~(jab by cave.plot.turf)  shade-id.grit
-      |=  =shade
-      =+  (get-effects-by-shade turf shade)
-      =/  overrides
-        %-  malt
-        %+  murn  ~(tap by full-fx)
-        |=  [=trigger eff=(unit possible-effect)]
-        ^-  (unit [_trigger _eff])
-        ?~  eff  ~
-        ?@  u.eff  ~
-        ?.  ?=(%port -.u.eff)  ~
-        ?.  =(portal-id.u.eff portal-id.grit)
-          ~
-        `[trigger `%port]
-      shade(effects (~(uni by husk-fx) overrides))
-    turf
     ::
-      %portal-confirmed
-    %^  jab-by-portals  turf  from.grit
-    |=  =portal
-    portal(at `at.grit)
+    %portal-confirmed
+      %^  jab-by-portals  turf  from.grit
+      |=  =portal
+      portal(at `at.grit)
     ::
-      %chat
-    turf(chats.ephemera [chat.grit (scag 19 chats.ephemera.turf)])
-      ?(%move %tele)
-    %^  jab-by-players  turf  ship.grit
-    |=  =player
-    player(pos pos.grit)
-      %face
-    %^  jab-by-players  turf  ship.grit
-    |=  =player
-    player(dir dir.grit)
-      %ping-player
-    turf
-      %set-avatar
-    %^  jab-by-players  turf  ship.grit
-    |=  =player
-    player(avatar avatar.grit)
-      %add-port-offer
-    =.  port-offers.deed.turf
-      (~(put by port-offers.deed.turf) ship.grit from.grit)
-    turf
-      %del-port-offer
-    =.  port-offers.deed.turf
-      (~(del by port-offers.deed.turf) ship.grit)
-    turf
-      %add-port-req
-    ?@  from.grit  turf
-    =.  port-reqs.deed.turf
-      (~(put by port-reqs.deed.turf) ship.grit [u.from.grit avatar.grit])
-    turf
-      %del-port-req
-    =.  port-reqs.deed.turf
-      (~(del by port-reqs.deed.turf) ship.grit)
-    turf
-      %add-port-rec
-    =.  port-recs.deed.turf
-      (~(put ju port-recs.deed.turf) from.grit ship.grit)
-    turf
-      %del-port-rec
-    =.  port-recs.deed.turf
-      (~(del ju port-recs.deed.turf) from.grit ship.grit)
-    turf
-      %del-port-recs
-    =.  port-recs.deed.turf
-      (~(del by port-recs.deed.turf) from.grit)
-    turf
-      %add-player
-    =.  players
-      (~(put by players) ship.grit player.grit)
-    turf
-      %del-player
-    =.  players
-      (~(del by players) ship.grit)
-    turf
-      %add-invite
-    =.  invites.deed.turf
-      (~(put by invites.deed.turf) id.grit invite.grit)
-    turf
-      %del-invite
-    =.  invites.deed.turf
-      (~(del by invites.deed.turf) id.grit)
-    turf
+    %chat
+      turf(chats.ephemera [chat.grit (scag 19 chats.ephemera.turf)])
+        ?(%move %tele)
+      %^  jab-by-players  turf  ship.grit
+      |=  =player
+      player(pos pos.grit)
+    %face
+      %^  jab-by-players  turf  ship.grit
+      |=  =player
+      player(dir dir.grit)
+    %ping-player
+      turf
+    %set-avatar
+      %^  jab-by-players  turf  ship.grit
+      |=  =player
+      player(avatar avatar.grit)
+    %add-port-offer
+      =.  port-offers.deed.turf
+        (~(put by port-offers.deed.turf) ship.grit from.grit)
+      turf
+    %del-port-offer
+      =.  port-offers.deed.turf
+        (~(del by port-offers.deed.turf) ship.grit)
+      turf
+    %add-port-req
+      ?@  from.grit  turf
+      =.  port-reqs.deed.turf
+        (~(put by port-reqs.deed.turf) ship.grit [u.from.grit avatar.grit])
+      turf
+    %del-port-req
+      =.  port-reqs.deed.turf
+        (~(del by port-reqs.deed.turf) ship.grit)
+      turf
+    %add-port-rec
+      =.  port-recs.deed.turf
+        (~(put ju port-recs.deed.turf) from.grit ship.grit)
+      turf
+    %del-port-rec
+      =.  port-recs.deed.turf
+        (~(del ju port-recs.deed.turf) from.grit ship.grit)
+      turf
+    %del-port-recs
+      =.  port-recs.deed.turf
+        (~(del by port-recs.deed.turf) from.grit)
+      turf
+    %add-player
+      =.  players
+        (~(put by players) ship.grit player.grit)
+      turf
+    %del-player
+      =.  players
+        (~(del by players) ship.grit)
+      turf
+    %add-invite
+      =.  invites.deed.turf
+        (~(put by invites.deed.turf) id.grit invite.grit)
+      turf
+    %del-invite
+      =.  invites.deed.turf
+        (~(del by invites.deed.turf) id.grit)
+      turf
   ==
 ::
 :: upgrades
@@ -311,7 +315,32 @@
 ++  turf-to-next
   |=  =turf:pold
   ^-  ^turf
-  turf(deed 'Main Turf'^deed.turf)
+  =/  players  (~(run by players.ephemera.turf) uplr)
+  =/  plot  (uplt plot.turf)
+  %=  turf
+    players.ephemera  players
+    plot  plot
+  ==
+++  uplr
+  |=  plr=player:pold
+  ^-  player
+  plr(avatar (uvtr avatar.player))
+++  uplt
+  |=  plt=plot:pold
+  ^-  plot
+  :-  color+0xa6.e4e8
+  :^  size.plt  offset.plt  tile-size.plt
+  =/  [[cav counter] spaces]
+    %+  ~(rib by spaces.plt)
+      `stuff-counter.plt
+    |=  [[pos=svec2 spc=space:pold] [cav=cave count=@ud]]
+    ^-  [[cave @ud] [svec2 space]]
+    ?~  tile.space  [[cav count] [pos spc]]
+    :-  :-  (~(put by cav) count [pos u.tile.space])
+        +(count)
+    :-  pos  spc(tile `count)
+  =/  sky  (~(run by skye.plt) ufrm)
+  [spaces sky cav count]
 ::
 ++  ugrt
   |=  g=vrit
@@ -325,16 +354,28 @@
   ^-  grit
   =/  grit  +.g
   :-  *cur-grit-v
-  ?+    -.grit  grit
-      %set-turf
-    grit(turf (turf-to-next turf.grit))
-      %upgrade
-    noop+~
-      %cycle-shade
-    [%cycle-husk +.grit]
-      %set-shade-var
-    [%set-husk-var +.grit]
-      %set-shade-effect
-    [%set-husk-effect +.grit]
+  ?+  -.grit  grit
+    %set-turf
+      grit(turf (turf-to-next turf.grit))
+    %add-form
+      grit(form (ufrm form.grit))
+    %cycle-husk
+      ?^  husk-id.grit  noop+~
+      [%cycle-shade +.grit]
+    %set-husk-var
+      ?^  husk-id.grit  noop+~
+      [%set-shade-var +.grit]
+    %set-husk-effect
+      ?^  husk-id.grit  noop+~
+      [%set-shade-effect +.grit]
+    %set-husk-collidable
+      ?^  husk-id.grit  noop+~
+      [%set-shade-collidable +.grit]
+    %set-avatar
+      grit(avatar (uvtr avatar.grit))
+    %add-port-req
+      grit(avatar (uvtr avatar.grit))
+    %add-player
+      grit(avatar.player (uvtr avatar.player.grit))
   ==
 --

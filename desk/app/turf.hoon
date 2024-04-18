@@ -202,8 +202,8 @@
     =^  cards  state  (give-pond-goal:hc dtid:hc set-turf+(default-turf:gen our.bowl size offset ~))
     cards^this
   ::
-      %add-husk
-    =^  cards  state  (give-pond-goal:hc dtid:hc add-husk+!<(add-husk-spec vase))
+      %add-shade
+    =^  cards  state  (give-pond-goal:hc dtid:hc add-shade+!<(add-shade-spec vase))
     cards^this
   ::
       %chat

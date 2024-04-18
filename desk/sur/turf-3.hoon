@@ -1,9 +1,10 @@
-/-  turf-3
+/-  *turf-1
 /+  vita-client
 |%
 +$  turf-id  [=ship =path]
 +$  form-id  path
 +$  shade-id  @ud
++$  husk-id  $@(shade-id svec2)
 +$  dest  [for=turf-id at=portal-id]
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
@@ -33,8 +34,7 @@
       =avatar
   ==
 +$  avatar
-  $:  nick=(unit @t)
-      =body
+  $:  =body
       things=(list thing)
   ==
 +$  body  [=color =thing]
@@ -45,6 +45,7 @@
   ==
 ::
 +$  deed
+  :: $:  =invites
   $:  name=$~('Main Turf' @t)
       =invites
       =perms
@@ -86,18 +87,13 @@
 +$  dinks  (map portal-id ?)
 ::
 +$  plot
-  $:  back=background
-      size=$~((vec2 16 8) vec2)
+  $:  size=$~((vec2 16 8) vec2)
       offset=svec2  :: Where is the top left corner? May change due to resizing
       tile-size=$~((vec2 [32 32]) vec2)
       =spaces
       =skye
       =cave
       stuff-counter=@ud
-  ==
-+$  background
-  $%  [%color color]
-      [%sprite sprite]
   ==
 +$  spaces  $+  spaces  (map svec2 space)
 +$  grid  (list col)
@@ -106,7 +102,7 @@
 +$  cave  $+  cave  (map shade-id shade)
 +$  space
   $+  space
-  $:  tile=(unit shade-id)
+  $:  tile=(unit husk)
       shades=(list shade-id)
   ==
 +$  thing
@@ -136,7 +132,8 @@
       form-bits
   ==
 +$  form-bits
-  $:  collidable=flug
+  $:  offset=svec2
+      collidable=flug
       effects=fx
       seeds=sfx
   ==
@@ -145,8 +142,7 @@
 +$  luuk
   %-  unit
   $:  =deep
-      offset=svec2
-      tint=(unit color)
+      :: todo: tint=(unit color)
       =sprite
   ==
 +$  deep  ?(%flat %back %fore)
@@ -155,7 +151,6 @@
 +$  png  @t  :: base64 encoded from js frontend or relative path to sprite image
 +$  anim
   $:  type=anim-type
-      timing=(list @ud)  :: frame delays in ms, 14fps=[71 ~]
       frames=(list png)
   ==
 +$  anim-type  ?(%loop %once %pong %rand)
@@ -174,8 +169,8 @@
   ==
 ::
 +$  form-spec  [=form-id =form]
-+$  shade-spec  [pos=svec2 =form-id variation=@ud]
-+$  add-shade-spec  [is-lunk=? shade-spec]
++$  husk-spec  [pos=svec2 =form-id variation=@ud]
++$  add-husk-spec  [is-lunk=? husk-spec]
 ::
 +$  pond-path  [%pond *]
 +$  mist-path  [%mist *]
@@ -231,25 +226,4 @@
     %add-form  (~(put by sky) form-id.grit form.grit)
     %del-form  (~(del by sky) form-id.grit)
   ==
-++  uvtr
-  |=  vtr+avatar:turf-3
-  ^-  avatar
-  `vtr(things (turn things.vtr utng))
-++  utng
-  |=  tng=thing:turf-3
-  ^-  thing
-  tng(form (ufrm form.tng))
-++  ufrm
-  |=  frm=form:turf-3
-  ^-  form
-  frm(variations (turn variations (curr uluk offset.frm)))
-++  uluk
-  |=  [luk=luuk:turf-3 offset=svec2]
-  ^-  luuk
-  :^  deep.luuk  offset  ~  (uspr sprite.luk)
-++  uspr
-  |=  spr=sprite:turf-3
-  ^-  sprite
-  ?@  spr  spr
-  :+  -.spr  ~  +.spr
 --

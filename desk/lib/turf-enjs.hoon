@@ -55,122 +55,121 @@
           %set-turf
         (turf turf.grit)
         %del-turf  ~
-          %size-turf
-        (pairs ~[offset+(svec2 offset.grit) size+(vec2 size.grit)])
-          %add-form
-        (form-spec +.grit)
-          %del-form
-        (frond 'formId' (path form-id.grit))
-          %add-husk
-        (add-husk-spec +.grit)
-          %del-shade
-        (frond 'shadeId' (numb +.grit))
-          %move-shade
-        (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
-          %cycle-husk
-        (pairs ~['huskId'^(husk-id husk-id.grit) amount+(numb amt.grit)])
-          %set-husk-var
-        (pairs ~['huskId'^(husk-id husk-id.grit) variation+(numb variation.grit)])
-          %set-husk-effect
-        %-  pairs
-        :~  'huskId'^(husk-id husk-id.grit)
-            'trigger'^s+trigger.grit
-            'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
-        ==
-          %set-husk-collidable
-        (pairs ~['huskId'^(husk-id husk-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
-        %set-lunk  (maybe-lunk lunk.grit)
-          %set-dink
-        %-  pairs
-        :~  'portalId'^(numb portal-id.grit)
-            approved+b+approved.grit
-        ==
-          %del-dink
-        (frond 'portalId' (numb portal-id.grit))
-          %add-portal
-        %-  pairs
-        :~  for+(turf-id for.grit)
-            at+?~(at.grit ~ (numb u.at.grit))
-        ==
-          %del-portal
-        %-  pairs
-        :~  from+(numb from.grit)
-            loud+b+loud.grit
-        ==
-          %add-shade-to-portal
-        %-  pairs
-        :~  'from'^(numb from.grit)
-            'shadeId'^(numb shade-id.grit)
-        ==
-          %del-shade-from-portal
-        %-  pairs
-        :~  'from'^(numb from.grit)
-            'shadeId'^(numb shade-id.grit)
-        ==
-          %del-portal-from-shade
-        %-  pairs
-        :~  'shadeId'^(numb shade-id.grit)
-            'portalId'^(numb portal-id.grit)
-        ==
-          %portal-confirmed
-        %-  pairs
-        :~  from+(numb from.grit)
-            at+(numb at.grit)
-        ==
-          %chat
-        (chat chat.grit)
-          %move
-        (move +.grit)
-          %tele
-        (move +.grit)
-          %face
-        (face +.grit)
-          %ping-player
-        %-  pairs
-        :~  ship+(ship-json ship.grit)
-            by+(ship-json by.grit)
-        ==
-          %set-avatar
-        (pond-set-avatar +.grit)
-          %add-port-offer
-        %-  pairs
-        :~  ship+(ship-json ship.grit)
-            from+(numb from.grit)
-        ==
-          %del-port-offer
-        (ship-json ship.grit)
-          %add-port-req
-        %-  pairs
-        :~  ship+(ship-json ship.grit)
-            from+?@(from.grit s+`@t`from.grit (numb u.from.grit))
-            avatar+(avatar avatar.grit)
-        ==
-          %del-port-req
-        (ship-json ship.grit)
-          %add-port-rec
-        %-  pairs
-        :~  from+(numb from.grit)
-            ship+(ship-json ship.grit)
-        ==
-          %del-port-rec
-        %-  pairs
-        :~  from+(numb from.grit)
-            ship+(ship-json ship.grit)
-        ==
-          %del-port-recs
-        (numb from.grit)
-          %add-player
-        (add-player +.grit)
-          %del-player
-        (frond 'ship' (ship-json +.grit))
-          %add-invite
-        %-  pairs
-        :~  id+s+id.grit
-            name+s+name.invite.grit
-            till+(time till.invite.grit)
-        ==
-          %del-invite
-        (frond id+s+id.grit)
+        %set-name
+          (frond 'name' s+name.grit)
+        %set-back
+          (frond 'back' (background back.grit))
+        %size-turf
+          (pairs ~[offset+(svec2 offset.grit) size+(vec2 size.grit)])
+        %add-form
+          (form-spec +.grit)
+        %del-form
+          (frond 'formId' (path form-id.grit))
+        %add-husk
+          (add-husk-spec +.grit)
+        %del-shade
+          (frond 'shadeId' (numb +.grit))
+        %move-shade
+          (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
+        %cycle-shade
+          (pairs ~['shadeId'^(shade-id shade-id.grit) amount+(numb amt.grit)])
+        %set-shade-var
+          (pairs ~['shadeId'^(shade-id shade-id.grit) variation+(numb variation.grit)])
+        %set-shade-effect
+          %-  pairs
+          :~  'shadeId'^(shade-id shade-id.grit)
+              'trigger'^s+trigger.grit
+              'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
+          ==
+        %set-shade-collidable
+          (pairs ~['shadeId'^(shade-id shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
+        %set-lunk
+          (maybe-lunk lunk.grit)
+        %set-dink
+          %-  pairs
+          :~  'portalId'^(numb portal-id.grit)
+              approved+b+approved.grit
+          ==
+        %del-dink
+          (frond 'portalId' (numb portal-id.grit))
+        %add-portal
+          %-  pairs
+          :~  for+(turf-id for.grit)
+              at+?~(at.grit ~ (numb u.at.grit))
+          ==
+        %del-portal
+          %-  pairs
+          :~  from+(numb from.grit)
+              loud+b+loud.grit
+          ==
+        %add-shade-to-portal
+          %-  pairs
+          :~  'from'^(numb from.grit)
+              'shadeId'^(numb shade-id.grit)
+          ==
+        %del-shade-from-portal
+          %-  pairs
+          :~  'from'^(numb from.grit)
+              'shadeId'^(numb shade-id.grit)
+          ==
+        %del-portal-from-shade
+          %-  pairs
+          :~  'shadeId'^(numb shade-id.grit)
+              'portalId'^(numb portal-id.grit)
+          ==
+        %portal-confirmed
+          %-  pairs
+          :~  from+(numb from.grit)
+              at+(numb at.grit)
+          ==
+        %chat  (chat chat.grit)
+        %move  (move +.grit)
+        %tele  (move +.grit)
+        %face  (face +.grit)
+        %ping-player
+          %-  pairs
+          :~  ship+(ship-json ship.grit)
+              by+(ship-json by.grit)
+          ==
+        %set-avatar
+          (pond-set-avatar +.grit)
+        %add-port-offer
+          %-  pairs
+          :~  ship+(ship-json ship.grit)
+              from+(numb from.grit)
+          ==
+        %del-port-offer  (ship-json ship.grit)
+        %add-port-req
+          %-  pairs
+          :~  ship+(ship-json ship.grit)
+              from+?@(from.grit s+`@t`from.grit (numb u.from.grit))
+              avatar+(avatar avatar.grit)
+          ==
+        %del-port-req  (ship-json ship.grit)
+        %add-port-rec
+          %-  pairs
+          :~  from+(numb from.grit)
+              ship+(ship-json ship.grit)
+          ==
+        %del-port-rec
+          %-  pairs
+          :~  from+(numb from.grit)
+              ship+(ship-json ship.grit)
+          ==
+        %del-port-recs
+          (numb from.grit)
+        %add-player
+          (add-player +.grit)
+        %del-player
+          (frond 'ship' (ship-json +.grit))
+        %add-invite
+          %-  pairs
+          :~  id+s+id.grit
+              name+s+name.invite.grit
+              till+(time till.invite.grit)
+          ==
+        %del-invite
+          (frond id+s+id.grit)
   ==  ==
 ++  mist-rock
   |=  =rock:mist
@@ -281,6 +280,7 @@
       'portOffers'^port-offers
       lunk+(maybe-lunk lunk)
       dinks+(^dinks dinks)
+      back+(background back)
       size+(vec2 size)
       offset+(svec2 offset)
       'tileSize'^(vec2 tile-size)
@@ -388,10 +388,6 @@
   ^-  [@t json]
   :-  (numbt portal-id)
   b+approved
-++  husk-id
-  |=  =^husk-id
-  ^-  json
-  ?@(husk-id (numb husk-id) (svec2 husk-id))
 ++  vec2
   |=  =^vec2
   ^-  json
@@ -469,6 +465,15 @@
       for+(turf-id for.pol)
       at+?~(at.pol ~ (numb u.at.pol))
   ==
+++  background
+  |=  back=^background
+  ^-  json
+  %-  pairs
+  :~  type+s+-.back
+      :-  %arg
+      ?-  -.back
+        %color  (color +.back)
+        %sprite  (sprite +.back)
 ++  space
   |=  =^space
   ^-  json
