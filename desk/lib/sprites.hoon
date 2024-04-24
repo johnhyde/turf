@@ -8,14 +8,14 @@
   ?.  (lth a 10)  b
   (welk '0' b)
 ++  garb
-  |=  [name=@t var-count=@ud frame-count=@ud]
+  |=  [name=@t var-count=@ud frame-count=@ud offset=svec2]
   ^-  (list luuk)
   ?:  =(0 var-count)  ~
   %+  turn  (gulf 0 (dec var-count))
   |=  i=@ud
   ^-  luuk
   :-  ~
-  :-  %fore
+  :^  %fore  offset  tint=~
   =/  base  :(welk 'sprites/garb/' name '-' (scot %ud i))
   ?:  (lte frame-count 1)
     (welk base '.png')
@@ -24,7 +24,7 @@
     %+  turn  (gulf 0 (dec frame-count))
     |=  j=@ud
     :(welk base '-' (scot %ud j) '.png')
-  :-  %loop
+  :+  %loop  timing=~
   ?.  =(3 frame-count)
     frames
   ?>  ?=([png png png ~] frames)

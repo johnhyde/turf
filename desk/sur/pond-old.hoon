@@ -16,7 +16,7 @@
 |%
 +$  rock  rock-2
 +$  rock-v  _-:*rock
-+$  vock
++$  vock  $+  pond-rock-0-2
   $%  rock-0
       rock-1
       rock-2

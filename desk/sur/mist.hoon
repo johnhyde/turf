@@ -1,4 +1,4 @@
-/-  *turf, mild=mist-0
+/-  *turf, mild=mist-1
 /+  *turf
 =<
 |%
@@ -17,7 +17,7 @@
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
-+$  rock  $+  mist-rock  [%1 =stir-ids core]
++$  rock  $+  mist-rock  [%2 =stir-ids core]
 +$  rock-v  _-:*rock
 +$  core
   $:  ctid=(unit turf-id)  :: current turf-id
@@ -25,12 +25,15 @@
       port-offer=(unit port-offer)
       =avatar
   ==
-+$  vock
-  $^  rock:mild  rock
++$  vock  $^(vock:mild pvock)
++$  pvock  :: proper vock (head-tagged)
+  $%  pvock:mild
+      rock
+  ==
 +$  grit  $+  mist-grit  [cur-grit-v cur-grit]
 +$  vrit
-  $@   grit:mild
-  $%(grit:mild grit)
+  $@   vrit:mild
+  $%(vrit:mild grit)
 +$  cur-grit-v  rock-v
 +$  cur-grit
   $%  [%set-ctid turf-id=(unit turf-id)]
@@ -111,29 +114,34 @@
 ++  urck
   |=  rock=vock
   ^-  ^rock
-  ?-  -.rock
-    rock-v   rock
-    $@(~ ^)  (rock-to-next rock)
+  ?+  -.rock     $(rock (urck:mild rock))
+    rock-v       rock
+    rock-v:mild  (rock-to-next rock)
   ==
 ++  rock-to-next
   |=  =rock:mild
+  ^-  ^rock
   :-  *rock-v
-  :-  stir-ids.rock
-  +.rock
+  +.rock(avatar (uvtr avatar.rock))
 ::
 ++  ugrt
   |=  g=vrit
   ^-  grit
-  ?-  g
-    [cur-grit-v *]  g
-    *               (grit-to-next g)
+  ?+  g                  $(g (ugrt:mild g))
+    [cur-grit-v *]       g
+    [cur-grit-v:mild *]  (grit-to-next g)
   ==
 ++  grit-to-next
   |=  [g=grit:mild]
   ^-  grit
-  :: =/  grit  +.g
+  =/  grit  +.g
   :-  *cur-grit-v
-  ?@  g
-    clear-port-offer+~
-  g
+  ?+  -.grit  grit
+    %set-avatar
+      grit(avatar (uvtr avatar.grit))
+    %add-thing
+      grit(thing (utng thing.grit))
+    %set-thing
+      grit(thing (utng thing.grit))
+  ==
 --

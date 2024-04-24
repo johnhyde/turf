@@ -96,6 +96,7 @@
       stuff-counter=@ud
   ==
 +$  background
+  $~  color+0xa6.e4e8
   $%  [%color color]
       [%sprite sprite]
   ==
@@ -165,12 +166,14 @@
 +$  ufx  (map trigger (unit possible-effect))
 +$  trigger  ?(%step %leave %bump %interact %click)
 +$  possible-effect  $@(effect-type effect)
-+$  effect-type  ?(%port %jump %read %swap)
++$  effect-type  ?(%port %jump %read %swap %seem %vary)
 +$  effect
-  $%  [%port =portal-id]
-      [%jump to=svec2]
-      [%read note=@t]
+  $%  [%port =portal-id]  :: port player to turf
+      [%jump to=svec2]  :: move player in turf
+      [%read note=@t]  :: show dialog box
       [%swap with=form-id]  :: for opening/closing doors
+      [%seem var=@ud]  :: display item variation
+      [%vary var=@ud]  :: set item variation
   ==
 ::
 +$  form-spec  [=form-id =form]
@@ -232,9 +235,9 @@
     %del-form  (~(del by sky) form-id.grit)
   ==
 ++  uvtr
-  |=  vtr+avatar:turf-3
+  |=  vtr=avatar:turf-3
   ^-  avatar
-  `vtr(things (turn things.vtr utng))
+  `vtr(things (turn things.vtr utng), thing.body (utng thing.body.vtr))
 ++  utng
   |=  tng=thing:turf-3
   ^-  thing
@@ -242,11 +245,13 @@
 ++  ufrm
   |=  frm=form:turf-3
   ^-  form
-  frm(variations (turn variations (curr uluk offset.frm)))
+  frm(variations (turn variations.frm (curr uluk offset.frm)), |3 |4.frm)
 ++  uluk
   |=  [luk=luuk:turf-3 offset=svec2]
   ^-  luuk
-  :^  deep.luuk  offset  ~  (uspr sprite.luk)
+  ?~  luk  ~
+  :-  ~
+  :^  deep.u.luk  offset  ~  (uspr sprite.u.luk)
 ++  uspr
   |=  spr=sprite:turf-3
   ^-  sprite

@@ -316,37 +316,44 @@
   |=  =turf:pold
   ^-  ^turf
   =/  players  (~(run by players.ephemera.turf) uplr)
+  =/  port-reqs
+    %-  ~(run by port-reqs.deed.turf)
+    |=  [pid=portal-id vtr=avatar:pold]
+    pid^(uvtr vtr)
   =/  plot  (uplt plot.turf)
   %=  turf
     players.ephemera  players
+    port-reqs.deed  port-reqs
     plot  plot
   ==
 ++  uplr
   |=  plr=player:pold
   ^-  player
-  plr(avatar (uvtr avatar.player))
+  plr(avatar (uvtr avatar.plr))
 ++  uplt
   |=  plt=plot:pold
   ^-  plot
   :-  color+0xa6.e4e8
   :^  size.plt  offset.plt  tile-size.plt
-  =/  [[cav counter] spaces]
-    %+  ~(rib by spaces.plt)
-      `stuff-counter.plt
-    |=  [[pos=svec2 spc=space:pold] [cav=cave count=@ud]]
-    ^-  [[cave @ud] [svec2 space]]
-    ?~  tile.space  [[cav count] [pos spc]]
-    :-  :-  (~(put by cav) count [pos u.tile.space])
-        +(count)
-    :-  pos  spc(tile `count)
+  =/  [=spaces cav=cave count=@ud]
+    =/  acc  [spaces=*spaces cav=cave.plt count=stuff-counter.plt]
+    %-  ~(rep by spaces.plt)
+    |=  [[pos=svec2 spc=space:pold] _acc]
+    ^-  _acc
+    ?~  tile.spc
+      :-  (~(put by spaces) pos spc)
+      [cav count]
+    :+  (~(put by spaces) pos spc(tile `count))
+      (~(put by cav) count [pos u.tile.spc])
+    +(count)
   =/  sky  (~(run by skye.plt) ufrm)
   [spaces sky cav count]
 ::
 ++  ugrt
   |=  g=vrit
   ^-  grit
-  ?+  g                        $(g (ugrt:pold g))
-    [cur-grit-v *]             g
+  ?+  g                  $(g (ugrt:pold g))
+    [cur-grit-v *]       g
     [cur-grit-v:pold *]  (grit-to-next g)
   ==
 ++  grit-to-next
@@ -359,6 +366,7 @@
       grit(turf (turf-to-next turf.grit))
     %add-form
       grit(form (ufrm form.grit))
+    %add-husk  [%add-shade +.grit]
     %cycle-husk
       ?^  husk-id.grit  noop+~
       [%cycle-shade +.grit]

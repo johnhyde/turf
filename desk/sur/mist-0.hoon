@@ -1,5 +1,4 @@
 /-  *turf-2
-/+  *turf
 =<
 |%
 ++  name  %mist
@@ -8,7 +7,6 @@
 +$  foam  ^foam  :: from lib/turf
 +$  foam-all  ^foam-all
 +$  grit  ^grit
-++  wash  wash-grit
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
@@ -68,34 +66,4 @@
   ==
 +$  roars  (list roar)
 ::
-++  wash-grit
-  |=  [=rock foam =grit]
-  ^-  ^rock
-  =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
-    (~(put by stir-ids.rock) (need src) (need id))
-  :-  stir-ids.rock
-  ^-  core
-  =*  core  +.rock
-  =*  avatar  avatar.rock
-  ?@  grit
-    :: %clear-port-offer
-    core(ttid ~, port-offer ~)
-  ?-  -.grit
-    %set-ctid  core(ctid turf-id.grit)
-    %set-avatar  core(avatar avatar.grit)
-    %set-color  core(color.body.avatar color.grit)
-    %add-thing  core(things.avatar (snoc things.avatar thing.grit))
-    %del-thing  core(things.avatar (oust [index.grit 1] things.avatar))
-    %set-thing  core(things.avatar (snap things.avatar index.grit thing.grit))
-    %port-offered  core(port-offer `+.grit, ttid ~)
-    %accept-port-offer  core(ttid `for.grit, port-offer ~)
-      %reject-port-offer
-    =.  port-offer.core
-      ?~  port-offer.core  ~
-      ?:  =(for.grit for.u.port-offer.core)  ~
-      port-offer.core
-    =?  ttid.core  =(`for.grit ttid.core)
-      ~
-    core
-  ==
 --

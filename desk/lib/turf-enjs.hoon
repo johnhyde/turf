@@ -65,24 +65,24 @@
           (form-spec +.grit)
         %del-form
           (frond 'formId' (path form-id.grit))
-        %add-husk
-          (add-husk-spec +.grit)
+        %add-shade
+          (add-shade-spec +.grit)
         %del-shade
           (frond 'shadeId' (numb +.grit))
         %move-shade
           (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
         %cycle-shade
-          (pairs ~['shadeId'^(shade-id shade-id.grit) amount+(numb amt.grit)])
+          (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
         %set-shade-var
-          (pairs ~['shadeId'^(shade-id shade-id.grit) variation+(numb variation.grit)])
+          (pairs ~['shadeId'^(numb shade-id.grit) variation+(numb variation.grit)])
         %set-shade-effect
           %-  pairs
-          :~  'shadeId'^(shade-id shade-id.grit)
+          :~  'shadeId'^(numb shade-id.grit)
               'trigger'^s+trigger.grit
               'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
           ==
         %set-shade-collidable
-          (pairs ~['shadeId'^(shade-id shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
+          (pairs ~['shadeId'^(numb shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
         %set-lunk
           (maybe-lunk lunk.grit)
         %set-dink
@@ -439,14 +439,15 @@
   |=  =^avatar
   ^-  json
   %-  pairs
-  :~  body+(body body.avatar)
+  :~  nick+?~(nick.avatar ~ s+u.nick.avatar)
+      body+(body body.avatar)
       things+a+(turn things.avatar thing)
   ==
 ++  body
   |=  =^body
   ^-  json
   %-  pairs
-  :~  color+(numb color.body)
+  :~  color+(color color.body)
       thing+(thing thing.body)
   ==
 ++  chat
@@ -474,11 +475,13 @@
       ?-  -.back
         %color  (color +.back)
         %sprite  (sprite +.back)
+  ==   ==
+++  color  numb
 ++  space
   |=  =^space
   ^-  json
   %-  pairs
-  :~  tile+(fall (bind tile.space husk) ~)
+  :~  tile+(fall (bind tile.space numb) ~)
       shades+a+(turn shades.space numb)
   ==
 ++  thing
@@ -487,12 +490,12 @@
   %-  pairs
   :-  form+(pairs (form-pairs +.thing))
   (husk-pairs -.thing)
-++  husk
-  |=  =^husk
-  ^-  json
-  (pairs (husk-pairs husk))
+:: ++  husk
+::   |=  =^husk
+::   ^-  json
+::   (pairs (husk-pairs husk))
 ++  husk-pairs
-  |=  =^husk
+  |=  =husk
   ^-  (list [@t json])
   =,  husk
   =/  collidable=(unit ?)  collidable
@@ -519,7 +522,7 @@
   :~  name+s+name
       type+s+type
       variations+a+(turn variations luuk)
-      offset+(svec2 offset)
+      :: offset+(svec2 offset)
       collidable+b+collidable
       effects+(pairs (turn ~(tap by effects) effect))
       seeds+(pairs (turn ~(tap by seeds) effect-type))
@@ -531,9 +534,9 @@
   :~  'formId'^(path form-id.spec)
       form+(form form.spec)
   ==
-++  add-husk-spec
-  |=  =^add-husk-spec
-  =,  add-husk-spec
+++  add-shade-spec
+  |=  =^add-shade-spec
+  =,  add-shade-spec
   ^-  json
   %-  pairs
   :~  'isLunk'^b+is-lunk
@@ -547,6 +550,8 @@
   ?~  luuk  ~
   %-  pairs
   :~  deep+s+deep.u.luuk
+      offset+(svec2 offset.u.luuk)
+      tint+?~(tint.u.luuk ~ (color u.tint.u.luuk))
       sprite+(sprite sprite.u.luuk)
   ==
 ++  sprite
@@ -555,6 +560,7 @@
   ?@  sprite  s+sprite
   %-  pairs
   :~  type+s+type.sprite
+      timing+a+(turn timing.sprite numb)
       frames+a+(turn frames.sprite (lead %s))
   ==
 ++  maybe-possible-effect
@@ -582,6 +588,8 @@
         %jump  (svec2 +.eff)
         %read  s+note.eff
         %swap  (path +.eff)
+        %seem  (numb +.eff)
+        %vary  (numb +.eff)
   ==  ==
 ++  effect-type
   |=  [=trigger =^effect-type]

@@ -1,4 +1,4 @@
-/-  *turf, pond, mist, hark
+/-  *turf, pond, mist, hark, turf-3
 /+  *turf, *sss, *ssio, *plow, default-agent, dbug, verb, agentio, vita-client
 /%  sss-mist-mark  %sss-mist
 /%  sss-pond-mark  %sss-pond
@@ -38,10 +38,17 @@
   $:  %1
       =reset
       =skye-reset
+      closet=skye:turf-3
+      lakes
+  ==
++$  state-2
+  $:  %2
+      =reset
+      =skye-reset
       =closet
       lakes
   ==
-+$  current-state  state-1
++$  current-state  state-2
 +$  reset  _63
 +$  skye-reset  _10
 +$  closet  $~(default-closet:gen skye)
@@ -103,11 +110,44 @@
   =+  :-  cards-0=`(list card)`~
       ?.  =(old-reset reset)  ~&('reseting %turf state' old=state)
       :: ~&  'i am a fool?'
+      :: =/  sub-pond-vase  (slot 62 old-state)
+      :: =/  pub-pond-vase  (slot 126 old-state)
+      :: ~&  ['pub-pond-vase type' p.pub-pond-vase]
+      :: =/  sub-mist-vase  (slot 254 old-state)
+      :: =/  pub-mist-vase  (slot 510 old-state)
+      :: ~&  ['pub-mist-vase type' p.pub-mist-vase]
+      :: =/  pond-rock-vase  (slot 209 pub-pond-vase)
+      :: =/  pond-wave-vase  (slot 425 pub-pond-vase)
+      :: =/  mist-rock-vase  (slot 209 pub-mist-vase)
+      :: =/  mist-wave-vase  (slot 425 pub-mist-vase)
+      :: :: ~&  ['mist-rock-vase type' p.mist-rock-vase]
+      :: ~&  ['mist-wave-vase type' p.mist-wave-vase]
+      :: :: =/  turf-vase  (slot 15 mist-rock-vase)
+      :: :: =/  players-vase  (slot 4 turf-vase)
+      :: :: ~&  ['player type' q.players-vase]
+      :: :: =/  fake-players-vase  [p.players-vase [[~nec *player:turf-3] ~ ~]]
+      :: :: =/  fake-player-vase  (slot 5 fake-players-vase)
+      :: :: ~&  ['fake player vase' fake-player-vase]
+      :: :: =/  p  !<(players:turf-3 [p.players-vase *players:turf-3])
+      :: :: =/  p  !<(players:turf-3 fake-players-vase)
+      :: =/  r  !<(vock:pond pond-rock-vase)
+      :: =/  r  !<(vock:mist mist-rock-vase)
+      :: =/  w  !<(vave:pond-lake pond-wave-vase)
+      :: =/  w  !<(vave:mist-lake mist-wave-vase)
+      :: =/  pp  !<(_pub-pond-init pub-pond-vase)
+      :: =/  pm  !<(_pub-mist-init pub-mist-vase)
+      :: =/  sp  !<(_sub-pond-init sub-pond-vase)
+      :: =/  sm  !<(_sub-mist-init sub-mist-vase)
+      :: ~&  r
+      :: =/  t  !<(turf:turf-3 turf-vase)
+      :: ~&  t
       old=!<(versioned-state old-state)
 
   =*  quolp  -
   =?  quolp  ?=(%0 -.old)
     (state-0-to-1 cards-0 old)
+  =?  quolp  ?=(%1 -.old)
+    (state-1-to-2 cards-0 old)
   :: =/  old  *current-state
   ?>  ?=(_-:*current-state -.old)
   =.  state  old
@@ -142,9 +182,15 @@
   ++  state-0-to-1
     |=  [cards=(list card) =state-0]
     ^-  (quip card state-1)
-    :-  ~
+    :-  cards
     =|  s=state-1
     s(skye-reset +(skye-reset.s), |4 |4.state-0)
+  ++  state-1-to-2
+    |=  [cards=(list card) s=state-1]
+    ^-  (quip card state-2)
+    :-  cards
+    :-  %2
+    +.s(closet (~(run by closet.s) ufrm))
   --
 ::
 ::  The SSS library will give your agent pokes with the following marks:
@@ -316,6 +362,7 @@
       |=  [=ship =player]
       ^-  (unit cur-grit:pond)
       ?~  wake.player  ~
+      ?:  =(ship our.bowl)  ~
       ?:  (gth (add u.wake.player cutoff) now.bowl)  ~
       `[%del-player ship]
     =/  =turf-id  (ship-ppath-to-turf-id our.bowl dppath)

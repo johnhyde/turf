@@ -30,20 +30,22 @@
   :: todo: set-turf?
   :~  noop+_~
       wake+_~
+      set-name+(ot ~[name+so])
+      set-back+(ot ~[back+background])
       size-turf+(ot ~[offset+svec2 size+vec2])
       add-form+form-spec
       del-form+(ot ~['formId'^pa])
-      add-husk+add-husk-spec
+      add-shade+add-shade-spec
       del-shade+(ot ~['shadeId'^ni])
       move-shade+(ot ~['shadeId'^ni pos+svec2])
-      cycle-husk+(ot ~['huskId'^husk-id amount+ni])
-      set-husk-var+(ot ~['huskId'^husk-id variation+ni])
-      set-husk-effect+(ot ~['huskId'^husk-id trigger+(cork so trigger) effect+maybe-possible-effect])
-      set-husk-collidable+(ot ~['huskId'^husk-id collidable+bo:soft])
+      cycle-shade+(ot ~['shadeId'^ni amount+ni])
+      set-shade-var+(ot ~['shadeId'^ni variation+ni])
+      set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
+      set-shade-collidable+(ot ~['shadeId'^ni collidable+bo:soft])
       approve-dink+(ot ~['portalId'^ni])
       :-  %create-bridge
       %-  ot
-      :~  shade+(maybe-ni add-husk-spec)
+      :~  shade+(maybe-ni add-shade-spec)
           trigger+(cork so trigger)
           portal+(maybe-ni ot-turf-id)
       ==
@@ -95,6 +97,14 @@
       del-form+(ot ~['formId'^pa])
   ==
 ::
+++  background
+  |=  jon=json
+  ^-  ^background
+  %.  jon
+  %-  of
+  :~  color+ni
+      sprite+sprite
+  ==
 ++  skye
   |=  jon=json
   ^-  ^skye
@@ -113,7 +123,6 @@
   :~  name+so
       type+(cork so form-type)
       variations+(ar luuk)
-      offset+svec2
       collidable+bo
       effects+fx
       seeds+sfx
@@ -134,16 +143,25 @@
   |=  jon=json
   ^-  ^luuk
   ?~  jon  ~
-  `((ot ~[deep+(cork so deep) sprite+sprite]) jon)
+  :-  ~
+  %.  jon  %-  ot
+  :~  deep+(cork so deep)
+      offset+svec2
+      tint+ni:soft
+      sprite+sprite
+  ==
 ++  sprite
   |=  jon=json
   ^-  ^sprite
   ?:  ?=([%s *] jon)  (so jon)
-  %.  jon
-  (ot ~[type+(cork so anim-type) frames+(ar so)])
-++  add-husk-spec
+  %.  jon  %-  ot
+  :~  type+(cork so anim-type)
+      timing+(ar ni)
+      frames+(ar so)
+  ==
+++  add-shade-spec
   |=  jon=json
-  ^-  ^add-husk-spec
+  ^-  ^add-shade-spec
   %.  jon
   (ot ~['isLunk'^bo pos+svec2 'formId'^pa variation+ni])
 ++  maybe-possible-effect
@@ -158,14 +176,23 @@
 ++  effect
   |=  jon=json
   ^-  ^effect
-  ?>  ?=([%o *] jon)
-  =/  type  (effect-type (~(got by p.jon) 'type'))
-  =/  arg  (~(got by p.jon) 'arg')
-  ?-  type
-    %port  port+(ni arg)
-    %jump  jump+(svec2 arg)
-    %read  read+(so arg)
-    %swap  swap+(pa arg)
+  :: ?>  ?=([%o *] jon)
+  :: =/  type  (effect-type (~(got by p.jon) 'type'))
+  :: =/  arg  (~(got by p.jon) 'arg')
+  :: ?-  type
+  ::   %port  port+(ni arg)
+  ::   %jump  jump+(svec2 arg)
+  ::   %read  read+(so arg)
+  ::   %swap  swap+(pa arg)
+  ::   %seem  seem+
+  :: ==
+  %.  jon  %-  of
+  :~  port+ni
+      jump+svec2
+      read+so
+      swap+pa
+      seem+ni
+      vary+ni
   ==
 ++  port-offer
   |=  jon=json
@@ -183,12 +210,6 @@
   |=  jon=json
   ^-  ^dir
   ;;(^dir (so jon))
-++  husk-id
-  |=  jon=json
-  ^-  ^husk-id
-  ?:  ?=([%o *] jon)
-    (svec2 jon)
-  (ni jon)
 ++  svec2
   |=  jon=json
   ^-  ^svec2
