@@ -410,11 +410,21 @@ export function calcCellDims(n, v, aw, ah, gap = 0) {
 }
 
 export function bind(el, accessor) {
-  const [s, set] = accessor();
+  const [v, set] = accessor();
   el.addEventListener('input', (e) => set(e.currentTarget.value));
   createRenderEffect(() => {
-    el.value = s();
+    el.value = v();
   });
+}
+
+export function bindNum(el, accessor) {
+  const [v, set] = accessor();
+  bind(el, () => [v, (s) => {
+    if (s === '') return;
+    const n = Number(s);
+    if (isNaN(n)) return;
+    set(n);
+  }]);
 }
 
 export function autofocus(el, _) {

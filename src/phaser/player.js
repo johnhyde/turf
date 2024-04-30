@@ -21,7 +21,7 @@ import {
   vec2,
 } from 'lib/utils.js';
 import {
-  getShadesAtPos,
+  getThingsAtPos,
   pickVariationWithDir,
   spriteNameWithDir,
 } from 'lib/turf.js';
@@ -111,6 +111,10 @@ export class Player extends Phaser.GameObjects.Container {
   get properDepth() {
     return (vec2(this.dPos).scale(1 / tileFactor) || this.tilePos).y +
       this.depthMod;
+  }
+
+  get playerCenter() {
+    return vec2(tileSize).scale(0.25).add(vec2(2)); // 2: half of foot offset
   }
 
   effectiveVariation(thing) {
@@ -204,13 +208,14 @@ export class Player extends Phaser.GameObjects.Container {
         frameRate,
       });
     });
-    const footOffset = 4;
-    const playerCenter = vec2(tileSize).scale(0.25).add(vec2(footOffset / 2));
     const playerOffset = vec2(avatar.body.thing.offset).add(
-      avatar.body.thing.form.offset,
+      avatar.body.thing.form.variations[0]?.offset || vec2(),
     );
-    const bodyOffset = vec2(playerOffset).add(playerCenter);
-    this.avatar.setPosition(playerCenter.x * factor, playerCenter.y * factor);
+    const bodyOffset = vec2(playerOffset).add(this.playerCenter);
+    this.avatar.setPosition(
+      this.playerCenter.x * factor,
+      this.playerCenter.y * factor,
+    );
     this.bodyImage.setDisplayOrigin(bodyOffset.x, bodyOffset.y);
     this.bodyImage.setScale(factor);
     this.bodyImage.preDestroy = preDestroy;
@@ -225,7 +230,9 @@ export class Player extends Phaser.GameObjects.Container {
           this.patp,
         )
       );
-      const offset = vec2(thing.offset).add(thing.form.offset).add(bodyOffset);
+      const offset = vec2(thing.offset).add(
+        thing.form.variations[0]?.offset || vec2(),
+      ).add(bodyOffset);
       const defaultDir = spriteDirs.filter((key) => key)[0];
       const sprite = this.scene.make.sprite({
         key: spriteDirs[dirs[this.dir]] || defaultDir,
@@ -382,6 +389,11 @@ export class Player extends Phaser.GameObjects.Container {
           }
         }
       });
+      const bodyVar = this.effectiveVariation(this.p.avatar.body.thing);
+      const playerOffset = vec2(this.p.avatar.body.thing.offset)
+        .add(bodyVar?.offset || vec2());
+      const bodyOffset = vec2(playerOffset).add(this.playerCenter);
+      this.bodyImage.setDisplayOrigin(bodyOffset.x, bodyOffset.y);
       this.things.forEach((sprite, i) => {
         if (sprite.thing) {
           const variation = this.effectiveVariation(sprite.thing);
@@ -389,6 +401,9 @@ export class Player extends Phaser.GameObjects.Container {
             const layer = { flat: -2, back: -1, fore: 1 }[variation.deep] || 2;
             const depth = (this.things.length * layer) + i;
             sprite.setDepth(depth);
+            const offset = vec2(sprite.thing.offset)
+              .add(variation?.offset || vec2()).add(bodyOffset);
+            sprite.setDisplayOrigin(offset.x, offset.y);
           }
         }
       });
@@ -590,7 +605,7 @@ export class Player extends Phaser.GameObjects.Container {
   interact() {
     if (this.isUs) {
       const interactPos = shiftVInDir(vec2(this.tilePos), this.dir);
-      const shades = getShadesAtPos(this.s.e, interactPos);
+      const shades = getThingsAtPos(this.s.e, interactPos);
       shades.forEach((shade) => this.s.shadeInteract(shade.id));
     }
   }

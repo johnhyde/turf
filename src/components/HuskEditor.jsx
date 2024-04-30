@@ -4,7 +4,6 @@ import { getForm } from 'lib/turf.js';
 import { bind, input, jClone, vec2 } from 'lib/utils.js';
 import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
-import Heading from '@/Heading.jsx';
 import SmallButton from '@/SmallButton.jsx';
 import FormInfo from '@/FormInfo.jsx';
 import ListItemPicker from '@/ListItemPicker.jsx';
@@ -14,10 +13,9 @@ import EffectsEditor from '@/EffectsEditor.jsx';
 export default function HuskEditor(props) {
   const state = useState();
   const [newEffects, $newEffects] = createStore({});
-  const isShade = () => !!props.shade;
-  const husk = () => props.shade || props.tile;
-  const pos = () => isShade() ? props.shade?.pos : props.pos;
-  const form = () => isShade() ? husk().form : getForm(state.e, husk().formId);
+  const husk = () => props.shade;
+  const pos = () => props.shade?.pos;
+  const form = () => husk().form;
 
   function clearNewEffects() {
     $newEffects(reconcile({}));
@@ -47,38 +45,22 @@ export default function HuskEditor(props) {
           effect = effect.arg === null ? effect.type : effect;
         }
         if (effect === '') return;
-        if (isShade()) {
-          state.setShadeEffect(husk().id, trigger, effect);
-        } else {
-          state.setTileEffect(pos(), trigger, effect);
-        }
+        state.setShadeEffect(husk().id, trigger, effect);
       });
       clearNewEffects();
     });
   }
 
   function cycleHusk(amount) {
-    if (isShade()) {
-      state.cycleShade(husk().id, amount);
-    } else {
-      state.cycleTile(pos(), amount);
-    }
+    state.cycleShade(husk().id, amount);
   }
 
   function setHuskVariation(variation) {
-    if (isShade()) {
-      state.setShadeVariation(husk().id, variation);
-    } else {
-      state.setTileVariation(pos(), variation);
-    }
+    state.setShadeVariation(husk().id, variation);
   }
 
   function setHuskCollidable(collidable) {
-    if (isShade()) {
-      state.setShadeCollidable(husk().id, collidable);
-    } else {
-      state.setTileCollidable(pos(), collidable);
-    }
+    state.setShadeCollidable(husk().id, collidable);
   }
 
   function cancel() {
@@ -86,9 +68,7 @@ export default function HuskEditor(props) {
   }
 
   function deleteItem() {
-    if (isShade()) {
-      state.delShade(husk().id);
-    }
+    state.delShade(husk().id);
   }
 
   return (
@@ -130,12 +110,10 @@ export default function HuskEditor(props) {
           </p>
           <div class='text-center'>
             Position: {pos().x}x{pos().y}
-            <Show when={isShade()}>
-              <br />
-              <div class='text-sm -mt-1'>
-                (click+drag to move)
-              </div>
-            </Show>
+            <br />
+            <div class='text-sm -mt-1'>
+              (click+drag to move)
+            </div>
           </div>
           <div class='flex justify-center items-center gap-2'>
             <label for='collidable'>
@@ -159,11 +137,9 @@ export default function HuskEditor(props) {
                 Cancel
               </SmallButton>
             </Show>
-            <Show when={isShade()}>
-              <SmallButton onClick={deleteItem}>
-                Delete
-              </SmallButton>
-            </Show>
+            <SmallButton onClick={deleteItem}>
+              Delete
+            </SmallButton>
           </div>
         </div>
       </div>

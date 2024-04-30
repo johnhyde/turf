@@ -26,6 +26,7 @@
 +$  versioned-state
   $%  state-0
       state-1
+      state-2
   ==
 +$  state-0
   $:  %0
@@ -1019,7 +1020,8 @@
   ^-  (list card)
   =/  tid  'turf-delayed-logout'
   =/  ta-now  `@ta`(scot %da now.bowl)
-  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(delay)]
+  :: =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(delay)]
+  =/  start-args  [~ `tid byk.bowl(r da+now.bowl) %delayed-logout !>(~h1)]
   :: [%pass /thread/[tid]/[ta-now] %arvo %k %fard q.byk.bowl tid %noun !>(delay)]~
   :~
     [%pass /thread/[tid]/[ta-now] %agent [our.bowl %spider] %poke %spider-stop !>([tid %.y])]

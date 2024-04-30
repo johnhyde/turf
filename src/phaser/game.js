@@ -24,20 +24,14 @@ import {
   vecToStr,
 } from 'lib/utils.js';
 import {
-  getEffectsByHusk,
+  getEffectsByShade,
   getEffectsByShadeId,
   getShadeWithForm,
   getSpace,
   getWallVariationAtPos,
   isInTurf,
 } from 'lib/turf.js';
-import {
-  extractPlayerSprites,
-  extractSkyeSprites,
-  extractSkyeTileSprites,
-  spriteName,
-  spriteNameWithDir,
-} from 'lib/turf.js';
+import { extractPlayerSprites, extractSkyeSprites } from 'lib/turf.js';
 import { Player } from './player.js';
 import { Shade } from './shade.js';
 import { Preview } from './preview.js';
@@ -50,8 +44,7 @@ import voidUrl from 'assets/sprites/void.png';
 let owner, setBounds, container;
 let gritController = new AbortController();
 var game, scene, cam, cursors, keys = {}, player, earth, flats, stand, preview;
-var formIndexMap, players = {}, tiles = {}, shades = {};
-window.tiles = tiles;
+var formIndexMap, players = {}, shades = {};
 window.shades = shades;
 
 function addGritListener(eventName, handler) {
@@ -174,68 +167,70 @@ async function loadImageUnsafe(id, url, config = {}) {
 
 let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
-  const isShade = typeof id === 'number';
+  const isTile = state.e?.skye?.[shade.formId]?.type === 'tile';
   const siblings = getSpace(turf, shade.pos)?.shades || []; // tile depth mod = 0
   const i = Math.min(
     siblings.length - 1,
     siblings.findIndex((s) => Number(s) === Number(id)),
   );
   const index = siblings.length - i - 1; // reverse since bottom/first is most recent
-  const indexDepthMod = isShade ? index / 1000 : 0;
-  let sprite = new Shade(scene, shade, turf, indexDepthMod);
-  if (isShade) sprite.id = id;
+  const indexDepthMod = isTile ? 0 : index / 1000;
+  const sprite = new Shade(scene, shade, turf, indexDepthMod);
+  sprite.id = id;
+  sprite.isTile = isTile;
   const { formId } = shade;
   if (!sprite.active) {
     console.error('Could not create shade', formId);
     return;
   }
-  if (isShade) {
+  if (isTile) {
+    sprite.setInteractive();
+  } else {
     sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
+  }
+  createEffect(() => {
+    const shade = state.e?.cave?.[id];
+    if (shade) {
+      const form = state.e.skye[shade.formId];
+      const variation = form?.variations?.[shade.variation];
+      sprite.depthMod = 0;
+      if (form?.type === 'tile') {
+        earth.add(sprite);
+        earth.sort('depth');
+      } else if (variation?.deep == 'flat') {
+        flats.add(sprite);
+        sprite.updateDepth();
+        flats.sort('depth');
+      } else {
+        stand.add(sprite);
+        if (variation?.deep == 'fore') {
+          sprite.depthMod += 0.6;
+        }
+        sprite.updateDepth();
+        stand.sort('depth');
+      }
+    }
+  });
+  if (shade.formId === '/portal') {
+    // const state = useState();
     createEffect(() => {
-      shade = state.e?.cave?.[id];
+      const shade = state.e?.cave?.[id];
       if (shade) {
-        const form = state.e.skye[shade.formId];
-        let variation = form?.variations?.[shade.variation];
-        sprite.depthMod = 0;
-        if (variation?.deep == 'flat') {
-          flats.add(sprite);
-          sprite.updateDepth();
-          flats.sort('depth');
+        const step = shade.effects['step'];
+        if (
+          step?.type === 'port' &&
+          step.arg !== undefined &&
+          step.arg !== null &&
+          state.e.portals[step.arg]?.at
+        ) {
+          sprite.setAlpha(1);
+          sprite.setTint(0xffffff);
         } else {
-          stand.add(sprite);
-          if (variation?.deep == 'fore') {
-            sprite.depthMod += 0.6;
-          }
-          sprite.updateDepth();
-          stand.sort('depth');
+          sprite.setAlpha(0.7);
+          sprite.setTint(0xbbbbbb);
         }
       }
     });
-    if (shade.formId === '/portal') {
-      // const state = useState();
-      createEffect(() => {
-        shade = state.e?.cave?.[id];
-        if (shade) {
-          const step = shade.effects['step'];
-          if (
-            step?.type === 'port' &&
-            step.arg !== undefined &&
-            step.arg !== null &&
-            state.e.portals[step.arg]?.at
-          ) {
-            sprite.setAlpha(1);
-            sprite.setTint(0xffffff);
-          } else {
-            sprite.setAlpha(0.7);
-            sprite.setTint(0xbbbbbb);
-          }
-        }
-      });
-    }
-  } else {
-    sprite.setInteractive();
-    earth.add(sprite);
-    earth.sort('depth');
   }
   let textObj;
   function addText(text, limit = 21) {
@@ -278,7 +273,7 @@ function createShade(shade, id, turf) {
   function onTouch(pointer) {
     console.log('got pointer down on shade', id, shade.formId);
     if (state.editor.editing) {
-      if (state.editor.eraser && isShade) {
+      if (state.editor.eraser) {
         const shade = getShadeWithForm(state.e, id);
         state.delShade(id);
         if (shade && shade.form.type === 'wall') {
@@ -286,31 +281,25 @@ function createShade(shade, id, turf) {
         }
         console.log('try to remove shade');
       } else if (state.editor.cycler) {
-        if (isShade) {
-          state.cycleShade(id);
-        } else {
-          state.cycleTile(shade.pos);
-        }
+        state.cycleShade(id);
       }
     }
   }
   function onClick(pointer) {
-    if (isShade) {
-      console.log('got click on shade', id, formId);
-      lastClickedShadeId = id;
-      if (state.editor.editing) {
-        if (state.editor.pointer) {
-          state.selectShade(id);
-        }
-      } else {
-        // state.huskInteract(shade);
-        state.shadeClick(id);
+    console.log('got click on shade', id, formId);
+    lastClickedShadeId = id;
+    if (state.editor.editing) {
+      if (state.editor.pointer) {
+        state.selectShade(id);
       }
+    } else {
+      // state.huskInteract(shade);
+      state.shadeClick(id);
     }
   }
   sprite.on('pointermove', (pointer) => {
     if (state.e && shade) {
-      const effects = getEffectsByHusk(state.e, shade).fullFx;
+      const effects = getEffectsByShade(state.e, shade).fullFx;
       if (effects.interact?.type === 'read') {
         addText(effects.interact.arg);
       } else if (effects.click?.type === 'read') {
@@ -373,7 +362,9 @@ export function startPhaser(_owner, _container) {
         height: ~~container.clientHeight || 500,
         pixelArt: true,
         roundPixels: true,
-        backgroundColor: '#a6e4e8',
+        // backgroundColor: '#a6e4e8',
+        // backgroundColor: 'transparent',
+        transparent: true,
         scene: {
           init,
           preload: preload,
@@ -425,14 +416,14 @@ export function startPhaser(_owner, _container) {
                 15,
                 state.editor.selectedFormId,
               );
-              const added = state.addHusk(
+              const added = state.addShade(
                 pos,
                 state.editor.selectedFormId,
                 variation,
               );
               if (added) state.updateWallsAroundPos(pos, false);
             } else {
-              state.addHusk(pos, state.editor.selectedFormId);
+              state.addShade(pos, state.editor.selectedFormId);
             }
           }
         }
@@ -462,19 +453,19 @@ export function startPhaser(_owner, _container) {
                   pos,
                 }, state.huskToPlace.portal);
               } else {
-                state.addHusk(pos, shade.formId, shade.variation, shade.isLunk);
+                state.addShade(
+                  pos,
+                  shade.formId,
+                  shade.variation,
+                  shade.isLunk,
+                );
               }
               state.clearHuskToPlace();
             }
           } else {
             if (state.editor.editing && state.editor.pointer) {
-              const tile = tiles[vecToStr(pos)];
-              if (gameObjects.filter((o) => o !== tile).length === 0) {
-                if (isInTurf(state.e, pos)) {
-                  state.selectTile(pos);
-                } else {
-                  state.deselectHusk();
-                }
+              if (gameObjects.length === 0 && !isInTurf(state.e, pos)) {
+                state.deselectShade();
               }
             }
           }
@@ -496,7 +487,8 @@ export function startPhaser(_owner, _container) {
 
         this.input.on('pointermove', (pointer) => {
           if (pointer.isDown) {
-            mapEdit(pointer);
+            const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
+            mapEdit(pos);
             const pastMoveThreshold =
               pointer.getDistance() > 20 / window.devicePixelRatio;
             if (lastClickedShadeId !== null && pastMoveThreshold) {
@@ -633,7 +625,6 @@ export function startPhaser(_owner, _container) {
         if (loader.state === 'ready') {
           if (readyToRender()) {
             initTurf(state.e, state.player);
-            initTiles(state.e);
             initShades(state.e);
             initPlayers(state.e);
             initShadePreview(state.e);
@@ -641,13 +632,6 @@ export function startPhaser(_owner, _container) {
           return state.c.id;
         }
       }));
-      createEffect(
-        on(() => [loader.state, JSON.stringify(state.e?.spaces)], () => {
-          if (gameInited()) {
-            initTiles(state.e);
-          }
-        }, { defer: true }),
-      );
       createEffect(
         on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
           if (gameInited()) {
@@ -687,7 +671,6 @@ export function startPhaser(_owner, _container) {
   function destroyCurrentTurf() {
     window.player = player = null;
     window.players = players = {};
-    window.tiles = tiles = {};
     window.shades = shades = {};
     earth = flats = stand = null;
     preview = null;
@@ -759,38 +742,6 @@ export function startPhaser(_owner, _container) {
       });
       window.players = players;
     }
-  }
-
-  function initTiles(turf) {
-    console.log('init tiles');
-    if (turf) {
-      const spaces = jClone(turf.spaces);
-      const poses = uniq([...Object.keys(tiles), ...Object.keys(spaces)]);
-      poses.forEach((posId) => {
-        const pos = vec2(...posId.split(',').map(Number));
-        const tileObject = tiles[posId];
-        const tileData = spaces[posId]?.tile;
-        if (tileData) tileData.pos = pos;
-        if (tileData && tileObject) {
-          if (tileObject.shade.formId !== tileData.formId) {
-            tiles[posId].destroy();
-            tiles[posId] = createShade(tileData, pos, turf);
-          } else if (tileObject.shade.variation !== tileData.variation) {
-            tileObject.updateVariation(tileData.variation);
-          }
-          const gamePos = vec2(tileData.pos).scale(tileFactor);
-          tiles[posId].setPosition(gamePos.x, gamePos.y);
-        } else if (!tileData || !isInTurf(turf, tileData.pos)) {
-          if (tiles[posId]) {
-            tiles[posId].destroy();
-            delete tiles[posId];
-          }
-        } else {
-          tiles[posId] = createShade(tileData, pos, turf);
-        }
-      });
-    }
-    earth.sort('depth');
   }
 
   function initShades(turf) {

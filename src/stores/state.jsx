@@ -11,15 +11,14 @@ import {
 } from 'solid-js';
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
-import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils';
+import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils.js';
 import {
-  getEffectsByHusk,
+  getEffectsByShade,
   getWallsAtPos,
   getWallVariationAtPos,
-} from 'lib/turf';
-import { Pond } from 'lib/pond';
-import { Mist } from 'lib/mist';
-
+} from 'lib/turf.js';
+import { Pond } from 'lib/pond.js';
+import { Mist } from 'lib/mist.js';
 export const StateContext = createContext();
 
 export const lsKeys = {
@@ -32,7 +31,6 @@ function initEditorState() {
   return {
     selectedFormId: null,
     selectedShadeId: null,
-    selectedTilePos: null,
     selectedTool: null,
     huskToPlace: null,
   };
@@ -366,8 +364,8 @@ export function getState() {
       if (delFormId) await this.sendOurPondWave({ formId: delFormId });
       if (form) return await this.sendOurPondWave('add-form', form);
     },
-    addHusk(pos, formId, variation = 0, isLunk = false) {
-      return this.sendPondWave('add-husk', {
+    addShade(pos, formId, variation = 0, isLunk = false) {
+      return this.sendPondWave('add-shade', {
         isLunk,
         pos,
         formId,
@@ -386,32 +384,20 @@ export function getState() {
       });
     },
     cycleShade(shadeId, amount = 1) {
-      this.sendPondWave('cycle-husk', {
-        huskId: Number.parseInt(shadeId),
-        amount: Number.parseInt(amount),
-      });
-    },
-    cycleTile(pos, amount = 1) {
-      this.sendPondWave('cycle-husk', {
-        huskId: vec2(pos),
+      this.sendPondWave('cycle-shade', {
+        shadeId: Number.parseInt(shadeId),
         amount: Number.parseInt(amount),
       });
     },
     setShadeVariation(shadeId, variation) {
-      this.sendPondWave('set-husk-var', {
-        huskId: Number.parseInt(shadeId),
-        variation: Number.parseInt(variation),
-      });
-    },
-    setTileVariation(pos, variation) {
-      this.sendPondWave('set-husk-var', {
-        huskId: vec2(pos),
+      this.sendPondWave('set-shade-var', {
+        shadeId: Number.parseInt(shadeId),
         variation: Number.parseInt(variation),
       });
     },
     setShadeEffect(shadeId, trigger, effect) {
-      this.sendPondWave('set-husk-effect', {
-        huskId: Number.parseInt(shadeId),
+      this.sendPondWave('set-shade-effect', {
+        shadeId: Number.parseInt(shadeId),
         trigger,
         effect,
         /*
@@ -425,22 +411,9 @@ export function getState() {
         */
       });
     },
-    setTileEffect(shadeId, trigger, effect) {
-      this.sendPondWave('set-husk-effect', {
-        huskId: vec2(shadeId),
-        trigger,
-        effect,
-      });
-    },
     setShadeCollidable(shadeId, collidable) {
-      this.sendPondWave('set-husk-collidable', {
-        huskId: Number.parseInt(shadeId),
-        collidable,
-      });
-    },
-    setTileCollidable(pos, collidable) {
-      this.sendPondWave('set-husk-collidable', {
-        huskId: vec2(pos),
+      this.sendPondWave('set-shade-collidable', {
+        shadeId: Number.parseInt(shadeId),
         collidable,
       });
     },
@@ -507,17 +480,6 @@ export function getState() {
           poses.push([vec2(pos), 0, 15]);
         }
         poses.forEach((p) => this.updateWallsAtPos(...p));
-      }
-    },
-    huskInteract(husk) {
-      if (this.e && husk) {
-        // this.sendPondWave('husk-interact', {
-        //   huskId: id or pos,
-        // });
-        const effects = getEffectsByHusk(this.e, husk).fullFx;
-        if (effects.interact?.type === 'read') {
-          this.displayText(effects.interact.arg);
-        }
       }
     },
     shadeInteract(shadeId) {
@@ -608,15 +570,8 @@ export function getState() {
         $state('editor', 'selectedShadeId', id);
       });
     },
-    selectTile(pos) {
-      batch(() => {
-        if (pos) this.selectTool(null);
-        $state('editor', 'selectedTilePos', pos);
-      });
-    },
-    deselectHusk() {
+    deselectShade() {
       this.selectShade(null);
-      this.selectTile(null);
     },
     selectTool(tool) {
       batch(() => {
@@ -627,7 +582,7 @@ export function getState() {
         if (tool !== this.editor.tools.POINTER) {
           $state('editor', 'huskToPlace', null);
         }
-        this.deselectHusk();
+        this.deselectShade();
       });
     },
     selectTab(tab) {
@@ -641,7 +596,6 @@ export function getState() {
         $state('selectedTab', tab);
         $state('editor', 'huskToPlace', null);
         this.selectShade(null);
-        this.selectTile(null);
         if (tab === state.tabs.LAB) {
           this.setScaleLog(-1);
         }

@@ -1,13 +1,29 @@
-import { createSignal } from 'solid-js';
-import { maxV } from 'lib/utils';
+import { createEffect, createSignal } from 'solid-js';
+import { maxV } from 'lib/utils.js';
 import voidUrl from 'assets/sprites/void.png';
 
 export default function ItemButton(props) {
-  const [width, $width] = createSignal();
+  const [width, $width] = createSignal(0);
+  const [height, $height] = createSignal(0);
+  const [bgWidth, $bgWidth] = createSignal(0);
+  const [bgHeight, $bgHeight] = createSignal(0);
 
+  createEffect(() => {
+    if (!previewForm()) {
+      $width(0);
+      $height(0);
+    }
+  });
   function onImg(el) {
     el.onload = () => {
-      $width(el.naturalWidth*2)
+      $width(el.naturalWidth);
+      $height(el.naturalHeight);
+    };
+  }
+  function onBg(el) {
+    el.onload = () => {
+      $bgWidth(el.naturalWidth);
+      $bgHeight(el.naturalHeight);
     };
   }
   const variationI = () => {
@@ -16,42 +32,83 @@ export default function ItemButton(props) {
       return 6;
     }
     return 0;
-  }
+  };
 
   const variation = () => props.form.variations[variationI()];
   const previewForm = () => {
     const sprite = variation()?.sprite;
-    if (!sprite) return voidUrl;
+    if (!sprite) return '';
     if (sprite.frames) {
       return sprite.frames[0];
     }
     return sprite;
   };
 
-
-  const formOffset = () => props.form.offset;
+  const formOffset = () => variation().offset || vec2();
+  const scale = () =>
+    Math.min(
+      totalWidth() ? 64 / totalWidth() : 1,
+      totalHeight() ? 64 / totalHeight() : 1,
+    );
 
   const bgMargin = () => {
-    return maxV(vec2(), vec2(formOffset()).scale(2));
-  }
-  
+    return maxV(vec2(), vec2(formOffset()));
+  };
+
   const formMargin = () => {
     if (!props.bgImage) return vec2();
     return maxV(vec2(), vec2().subtract(formOffset()));
-  }
+  };
+
+  const totalWidth = () => {
+    return Math.max(bgMargin().x + bgWidth(), formMargin().x + width());
+  };
+
+  const totalHeight = () => {
+    return Math.max(bgMargin().y + bgHeight(), formMargin().y + height());
+  };
+
+  const centeringOffset = () => {
+    return vec2(
+      (64 - totalWidth() * scale()) / 2,
+      (64 - totalHeight() * scale()) / 2,
+    );
+  };
 
   return (
-    <div class={'rounded-lg p-[5px] ' + (props.selected ? 'bg-yellow-600' : '')}>
-      <div class="relative pointer-events-none" style={{ width: width() + 'px' }}>
-        <Show when={props.bgImage}>
+    <button
+      class={'rounded-lg p-[5px] w-[74px] h-[74px] flex justify-center items-center' +
+        (props.selected ? ' bg-yellow-600' : '')}
+      onClick={() => props.onClick?.()}
+    >
+      <div
+        class='relative pointer-events-none'
+        style={{
+          width: '64px',
+          height: '64px',
+          // width: Math.round(totalWidth() * scale()) + 'px',
+          // height: Math.round(totalHeight() * scale()) + 'px',
+        }}
+      >
+        <Show when={props.playerImage || props.bgImage}>
           <img
-            src={props.bgImage}
+            ref={onBg}
+            src={props.playerImage || props.bgImage}
             draggable={false}
-            class="absolute top-0 left-0 scale-[2] origin-top-left z-[5] opacity-50"
+            class='absolute top-0 left-0 origin-top-left opacity-50'
             style={{
               'image-rendering': 'pixelated',
-              'margin-left': bgMargin().x + 'px',
-              'margin-top': bgMargin().y + 'px',
+              'object-fit': 'none',
+              'object-position': 'left top',
+              'overflow': 'visible',
+              // 'margin-left': bgMargin().x * scale() + 'px',
+              // 'margin-top': bgMargin().y * scale() + 'px',
+              'transform':
+                `translate(${bgMargin().x * scale() + centeringOffset().x}px, ${
+                  bgMargin().y * scale() + centeringOffset().y
+                }px)` +
+                ` scale(${scale()})`,
+              'z-index': props.playerImage ? 5 : 0,
             }}
           />
         </Show>
@@ -59,31 +116,21 @@ export default function ItemButton(props) {
           ref={onImg}
           src={previewForm()}
           draggable={false}
-          class="invisible w-full"
+          class='absolute top-0 left-0 origin-top-left pointer-events-auto'
           style={{
-            'margin-right': formMargin().x*2 + 'px',
-            'margin-bottom': formMargin().y*2 + 'px',
+            'image-rendering': 'pixelated',
+            'object-fit': 'none',
+            'object-position': 'left top',
+            'overflow': 'visible',
+            'z-index': (variation().deep === 'fore') ? 10 : 3,
+            'transform':
+              `translate(${formMargin().x * scale() + centeringOffset().x}px, ${
+                formMargin().y * scale() + centeringOffset().y
+              }px)` +
+              ` scale(${scale()})`,
           }}
         />
-        <button
-          class="absolute top-0 left-0 scale-[2] origin-top-left pointer-events-auto" 
-          onClick={() => props.onClick?.()}
-          style={{
-            'z-index': (variation().deep === 'fore') ? 10 : 0,
-          }}
-        >
-          <img
-            src={previewForm()}
-            draggable={false}
-            class=""
-            style={{
-              'image-rendering': 'pixelated',
-              'margin-left': formMargin().x + 'px',
-              'margin-top': formMargin().y + 'px',
-            }}
-          />
-        </button>
       </div>
-    </div>
+    </button>
   );
 }

@@ -1,7 +1,7 @@
 import { createEffect } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { defaultTextStyles, shiftVInDir } from 'lib/utils.js';
-import { getEffectsByHusk, getShadesAtPos } from 'lib/turf.js';
+import { getEffectsByShade, getThingsAtPos } from 'lib/turf.js';
 
 export class ButtonHint extends Phaser.GameObjects.Container {
   constructor(scene, turfId) {
@@ -38,9 +38,9 @@ export class ButtonHint extends Phaser.GameObjects.Container {
           vec2(this.s.player.pos),
           this.s.player.dir,
         );
-        const shades = getShadesAtPos(this.t, interactPos);
+        const shades = getThingsAtPos(this.t, interactPos);
         const interactable = shades.some((shade) => {
-          return getEffectsByHusk(this.t, shade).fullFx.interact?.arg;
+          return getEffectsByShade(this.t, shade).fullFx.interact?.arg;
         });
         const gamePos = interactPos.scale(tileFactor);
         this.hint.setPosition(

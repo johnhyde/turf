@@ -10,18 +10,20 @@ import {
   fillEmptySpace,
   generateHusk,
   getCollision,
-  getEffectsByHusk,
+  getEffectsByShade,
   getEffectsByThing,
   getForm,
-  getHusk,
   getShade,
   getShadeWithForm,
   getThingsAtPos,
+  getThingsAtPosByFormId,
+  getTileId,
   isInTurf,
+  isSpaceFormType,
   jabBySpaces,
-} from 'lib/turf';
-import { jClone, turfIdToPath, vec2, vecToStr } from 'lib/utils';
-import { getPool } from 'lib/pool';
+} from 'lib/turf.js';
+import { jClone, turfIdToPath, vec2, vecToStr } from 'lib/utils.js';
+import { getPool } from 'lib/pool.js';
 
 function getTurfGrid(turf) {
   const grid = [];
@@ -173,8 +175,11 @@ export class Pond { // we use a class so we can put it inside a store without ge
 }
 
 const pondGrits = {
-  'inc-counter': (turf, arg) => {
-    turf.stuffCounter++;
+  'set-name': (turf, arg) => {
+    turf.name = arg.name;
+  },
+  'set-back': (turf, arg) => {
+    turf.back = arg.back;
   },
   'size-turf': (turf, arg) => {
     turf.offset = arg.offset;
@@ -205,29 +210,31 @@ const pondGrits = {
     }
     delete turf.skye[formId];
   },
-  'add-husk': (turf, arg) => {
+  'add-shade': (turf, arg) => {
     const { pos, formId, variation } = arg;
-    if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
-    if (
-      pos.x >= turf.offset.x + turf.size.x ||
-      pos.y >= turf.offset.y + turf.size.y
-    ) return;
+    // commented out quitting on out-of-bounds because theoretically this could happen
+    // and the backend allows it, so this would give us invalid state
+    // if (pos.x < turf.offset.x || pos.y < turf.offset.y) return;
+    // if (
+    //   pos.x >= turf.offset.x + turf.size.x ||
+    //   pos.y >= turf.offset.y + turf.size.y
+    // ) return;
     const formType = getForm(turf, formId)?.type;
     const newHusk = generateHusk(formId, variation);
     if (formType === 'tile') {
-      jabBySpaces(turf, pos, (space) => space.tile = newHusk);
+      jabBySpaces(turf, pos, (space) => space.tile = turf.stuffCounter);
     } else if (formType == 'wall' || formType == 'item') {
       jabBySpaces(
         turf,
         pos,
         (space) => space.shades.unshift(turf.stuffCounter),
       );
-      turf.cave[turf.stuffCounter] = {
-        pos,
-        ...newHusk,
-      };
-      turf.stuffCounter++;
-    }
+    } else return;
+    turf.cave[turf.stuffCounter] = {
+      pos,
+      ...newHusk,
+    };
+    turf.stuffCounter++;
   },
   'del-shade': (turf, arg) => {
     delShade(turf, arg.shadeId);
@@ -236,71 +243,49 @@ const pondGrits = {
     const { shadeId, pos } = arg;
     const shade = getShade(turf, shadeId);
     if (shade) {
+      const formType = getForm(turf, shade.formId)?.type;
       const oldPos = shade.pos;
+      if (formType === 'tile') {
+        jabBySpaces(turf, pos, (space) => space.tile = shadeId);
+      } else if (formType == 'wall' || formType == 'item') {
+        jabBySpaces(turf, pos, (space) => space.shades.unshift(shadeId));
+      } else return;
       shade.pos = pos;
       delShadeFromSpace(turf, shadeId, oldPos);
-      jabBySpaces(turf, pos, (space) => space.shades.unshift(shadeId));
     }
   },
-  // 'cycle-shade': (turf, arg) => {
-  //   const { shadeId, amount } = arg;
-  //   const shade = getShade(turf, shadeId);
-  //   if (shade) {
-  //     const form = getForm(turf, shade.formId);
-  //     if (form) {
-  //       shade.variation = (shade.variation + amount) % form.variations.length;
-  //     }
-  //   }
-  // },
-  // 'set-shade-var': (turf, arg) => {
-  //   const { shadeId, variation } = arg;
-  //   const shade = getShade(turf, shadeId);
-  //   if (shade) {
-  //     const form = getForm(turf, shade.formId);
-  //     if (form) {
-  //       shade.variation = variation % form.variations.length;
-  //     }
-  //   }
-  // },
-  // 'set-shade-effect': (turf, arg) => {
-  //   const { shadeId, trigger, effect } = arg;
-  //   const shade = getShade(turf, shadeId);
-  //   if (shade) {
-  //     shade.effects[trigger] = effect;
-  //   }
-  // },
-  'cycle-husk': (turf, arg) => {
-    const { huskId, amount } = arg;
-    const husk = getHusk(turf, huskId);
-    if (husk) {
-      const form = getForm(turf, husk.formId);
+  'cycle-shade': (turf, arg) => {
+    const { shadeId, amount } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      const form = getForm(turf, shade.formId);
       if (form) {
-        husk.variation = (husk.variation + amount) % form.variations.length;
+        shade.variation = (shade.variation + amount) % form.variations.length;
       }
     }
   },
-  'set-husk-var': (turf, arg) => {
-    const { huskId, variation } = arg;
-    const husk = getHusk(turf, huskId);
-    if (husk) {
-      const form = getForm(turf, husk.formId);
+  'set-shade-var': (turf, arg) => {
+    const { shadeId, variation } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      const form = getForm(turf, shade.formId);
       if (form) {
-        husk.variation = variation % form.variations.length;
+        shade.variation = variation % form.variations.length;
       }
     }
   },
-  'set-husk-effect': (turf, arg) => {
-    const { huskId, trigger, effect } = arg;
-    const husk = getHusk(turf, huskId);
-    if (husk) {
-      husk.effects[trigger] = effect;
+  'set-shade-effect': (turf, arg) => {
+    const { shadeId, trigger, effect } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      shade.effects[trigger] = effect;
     }
   },
-  'set-husk-collidable': (turf, arg) => {
-    const { huskId, collidable } = arg;
-    const husk = getHusk(turf, huskId);
-    if (husk) {
-      husk.collidable = collidable;
+  'set-shade-collidable': (turf, arg) => {
+    const { shadeId, collidable } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      shade.collidable = collidable;
     }
   },
   'set-lunk': (turf, arg) => {
@@ -341,7 +326,7 @@ const pondGrits = {
     const { shadeId, portalId } = arg;
     const shade = getShade(turf, shadeId);
     if (shade) {
-      const { fullFx, huskFx, formFx } = getEffectsByHusk(turf, shade);
+      const { fullFx } = getEffectsByShade(turf, shade);
       Object.entries(fullFx).forEach(([trigger, effect]) => {
         if (effect?.type === 'port' && effect?.arg === portalId) {
           shade.effects[trigger] = 'port';
@@ -497,19 +482,11 @@ export class PondEvent extends Event {
 // returns false if goal is rejected
 // otherwise, returns the goal (possibly modified)
 const preFilters = {
-  'add-husk': (turf, goal) => {
+  'add-shade': (turf, goal) => {
     const { pos, formId } = goal.arg;
     if (!isInTurf(turf, pos)) return false;
-    const currentSpace = turf.spaces[vecToStr(pos)];
-    const currentTile = currentSpace?.tile;
-    const currentShades = (currentSpace?.shades || []).map((sid) =>
-      turf.cave[sid]
-    ).filter((s) => s);
-    const tileAlreadyHere = currentTile?.formId === formId;
-    const shadeAlreadyHere = currentShades.some((shade) =>
-      shade.formId === formId
-    );
-    if (!tileAlreadyHere && !shadeAlreadyHere) {
+    const dupsOfForm = getThingsAtPosByFormId(turf, pos, formId);
+    if (dupsOfForm.length === 0) {
       return goal;
     }
     return false;
@@ -526,8 +503,45 @@ const preFilters = {
 //   goals: Array<goal>, // what sub-goals does this trigger?
 // }
 const filters = {
+  'add-shade': (turf, goal) => {
+    const { pos, formId } = goal.arg;
+    const formType = getForm(turf, formId)?.type;
+    if (!isSpaceFormType(formType)) return [];
+    goal.arg.pos = clampToTurf(turf, pos);
+    if (formType === 'tile') {
+      const tileId = getTileId(turf, goal.arg.pos);
+      if (tileId != null) {
+        return {
+          roars: [],
+          grits: [goal],
+          goals: [{
+            type: 'del-shade',
+            arg: { shadeId: tileId },
+          }],
+        };
+      }
+    }
+    return [goal];
+  },
   'move-shade': (turf, goal) => {
-    goal.arg.pos = clampToTurf(turf, goal.arg.pos);
+    const { pos, shadeId } = goal.arg;
+    const shade = getShade(turf, shadeId);
+    const formType = getForm(turf, shade?.formId)?.type;
+    if (!isSpaceFormType(formType)) return [];
+    goal.arg.pos = clampToTurf(turf, pos);
+    if (formType === 'tile') {
+      const tileId = getTileId(turf, goal.arg.pos);
+      if (tileId != null) {
+        return {
+          roars: [],
+          grits: [goal],
+          goals: [{
+            type: 'del-shade',
+            arg: { shadeId: tileId },
+          }],
+        };
+      }
+    }
     return [goal];
   },
   'create-bridge': (turf, goal) => {
@@ -545,7 +559,7 @@ const filters = {
     }
     if (!shadeExists) {
       goals.push({
-        type: 'add-husk',
+        type: 'add-shade',
         arg: shade,
       });
     }
@@ -561,9 +575,9 @@ const filters = {
     goals = [
       ...goals,
       {
-        type: 'set-husk-effect',
+        type: 'set-shade-effect',
         arg: {
-          huskId: shadeId,
+          shadeId,
           trigger,
           effect: {
             type: 'port',
@@ -571,7 +585,7 @@ const filters = {
           },
         },
       },
-      { // TODO: don't add this here, but in a filter on 'set-husk-effect'
+      { // TODO: don't add this here, but in a filter on 'set-shade-effect'
         type: 'add-shade-to-portal',
         arg: {
           from: portalId,
@@ -673,10 +687,10 @@ function pullTriggerAtPos(turf, ship, trigger, pos) {
     thing,
   ) => [thing.id || pos, getEffectsByThing(thing)]);
   let roars = [], goals = [];
-  effectsMap.forEach(([huskId, effects]) => {
+  effectsMap.forEach(([shadeId, effects]) => {
     const effect = effects.fullFx[trigger];
     if (effect && effect.type) {
-      const res = applyEffect(turf, ship, effect, huskId);
+      const res = applyEffect(turf, ship, effect, shadeId);
       roars = [...roars, ...res.roars];
       goals = [...goals, ...res.goals];
     }
@@ -704,7 +718,7 @@ function pullTriggerOnShade(turf, ship, trigger, shadeId) {
   };
 }
 
-function applyEffect(turf, ship, effect, huskId) {
+function applyEffect(turf, ship, effect, shadeId) {
   switch (effect.type) {
     case 'port': {
       const portal = turf.portals[effect.arg];
@@ -732,7 +746,7 @@ function applyEffect(turf, ship, effect, huskId) {
           type: 'effect-' + effect.type,
           arg: effect.arg,
           ship,
-          huskId,
+          shadeId,
         }],
         goals: [],
       };

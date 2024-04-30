@@ -1,7 +1,5 @@
-/-  sur=turf
+/-  *turf
 /+  sprites
-=<  [sur .]
-=,  sur
 |%
 ++  gen
   |%
@@ -276,13 +274,13 @@
     :-  (sun:si (mod count x.size.plot.turf))
     (sun:si (div count x.size.plot.turf))
   =.  pos  (sum-svec2 pos offset.plot.turf)
-  =/  space  (~(gut by spaces) pos ~)
-  =/  tile=shade  [pos id 0 *husk-bits]
-  =.  spaces
-    ?~  space  (~(put by spaces) pos [`shade-id ~])
-    ?^  tile.space  spaces
-    (~(put by spaces) pos space(tile `shade-id))
-  =.  cave  (~(put by cave) shade-id tile)
+  =/  space  (get-space spaces.plot.turf pos)
+  ?^  tile.space
+    $(count +(count))
+  =.  spaces  (~(put by spaces) pos space(tile `shade-id))
+  =.  cave
+    %+  ~(put by cave)  shade-id
+    [pos id 0 *husk-bits]
   =.  shade-id  +(shade-id)
   $(count +(count), turf turf)
 ++  spaces-to-grid  :: not used anymore
@@ -389,6 +387,16 @@
       pos
     (fun (get-space spaces.plot.turf pos))
   turf
+++  add-shade-id-to-space
+  |=  [=turf pos=svec2 =shade-id]
+  %^  jab-by-spaces  turf  pos
+  |=  =space
+  space(shades [shade-id shades.space])
+++  set-tile-at-space
+  |=  [=turf pos=svec2 tile=(unit shade-id)]
+  %^  jab-by-spaces  turf  pos
+  |=  =space
+  space(tile tile)
 ++  jab-by-players
   |=  [=turf =ship fun=$-(player player)]
   ^-  ^turf
@@ -609,11 +617,9 @@
       stuff-counter
     [pos new-husk]
   =.  turf
-    %^  jab-by-spaces  turf  pos
-    |=  =space  ^-  _space
     ?:  =(%tile u.form-type)
-      space(tile `stuff-counter)
-    space(shades [stuff-counter shades.space])
+      (set-tile-at-space turf pos `stuff-counter)
+    (add-shade-id-to-space turf pos stuff-counter)
   =.  stuff-counter  +(stuff-counter)
   turf
 ::
@@ -647,11 +653,9 @@
     %+  ~(put by cave.plot.turf)  id
     shade(pos pos)
   =.  turf  (del-shade-from-space turf id old-pos)
-  %^  jab-by-spaces  turf  pos
-  |=  =space  ^-  _space
   ?:  =(%tile u.form-type)
-    space(tile `id)
-  space(shades [id shades.space])
+    (set-tile-at-space turf pos `id)
+  (add-shade-id-to-space turf pos id)
 ::
 ++  cycle-shade
   |=  [=turf id=shade-id amt=@ud]

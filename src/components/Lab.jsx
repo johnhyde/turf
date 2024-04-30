@@ -1,12 +1,12 @@
 import { createSignal, mapArray, onCleanup } from 'solid-js';
-import { createStore, produce, reconcile, unwrap } from "solid-js/store";
-import { leading, throttle } from "@solid-primitives/scheduled";
-import { bind, jClone, intToHex } from 'lib/utils';
+import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
+import { leading, throttle } from '@solid-primitives/scheduled';
+import { bind, intToHex, jClone } from 'lib/utils.js';
 import { useState } from 'stores/state.jsx';
-import MediumButton from '@/MediumButton';
-import FormEditor from '@/FormEditor';
-import FormSelect from '@/FormSelect';
-import Heading from '@/Heading';
+import MediumButton from '@/MediumButton.jsx';
+import FormEditor from '@/FormEditor.jsx';
+import FormSelect from '@/FormSelect.jsx';
+import Heading from '@/Heading.jsx';
 
 export default function Lab() {
   const state = useState();
@@ -16,9 +16,8 @@ export default function Lab() {
     if (c !== avColor()) {
       state.mist.setColor(c);
     }
-  }, 500);;
+  }, 500);
   onCleanup(() => setColor.clear());
-
 
   const [newForm, $newForm] = createStore({});
   function initNewForm() {
@@ -47,7 +46,8 @@ export default function Lab() {
           },
         ],
         offset: {
-          x: 0, y: 0,
+          x: 0,
+          y: 0,
         },
         collidable: false,
         effects: {},
@@ -63,7 +63,7 @@ export default function Lab() {
       $newForm({
         formId: formId + (copying ? '/copy' : ''),
         form: jClone(form),
-      })
+      });
     }
   }
 
@@ -75,7 +75,7 @@ export default function Lab() {
     return mapArray(() => av.things, (thing) => {
       return [thing.formId, thing.form];
     });
-  }
+  };
   function addThing(formId) {
     state.mist.addThing(formId);
     console.log('add ' + formId + ' to player');
@@ -95,7 +95,8 @@ export default function Lab() {
         editThing(formId);
         break;
       }
-      default: break;
+      default:
+        break;
     }
   }
 
@@ -113,7 +114,8 @@ export default function Lab() {
         editThing(formId, true);
         break;
       }
-      default: break;
+      default:
+        break;
     }
   }
 
@@ -122,30 +124,33 @@ export default function Lab() {
     const sprite = state.m.avatar.body.thing.form.variations[0].sprite;
     if (typeof sprite === 'string') return sprite;
     return sprite.frames[0];
-  }
+  };
 
-  const pClass = 'bg-yellow-950 text-yellow-50 rounded-md px-2 py-0.5 my-1 mx-auto w-fit';
+  const pClass =
+    'bg-yellow-950 text-yellow-50 rounded-md px-2 py-0.5 my-1 mx-auto w-fit';
   return (
-    <div class="text-black text-center space-y-2 h-full overflow-y-auto">
+    <div class='text-black text-center space-y-2 h-full overflow-y-auto'>
       <MediumButton onClick={initNewForm}>
         Create Garb
       </MediumButton>
-      <FormEditor form={newForm} $form={$newForm}
+      <FormEditor
+        form={newForm}
+        $form={$newForm}
         skye={state.mist.closet}
         addFn={state.closet.addForm.bind(state.closet)}
         editing={editing()}
       />
-      <div class="flex items-center justify-center">
-        <Heading class="ml-0 mr-1">
+      <div class='flex items-center justify-center'>
+        <Heading class='ml-0 mr-1'>
           Skin Color
         </Heading>
         <input
-          type="color"
+          type='color'
           default={intToHex(avColor())}
           use:bind={[avColor, setColor]}
         />
       </div>
-      <div class="">
+      <div class=''>
         <Heading>
           Equipped Features
         </Heading>
@@ -156,24 +161,26 @@ export default function Lab() {
             buttons={[['Delete', 'del'], ['Edit', 'edit']]}
             onButton={onEquippedButton}
             fallback={'No Features Equipped'}
-            bgImage={bodyImage()}
-            bgOffset
+            playerImage={bodyImage()}
           />
         </Show>
       </div>
-      <div class="">
+      <div class=''>
         <Heading>
           Closet
         </Heading>
-        <Show when={state.mist.closet !== undefined} fallback={'Loading Closet'}>
-            <FormSelect 
-              forms={Object.entries(state.mist.closet || {})}
-              select={addThing}
-              buttons={[['Add', 'add'], ['Edit', 'edit'], ['Copy', 'copy']]}
-              onButton={onClosetButton}
-              bgImage={bodyImage()}
-              sort={true}
-            />
+        <Show
+          when={state.mist.closet !== undefined}
+          fallback={'Loading Closet'}
+        >
+          <FormSelect
+            forms={Object.entries(state.mist.closet || {})}
+            select={addThing}
+            buttons={[['Add', 'add'], ['Edit', 'edit'], ['Copy', 'copy']]}
+            onButton={onClosetButton}
+            bgImage={bodyImage()}
+            sort={true}
+          />
         </Show>
       </div>
     </div>

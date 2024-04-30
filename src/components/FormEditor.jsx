@@ -21,6 +21,7 @@ import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading.jsx';
 import SmallButton from '@/SmallButton.jsx';
+import ItemButton from '@/ItemButton.jsx';
 import Radio from '@/Radio.jsx';
 import Modal from '@/Modal.jsx';
 import EffectsEditor from '@/EffectsEditor.jsx';
@@ -163,6 +164,14 @@ export default function FormEditor(props) {
     }
   }
 
+  function swapVariations(i) {
+    $newForm('form', 'variations', (vars) => {
+      const vi = vars[i];
+      const vj = vars[i + 1];
+      return [...vars.slice(0, i), vj, vi, ...vars.slice(i + 2)];
+    });
+  }
+
   async function uploadFiles(e) {
     const [frames, _errors] = await processImageFiles(e.target.files);
     for (const f of frames) {
@@ -240,7 +249,8 @@ export default function FormEditor(props) {
                 />
               </div>
             </Show>
-            <div class='flex gap-2'>
+            {
+              /* <div class='flex gap-2'>
               <span class='font-semibold'>Offset</span>
               <div>
                 <span class='mr-1'>x:</span>
@@ -272,7 +282,8 @@ export default function FormEditor(props) {
                   ]}
                 />
               </div>
-            </div>
+            </div> */
+            }
             <Show when={notGarb()}>
               <div class='flex items-center'>
                 <label for='collidable' class='font-semibold mr-2'>
@@ -299,47 +310,92 @@ export default function FormEditor(props) {
             </Show>
           </div>
           <div class='max-w-md flex flex-col space-y-2 p-2'>
-            <p class='font-semibold'>Image</p>
-            <div class='flex flex-col space-y-2'>
-              <p>
+            {
+              /*<p>
                 Tiles are 32x32 pixels. GIF uploads OK.
-              </p>
-              <div class='flex gap-2 items-center'>
-                <span class='font-semibold'>Variations</span>
-                <ListItemPicker
-                  wall={form().type === 'wall'}
-                  items={form().variations}
-                  selected={currentVar()}
-                  onSelect={$currentVar}
-                  onAdd={addVariation}
-                  editing
+              </p>*/
+            }
+            <div class='flex gap-2 items-center'>
+              <span class='font-semibold'>Variations</span>
+              <div class='flex items-center space-x-2'>
+                <SmallButton onClick={() => uploader.click()}>
+                  Upload
+                </SmallButton>
+                <input
+                  type='file'
+                  accept='image/*'
+                  multiple
+                  onInput={uploadFiles}
+                  ref={uploader}
+                  class='hidden'
                 />
-                <div class='flex items-center space-x-2'>
-                  <SmallButton onClick={() => uploader.click()}>
-                    Upload
-                  </SmallButton>
-                  <input
-                    type='file'
-                    accept='image/*'
-                    multiple
-                    onInput={uploadFiles}
-                    ref={uploader}
-                    class='hidden'
-                  />
-                </div>
               </div>
-              <Show when={form().variations[currentVar()]}>
-                <div class='border-b border-yellow-950' />
-                <VariationEditor
-                  type={form().type}
-                  var={form().variations[currentVar()]}
-                  $var={setVariation}
-                  offset={offset()}
-                  $offset={setOffset}
-                  onDel={() => delVariation(currentVar())}
-                />
+              <Show when={form().variations.length < 2}>
+                <SmallButton onClick={addVariation}>+</SmallButton>
               </Show>
             </div>
+            <Show when={form().variations.length > 1}>
+              <ListItemPicker
+                wall={form().type === 'wall'}
+                items={form().variations}
+                selected={currentVar()}
+                onAdd={addVariation}
+                editing
+                addButtonClass='w-[42px] h-[74px]'
+                button={(label, i, selected) => {
+                  return (
+                    <div className='relative'>
+                      <ItemButton
+                        onClick={() => $currentVar(i)}
+                        selected={selected}
+                        form={form()}
+                        variation={i}
+                        playerImage={form().type === 'garb' &&
+                          'sprites/garb/body-0-0.png'}
+                        bgImage={form().type !== 'garb' &&
+                          'sprites/grass.png'}
+                      />
+                      <SmallButton class='absolute top-1 left-1 bg-opacity-50 z-[20] pointer-events-none'>
+                        {label}
+                      </SmallButton>
+                      <SmallButton
+                        class='absolute top-1 right-1 bg-opacity-50 z-[20]'
+                        onClick={() => delVariation(i)}
+                      >
+                        x
+                      </SmallButton>
+                      <Show when={i !== 0}>
+                        <SmallButton
+                          class='absolute bottom-1 left-1 bg-opacity-50 z-[20]'
+                          onClick={() => swapVariations(i - 1)}
+                        >
+                          {'<'}
+                        </SmallButton>
+                      </Show>
+                      <Show when={i !== form().variations.length - 1}>
+                        <SmallButton
+                          class='absolute bottom-1 right-1 bg-opacity-50 z-[20]'
+                          onClick={() => swapVariations(i)}
+                        >
+                          {'>'}
+                        </SmallButton>
+                      </Show>
+                    </div>
+                  );
+                }}
+              />
+            </Show>
+            <div class='border-b border-yellow-950' />
+            <Show when={form().variations[currentVar()]}>
+              <VariationEditor
+                type={form().type}
+                var={form().variations[currentVar()]}
+                $var={setVariation}
+                offset={offset()}
+                $offset={setOffset}
+                onDel={() => delVariation(currentVar())}
+              />
+            </Show>
           </div>
           {
             /* {dev &&

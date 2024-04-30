@@ -1,10 +1,18 @@
-import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
-import { createStore, produce, reconcile } from "solid-js/store";
+import {
+  batch,
+  createEffect,
+  createMemo,
+  createSignal,
+  mergeProps,
+  onCleanup,
+} from 'solid-js';
+import { createStore, produce, reconcile } from 'solid-js/store';
+import { bindNum } from 'lib/utils.js';
 import { useState } from 'stores/state.jsx';
-import SmallButton from '@/SmallButton';
-import Radio from '@/Radio';
-import ListItemPicker from '@/ListItemPicker';
-import FrameEditor from '@/FrameEditor';
+import SmallButton from '@/SmallButton.jsx';
+import Radio from '@/Radio.jsx';
+import ListItemPicker from '@/ListItemPicker.jsx';
+import FrameEditor from '@/FrameEditor.jsx';
 
 export default function VariationEditor(props) {
   const state = useState();
@@ -14,6 +22,7 @@ export default function VariationEditor(props) {
   const frames = () => props.var.sprite?.frames || [props.var.sprite];
   const $sprite = (...args) => props.$var('sprite', ...args);
   const $deep = (deep) => props.$var('deep', deep);
+  const $offset = (...args) => props.$var('offset', ...args);
 
   // const framesMismatch = () => {
   //   let maxDims;
@@ -35,7 +44,7 @@ export default function VariationEditor(props) {
       $sprite('frames', frame, ...args);
     }
   }
-  
+
   function addFrame() {
     if (simple()) {
       $sprite({
@@ -63,12 +72,12 @@ export default function VariationEditor(props) {
 
   return (
     <>
-      <SmallButton onClick={() => props.onDel?.()}>
-        Delete Variation
-      </SmallButton>
+      <div class='flex gap-2 items-center'>
+        <span class='font-semibold'>Frames</span>
+      </div>
       <Show when={frames().length > 1}>
-        <div class="flex gap-2 items-center">
-          <span class="font-semibold">Frames</span>
+        <div class='flex gap-2 items-center'>
+          {/* <span class='font-semibold'>Frames</span> */}
           <ListItemPicker
             items={frames()}
             selected={currentFrame()}
@@ -78,7 +87,7 @@ export default function VariationEditor(props) {
           />
         </div>
         <div>
-          <p class="break-word">
+          <p class='break-word'>
             {/* Frame dimensions do not match. Some frames will be distorted. */}
             If frame dimensions do not match,
             {/* <br/> */}
@@ -86,7 +95,7 @@ export default function VariationEditor(props) {
           </p>
         </div>
         {/* </Show> */}
-        <div class="border-b border-yellow-950" />
+        <div class='border-b border-yellow-950' />
       </Show>
       <FrameEditor
         type={props.type}
@@ -96,15 +105,59 @@ export default function VariationEditor(props) {
         frameCount={frames().length}
         // sprite={props.var.sprite}
         $sprite={(sprite) => $sprite(sprite)}
-        offset={props.offset}
-        $offset={props.$offset}
+        offset={props.var.offset || vec2()}
+        $offset={$offset}
         onAdd={addFrame}
         onDel={() => delFrame(currentFrame())}
       />
       <div>
-        <p class="font-semibold">Relative to Player</p>
-        <Radio value={props.var.deep} $value={$deep} items={[['flat', 'Under'], ['back', 'Behind'], ['fore', 'In Front']]} bg="border border-yellow-950" bgActive="border border-yellow-950 bg-yellow-600" />
+        <div class='flex gap-2'>
+          <span class='font-semibold'>Offset</span>
+          <div>
+            <span class='mr-1'>x:</span>
+            <input
+              type='number'
+              class='rounded-md pl-1 w-12'
+              min={-tileSize}
+              // todo: figure out some way to do this again?
+              // but there an be many bmps of different size
+              // max={spriteBmp()?.width || 0}
+              max='99'
+              use:bindNum={[
+                () => props.var.offset?.x || 0,
+                (n) => $offset(vec2(n, props.var.offset?.y)),
+              ]}
+            />
+          </div>
+          <div>
+            <span class='mr-1'>y:</span>
+            <input
+              type='number'
+              class='rounded-md pl-1 w-12'
+              min={-tileSize}
+              // max={spriteBmp()?.height || 0}
+              max='99'
+              use:bindNum={[
+                () => props.var.offset?.y || 0,
+                (n) => $offset(vec2(props.var.offset?.x, Number(n))),
+              ]}
+            />
+          </div>
+        </div>
+        <p class='font-semibold'>Relative to Player</p>
+        <Radio
+          value={props.var.deep}
+          $value={$deep}
+          items={[['flat', 'Under'], ['back', 'Behind'], ['fore', 'In Front']]}
+          bg='border border-yellow-950'
+          bgActive='border border-yellow-950 bg-yellow-600'
+        />
       </div>
+      {
+        /* <SmallButton onClick={() => props.onDel?.()}>
+        Delete Variation
+      </SmallButton> */
+      }
     </>
   );
-};
+}

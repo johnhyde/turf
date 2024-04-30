@@ -1,11 +1,27 @@
-import { batch, createMemo, createSignal, createEffect, onCleanup, mergeProps } from 'solid-js';
-import { createStore, produce, reconcile } from "solid-js/store";
-import { parseGIF, decompressFrames } from 'gifuct-js';
-import { vec2, bind, input, autofocus, makeImage, convertGifFramesToDataUrls, processImageFiles, jClone } from 'lib/utils';
+import {
+  batch,
+  createEffect,
+  createMemo,
+  createSignal,
+  mergeProps,
+  onCleanup,
+} from 'solid-js';
+import { createStore, produce, reconcile } from 'solid-js/store';
+import { decompressFrames, parseGIF } from 'gifuct-js';
+import {
+  autofocus,
+  bind,
+  convertGifFramesToDataUrls,
+  input,
+  jClone,
+  makeImage,
+  processImageFiles,
+  vec2,
+} from 'lib/utils.js';
 import { useState } from 'stores/state.jsx';
-import SmallButton from '@/SmallButton';
-import Radio from '@/Radio';
-import OffsetInput from '@/OffsetInput';
+import SmallButton from '@/SmallButton.jsx';
+import Radio from '@/Radio.jsx';
+import OffsetInput from '@/OffsetInput.jsx';
 
 export default function FrameEditor(props) {
   const state = useState();
@@ -66,7 +82,7 @@ export default function FrameEditor(props) {
             type: 'loop',
             frames,
           };
-        })
+        });
       }
     }
     clearUpload();
@@ -90,31 +106,33 @@ export default function FrameEditor(props) {
     root.removeEventListener('keydown', onKeyDown);
   });
 
-
   let urlInput, uploader;
   return (
     <>
-      <div class="w-full flex gap-2">
+      <div class='w-full flex gap-2'>
         <Show when={props.frameCount <= 1 && props.frame}>
-          <SmallButton onClick={() => props.onAdd?.()} class="grow">
+          <SmallButton onClick={() => props.onAdd?.()} class='grow'>
             Add Frame
           </SmallButton>
         </Show>
         <Show when={props.frameCount > 1 || props.frame}>
-          <SmallButton onClick={() => props.onDel?.()} class="grow">
+          <SmallButton onClick={() => props.onDel?.()} class='grow'>
             {props.frameCount > 1 ? 'Delete' : 'Clear'} Frame
           </SmallButton>
         </Show>
       </div>
-      <div class="flex items-center space-x-2">
+      <div class='flex items-center space-x-2'>
         <input
           use:bind={[
             frame,
-            (s) => { $bmpError(false); setFrame(s); }
+            (s) => {
+              $bmpError(false);
+              setFrame(s);
+            },
           ]}
-          placeholder="Image URL"
+          placeholder='Image URL'
           ref={urlInput}
-          class="rounded-md pl-1"
+          class='rounded-md pl-1'
         />
         <Show when={!spriteBmp()}>
           <SmallButton onClick={loadSprite}>
@@ -122,32 +140,48 @@ export default function FrameEditor(props) {
           </SmallButton>
         </Show>
       </div>
-      <div class="flex items-center space-x-2">
+      <div class='flex items-center space-x-2'>
         <SmallButton onClick={() => uploader.click()}>
           Upload Frames
         </SmallButton>
-        <input type="file" accept="image/*" multiple onInput={uploadFiles} ref={uploader} class="hidden"/>
+        <input
+          type='file'
+          accept='image/*'
+          multiple
+          onInput={uploadFiles}
+          ref={uploader}
+          class='hidden'
+        />
       </div>
       {bmpError() && <p>Could not load the image</p>}
-      {/* {(props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)) &&
+      {
+        /* {(props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)) &&
         <p>
           This image is bigger than 32x32 pixels.
         </p>
-      } */}
-      {spriteBmp() &&
-        <>
-          <p class={'text-center rounded-md ' + (props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32) ? 'bg-red-200' : '')}>
-            {spriteBmp().width}x{spriteBmp().height}
-          </p>
-          <OffsetInput
-            type={props.type}
-            deep={props.deep}
-            bitmap={spriteBmp()}
-            offset={props.offset}
-            $offset={props.$offset}
-          />
-        </>
+      } */
       }
+      {spriteBmp() &&
+        (
+          <>
+            <p
+              class={'text-center rounded-md ' +
+                (props.type === 'tile' &&
+                    (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)
+                  ? 'bg-red-200'
+                  : '')}
+            >
+              {spriteBmp().width}x{spriteBmp().height}
+            </p>
+            <OffsetInput
+              type={props.type}
+              deep={props.deep}
+              bitmap={spriteBmp()}
+              offset={props.offset}
+              $offset={props.$offset}
+            />
+          </>
+        )}
     </>
   );
-};
+}
