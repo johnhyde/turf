@@ -1,4 +1,13 @@
-import { dirs, jClone, maxV, minV, uuidv4, vec2, vecToStr } from 'lib/utils';
+import {
+  dirs,
+  intToHex,
+  jClone,
+  maxV,
+  minV,
+  uuidv4,
+  vec2,
+  vecToStr,
+} from 'lib/utils';
 
 export function isSpaceFormType(formType) {
   return ['tile', 'item', 'wall'].includes(formType);
@@ -252,10 +261,20 @@ function addFormSprites(turfId, sprites, form, formId, patp, config = {}) {
   form.variations.forEach((variation, i) => {
     if (variation) {
       const name = spriteName(turfId, formId, i, patp);
+      const colorConfig = variation.tint == null
+        ? {}
+        : { color: variation.tint };
+      const newConfig = {
+        ...colorConfig,
+        ...config,
+      };
       if (typeof variation.sprite === 'string') {
-        sprites[name] = { sprite: variation.sprite, config };
+        sprites[name] = { sprite: variation.sprite, config: newConfig };
       } else {
-        sprites[name] = { sprite: variation.sprite.frames.slice(), config };
+        sprites[name] = {
+          sprite: variation.sprite.frames.slice(),
+          config: newConfig,
+        };
       }
     }
   });
@@ -284,13 +303,19 @@ export function spriteName(turfId, id, variation, patp = '') {
     (variation || '0');
 }
 
-export function spriteNameWithDir(turfId, id, form, dir = dir.DOWN, patp = '') {
+export function spriteNameWithDir(
+  turfId,
+  id,
+  form,
+  dir = dirs.DOWN,
+  patp = '',
+) {
   const variation = pickVariationWithDir(form, dir);
   if (variation === null) return null;
   return spriteName(turfId, id, variation, patp);
 }
 
-export function pickVariationWithDir(form, dir = dir.DOWN) {
+export function pickVariationWithDir(form, dir = dirs.DOWN) {
   let variation = dirs[dir];
   const len = form.variations.length;
   if (len === 3) {
@@ -301,7 +326,29 @@ export function pickVariationWithDir(form, dir = dir.DOWN) {
   return variation % form.variations.length;
 }
 
+export function pickVariationWithIndex(form, i) {
+  return pickVariationWithDir(form, dirs[i % 4]);
+}
+
+export function getVariationWithDir(form, dir = dirs.DOWN) {
+  return form.variations[pickVariationWithDir(form, dir)];
+}
+
+export function getVariationWithIndex(form, i) {
+  return form.variations[pickVariationWithIndex(form, i)];
+}
+
 export const specialFormIds = ['/portal', '/portal/house', '/gate'];
 export function isSpecialFormId(formId) {
   return specialFormIds.includes(formId);
+}
+
+export function getSpriteTiming(sprite, defaultTiming = 1000 / 7) {
+  const timing = sprite?.timing?.[0];
+  return timing || defaultTiming;
+}
+
+export function getSpriteFps(sprite, defaultFps = 7) {
+  const timing = sprite?.timing?.[0];
+  return timing ? 1000 / timing : defaultFps;
 }

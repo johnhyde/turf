@@ -62,7 +62,7 @@ async function loadImage(id, url, ...args) {
   }
 }
 
-async function loadImageUnsafe(id, url, config = {}) {
+function loadImageUnsafe(id, url, config = {}) {
   if (!Array.isArray(url)) url = [url];
   // console.log("trying to load image: " + id)
   const changeColor = config.color !== undefined &&
@@ -133,7 +133,7 @@ async function loadImageUnsafe(id, url, config = {}) {
       });
       const texture = game.textures.create(id, images, maxDims.x, maxDims.y);
       if (!texture) reject('could not create texture for: ' + url[0]);
-      images.forEach((img, i) => {
+      images.forEach((_img, i) => {
         texture.add(i, i, 0, 0, maxDims.x, maxDims.y);
         if (i === 0) {
           texture.add('__BASE', i, 0, 0, maxDims.x, maxDims.y);
@@ -270,30 +270,34 @@ function createShade(shade, id, turf) {
 
   // here "touch" means that the shade was touched by the cursor
   // as it passed through or clicked
-  function onTouch(pointer) {
+  function onTouch(pointer, event) {
     console.log('got pointer down on shade', id, shade.formId);
     if (state.editor.editing) {
       if (state.editor.eraser) {
         const shade = getShadeWithForm(state.e, id);
-        state.delShade(id);
+        if (shade.form.type !== 'tile') {
+          state.delShade(id);
+          event.stopPropagation();
+        }
         if (shade && shade.form.type === 'wall') {
           state.updateWallsAroundPos(shade.pos, false, [id]);
         }
         console.log('try to remove shade');
-      } else if (state.editor.cycler) {
-        state.cycleShade(id);
+      } else if (state.editor.dropper) {
+        state.selectForm(shade.formId);
+        event.stopPropagation();
       }
     }
   }
-  function onClick(pointer) {
+  function onClick(pointer, event) {
     console.log('got click on shade', id, formId);
     lastClickedShadeId = id;
     if (state.editor.editing) {
       if (state.editor.pointer) {
         state.selectShade(id);
+        event.stopPropagation();
       }
     } else {
-      // state.huskInteract(shade);
       state.shadeClick(id);
     }
   }
@@ -312,12 +316,12 @@ function createShade(shade, id, turf) {
       }
     }
     if (pointer.isDown) {
-      onTouch(pointer);
+      onTouch(pointer, event);
     }
   });
-  sprite.on('pointerdown', (pointer) => {
-    onTouch(pointer);
-    onClick(pointer);
+  sprite.on('pointerdown', (pointer, _x, _y, event) => {
+    onTouch(pointer, event);
+    onClick(pointer, event);
   });
   sprite.on('pointerout', (pointer) => {
     removeText();

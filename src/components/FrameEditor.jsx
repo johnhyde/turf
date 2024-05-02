@@ -7,27 +7,25 @@ import {
   onCleanup,
 } from 'solid-js';
 import { createStore, produce, reconcile } from 'solid-js/store';
-import { decompressFrames, parseGIF } from 'gifuct-js';
-import {
-  autofocus,
-  bind,
-  convertGifFramesToDataUrls,
-  input,
-  jClone,
-  makeImage,
-  processImageFiles,
-  vec2,
-} from 'lib/utils.js';
+import { autofocus, bind, makeImage, tintImageData } from 'lib/utils.js';
 import { useState } from 'stores/state.jsx';
 import SmallButton from '@/SmallButton.jsx';
-import Radio from '@/Radio.jsx';
+import UploadButton from '@/UploadButton.jsx';
 import OffsetInput from '@/OffsetInput.jsx';
 
 export default function FrameEditor(props) {
   const state = useState();
-  const [bmps, $bmps] = createStore({});
+  const [imgDatas, $imgDatas] = createStore({});
+  const [spriteBmp, $spriteBmp] = createSignal(null);
   const frame = () => props.frame || '';
-  const spriteBmp = () => bmps[frame()];
+  createEffect(async () => {
+    let imgData = imgDatas[frame()];
+    if (!imgData) return $spriteBmp(null);
+    if (props.var.tint != null) {
+      imgData = tintImageData(imgData, props.var.tint);
+    }
+    $spriteBmp(await createImageBitmap(imgData));
+  });
   const [bmpError, $bmpError] = createSignal(false);
 
   createEffect(() => {
@@ -35,7 +33,10 @@ export default function FrameEditor(props) {
   });
 
   createEffect(() => {
-    if (!spriteBmp() && frame()?.startsWith?.('data:')) loadSprite();
+    if (
+      !spriteBmp() && document.activeElement !== urlInput && frame() &&
+      !frame().startsWith?.('http')
+    ) loadSprite();
   });
 
   onCleanup(() => {
@@ -53,19 +54,24 @@ export default function FrameEditor(props) {
   async function setSpriteBmp(url) {
     try {
       const imageStuff = await makeImage(url);
-      $bmps(url, imageStuff.bitmap);
+      if (url.startsWith('http')) {
+        const { dataUrl } = imageStuff;
+        $imgDatas(dataUrl, imageStuff.imageData);
+        setFrame(dataUrl);
+      } else {
+        $imgDatas(url, imageStuff.imageData);
+      }
       return imageStuff;
     } catch (e) {
       console.error(e);
-      $bmps(url, null);
+      $imgDatas(url, null);
       $bmpError(true);
       return false;
     }
   }
 
-  async function uploadFiles(e) {
-    let [frames, _errors] = await processImageFiles(e.target.files);
-    frames = frames.flat();
+  function onFrameUpload(frame) {
+    const frames = [frame].flat();
     if (frames.length) {
       if (frames.length === 1) {
         setFrame(frames[0]);
@@ -80,12 +86,12 @@ export default function FrameEditor(props) {
           }
           return {
             type: 'loop',
+            timing: [],
             frames,
           };
         });
       }
     }
-    clearUpload();
   }
 
   function clearUpload() {
@@ -110,12 +116,7 @@ export default function FrameEditor(props) {
   return (
     <>
       <div class='w-full flex gap-2'>
-        <Show when={props.frameCount <= 1 && props.frame}>
-          <SmallButton onClick={() => props.onAdd?.()} class='grow'>
-            Add Frame
-          </SmallButton>
-        </Show>
-        <Show when={props.frameCount > 1 || props.frame}>
+        <Show when={props.frameCount > 2 || props.frame}>
           <SmallButton onClick={() => props.onDel?.()} class='grow'>
             {props.frameCount > 1 ? 'Delete' : 'Clear'} Frame
           </SmallButton>
@@ -134,26 +135,18 @@ export default function FrameEditor(props) {
           ref={urlInput}
           class='rounded-md pl-1'
         />
-        <Show when={!spriteBmp()}>
+
+        <Show
+          when={frame() && !spriteBmp()}
+          fallback={<UploadButton onFrames={onFrameUpload} multiple />}
+        >
           <SmallButton onClick={loadSprite}>
             Load
           </SmallButton>
         </Show>
       </div>
-      <div class='flex items-center space-x-2'>
-        <SmallButton onClick={() => uploader.click()}>
-          Upload Frames
-        </SmallButton>
-        <input
-          type='file'
-          accept='image/*'
-          multiple
-          onInput={uploadFiles}
-          ref={uploader}
-          class='hidden'
-        />
-      </div>
       {bmpError() && <p>Could not load the image</p>}
+
       {
         /* {(props.type === 'tile' && (spriteBmp()?.width > 32 || spriteBmp()?.height > 32)) &&
         <p>
@@ -161,6 +154,7 @@ export default function FrameEditor(props) {
         </p>
       } */
       }
+
       {spriteBmp() &&
         (
           <>
@@ -175,9 +169,11 @@ export default function FrameEditor(props) {
             </p>
             <OffsetInput
               type={props.type}
-              deep={props.deep}
+              deep={props.var.deep}
+              variation={props.variation}
+              frame={props.frameI}
               bitmap={spriteBmp()}
-              offset={props.offset}
+              offset={props.var.offset}
               $offset={props.$offset}
             />
           </>

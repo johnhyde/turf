@@ -60,6 +60,7 @@ export function getState() {
       EDITOR: 'editor',
       TOWN: 'town',
       PORTALS: 'portals',
+      SETTINGS: 'settings',
     },
     editor: {
       get editing() {
@@ -68,7 +69,7 @@ export function getState() {
       tools: {
         BRUSH: 'brush',
         ERASER: 'eraser',
-        CYCLER: 'cycler',
+        DROPPER: 'dropper',
         RESIZER: 'resizer',
       },
       get pointer() {
@@ -80,8 +81,8 @@ export function getState() {
       get eraser() {
         return this.selectedTool === this.tools.ERASER;
       },
-      get cycler() {
-        return this.selectedTool === this.tools.CYCLER;
+      get dropper() {
+        return this.selectedTool === this.tools.DROPPER;
       },
       get resizer() {
         return this.selectedTool === this.tools.RESIZER;
@@ -253,9 +254,6 @@ export function getState() {
 
   const _state = mergeProps(state, {
     $: $state,
-    setName(name) {
-      $state('name', name);
-    },
     subToTurf(id) {
       runWithOwner(owner, () => {
         if (!state.ponds[id]) {
@@ -339,6 +337,12 @@ export function getState() {
     },
     resetEditor() {
       $state('editor', initEditorState());
+    },
+    setName(name) {
+      this.sendPondWave('set-name', { name });
+    },
+    setBack(type, arg) {
+      this.sendPondWave('set-back', { [type]: arg });
     },
     resizeTurf(offset, size) {
       if (size.x <= 0 && size.y <= 0) return false;

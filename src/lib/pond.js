@@ -179,7 +179,7 @@ const pondGrits = {
     turf.name = arg.name;
   },
   'set-back': (turf, arg) => {
-    turf.back = arg.back;
+    turf.back = arg;
   },
   'size-turf': (turf, arg) => {
     turf.offset = arg.offset;

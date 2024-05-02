@@ -13,30 +13,38 @@ function Game() {
   });
 
   const backgroundStyle = () => {
+    const colorStyles = {
+      'width': '100%',
+      'height': '100%',
+      'background-color': '#a6e4e8',
+    };
     if (!state.e) {
-      return { 'background-color': '#a6e4e8' };
+      return colorStyles;
     }
     const back = state.e.back;
-    if (back?.type === 'color') {
-      return { 'background-color': intToHex(back.arg) };
-    } else if (back?.type === 'sprite') {
-      const png = back.arg;
+    if (back.color != null) {
+      return { ...colorStyles, 'background-color': intToHex(back.color) };
+    } else if (back.sprite != null) {
+      const png = back.sprite;
       if (typeof png !== 'string') {
         console.error('animated backgrounds not yet supported');
       }
       return {
         'background-image': `url("${png}")`,
         'background-repeat': 'repeat',
+        'image-rendering': 'pixelated',
+        'scale': 4 / state.scale,
+        'width': 25 * state.scale + '%',
+        'height': 25 * state.scale + '%',
       };
     }
   };
 
   return (
-    // <div id="shell" class="relative">
-    <div id='shell'>
+    <div id='shell' class='relative'>
+      <div class='absolute origin-top-left' style={backgroundStyle()} />
+      <div id='gameContainer' class='absolute w-full h-full' />
       <Overlay />
-      <div id='gameContainer' style={backgroundStyle()}>
-      </div>
     </div>
   );
 }

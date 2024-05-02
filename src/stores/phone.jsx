@@ -1,4 +1,15 @@
-import { createSignal, createContext, createEffect, createMemo, createResource, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
+import {
+  batch,
+  createContext,
+  createEffect,
+  createMemo,
+  createResource,
+  createSignal,
+  getOwner,
+  mergeProps,
+  runWithOwner,
+  useContext,
+} from 'solid-js';
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import { horn as hornPromise } from 'lib/api.js';
 import { normalizeId } from 'lib/utils';
@@ -9,7 +20,6 @@ export const PhoneContext = createContext();
 const [horn, _] = createResource(() => hornPromise);
 const incoming = () => horn()?.incomings?.['turf'];
 
-
 export function getPhone(state) {
   const [phone, $phone] = createStore({
     calls: {},
@@ -19,8 +29,12 @@ export function getPhone(state) {
   });
 
   const _phone = mergeProps(phone, {
-    get r() { return Object.values(phone.calls)[0] },
-    get c() { return Object.values(this.r.calls)[0] },
+    get r() {
+      return Object.values(phone.calls)[0];
+    },
+    get c() {
+      return Object.values(this.r.calls)[0];
+    },
     async call(peers) {
       if (!horn()) await hornPromise;
       if (!Array.isArray(peers)) peers = [peers];
@@ -59,12 +73,13 @@ export function getPhone(state) {
       $phone('calls', id, undefined);
     },
     addRing(ring) {
-      $phone('rings', r => [...r, ring]);
+      $phone('rings', (r) => [...r, ring]);
     },
     delRing(ring) {
-      $phone('rings', r => r.filter((r) => {
-        return !(r.ship === ring.ship && r.crewId === ring.crewId);
-      }));
+      $phone('rings', (r) =>
+        r.filter((r) => {
+          return !(r.ship === ring.ship && r.crewId === ring.crewId);
+        }));
     },
     handleIncomingMessage(e) {
       console.log('IncomingMessage', e);
@@ -116,7 +131,8 @@ export function getPhone(state) {
   createEffect(() => {
     const ourCrewIdPrefix = `/turf/${our}`;
     const ours = _phone.rings.filter((i) => {
-      return (i.ship === state.c.host) && (i.crewId.startsWith(ourCrewIdPrefix))
+      return (i.ship === state.c.host) &&
+        (i.crewId.startsWith(ourCrewIdPrefix));
     });
     ours.forEach(_phone.answer.bind(_phone));
   });
@@ -126,18 +142,20 @@ export function getPhone(state) {
     if (phone.publics?.host !== state.c.host) {
       if (phone.publics) phone.publics.cancel();
       if (state.c.host && horn()) {
-        const publics = horn().watchPublics(state.c.host, null, { watchDetails: true });
+        const publics = horn().watchPublics(state.c.host, null, {
+          watchDetails: true,
+        });
         publics.addEventListener('dests-update', (e) => {
           console.log(publics.publics);
-          $phone('publicCalls', reconcile(publics.crews))
+          $phone('publicCalls', reconcile(publics.crews));
         });
         $phone('publics', publics);
       }
     }
   });
-  createEffect(() => {
-    console.log('public calls', JSON.stringify(phone.publicCalls, null, 2));
-  });
+  // createEffect(() => {
+  //   console.log('public calls', JSON.stringify(phone.publicCalls, null, 2));
+  // });
 
   window.phone = _phone;
   return _phone;
@@ -152,4 +170,6 @@ export function PhoneProvider(props) {
   );
 }
 
-export function usePhone() { return useContext(PhoneContext); }
+export function usePhone() {
+  return useContext(PhoneContext);
+}

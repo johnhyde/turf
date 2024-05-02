@@ -56,8 +56,8 @@ input[type="color"] {
   -moz-appearance: none;
   appearance: none;
   background-color: transparent;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
   cursor: pointer;
@@ -65,24 +65,24 @@ input[type="color"] {
 }
 
 input[type="color"]::-webkit-color-swatch {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   top: 0;
   left: 0;
   position: absolute;
-  border-radius: 50%;
+  border-radius: 25%;
   margin: 0;
   @apply border-2 border-yellow-950;
   box-sizing: border-box;
 }
 
 input[type="color"]::-moz-color-swatch {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   top: 0;
   left: 0;
   position: absolute;
-  border-radius: 50%;
+  border-radius: 25%;
   margin: 0;
   @apply border-2 border-yellow-950;
   box-sizing: border-box;

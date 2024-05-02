@@ -31,7 +31,7 @@
   :~  noop+_~
       wake+_~
       set-name+(ot ~[name+so])
-      set-back+(ot ~[back+background])
+      set-back+background
       size-turf+(ot ~[offset+svec2 size+vec2])
       add-form+form-spec
       del-form+(ot ~['formId'^pa])
@@ -79,6 +79,7 @@
   %.  jon
   %+  goal  goal:mist
   :~  set-ctid+pa-turf-id-soft
+      set-nick+so:soft
       set-color+ni
       add-thing-from-closet+pa
       del-thing+ni

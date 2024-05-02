@@ -58,7 +58,7 @@
         %set-name
           (frond 'name' s+name.grit)
         %set-back
-          (frond 'back' (background back.grit))
+          (background back.grit)
         %size-turf
           (pairs ~[offset+(svec2 offset.grit) size+(vec2 size.grit)])
         %add-form
@@ -202,30 +202,32 @@
       s+-.grit
     ::
       :-  %arg
-      ?-    -.grit
-          %set-ctid
-        (maybe-turf-id-path +.grit)
-          %set-avatar
-        (avatar +.grit)
-          %set-color
-        (numb +.grit)
-          %add-thing
-        (thing +.grit)
-          %del-thing
-        (numb +.grit)
-          %set-thing
-        %-  pairs
-        :~  index+(numb index.grit)
-            thing+(thing thing.grit)
-        ==
-          %port-offered
-        (port-offer +.grit)
-          %accept-port-offer
-        (turf-id-path +.grit)
-          %reject-port-offer
-        (turf-id-path +.grit)
-          %clear-port-offer
-        ~
+      ?-  -.grit
+        %set-ctid
+          (maybe-turf-id-path +.grit)
+        %set-avatar
+          (avatar +.grit)
+        %set-nick
+          ?~(nick.grit ~ s+u.nick.grit)
+        %set-color
+          (numb +.grit)
+        %add-thing
+          (thing +.grit)
+        %del-thing
+          (numb +.grit)
+        %set-thing
+          %-  pairs
+          :~  index+(numb index.grit)
+              thing+(thing thing.grit)
+          ==
+        %port-offered
+          (port-offer +.grit)
+        %accept-port-offer
+          (turf-id-path +.grit)
+        %reject-port-offer
+          (turf-id-path +.grit)
+        %clear-port-offer
+          ~
   ==  ==
 ++  skye-grit
   |=  grit=^skye-grit
@@ -469,13 +471,11 @@
 ++  background
   |=  back=^background
   ^-  json
-  %-  pairs
-  :~  type+s+-.back
-      :-  %arg
-      ?-  -.back
-        %color  (color +.back)
-        %sprite  (sprite +.back)
-  ==   ==
+  %+  frond  -.back
+  ?-  -.back
+    %color  (color +.back)
+    %sprite  (sprite +.back)
+  ==
 ++  color  numb
 ++  space
   |=  =^space

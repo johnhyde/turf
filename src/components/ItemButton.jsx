@@ -1,5 +1,5 @@
 import { createEffect, createSignal } from 'solid-js';
-import { maxV } from 'lib/utils.js';
+import { intToHex, maxV } from 'lib/utils.js';
 import voidUrl from 'assets/sprites/void.png';
 
 export default function ItemButton(props) {
@@ -56,7 +56,7 @@ export default function ItemButton(props) {
   };
 
   const formMargin = () => {
-    if (!props.bgImage) return vec2();
+    if (!props.bgImage && !props.playerImage) return vec2();
     return maxV(vec2(), vec2().subtract(formOffset()));
   };
 
@@ -75,6 +75,22 @@ export default function ItemButton(props) {
     );
   };
 
+  const imgZ = () => (variation().deep === 'fore') ? 10 : 3;
+  const bgZ = () => props.playerImage ? 5 : 0;
+
+  const imgStyles = () => ({
+    'image-rendering': 'pixelated',
+    'object-fit': 'none',
+    'object-position': 'left top',
+    'overflow': 'visible',
+    'z-index': imgZ(),
+    'transform':
+      `translate(${formMargin().x * scale() + centeringOffset().x}px, ${
+        formMargin().y * scale() + centeringOffset().y
+      }px)` +
+      ` scale(${scale()})`,
+  });
+
   return (
     <button
       class={'rounded-lg p-[5px] w-[74px] h-[74px] flex justify-center items-center' +
@@ -82,13 +98,8 @@ export default function ItemButton(props) {
       onClick={() => props.onClick?.()}
     >
       <div
-        class='relative pointer-events-none'
-        style={{
-          width: '64px',
-          height: '64px',
-          // width: Math.round(totalWidth() * scale()) + 'px',
-          // height: Math.round(totalHeight() * scale()) + 'px',
-        }}
+        class='relative pointer-events-none w-[64px] h-[64px]'
+
       >
         <Show when={props.playerImage || props.bgImage}>
           <img
@@ -101,14 +112,13 @@ export default function ItemButton(props) {
               'object-fit': 'none',
               'object-position': 'left top',
               'overflow': 'visible',
-              // 'margin-left': bgMargin().x * scale() + 'px',
-              // 'margin-top': bgMargin().y * scale() + 'px',
               'transform':
                 `translate(${bgMargin().x * scale() + centeringOffset().x}px, ${
                   bgMargin().y * scale() + centeringOffset().y
                 }px)` +
-                ` scale(${scale()})`,
-              'z-index': props.playerImage ? 5 : 0,
+                ` scale(${scale()})` +
+                (!props.flipBg ? '' : ` translateX(${bgWidth()}px) scaleX(-1)`),
+              'z-index': bgZ(),
             }}
           />
         </Show>
@@ -117,19 +127,23 @@ export default function ItemButton(props) {
           src={previewForm()}
           draggable={false}
           class='absolute top-0 left-0 origin-top-left pointer-events-auto'
-          style={{
-            'image-rendering': 'pixelated',
-            'object-fit': 'none',
-            'object-position': 'left top',
-            'overflow': 'visible',
-            'z-index': (variation().deep === 'fore') ? 10 : 3,
-            'transform':
-              `translate(${formMargin().x * scale() + centeringOffset().x}px, ${
-                formMargin().y * scale() + centeringOffset().y
-              }px)` +
-              ` scale(${scale()})`,
-          }}
+          style={imgStyles()}
         />
+        <Show when={variation().tint != null}>
+          <div
+            draggable={false}
+            class='absolute top-0 left-0 origin-top-left pointer-events-auto'
+            style={{
+              ...imgStyles(),
+              'z-index': imgZ() + 1,
+              'background-color': intToHex(variation().tint),
+              'mix-blend-mode': 'multiply',
+              'mask-image': `url(${previewForm()})`,
+              width: width() + 'px',
+              height: height() + 'px',
+            }}
+          />
+        </Show>
       </div>
     </button>
   );

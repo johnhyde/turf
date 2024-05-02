@@ -1,16 +1,18 @@
-import { createSignal, mapArray, onCleanup } from 'solid-js';
+import { createEffect, createSignal, mapArray, onCleanup } from 'solid-js';
 import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
 import { leading, throttle } from '@solid-primitives/scheduled';
-import { bind, intToHex, jClone } from 'lib/utils.js';
+import { bind, input, intToHex, jClone } from 'lib/utils.js';
 import { useState } from 'stores/state.jsx';
 import MediumButton from '@/MediumButton.jsx';
 import FormEditor from '@/FormEditor.jsx';
 import FormSelect from '@/FormSelect.jsx';
 import Heading from '@/Heading.jsx';
+import SmallButton from '@/SmallButton.jsx';
 
 export default function Lab() {
   const state = useState();
   const [editing, $editing] = createSignal(false);
+  const [nick, $nick] = createSignal('');
 
   const setColor = leading(throttle, (c) => {
     if (c !== avColor()) {
@@ -19,7 +21,24 @@ export default function Lab() {
   }, 500);
   onCleanup(() => setColor.clear());
 
+  createEffect(() => {
+    if (state.m.avatar.nick) $nick(state.m.avatar.nick);
+  });
+
+  function saveNick() {
+    state.mist.setNick(nick());
+  }
+
   const [newForm, $newForm] = createStore({});
+
+  function newVar(deep) {
+    return {
+      deep,
+      offset: { x: 0, y: 0 },
+      tint: null,
+      sprite: '',
+    };
+  }
   function initNewForm() {
     $editing(false);
     $newForm({
@@ -28,27 +47,11 @@ export default function Lab() {
         name: 'Custom Garb',
         type: 'garb',
         variations: [
-          {
-            deep: 'fore',
-            sprite: '',
-          },
-          {
-            deep: 'fore',
-            sprite: '',
-          },
-          {
-            deep: 'back',
-            sprite: '',
-          },
-          {
-            deep: 'fore',
-            sprite: '',
-          },
+          newVar('fore'),
+          newVar('fore'),
+          newVar('back'),
+          newVar('fore'),
         ],
-        offset: {
-          x: 0,
-          y: 0,
-        },
         collidable: false,
         effects: {},
         seeds: {},
@@ -130,6 +133,29 @@ export default function Lab() {
     'bg-yellow-950 text-yellow-50 rounded-md px-2 py-0.5 my-1 mx-auto w-fit';
   return (
     <div class='text-black text-center space-y-2 h-full overflow-y-auto'>
+      <Heading>
+        Nickname
+      </Heading>
+      <div className='flex items-center space-x-2 w-full px-1'>
+        <input
+          use:input={{ onSubmit: saveNick }}
+          use:bind={[nick, $nick]}
+          class='rounded-input shrink min-w-0'
+        />
+        <SmallButton onClick={saveNick}>
+          Set
+        </SmallButton>
+      </div>
+      <div class='flex items-center justify-center'>
+        <Heading class='ml-0 mr-2'>
+          Skin Color
+        </Heading>
+        <input
+          type='color'
+          default={intToHex(avColor())}
+          use:bind={[avColor, setColor]}
+        />
+      </div>
       <MediumButton onClick={initNewForm}>
         Create Garb
       </MediumButton>
@@ -140,16 +166,6 @@ export default function Lab() {
         addFn={state.closet.addForm.bind(state.closet)}
         editing={editing()}
       />
-      <div class='flex items-center justify-center'>
-        <Heading class='ml-0 mr-1'>
-          Skin Color
-        </Heading>
-        <input
-          type='color'
-          default={intToHex(avColor())}
-          use:bind={[avColor, setColor]}
-        />
-      </div>
       <div class=''>
         <Heading>
           Equipped Features

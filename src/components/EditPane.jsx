@@ -11,7 +11,7 @@ import FormInfo from '@/FormInfo';
 import MediumButton from '@/MediumButton';
 import point from 'assets/icons/point.png';
 import erase from 'assets/icons/delete.png';
-import cycle from 'assets/icons/cycle.png';
+import dropper from 'assets/icons/dropper.png';
 import resize from 'assets/icons/resize.png';
 
 export default function EditPane() {
@@ -20,7 +20,7 @@ export default function EditPane() {
   const buttons = {
     point: null,
     erase: null,
-    cycle: null,
+    dropper: null,
     resize: null,
   };
 
@@ -66,9 +66,9 @@ export default function EditPane() {
           selectTool(tools.ERASER);
           if (buttons.erase) buttons.erase.focus();
           break;
-        case 'c':
-          selectTool(tools.CYCLER);
-          if (buttons.cycle) buttons.cycle.focus();
+        case 'i':
+          selectTool(tools.DROPPER);
+          if (buttons.dropper) buttons.dropper.focus();
           break;
         case 'r':
           selectTool(tools.RESIZER);
@@ -93,12 +93,10 @@ export default function EditPane() {
         type: 'item',
         variations: [{
           deep: 'back',
+          offset: { x: 0, y: 0 },
+          tint: null,
           sprite: '',
         }],
-        offset: {
-          x: 0,
-          y: 0,
-        },
         collidable: false,
         effects: {},
         seeds: {},
@@ -124,11 +122,11 @@ export default function EditPane() {
           ref={buttons.erase}
         />
         <Button
-          onClick={[selectTool, tools.CYCLER]}
-          src={cycle}
-          selected={isToolSelected(tools.CYCLER)}
-          tooltip='C'
-          ref={buttons.cycle}
+          onClick={[selectTool, tools.DROPPER]}
+          src={dropper}
+          selected={isToolSelected(tools.DROPPER)}
+          tooltip='I'
+          ref={buttons.dropper}
         />
         <Button
           onClick={[selectTool, tools.RESIZER]}

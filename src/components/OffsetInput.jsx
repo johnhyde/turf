@@ -1,15 +1,20 @@
 import { useState } from 'stores/state.jsx';
 import { createEffect, createSignal, on, onCleanup, onMount } from 'solid-js';
-import { equalsV, makeImage, maxV, minV, roundV, vec2 } from 'lib/utils';
+import { equalsV, makeImage, maxV, minV, roundV, vec2 } from 'lib/utils.js';
+import { getVariationWithIndex } from 'lib/turf.js';
 
 export default function OffsetInput(props) {
   const state = useState();
   const [bgBitmap, $bgBitmap] = createSignal(null);
   const bgImage = () => {
     if (props.type !== 'garb') return null;
-    const sprite = state.m.avatar.body.thing.form.variations[0].sprite;
+    const sprite = getVariationWithIndex(
+      state.m.avatar.body.thing.form,
+      props.variation || 0,
+    )?.sprite;
+    if (!sprite) return null;
     if (typeof sprite === 'string') return sprite;
-    return sprite.frames[0];
+    return sprite.frames[(props.frame || 0) % sprite.frames.length];
   };
   createEffect(async () => {
     const url = bgImage();
@@ -27,7 +32,7 @@ export default function OffsetInput(props) {
 
   createEffect(on(
     () => [props.bitmap, bgBitmap(), props.deep],
-    (bitmap) => {
+    ([bitmap, _bg, _deep]) => {
       if (bitmap && canvas) {
         canvas.width = props.bitmap.width + tileSize;
         canvas.height = props.bitmap.height + tileSize;
@@ -73,7 +78,7 @@ export default function OffsetInput(props) {
     }
   }
 
-  createEffect(on(() => vec2(props.offset.x, props.offset.y), (propsOffset) => {
+  createEffect(on(() => vec2(props.offset), (propsOffset) => {
     drawStuff(null, propsOffset);
     if (!equalsV(roundV(offset), propsOffset)) {
       console.log('resetting offset', offset, propsOffset);

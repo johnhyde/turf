@@ -38,6 +38,7 @@
 +$  cur-grit
   $%  [%set-ctid turf-id=(unit turf-id)]
       [%set-avatar =avatar]
+      [%set-nick nick=(unit @t)]
       [%set-color color=@ux]
       [%add-thing =thing]
       [%del-thing index=@ud]
@@ -93,6 +94,7 @@
   ?-  -.grit
     %set-ctid  core(ctid turf-id.grit)
     %set-avatar  core(avatar avatar.grit)
+    %set-nick  core(nick.avatar nick.grit)
     %set-color  core(color.body.avatar color.grit)
     %add-thing  core(things.avatar (snoc things.avatar thing.grit))
     %del-thing  core(things.avatar (oust [index.grit 1] things.avatar))

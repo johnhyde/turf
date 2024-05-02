@@ -21,7 +21,9 @@ import {
   vec2,
 } from 'lib/utils.js';
 import {
+  getSpriteFps,
   getThingsAtPos,
+  getVariationWithDir,
   pickVariationWithDir,
   spriteNameWithDir,
 } from 'lib/turf.js';
@@ -86,6 +88,7 @@ export class Player extends Phaser.GameObjects.Container {
       hitArea: new Phaser.Geom.Rectangle(),
       hitAreaCallback: CreatePixelPerfectHandler(game.textures, 255, this.isUs),
     });
+    [this.hovering, this.$hovering] = createSignal(false);
     this.addToUpdateList();
     this.on('pointerdown', this.onClick.bind(this));
     this.on('pointermove', this.onHover.bind(this));
@@ -115,6 +118,15 @@ export class Player extends Phaser.GameObjects.Container {
 
   get playerCenter() {
     return vec2(tileSize).scale(0.25).add(vec2(2)); // 2: half of foot offset
+  }
+
+  get displayName() {
+    return this.p.avatar.nick || cite(this.patp);
+  }
+
+  get fullName() {
+    if (this.p.avatar.nick) return `${this.p.avatar.nick}\n(${this.patp})`;
+    return this.patp;
   }
 
   effectiveVariation(thing) {
@@ -167,6 +179,10 @@ export class Player extends Phaser.GameObjects.Container {
         }
       }, { defer: true }));
       createEffect(() => {
+        this.name.setText(this.hovering() ? this.patp : this.displayName);
+        this.centerText(this.name);
+      });
+      createEffect(() => {
         this.setZzz();
       });
     });
@@ -180,18 +196,22 @@ export class Player extends Phaser.GameObjects.Container {
     if (!(this.p && this.t && this.scene)) return; // regret to inform that these might disappear while we await the above
     this.avatar.removeAll(true);
     this.others.removeAll(true);
-    const frameRate = 7;
-    const bodyDirs = [0, 1, 2, 3].map((dir) =>
-      spriteNameWithDir(
-        this.t.id,
-        avatar.body.thing.formId,
-        avatar.body.thing.form,
-        dirs[dir],
-        this.patp,
-      )
-    );
+    const bodyDirs = [0, 1, 2, 3].map((dir) => {
+      const variation = getVariationWithDir(avatar.body.thing.form, dirs[dir]);
+      if (!variation) return null;
+      return {
+        key: spriteNameWithDir(
+          this.t.id,
+          avatar.body.thing.formId,
+          avatar.body.thing.form,
+          dirs[dir],
+          this.patp,
+        ),
+        fps: getSpriteFps(variation.sprite),
+      };
+    });
     this.bodyImage = this.scene.make.sprite({
-      key: bodyDirs[dirs[this.dir]],
+      key: bodyDirs[dirs[this.dir]]?.key,
       frame: 0,
     });
     this.bodyImage.thing = avatar.body.thing;
@@ -200,12 +220,14 @@ export class Player extends Phaser.GameObjects.Container {
     ) {
       this.bodyImage.setFlipX(true);
     }
-    bodyDirs.forEach((key, i) => {
+    bodyDirs.forEach((dir, i) => {
+      if (!dir) return;
+      const { key, fps } = dir;
       this.bodyImage.anims.create({
         key: dirs[i],
         frames: key,
         repeat: -1,
-        frameRate,
+        frameRate: fps,
       });
     });
     const playerOffset = vec2(avatar.body.thing.offset).add(
@@ -221,21 +243,26 @@ export class Player extends Phaser.GameObjects.Container {
     this.bodyImage.preDestroy = preDestroy;
     this.bodyImage.setTint(avatar.body.color);
     this.things = avatar.things.map((thing) => {
-      const spriteDirs = [0, 1, 2, 3].map((dir) =>
-        spriteNameWithDir(
-          this.t.id,
-          thing.formId,
-          thing.form,
-          dirs[dir],
-          this.patp,
-        )
-      );
+      const spriteDirs = [0, 1, 2, 3].map((dir) => {
+        const variation = getVariationWithDir(thing.form, dirs[dir]);
+        if (!variation) return null;
+        return {
+          key: spriteNameWithDir(
+            this.t.id,
+            thing.formId,
+            thing.form,
+            dirs[dir],
+            this.patp,
+          ),
+          fps: getSpriteFps(variation.sprite),
+        };
+      });
       const offset = vec2(thing.offset).add(
         thing.form.variations[0]?.offset || vec2(),
       ).add(bodyOffset);
-      const defaultDir = spriteDirs.filter((key) => key)[0];
+      const defaultDir = spriteDirs.filter((dir) => dir)[0].key;
       const sprite = this.scene.make.sprite({
-        key: spriteDirs[dirs[this.dir]] || defaultDir,
+        key: spriteDirs[dirs[this.dir]]?.key || defaultDir,
       });
       if (!spriteDirs[dirs[this.dir]]) sprite.setVisible(false);
       sprite.thing = thing;
@@ -243,9 +270,10 @@ export class Player extends Phaser.GameObjects.Container {
       if (thing.form.variations.length < 4 && this.dir === dirs.LEFT) {
         sprite.setFlipX(true);
       }
-      spriteDirs.forEach((key, i) => {
-        if (!key) return;
-        let frameKeys = Object.keys(game.textures.get(key).frames);
+      spriteDirs.forEach((dir, i) => {
+        if (!dir) return;
+        const { key, fps } = dir;
+        const frameKeys = Object.keys(game.textures.get(key).frames);
         const frames = frameKeys.map((frame) => {
           return { key, frame };
         }).filter(({ frame }) => frame !== '__BASE');
@@ -253,7 +281,7 @@ export class Player extends Phaser.GameObjects.Container {
           key: dirs[i],
           frames,
           repeat: -1,
-          frameRate,
+          frameRate: fps,
         });
       });
       sprite.setDisplayOrigin(offset.x, offset.y);
@@ -262,7 +290,7 @@ export class Player extends Phaser.GameObjects.Container {
     }).filter((thing) => !!thing);
     this.avatar.add([this.bodyImage, ...this.things]);
     this.name = this.scene.make.text({
-      text: cite(this.patp),
+      text: avatar.nick || cite(this.patp),
       style: {
         fontSize: 8 * factor + 'px',
         ...defaultTextStyles,
@@ -404,6 +432,11 @@ export class Player extends Phaser.GameObjects.Container {
             const offset = vec2(sprite.thing.offset)
               .add(variation?.offset || vec2()).add(bodyOffset);
             sprite.setDisplayOrigin(offset.x, offset.y);
+            if (variation.tint) {
+              sprite.setTint(variation.tint);
+            } else {
+              sprite.clearTint();
+            }
           }
         }
       });
@@ -635,6 +668,7 @@ export class Player extends Phaser.GameObjects.Container {
       this.ping.setText(text);
       this.centerPing();
     }
+    this.$hovering(true);
   }
 
   onLeave(pointer) {
@@ -644,6 +678,7 @@ export class Player extends Phaser.GameObjects.Container {
       this.ping.setText('(ping)');
       this.centerPing();
     }
+    this.$hovering(false);
   }
 
   preDestroy(fromScene) {
