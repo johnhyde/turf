@@ -1,5 +1,4 @@
-/-  *turf, mild=mist-1
-/+  *turf
+/-  *turf-3, mild=mist-0
 =<
 |%
 ++  name  %mist
@@ -13,11 +12,11 @@
 ++  urck  ^urck
 ++  ugrt  ^ugrt
 ++  ufam  foam
-++  wash  wash-grit
+:: ++  wash  wash-grit
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)
-+$  rock  $+  mist-rock  [%2 =stir-ids core]
++$  rock  $+  mist-rock  [%1 =stir-ids core]
 +$  rock-v  _-:*rock
 +$  core
   $:  ctid=(unit turf-id)  :: current turf-id
@@ -25,20 +24,18 @@
       port-offer=(unit port-offer)
       =avatar
   ==
-+$  vock  $^(vock:mild pvock)
++$  vock
+  $^  rock:mild  rock
 +$  pvock  :: proper vock (head-tagged)
-  $%  pvock:mild
-      rock
-  ==
+  rock
 +$  grit  $+  mist-grit  [cur-grit-v cur-grit]
 +$  vrit
-  $@   vrit:mild
-  $%(vrit:mild grit)
+  $@   grit:mild
+  $%(grit:mild grit)
 +$  cur-grit-v  rock-v
 +$  cur-grit
   $%  [%set-ctid turf-id=(unit turf-id)]
       [%set-avatar =avatar]
-      [%set-nick nick=(unit @t)]
       [%set-color color=@ux]
       [%add-thing =thing]
       [%del-thing index=@ud]
@@ -82,68 +79,34 @@
   ==
 +$  roars  (list roar)
 ::
-++  wash-grit
-  |=  [=rock foam * grit=cur-grit]
-  ^-  ^rock
-  =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
-    (~(put by stir-ids.rock) (need src) (need id))
-  :+  -.rock  stir-ids.rock
-  ^-  core
-  =*  core  +>.rock
-  =*  avatar  avatar.rock
-  ?-  -.grit
-    %set-ctid  core(ctid turf-id.grit)
-    %set-avatar  core(avatar avatar.grit)
-    %set-nick  core(nick.avatar nick.grit)
-    %set-color  core(color.body.avatar color.grit)
-    %add-thing  core(things.avatar (snoc things.avatar thing.grit))
-    %del-thing  core(things.avatar (oust [index.grit 1] things.avatar))
-    %set-thing  core(things.avatar (snap things.avatar index.grit thing.grit))
-    %port-offered  core(port-offer `+.grit, ttid ~)
-    %accept-port-offer  core(ttid `for.grit, port-offer ~)
-      %reject-port-offer
-    =.  port-offer.core
-      ?~  port-offer.core  ~
-      ?:  =(for.grit for.u.port-offer.core)  ~
-      port-offer.core
-    =?  ttid.core  =(`for.grit ttid.core)
-      ~
-    core
-    %clear-port-offer  core(ttid ~, port-offer ~)
-  ==
-::
 :: upgrades
 ++  urck
   |=  rock=vock
   ^-  ^rock
-  ?+  -.rock     $(rock (urck:mild rock))
-    rock-v       rock
-    rock-v:mild  (rock-to-next rock)
+  ?-  -.rock
+    rock-v   rock
+    $@(~ ^)  (rock-to-next rock)
   ==
 ++  rock-to-next
   |=  =rock:mild
   ^-  ^rock
   :-  *rock-v
-  +.rock(avatar (uvtr avatar.rock))
+  :-  stir-ids.rock
+  +.rock
 ::
 ++  ugrt
   |=  g=vrit
   ^-  grit
-  ?+  g                  $(g (ugrt:mild g))
-    [cur-grit-v *]       g
-    [cur-grit-v:mild *]  (grit-to-next g)
+  ?-  g
+    [cur-grit-v *]  g
+    *               (grit-to-next g)
   ==
 ++  grit-to-next
   |=  [g=grit:mild]
   ^-  grit
-  =/  grit  +.g
+  :: =/  grit  +.g
   :-  *cur-grit-v
-  ?+  -.grit  grit
-    %set-avatar
-      grit(avatar (uvtr avatar.grit))
-    %add-thing
-      grit(thing (utng thing.grit))
-    %set-thing
-      grit(thing (utng thing.grit))
-  ==
+  ?@  g
+    clear-port-offer+~
+  g
 --

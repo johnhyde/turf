@@ -10,6 +10,7 @@ import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
 import {
   autofocus,
   bind,
+  hexToInt,
   input,
   isValidPath,
   jClone,
@@ -21,6 +22,8 @@ import mapValues from 'lodash/mapValues';
 import { useState } from 'stores/state.jsx';
 import Heading from '@/Heading.jsx';
 import SmallButton from '@/SmallButton.jsx';
+import ItemButton from '@/ItemButton.jsx';
+import UploadButton from '@/UploadButton.jsx';
 import Radio from '@/Radio.jsx';
 import Modal from '@/Modal.jsx';
 import EffectsEditor from '@/EffectsEditor.jsx';
@@ -32,6 +35,13 @@ export default function FormEditor(props) {
   const [newForm, $newForm] = createStore({});
   createEffect(() => {
     $newForm(reconcile(jClone(props.form)));
+  });
+  createEffect(() => {
+    if (!props.form.form) {
+      $idValid(null);
+      $currentVar(0);
+      $globalTint(null);
+    }
   });
   const formDef = mergeProps(props.form, newForm);
   const formId = () => formDef.formId;
@@ -54,6 +64,7 @@ export default function FormEditor(props) {
   const notGarb = () => form()?.type !== 'garb';
   const [idValid, $idValid] = createSignal(null);
   const [currentVar, $currentVar] = createSignal(0);
+  const [globalTint, $globalTint] = createSignal(null);
   const idChanged = () => props.editing && formId() !== props.form?.formId;
   const idClash = () => {
     if (props.editing && !idChanged()) return false;
@@ -150,7 +161,9 @@ export default function FormEditor(props) {
 
   function addVariation() {
     $newForm('form', 'variations', form().variations.length, {
-      deep: (form().type === 'garb') ? 'fore' : 'back',
+      deep: notGarb() ? 'back' : 'fore',
+      offset: { x: 0, y: 0 },
+      tint: null,
       sprite: '',
     });
     $currentVar(form().variations.length - 1);
@@ -163,8 +176,24 @@ export default function FormEditor(props) {
     }
   }
 
-  async function uploadFiles(e) {
-    const [frames, _errors] = await processImageFiles(e.target.files);
+  function swapVariations(i) {
+    $newForm('form', 'variations', (vars) => {
+      const vi = vars[i];
+      const vj = vars[i + 1];
+      return [...vars.slice(0, i), vj, vi, ...vars.slice(i + 2)];
+    });
+  }
+
+  function applyGlobalTint() {
+    const tint = globalTint() ? hexToInt(globalTint()) : null;
+    batch(() => {
+      form().variations.forEach((_v, i) => {
+        $newForm('form', 'variations', i, 'tint', tint);
+      });
+    });
+  }
+
+  function onFramesUpload(frames) {
     for (const f of frames) {
       // if sprite is empty, overwrite rather than adding
       $currentVar(form().variations.length - 1);
@@ -176,18 +205,17 @@ export default function FormEditor(props) {
       } else {
         setVariation('sprite', {
           type: 'loop',
+          timing: [],
           frames: f,
         });
       }
     }
-    uploader.value = '';
   }
 
-  let uploader;
   return (
     <Show when={props.form?.form} keyed>
       <Modal
-        class='top-0 left-0 !max-w-full flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'
+        class='top-0 left-0 !max-w-full flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700 text-left'
         onClose={cancel}
       >
         <div class='flex'>
@@ -240,7 +268,8 @@ export default function FormEditor(props) {
                 />
               </div>
             </Show>
-            <div class='flex gap-2'>
+            {
+              /* <div class='flex gap-2'>
               <span class='font-semibold'>Offset</span>
               <div>
                 <span class='mr-1'>x:</span>
@@ -272,7 +301,31 @@ export default function FormEditor(props) {
                   ]}
                 />
               </div>
-            </div>
+            </div> */
+            }
+            <Show when={form().variations.length > 1}>
+              <span class='font-semibold'>Tint Override</span>
+              <div class='flex gap-2 items-center'>
+                <Show
+                  when={globalTint()}
+                  fallback={
+                    <SmallButton onClick={() => $globalTint('#ffffff')}>
+                      +
+                    </SmallButton>
+                  }
+                >
+                  <SmallButton onClick={() => $globalTint(null)}>x</SmallButton>
+                  <input
+                    type='color'
+                    default='#ffffff'
+                    use:bind={[globalTint, $globalTint]}
+                  />
+                </Show>
+                <SmallButton onClick={applyGlobalTint}>
+                  {globalTint() ? 'Set' : 'Clear'} All
+                </SmallButton>
+              </div>
+            </Show>
             <Show when={notGarb()}>
               <div class='flex items-center'>
                 <label for='collidable' class='font-semibold mr-2'>
@@ -299,47 +352,87 @@ export default function FormEditor(props) {
             </Show>
           </div>
           <div class='max-w-md flex flex-col space-y-2 p-2'>
-            <p class='font-semibold'>Image</p>
-            <div class='flex flex-col space-y-2'>
-              <p>
+            {
+              /*<p>
                 Tiles are 32x32 pixels. GIF uploads OK.
-              </p>
-              <div class='flex gap-2 items-center'>
-                <span class='font-semibold'>Variations</span>
-                <ListItemPicker
-                  wall={form().type === 'wall'}
-                  items={form().variations}
-                  selected={currentVar()}
-                  onSelect={$currentVar}
-                  onAdd={addVariation}
-                  editing
-                />
-                <div class='flex items-center space-x-2'>
-                  <SmallButton onClick={() => uploader.click()}>
-                    Upload
-                  </SmallButton>
-                  <input
-                    type='file'
-                    accept='image/*'
-                    multiple
-                    onInput={uploadFiles}
-                    ref={uploader}
-                    class='hidden'
-                  />
-                </div>
-              </div>
-              <Show when={form().variations[currentVar()]}>
-                <div class='border-b border-yellow-950' />
-                <VariationEditor
-                  type={form().type}
-                  var={form().variations[currentVar()]}
-                  $var={setVariation}
-                  offset={offset()}
-                  $offset={setOffset}
-                  onDel={() => delVariation(currentVar())}
-                />
+              </p>*/
+            }
+            <div class='flex gap-2 items-center'>
+              <span class='font-semibold'>Variations</span>
+              <UploadButton onFrames={onFramesUpload} multiple />
+              <Show when={form().variations.length < 2}>
+                <SmallButton onClick={addVariation}>+</SmallButton>
               </Show>
             </div>
+            <Show when={form().variations.length > 1}>
+              <ListItemPicker
+                wall={form().type === 'wall'}
+                items={form().variations}
+                selected={currentVar()}
+                onAdd={addVariation}
+                editing
+                addButtonClass='w-[42px] h-[74px]'
+                button={(label, i, selected) => {
+                  let bodyVar = i % 4;
+                  if (bodyVar === 3) bodyVar = 1;
+                  return (
+                    <div className='relative'>
+                      <ItemButton
+                        onClick={() => $currentVar(i)}
+                        selected={selected}
+                        form={form()}
+                        variation={i}
+                        playerImage={!notGarb() &&
+                          `sprites/garb/body-${bodyVar}-0.png`}
+                        bgImage={notGarb() &&
+                          'sprites/grass.png'}
+                        flipBg={i % 4 === 3}
+                      />
+                      <SmallButton
+                        class='absolute top-1 left-1 bg-opacity-50 z-[20] pointer-events-none'
+                        tabindex='-1'
+                      >
+                        {label}
+                      </SmallButton>
+                      <SmallButton
+                        class='absolute top-1 right-1 bg-opacity-50 z-[20]'
+                        onClick={() => delVariation(i)}
+                      >
+                        x
+                      </SmallButton>
+                      <Show when={i !== 0}>
+                        <SmallButton
+                          class='absolute bottom-1 left-1 bg-opacity-50 z-[20]'
+                          onClick={() => swapVariations(i - 1)}
+                        >
+                          {'<'}
+                        </SmallButton>
+                      </Show>
+                      <Show when={i !== form().variations.length - 1}>
+                        <SmallButton
+                          class='absolute bottom-1 right-1 bg-opacity-50 z-[20]'
+                          onClick={() => swapVariations(i)}
+                        >
+                          {'>'}
+                        </SmallButton>
+                      </Show>
+                    </div>
+                  );
+                }}
+              />
+            </Show>
+            <div class='border-b border-yellow-950' />
+            <Show when={form().variations[currentVar()]}>
+              <VariationEditor
+                type={form().type}
+                var={form().variations[currentVar()]}
+                variation={currentVar()}
+                $var={setVariation}
+                offset={offset()}
+                $offset={setOffset}
+                onDel={() => delVariation(currentVar())}
+              />
+            </Show>
           </div>
           {
             /* {dev &&

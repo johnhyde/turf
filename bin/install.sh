@@ -96,6 +96,7 @@ if [ -z "$WATCH_MODE" ]; then
         echo "copied from $GLOBS to $TARGET_GLOBS"
         HASH="${GLOB//glob-/}"
         HASH="${HASH//.glob/}"
+        echo $(du -sh "$GLOBS/$GLOB")
         echo $HASH
         s3upload $HASH
     else

@@ -1,7 +1,15 @@
 import { batch, createSignal } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { autofocus, bind, input, jClone, turfIdToName, vec2 } from 'lib/utils';
-import SmallButton from '@/SmallButton';
+import {
+  autofocus,
+  bind,
+  bindNum,
+  input,
+  jClone,
+  turfIdToName,
+  vec2,
+} from 'lib/utils.js';
+import SmallButton from '@/SmallButton.jsx';
 
 function toPairs(str) {
   return str.split(', ').map((t) => t.split('  ')).map((p) => {
@@ -213,9 +221,9 @@ function ArgInput(props) {
                       min={state.e.offset.x}
                       max={state.e.offset.x + state.e.size.x - 1}
                       use:input
-                      use:bind={[
+                      use:bindNum={[
                         () => props.arg.x,
-                        (s) => props.$arg(vec2(s, props.arg.y)),
+                        (n) => props.$arg(vec2(n, props.arg.y)),
                       ]}
                     />
                     <span>y:</span>
@@ -225,9 +233,9 @@ function ArgInput(props) {
                       min={state.e.offset.y}
                       max={state.e.offset.y + state.e.size.y - 1}
                       use:input
-                      use:bind={[
+                      use:bindNum={[
                         () => props.arg.y,
-                        (s) => props.$arg(vec2(props.arg.x, s)),
+                        (n) => props.$arg(vec2(props.arg.x, n)),
                       ]}
                     />
                   </Match>

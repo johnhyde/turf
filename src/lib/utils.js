@@ -410,11 +410,21 @@ export function calcCellDims(n, v, aw, ah, gap = 0) {
 }
 
 export function bind(el, accessor) {
-  const [s, set] = accessor();
+  const [v, set] = accessor();
   el.addEventListener('input', (e) => set(e.currentTarget.value));
   createRenderEffect(() => {
-    el.value = s();
+    el.value = v();
   });
+}
+
+export function bindNum(el, accessor) {
+  const [v, set] = accessor();
+  bind(el, () => [v, (s) => {
+    if (s === '') return;
+    const n = Number(s);
+    if (isNaN(n)) return;
+    set(n);
+  }]);
 }
 
 export function autofocus(el, _) {
@@ -426,9 +436,6 @@ export function autofocus(el, _) {
 }
 
 export function input(el, callbacks) {
-  function focus() {
-    el.focus();
-  }
   function blur() {
     el.blur();
   }
@@ -444,6 +451,17 @@ export function input(el, callbacks) {
         const { onBlur } = callbacks();
         if (onBlur) onBlur(e);
       }, { once: true });
+    }
+  });
+  el.addEventListener('keydown', (e) => {
+    const { onSubmit, dontEscape } = callbacks();
+    if (e.key === 'Enter' && onSubmit) {
+      onSubmit(e);
+      e.stopPropagation();
+    }
+    if (e.key === 'Escape' && !dontEscape) {
+      blur();
+      e.stopPropagation();
     }
   });
 }
@@ -473,6 +491,7 @@ export function makeImage(url) {
   return new Promise((resolve, reject) => {
     try {
       const image = new Image();
+      image.crossOrigin = 'Anonymous';
       image.onload = async () => {
         let bitmap;
         try {
@@ -591,22 +610,13 @@ export async function processImageFiles(files) {
   return [frames, errors];
 }
 
-export async function tintImage(image, color) {
-  const rgb = intToRGB(color);
+export function tintImage(image, color) {
   canvas.width = image.width;
   canvas.height = image.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(image, 0, 0);
-  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-    data[i] = (rgb.red * data[i]) / 256; // red
-    data[i + 1] = (rgb.green * data[i + 1]) / 256; // green
-    data[i + 2] = (rgb.blue * data[i + 2]) / 256; // blue
-  }
-  ctx.putImageData(imageData, 0, 0);
-  let dataUrl = canvas.toDataURL();
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(tintImageData(imageData, color), 0, 0);
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
@@ -615,4 +625,18 @@ export async function tintImage(image, color) {
     image.onerror = reject;
     image.src = dataUrl;
   });
+}
+
+export function tintImageData(imgData, color) {
+  const rgb = intToRGB(color);
+  const data = imgData.data;
+  const newImgData = ctx.createImageData(imgData);
+  const newData = newImgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    newData[i] = (rgb.red * data[i]) / 256; // red
+    newData[i + 1] = (rgb.green * data[i + 1]) / 256; // green
+    newData[i + 2] = (rgb.blue * data[i + 2]) / 256; // blue
+    newData[i + 3] = data[i + 3]; // copy alpha
+  }
+  return newImgData;
 }

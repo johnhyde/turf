@@ -1,15 +1,15 @@
-import { createSignal, createSelector } from 'solid-js';
+import { createSelector, createSignal } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import * as api from 'lib/api.js';
-import { vec2, isTextInputFocused } from 'lib/utils';
-import Button from '@/Button';
-import TownPane from '@/TownPane';
-import PortalsPane from '@/PortalsPane';
-import EditPane from '@/EditPane';
-import Lab from '@/Lab';
-import Help from '@/Help';
-import ChatLog from '@/ChatLog';
-import ChatBar from '@/ChatBar';
+import { isTextInputFocused, vec2 } from 'lib/utils.js';
+import Button from '@/Button.jsx';
+import TownPane from '@/TownPane.jsx';
+import PortalsPane from '@/PortalsPane.jsx';
+import SettingsPane from '@/SettingsPane.jsx';
+import EditPane from '@/EditPane.jsx';
+import Lab from '@/Lab.jsx';
+import Help from '@/Help.jsx';
+import ChatLog from '@/ChatLog.jsx';
+import ChatBar from '@/ChatBar.jsx';
 import leftCaret from 'assets/icons/left-caret.png';
 import rightCaret from 'assets/icons/right-caret.png';
 import lab from 'assets/icons/lab.png';
@@ -17,6 +17,7 @@ import shovel from 'assets/icons/shovel.png';
 import help from 'assets/icons/help.png';
 import portal from 'assets/icons/portal.png';
 import town from 'assets/icons/town.png';
+import gear from 'assets/icons/gear.png';
 import muted from 'assets/icons/muted.png';
 import unmuted from 'assets/icons/unmuted.png';
 
@@ -65,9 +66,13 @@ function Sidebar() {
         case 'p':
           toggleTab(state.tabs.LAB);
           openSidebar();
-        break;
+          break;
         case 'e':
           toggleTab(state.tabs.EDITOR);
+          openSidebar();
+          break;
+        case 'z':
+          toggleTab(state.tabs.SETTINGS);
           openSidebar();
           break;
         case 't':
@@ -88,20 +93,29 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[245px] sm:min-w-[245px] ' + (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
+      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[245px] sm:min-w-[245px] ' +
+        (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
-      <Show when={open()} fallback={(
-        <div class="flex-grow">
-          <div class="pointer-events-auto inline-block relative">
-            <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
-            {state.portals?.from.length > 0 &&
-            <div
-              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
-            />}
+      <Show
+        when={open()}
+        fallback={
+          <div class='flex-grow'>
+            <div class='pointer-events-auto inline-block relative'>
+              <Button onClick={openSidebar} src={rightCaret} tooltip='Escape' />
+              {state.portals?.from.length > 0 &&
+                (
+                  <div
+                    class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+                  />
+                )}
+            </div>
           </div>
-        </div>
-      )}>
-        <div class={'pointer-events-auto flex flex-wrap justify-evenly content-evenly ' + (state.selectedTab ? 'pb-1 border-b border-yellow-950' : '')}>
+        }
+      >
+        <div
+          class={'pointer-events-auto flex flex-wrap justify-evenly content-evenly ' +
+            (state.selectedTab ? 'pb-1 border-b border-yellow-950' : '')}
+        >
           <Button
             onClick={closeSidebar}
             src={leftCaret}
@@ -125,13 +139,13 @@ function Sidebar() {
             selected={isSelected(state.tabs.EDITOR)}
             tooltip='E'
           />
-          {/* these next two buttons are just spacers */}
           <Button
-            src={shovel}
-            disabled
-            class="invisible hidden sm:block"
+            onClick={[toggleTab, state.tabs.SETTINGS]}
+            src={gear}
+            selected={isSelected(state.tabs.SETTINGS)}
+            tooltip='Z'
           />
-          <div class="inline-block relative">
+          <div class='inline-block relative'>
             <Button
               onClick={[toggleTab, state.tabs.TOWN]}
               src={town}
@@ -139,11 +153,13 @@ function Sidebar() {
               tooltip='T'
             />
             {state.portals?.dinks.pending.length > 0 && state.thisIsUs &&
-            <div
-              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
-            />}
+              (
+                <div
+                  class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+                />
+              )}
           </div>
-          <div class="inline-block relative">
+          <div class='inline-block relative'>
             <Button
               onClick={[toggleTab, state.tabs.PORTALS]}
               src={portal}
@@ -151,9 +167,11 @@ function Sidebar() {
               tooltip='G'
             />
             {state.portals?.from.length > 0 && state.thisIsUs &&
-            <div
-              class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
-            />}
+              (
+                <div
+                  class={'absolute top-0 right-0 m-0.5 w-2 h-2 rounded-full bg-orange-500 animate-pulse'}
+                />
+              )}
           </div>
           <Button
             onClick={state.toggleSound.bind(state)}
@@ -162,19 +180,20 @@ function Sidebar() {
           />
         </div>
         <Show when={state.selectedTab}>
-          <div class="overflow-y-hidden shrink min-w-xl pointer-events-auto">
-            <div class="my-1 h-full">
-              {state.selectedTab === state.tabs.TOWN && <TownPane/>}
-              {state.selectedTab === state.tabs.PORTALS && <PortalsPane/>}
-              {state.editor.editing && <EditPane/>}
-              {state.lab.editing && <Lab/>}
-              {state.selectedTab === state.tabs.HELP && <Help/>}
+          <div class='overflow-y-hidden shrink min-w-xl pointer-events-auto'>
+            <div class='my-1 h-full'>
+              {state.selectedTab === state.tabs.TOWN && <TownPane />}
+              {state.selectedTab === state.tabs.PORTALS && <PortalsPane />}
+              {state.selectedTab === state.tabs.SETTINGS && <SettingsPane />}
+              {state.editor.editing && <EditPane />}
+              {state.lab.editing && <Lab />}
+              {state.selectedTab === state.tabs.HELP && <Help />}
             </div>
           </div>
         </Show>
         <ChatLog chats={state.e?.chats || []} context={state.selectedTab} />
       </Show>
-      <div class="pointer-events-auto">
+      <div class='pointer-events-auto'>
         <ChatBar />
       </div>
     </div>

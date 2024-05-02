@@ -9,7 +9,7 @@
   },
   "lint": {
     "rules": {
-      "exclude": ["no-window", "no-window-prefix",  "import-prefix-missing"]
+      "exclude": ["no-window", "no-window-prefix",  "import-prefix-missing", "no-async-promise-executor"]
     }
   },
   "fmt": {

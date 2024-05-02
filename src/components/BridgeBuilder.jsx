@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { isValidPatp } from 'urbit-ob';
-import { bind, isTextInputFocused, input, normalizeId } from 'lib/utils';
+import { bind, input, isTextInputFocused, normalizeId } from 'lib/utils';
 import SmallButton from '@/SmallButton';
 
 export default function BridgeBuilder(props) {
@@ -15,12 +15,11 @@ export default function BridgeBuilder(props) {
     } else {
       return '';
     }
-  }
+  };
 
   const [toShipValid, $toShipValid] = createSignal(null);
 
   const [toShip, $toShip] = createSignal('');
-
 
   function updateToShip(ship) {
     let patp = normalizeId(ship);
@@ -66,36 +65,25 @@ export default function BridgeBuilder(props) {
     state.clearHuskToPlace();
   }
 
-
-  function shipKeyDown(e) {
-    if (e.key === 'Enter') {
-      submit();
-    }
-    if (e.key === 'Escape') {
-      e.target.blur();
-    }
-  }
-
   return (
-    <div class="flex justify-center items-center space-x-2">
+    <div class='flex justify-center items-center space-x-2'>
       <input
-          class={"rounded-input max-w-[175px] " + validBg()}
-          use:input
-          autofocus
-          use:bind={[
-            toShip,
-            updateToShip,
-          ]}
-          onKeyDown={shipKeyDown}
-          placeholder={props.placeholder || ''}
+        class={'rounded-input max-w-[175px] ' + validBg()}
+        use:input={{ onSubmit: submit }}
+        autofocus
+        use:bind={[
+          toShip,
+          updateToShip,
+        ]}
+        placeholder={props.placeholder || ''}
       />
-      {state.huskToPlace?.portal?.ship === toShip() ?
-        <SmallButton onClick={cancel}>–</SmallButton>
-      :
-        <SmallButton onClick={submit}>
-          {props.shadeId === undefined ? '+' : '✓'}
-        </SmallButton>
-      }
+      {state.huskToPlace?.portal?.ship === toShip()
+        ? <SmallButton onClick={cancel}>–</SmallButton>
+        : (
+          <SmallButton onClick={submit}>
+            {props.shadeId === undefined ? '+' : '✓'}
+          </SmallButton>
+        )}
     </div>
   );
 }

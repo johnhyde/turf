@@ -2,7 +2,7 @@ import { createMemo, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused } from 'lib/utils';
-import { getTile, getShadeWithForm, isSpecialFormId } from 'lib/turf';
+import { getShadeWithForm, getTile, isSpecialFormId } from 'lib/turf';
 import Button from '@/Button';
 import FormEditor from '@/FormEditor';
 import HuskEditor from '@/HuskEditor';
@@ -11,7 +11,7 @@ import FormInfo from '@/FormInfo';
 import MediumButton from '@/MediumButton';
 import point from 'assets/icons/point.png';
 import erase from 'assets/icons/delete.png';
-import cycle from 'assets/icons/cycle.png';
+import dropper from 'assets/icons/dropper.png';
 import resize from 'assets/icons/resize.png';
 
 export default function EditPane() {
@@ -20,7 +20,7 @@ export default function EditPane() {
   const buttons = {
     point: null,
     erase: null,
-    cycle: null,
+    dropper: null,
     resize: null,
   };
 
@@ -49,35 +49,31 @@ export default function EditPane() {
     return getShadeWithForm(state.e, state.editor.selectedShadeId);
   });
 
-  const selectedTile = createMemo(() => {
-    if (!state.e) return undefined;
-    if (!state.editor.selectedTilePos) return undefined;
-    return getTile(state.e, state.editor.selectedTilePos);
-  });
-
   const onKeyDown = (e) => {
     if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
       if (e.key === 'Escape') {
-        if (null != (state.editor.selectedTool ?? state.editor.selectedShadeId ?? state.editor.selectedTilePos)) {
+        if (
+          null != (state.editor.selectedTool ?? state.editor.selectedShadeId)
+        ) {
           selectTool(null);
           if (buttons.point) buttons.point.focus();
           e.stopPropagation();
         }
-      } 
+      }
       switch (e.key) {
         case 'Delete':
         case 'Backspace':
           selectTool(tools.ERASER);
           if (buttons.erase) buttons.erase.focus();
           break;
-        case 'c':
-          selectTool(tools.CYCLER);
-          if (buttons.cycle) buttons.cycle.focus();
-        break;
+        case 'i':
+          selectTool(tools.DROPPER);
+          if (buttons.dropper) buttons.dropper.focus();
+          break;
         case 'r':
           selectTool(tools.RESIZER);
           if (buttons.resize) buttons.resize.focus();
-        break;
+          break;
         default:
       }
     }
@@ -97,11 +93,10 @@ export default function EditPane() {
         type: 'item',
         variations: [{
           deep: 'back',
+          offset: { x: 0, y: 0 },
+          tint: null,
           sprite: '',
         }],
-        offset: {
-          x: 0, y: 0,
-        },
         collidable: false,
         effects: {},
         seeds: {},
@@ -110,8 +105,8 @@ export default function EditPane() {
   }
 
   return (
-    <div class="flex flex-col h-full">
-      <div class="flex flex-wrap justify-evenly content-evenly">
+    <div class='flex flex-col h-full'>
+      <div class='flex flex-wrap justify-evenly content-evenly'>
         <Button
           onClick={[selectTool, null]}
           src={point}
@@ -127,11 +122,11 @@ export default function EditPane() {
           ref={buttons.erase}
         />
         <Button
-          onClick={[selectTool, tools.CYCLER]}
-          src={cycle}
-          selected={isToolSelected(tools.CYCLER)}
-          tooltip='C'
-          ref={buttons.cycle}
+          onClick={[selectTool, tools.DROPPER]}
+          src={dropper}
+          selected={isToolSelected(tools.DROPPER)}
+          tooltip='I'
+          ref={buttons.dropper}
         />
         <Button
           onClick={[selectTool, tools.RESIZER]}
@@ -146,23 +141,22 @@ export default function EditPane() {
       </MediumButton>
       <FormEditor form={newForm} $form={$newForm} skye={state.e?.skye} />
       <Show when={state.c.selectedForm}>
-        <div class="flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700">
+        <div class='flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'>
           <FormInfo formId={state.editor.selectedFormId} />
         </div>
       </Show>
       <Show when={selectedShade()} keyed>
         {(shade) => <HuskEditor shade={shade} />}
       </Show>
-      <Show when={selectedTile()} keyed>
-        {(tile) => <HuskEditor tile={tile} pos={state.editor.selectedTilePos} />}
-      </Show>
-      <div class="h-full overflow-y-auto">
+      <div class='h-full overflow-y-auto'>
         <For each={types}>
           {(type) => (
-
             <FormSelect
               forms={formsByType(type)}
-              select={(formId) => state.editor.selectedFormId === formId ? selectForm(null) : selectForm(formId)}
+              select={(formId) =>
+                state.editor.selectedFormId === formId
+                  ? selectForm(null)
+                  : selectForm(formId)}
               selectedId={state.editor.selectedFormId}
             />
           )}

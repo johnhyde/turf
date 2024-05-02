@@ -1,11 +1,9 @@
-import { createMemo, createResource } from "solid-js";
-import { produce } from "solid-js/store";
+import { createMemo, createResource } from 'solid-js';
+import { produce } from 'solid-js/store';
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
-import {
-  generateHusk,
-} from 'lib/turf';
-import { hexToInt, vec2, vecToStr, jClone } from 'lib/utils';
+import { generateHusk } from 'lib/turf';
+import { hexToInt, jClone, vec2, vecToStr } from 'lib/utils';
 import { getPool } from 'lib/pool';
 import { Skye } from 'lib/skye';
 
@@ -64,7 +62,12 @@ export class Mist { // we use a class so we can put it inside a store without ge
   async subscribe() {
     const onMistErr = () => {};
     const onMistQuit = () => {};
-    this.sub = await api.subscribeToPool(this.id, this._.onRes.bind(this._), onMistErr, onMistQuit);
+    this.sub = await api.subscribeToPool(
+      this.id,
+      this._.onRes.bind(this._),
+      onMistErr,
+      onMistQuit,
+    );
   }
   async unsubscribe() {
     await api.unsubscribeToPool(this.id);
@@ -112,6 +115,10 @@ export class Mist { // we use a class so we can put it inside a store without ge
     }
   }
 
+  setNick(nick) {
+    this.sendWave('set-nick', nick);
+  }
+
   setColor(color) {
     if (typeof color === 'string' && color[0] === '#') {
       color = hexToInt(color);
@@ -144,6 +151,9 @@ const mistGrits = {
   'set-avatar': (mist, avatar) => {
     mist.avatar = avatar;
   },
+  'set-nick': (mist, nick) => {
+    mist.avatar.nick = nick;
+  },
   'set-color': (mist, color) => {
     mist.avatar.body.color = color;
   },
@@ -161,7 +171,7 @@ const mistGrits = {
     mist.targetTurfId = null;
   },
   'accept-port-offer': (mist, turfId) => {
-    mist.targetTurfId = turfId
+    mist.targetTurfId = turfId;
     mist.portOffer = null;
   },
   'reject-port-offer': (mist, turfId) => {
@@ -218,11 +228,12 @@ function filters(mistPool) {
           form,
         };
         return [
-        {
-          type: 'add-thing',
-          arg: husk,
-        }];
+          {
+            type: 'add-thing',
+            arg: husk,
+          },
+        ];
       }
-    }
+    },
   };
 }

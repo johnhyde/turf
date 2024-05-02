@@ -1,4 +1,4 @@
-import { createEffect, batch, untrack } from "solid-js";
+import { batch, createEffect, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state';
 import { getShade } from 'lib/turf';
@@ -19,8 +19,8 @@ export class TileIndicator extends Phaser.GameObjects.Container {
       new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
       new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
     ];
-    this.rects.forEach(r => r.setOrigin(0, 0));
-    
+    this.rects.forEach((r) => r.setOrigin(0, 0));
+
     this.updateShapes();
     this.add(this.rects);
     this.setupEffects();
@@ -44,9 +44,6 @@ export class TileIndicator extends Phaser.GameObjects.Container {
     return null;
   }
   get offset() {
-    if (this.s.editor.selectedTilePos) {
-      return this.tileOffsetToOffset(this.s.editor.selectedTilePos);
-    }
     const shade = this.shade;
     if (shade) {
       return this.tileOffsetToOffset(shade.pos);
@@ -62,15 +59,17 @@ export class TileIndicator extends Phaser.GameObjects.Container {
   }
 
   tileSizeToSize(size) {
-    return vec2(size || 0).scale(tileFactor).add(vec2(this.stroke*2));
+    return vec2(size || 0).scale(tileFactor).add(vec2(this.stroke * 2));
   }
 
   offsetToTileOffset(offset) {
-    return roundV(vec2(offset).add(vec2(this.stroke)).scale(1/tileFactor));
+    return roundV(vec2(offset).add(vec2(this.stroke)).scale(1 / tileFactor));
   }
 
   sizeToTileSize(size) {
-    return roundV(vec2(size).subtract(vec2(this.stroke*2)).scale(1/tileFactor));
+    return roundV(
+      vec2(size).subtract(vec2(this.stroke * 2)).scale(1 / tileFactor),
+    );
   }
 
   updateShapes() {
@@ -91,11 +90,11 @@ export class TileIndicator extends Phaser.GameObjects.Container {
       this.updateShapes();
     });
     createEffect(() => {
-      if (this.t && state.editor.editing && (this.shade || state.editor.selectedTilePos)) {
+      if (this.t && state.editor.editing && this.shade) {
         this.setVisible(true);
       } else {
         this.setVisible(false);
       }
-    })
+    });
   }
 }
