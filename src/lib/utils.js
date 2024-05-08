@@ -617,9 +617,11 @@ export function tintImage(image, color) {
   ctx.drawImage(image, 0, 0);
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   ctx.putImageData(tintImageData(imageData, color), 0, 0);
+  const dataUrl = canvas.toDataURL();
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
+      // console.log('finished loading tinted image');
       resolve(image);
     };
     image.onerror = reject;

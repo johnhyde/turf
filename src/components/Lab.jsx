@@ -1,6 +1,6 @@
 import { createEffect, createSignal, mapArray, onCleanup } from 'solid-js';
 import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
-import { leading, throttle } from '@solid-primitives/scheduled';
+import { leadingAndTrailing, throttle } from '@solid-primitives/scheduled';
 import { bind, input, intToHex, jClone } from 'lib/utils.js';
 import { useState } from 'stores/state.jsx';
 import MediumButton from '@/MediumButton.jsx';
@@ -14,7 +14,7 @@ export default function Lab() {
   const [editing, $editing] = createSignal(false);
   const [nick, $nick] = createSignal('');
 
-  const setColor = leading(throttle, (c) => {
+  const setColor = leadingAndTrailing(throttle, (c) => {
     if (c !== avColor()) {
       state.mist.setColor(c);
     }

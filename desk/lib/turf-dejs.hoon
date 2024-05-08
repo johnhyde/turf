@@ -177,17 +177,8 @@
 ++  effect
   |=  jon=json
   ^-  ^effect
-  :: ?>  ?=([%o *] jon)
-  :: =/  type  (effect-type (~(got by p.jon) 'type'))
-  :: =/  arg  (~(got by p.jon) 'arg')
-  :: ?-  type
-  ::   %port  port+(ni arg)
-  ::   %jump  jump+(svec2 arg)
-  ::   %read  read+(so arg)
-  ::   %swap  swap+(pa arg)
-  ::   %seem  seem+
-  :: ==
-  %.  jon  %-  of
+  %.  jon
+  %+  ol  effect-type
   :~  port+ni
       jump+svec2
       read+so
@@ -256,4 +247,20 @@
   %.  jon
   (of ~[set-enabled+bo])
 ++  shp  (se %p)
+++  ol
+  |*  [typ=fist arg=(pole [cord fist])]
+  |=  jon=json
+  ?>  ?=([%o *] jon)
+  =/  type  (typ (~(got by p.jon) 'type'))
+  =/  argu  (~(got by p.jon) 'arg')
+  |-
+  ?-    arg
+      :: [[key=@t wit=*] t=*]
+      [[key=@t *] t=*]
+    =>  .(arg [[* wit] *]=arg)
+    ?:  =(key.arg type)
+      [key.arg ~|(key+key.arg (wit.arg argu))]
+    ?~  t.arg  ~|(bad-key+type !!)
+    ((ol typ t.arg) jon)
+  ==
 --

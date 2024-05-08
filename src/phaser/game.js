@@ -1,11 +1,14 @@
 import {
   createEffect,
+  createMemo,
   createResource,
   createRoot,
   createSignal,
+  getOwner,
   indexArray,
   mapArray,
   on,
+  onCleanup,
   runWithOwner,
 } from 'solid-js';
 import { unwrap } from 'solid-js/store';
@@ -64,31 +67,30 @@ async function loadImage(id, url, ...args) {
 
 function loadImageUnsafe(id, url, config = {}) {
   if (!Array.isArray(url)) url = [url];
-  // console.log("trying to load image: " + id)
-  const changeColor = config.color !== undefined &&
+  // console.log('trying to load image: ' + id);
+  const changeColor = config.color != null &&
     game.renderer.type === Phaser.CANVAS;
+  let urlChanged = false;
   if (game.textures.exists(id)) {
     const oldUrls = game.textures.get(id).source.map((s) => s.source.src).join(
       ', ',
     );
     const newUrls = url.map((u) => new URL(u, window.location).href).join(', ');
-    const urlChanged = oldUrls !== newUrls;
-    if (urlChanged || changeColor) {
-      game.textures.removeKey(id);
-    } else {
+    urlChanged = oldUrls !== newUrls;
+    if (!urlChanged && !changeColor) {
       return;
     }
   }
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const onError = (key) => {
       console.error('could not load image', key);
-      if (key === 'id') {
+      if (key === id) {
         reject('could not load image: ' + key);
       }
     };
     game.textures.addListener(Phaser.Textures.Events.ADD_KEY + id, resolve);
     game.textures.addListener(Phaser.Textures.Events.ERROR, onError);
-    try {
+    (async () => {
       // if (config.isWall) {
       //   const img = new Image();
       //   img.onload = () => game.textures.addSpriteSheet(id, img, {
@@ -118,13 +120,18 @@ function loadImageUnsafe(id, url, config = {}) {
         images = await Promise.all(
           images.map((img) => tintImage(img, config.color)),
         );
-        if (game.textures.exists(id)) {
-          game.textures.removeKey(id);
-        }
+        // console.log('finished tinting images');
+        // if (game.textures.exists(id)) {
+        //   game.textures.removeKey(id);
+        // }
       }
       if (game.textures.exists(id)) {
-        resolve();
-        return;
+        if (urlChanged || changeColor) {
+          game.textures.removeKey(id);
+        } else {
+          resolve();
+          return;
+        }
       }
       const maxDims = vec2();
       images.forEach((img) => {
@@ -158,10 +165,10 @@ function loadImageUnsafe(id, url, config = {}) {
         );
       }
       resolve();
-      // }
-    } catch (e) {
+    })().catch((e) => {
       if (!game.textures.exists(id)) reject(e);
-    }
+      console.error(e);
+    });
   });
 }
 
@@ -188,11 +195,19 @@ function createShade(shade, id, turf) {
   } else {
     sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
   }
-  createEffect(() => {
-    const shade = state.e?.cave?.[id];
-    if (shade) {
-      const form = state.e.skye[shade.formId];
-      const variation = form?.variations?.[shade.variation];
+  sprite.dispose = createRoot((dispose) => {
+    onCleanup(() => {
+      // console.log('cleaning up scope for', id);
+    });
+    const state = useState();
+    const shade = createMemo(() => state.e?.cave[id]);
+    createEffect(() => {
+      if (!shade()) dispose();
+    });
+    sprite.addListener('destroy', dispose);
+    createEffect(() => {
+      const form = state.e.skye[shade().formId];
+      const variation = form?.variations?.[shade().variation];
       sprite.depthMod = 0;
       if (form?.type === 'tile') {
         earth.add(sprite);
@@ -209,19 +224,14 @@ function createShade(shade, id, turf) {
         sprite.updateDepth();
         stand.sort('depth');
       }
-    }
-  });
-  if (shade.formId === '/portal') {
-    // const state = useState();
+    });
     createEffect(() => {
-      const shade = state.e?.cave?.[id];
-      if (shade) {
-        const step = shade.effects['step'];
+      if (shade().formId === '/portal') {
+        const step = shade().effects.step;
         if (
           step?.type === 'port' &&
-          step.arg !== undefined &&
-          step.arg !== null &&
-          state.e.portals[step.arg]?.at
+          step.arg != null &&
+          state.e.portals[step.arg]?.at != null
         ) {
           sprite.setAlpha(1);
           sprite.setTint(0xffffff);
@@ -231,7 +241,16 @@ function createShade(shade, id, turf) {
         }
       }
     });
-  }
+    createEffect(() => {
+      const { fullFx } = getEffectsByShadeId(state.e, id);
+      if (fullFx.click?.type != null) {
+        sprite.input.cursor = 'pointer';
+      } else {
+        sprite.input.cursor = 'auto';
+      }
+    });
+    return dispose;
+  });
   let textObj;
   function addText(text, limit = 21) {
     text = truncateString(text, limit);
@@ -302,6 +321,15 @@ function createShade(shade, id, turf) {
     }
   }
   sprite.on('pointermove', (pointer) => {
+    if (pointer.isDown) {
+      onTouch(pointer, event);
+    }
+  });
+  sprite.on('pointerdown', (pointer, _x, _y, event) => {
+    onTouch(pointer, event);
+    onClick(pointer, event);
+  });
+  sprite.on('pointerover', (pointer) => {
     if (state.e && shade) {
       const effects = getEffectsByShade(state.e, shade).fullFx;
       if (effects.interact?.type === 'read') {
@@ -314,17 +342,15 @@ function createShade(shade, id, turf) {
           addText(turfIdToName(portal.for));
         }
       }
+
+      if (effects.click) {
+        sprite.setGlowActive(true);
+      }
     }
-    if (pointer.isDown) {
-      onTouch(pointer, event);
-    }
-  });
-  sprite.on('pointerdown', (pointer, _x, _y, event) => {
-    onTouch(pointer, event);
-    onClick(pointer, event);
   });
   sprite.on('pointerout', (pointer) => {
     removeText();
+    sprite.setGlowActive(false);
   });
   return sprite;
 }

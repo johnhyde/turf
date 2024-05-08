@@ -7,7 +7,7 @@ import {
 } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
-import { leading, throttle } from '@solid-primitives/scheduled';
+import { leadingAndTrailing, throttle } from '@solid-primitives/scheduled';
 import {
   autofocus,
   bind,
@@ -41,7 +41,7 @@ export default function SettingsPane() {
     state.setName(name());
   }
 
-  const $color = leading(throttle, (c) => {
+  const $color = leadingAndTrailing(throttle, (c) => {
     state.setBack('color', hexToInt(c));
   }, 500);
   onCleanup(() => $color.clear());

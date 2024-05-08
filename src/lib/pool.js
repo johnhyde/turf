@@ -1,12 +1,12 @@
-import { batch, mergeProps } from "solid-js";
-import { createStore, unwrap, produce, reconcile } from "solid-js/store";
+import { batch, mergeProps } from 'solid-js';
+import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
 import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
-import { connection, reportBadConnection } from 'lib/api';
-import { uuidv4, jClone } from 'lib/utils';
+import { connection, reportBadConnection } from 'lib/api.js';
+import { jClone, uuidv4 } from 'lib/utils.js';
 
 export function gritsTypeStr(grits) {
-  return `batch: [${grits.map(w => w?.type || 'no-op').join(', ')}]`;
+  return `batch: [${grits.map((w) => w?.type || 'no-op').join(', ')}]`;
 }
 
 export function getPool(wash, hydrate, apiSendWave, options = {}) {
@@ -43,9 +43,16 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       if (batch) {
         this.addCharge(charge, false);
       } else {
-        const {goals, grits} = charge;
+        const { goals, grits } = charge;
         const uuid = uuidv4();
-        console.log('sending goals', gritsTypeStr(goals), ', predicting grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
+        console.log(
+          'sending goals',
+          gritsTypeStr(goals),
+          ', predicting grits',
+          gritsTypeStr(grits),
+          'with id',
+          uuid ? uuid.substring(0, 4) : uuid,
+        );
         this.addPulse({
           id: uuid,
           src: our,
@@ -69,18 +76,25 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           // internet connectivity issue
           if (retries < 4) { // 15 seconds before pulse is discarded (1+2+4+8)
             const now = Date.now();
-            const timeout = Math.pow(2, retries)*1000;
+            const timeout = Math.pow(2, retries) * 1000;
             retries++;
-            console.warn(`Failed to send wave, attempting retry #${retries} in ${timeout/1000}s`);
+            console.warn(
+              `Failed to send wave, attempting retry #${retries} in ${
+                timeout / 1000
+              }s`,
+            );
             // await api.eventSource();
-            setTimeout(() => this.sendWavePoke(goals, uuid, retries), Math.max(0, timeout - (Date.now() - now)));
+            setTimeout(
+              () => this.sendWavePoke(goals, uuid, retries),
+              Math.max(0, timeout - (Date.now() - now)),
+            );
           } else {
             console.warn('Failed to send wave, no more retries, rolling back');
             this.removePulse(uuid);
             this.replayFake();
           }
         } else {
-          console.warn('Failed to send wave, can\'t retry, rolling back');
+          console.warn("Failed to send wave, can't retry, rolling back");
           if (e?.message === 'Failed to PUT channel') {
             reportBadConnection();
           }
@@ -108,11 +122,20 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           options.onNewRock?.(res.rock.core);
         } else if (res.hasOwnProperty('wave')) {
           const { grits, id, src, wen } = res.wave;
-          console.log(`getting wave for ${this.real?.id}`, gritsTypeStr(grits), 'with id', (id ? id.substring(0, 4) : id), 'src', src, 'wen', wen);
+          console.log(
+            `getting wave for ${this.real?.id}`,
+            gritsTypeStr(grits),
+            'with id',
+            id ? id.substring(0, 4) : id,
+            'src',
+            src,
+            'wen',
+            wen,
+          );
           const noop = !grits || grits.length === 0;
           const noPulses = this.pulses.length === 0;
           const noCharges = this.charges.length === 0;
-          
+
           if (!noop) {
             wash(this.updateReal.bind(this), grits, src, wen);
             options.onNewGrits?.(grits);
@@ -135,38 +158,40 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
     applyGrits(grits, src, wen) {
       wash(this.updateFake.bind(this), grits, src, wen);
     },
-  
+
     addPulse(pulse, apply = true) {
       batch(() => {
         this.$('pulses', (pulses) => [...pulses, pulse]);
         if (apply) this.applyPulse(pulse);
       });
     },
-  
+
     applyPulses() {
       this.pulses.forEach((pulse) => {
         this.applyPulse(pulse);
       });
     },
-  
+
     applyPulse(pulse) {
       this.applyGrits(pulse.grits, pulse.src, pulse.wen);
     },
-  
+
     removePulse(uuid) {
-      const pulseI = this.pulses.findIndex(p => p.id === uuid);
-      this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
+      const pulseI = this.pulses.findIndex((p) => p.id === uuid);
+      this.$('pulses', (p) => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
     },
-  
+
     removePulses() {
       this.$('pulses', []);
     },
-  
+
     updatePulses(noop, id, src, wen, grits) {
-      const pulseI = !id ? -1 : this.pulses.findIndex(p => p.id === id);
+      const pulseI = !id ? -1 : this.pulses.findIndex((p) => p.id === id);
       const matches = pulseI >= 0;
       const matchesFirst = pulseI === 0;
-      const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].grits), grits);
+      // const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].grits), grits);
+      const confirms = matches &&
+        isEqual(jClone(this.pulses[pulseI].grits), grits);
       const changesSomething = !noop || matches;
       const fakeInvalidated = changesSomething && !(matchesFirst && confirms);
       if (matches) {
@@ -174,14 +199,16 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         // we can throw out any pulses before the matched one
         // this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
         if (!confirms) console.log('DID NOT CONFIRM\nDID NOT CONFIRM');
-        if (pulseI > 0) console.log(`THROWING AWAY ${pulseI} UNMATCHED PULSE(S)`);
-        this.$('pulses', p => p.slice(pulseI + 1));
+        if (pulseI > 0) {
+          console.log(`THROWING AWAY ${pulseI} UNMATCHED PULSE(S)`);
+        }
+        this.$('pulses', (p) => p.slice(pulseI + 1));
       }
       if (fakeInvalidated) {
         this.replayFake();
       }
     },
-  
+
     addCharge(charge, apply = true) {
       // console.log('adding charge')
       if (this.charges.length == 0) {
@@ -193,7 +220,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         if (apply) this.applyCharge(charge);
       });
     },
-  
+
     setFirstChargeTimer() {
       if (firstChargeTimer) {
         clearTimeout(firstChargeTimer);
@@ -205,7 +232,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         }
       }, this.maxBatchLatency);
     },
-  
+
     setLastChargeTimer() {
       if (lastChargeTimer) {
         clearTimeout(lastChargeTimer);
@@ -217,30 +244,39 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         }
       }, this.minBatchLatency);
     },
-  
+
     applyCharges() {
       this.charges.forEach((charge) => {
         this.applyCharge(charge);
       });
     },
-  
+
     applyCharge(charge) {
       this.applyGrits(charge.grits, our, Date.now());
     },
-  
+
     fireCharges() {
       batch(() => {
-        if (firstChargeTimer)
+        if (firstChargeTimer) {
           clearTimeout(firstChargeTimer);
-        if (lastChargeTimer)
+        }
+        if (lastChargeTimer) {
           clearTimeout(lastChargeTimer);
+        }
         let goals = [], grits = [];
-        this.charges.forEach(c => {
-          goals = [...goals, ...c.goals]
-          grits = [...grits, ...c.grits]
+        this.charges.forEach((c) => {
+          goals = [...goals, ...c.goals];
+          grits = [...grits, ...c.grits];
         });
         const uuid = uuidv4();
-        console.log('sending goals', gritsTypeStr(goals), ', predicting grits', gritsTypeStr(grits), 'with id', uuid ? uuid.substring(0, 4) : uuid);
+        console.log(
+          'sending goals',
+          gritsTypeStr(goals),
+          ', predicting grits',
+          gritsTypeStr(grits),
+          'with id',
+          uuid ? uuid.substring(0, 4) : uuid,
+        );
         this.$('charges', []);
         this.addPulse({
           id: uuid,
@@ -251,13 +287,13 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         this.sendWavePoke(goals, uuid);
       });
     },
-  
+
     resetFake() {
       // console.log('resetting fake');
       const realCopy = hydrate(cloneDeep(pool.real));
       this.$('fake', reconcile(realCopy, { merge: true }));
     },
-  
+
     replayFake() {
       console.log('replaying fake');
       batch(() => {
@@ -266,7 +302,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         this.applyCharges();
       });
     },
-  
+
     updateReal(fun) {
       // console.log('updating base core')
       batch(() => {
@@ -274,7 +310,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
         this.$('real', fun);
       });
     },
-    
+
     updateFake(fun) {
       // console.log('updating fake core')
       batch(() => {
@@ -289,7 +325,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       if (!rock) return false;
       let [temp, $temp] = [rock, this.updateFake.bind(this)];
       if (!apply) [temp, $temp] = createStore(hydrate(cloneDeep(rock)));
-      goals = goals.map(g => this.preFilterGoal(temp, g)).filter(g => g);
+      goals = goals.map((g) => this.preFilterGoal(temp, g)).filter((g) => g);
       let newGoals = [], grits = [], roars = [];
       goals.forEach((goal) => {
         const res = this.fGoals(temp, $temp, [goal]);

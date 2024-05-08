@@ -140,7 +140,12 @@ export class Player extends Phaser.GameObjects.Container {
     createRoot((dispose) => {
       this.dispose = dispose;
       createEffect(() => {
-        let pos = this.p?.pos;
+        // theoretically this means we can use this.p without fear
+        // in the other effects?
+        if (!this.p) dispose();
+      });
+      createEffect(() => {
+        const pos = this.p.pos;
         if (pos) {
           // make sure to use x and y so solid knows to track them
           // we aren't tracking player, so that's no help
@@ -150,7 +155,7 @@ export class Player extends Phaser.GameObjects.Container {
       });
       createEffect((lastColor) => {
         const color = this.p?.avatar.body.color;
-        if (this.bodyImage && color && lastColor !== color) {
+        if (this.bodyImage && color != null && lastColor !== color) {
           if (game.renderer.type === Phaser.CANVAS) {
             this.recreateAvatar();
             this.updateAnims();
@@ -161,19 +166,17 @@ export class Player extends Phaser.GameObjects.Container {
         return color;
       });
       createEffect(on(() => {
-        if (!this.p) return null;
         return [this.dir, this.walking(), this.napping()];
       }, async () => {
-        if (this.p?.avatar) {
+        if (this.p.avatar) {
           await sleep(0);
           setTimeout(this.updateAnims.bind(this), 0);
         }
       }));
       createEffect(on(() => {
-        if (!this.p) return null;
         return jClone([this.p.avatar.body.thing, this.p.avatar.things]);
       }, async (input, prevInput) => {
-        if (this.p?.avatar && !isEqual(input, prevInput)) {
+        if (this.p.avatar && !isEqual(input, prevInput)) {
           await this.recreateAvatar();
           this.updateAnims();
         }

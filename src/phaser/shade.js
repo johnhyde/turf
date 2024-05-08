@@ -1,4 +1,4 @@
-import { jClone } from 'lib/utils.js';
+import { hexToInt, jClone } from 'lib/utils.js';
 import { getForm, getSpriteFps, spriteName } from 'lib/turf.js';
 
 export class Shade extends Phaser.GameObjects.Sprite {
@@ -35,6 +35,8 @@ export class Shade extends Phaser.GameObjects.Sprite {
         }
       });
       this.updateVariation(shade.variation);
+      // this.glow = this.postFX.addGlow(hexToInt('#ffffff'));
+      // this.setGlowActive(false);
     }
   }
 
@@ -67,5 +69,20 @@ export class Shade extends Phaser.GameObjects.Sprite {
     super.setPosition(...args);
     this.updateDepth();
     // this.parentContainer?.sort?.('depth'); // this is done in initShades in game.js
+  }
+
+  setGlowActive(active) {
+    if (this.scene.game.renderer.type === Phaser.WEBGL) {
+      if (!this.glow) {
+        if (!active) return;
+        this.glow = this.preFX.addGlow(hexToInt('#fffc99'));
+      }
+      if (this.glow.active === active) return;
+      this.glow.setActive(active);
+      console.log('set glow active', active);
+      // } else {
+      //   // this.input.cursor = active ? 'pointer' : 'auto';
+      //   if (active) this.input.cursor = active ? 'pointer' : 'pointer';
+    }
   }
 }
