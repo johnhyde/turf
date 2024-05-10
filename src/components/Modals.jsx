@@ -64,6 +64,11 @@ export default function Modals() {
                   No
                 </button>
               </div>
+              <Show when={phone.r}>
+                <p class='mt-2 text-center'>
+                  Your call won't be interrupted
+                </p>
+              </Show>
             </Modal>
           );
         }}

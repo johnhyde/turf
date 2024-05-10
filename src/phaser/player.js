@@ -351,7 +351,7 @@ export class Player extends Phaser.GameObjects.Container {
         align: 'left',
         fontSize: 4 * factor + 'px',
         color: 'black',
-        strokeWidth: 0,
+        strokeThickness: 0,
         wordWrap: {
           width: this.speechBubble.width * factor - 4 * factor,
           useAdvancedWrap: true,
@@ -608,22 +608,7 @@ export class Player extends Phaser.GameObjects.Container {
             newDir = dirs.LEFT;
             newTilePos.x--;
           }
-        } // if (pos.x < this.tilePos.x) {
-        //   newDir = dirs.LEFT;
-        //   newTilePos.x--;
-        // }
-        // if (pos.x > this.tilePos.x) {
-        //   newDir = dirs.RIGHT;
-        //   newTilePos.x++;
-        // }
-        // if (pos.y < this.tilePos.y) {
-        //   newDir = dirs.UP;
-        //   newTilePos.y--;
-        // }
-        // if (pos.y > this.tilePos.y) {
-        //   newDir = dirs.DOWN;
-        //   newTilePos.y++;
-        // }
+        }
         if (!newTilePos.equals(this.tilePos)) {
           if (newDir && newDir !== this.dir) {
             this.s.setDir(newDir);
