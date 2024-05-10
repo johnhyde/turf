@@ -83,6 +83,8 @@
           ==
         %set-shade-collidable
           (pairs ~['shadeId'^(numb shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
+        %set-shade-form-id
+          (pairs ~['shadeId'^(numb shade-id.grit) 'formId'^(path form-id.grit)])
         %set-lunk
           (maybe-lunk lunk.grit)
         %set-dink
@@ -577,24 +579,72 @@
 ++  effect
   |=  [=trigger eff=^effect]
   ^-  (pair @t json)
-  :-  trigger
+  [trigger (effect-pairs eff)]
+++  effect-pairs
+  |=  eff=^effect
   ^-  json
   %-  pairs
   :~  type+s+-.eff
       :-  %arg
       ^-  json
       ?-  -.eff
+        %list  a+(turn effects.eff effect-pairs)
         %port  (numb +.eff)
         %jump  (svec2 +.eff)
         %read  s+note.eff
         %swap  (path +.eff)
         %seem  (numb +.eff)
         %vary  (numb +.eff)
+        %move  (fx-move +.eff)
   ==  ==
+:: ++  labeled
+::   |*  fun=$-(* json)]
+::   ^-  json
+::   %-  pairs
+::   :~  type+s+-.eff
+::       :-  %arg
+::       ^-  json
+::       ?-  -.eff
+::         %list  a+(turn effects.eff effect-pairs)
+::         %port  (numb +.eff)
+::         %jump  (svec2 +.eff)
+::         %read  s+note.eff
+::         %swap  (path +.eff)
+::         %seem  (numb +.eff)
+::         %vary  (numb +.eff)
+::   ==  ==
 ++  effect-type
   |=  [=trigger =^effect-type]
   ^-  (pair @t json)
   [trigger s+effect-type]
+++  fx-move
+  |=  [tar=target to=^fx-loc]
+  ^-  json
+  (pairs ~[target+(fx-target tar) to+(fx-loc to)])
+++  fx-target
+  |=  =target
+  ^-  json
+  ?@  target  s+target
+  %+  frond  -.target
+  ?:  ?=(%item -.target)
+    (numb shade-id.target)
+  (ship-json ship.target)
+++  fx-loc
+  |=  loc=^fx-loc
+  ^-  json
+  ~
+++  fx-offset
+  |=  offset=^fx-offset
+  ^-  json
+  ~
+++  fx-dir
+  |=  dir=^fx-dir
+  ^-  json
+  ~
+++  fx-dir-8
+  |=  dir-8=^fx-dir-8
+  ^-  json
+  ~
 ++  maybe-turf-id-path
   |=  tid=(unit ^turf-id)
   ^-  json

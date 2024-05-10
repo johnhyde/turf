@@ -1,5 +1,6 @@
 /-  turf-3
-/+  vita-client
+:: util from rally-desk
+/+  vita-client, *util
 |%
 +$  turf-id  [=ship =path]
 +$  form-id  path
@@ -8,6 +9,8 @@
 +$  vec2  [x=@ud y=@ud]
 +$  svec2  [x=@sd y=@sd]
 +$  dir  ?(%right %up %left %down)
+++  dir-8  ?(%dr %ur %ul %dl dir)
+++  dir-9  ?(dir-8 %$)
 +$  color  $~(0xff.ffff @ux)
 +$  flug  $~(%.n ?)  :: flag which is false by default
 +$  off-size  [offset=svec2 size=vec2]
@@ -166,15 +169,61 @@
 +$  ufx  (map trigger (unit possible-effect))
 +$  trigger  ?(%step %leave %bump %interact %click)
 +$  possible-effect  $@(effect-type effect)
-+$  effect-type  ?(%port %jump %read %swap %seem %vary)
+++  effect-type  (tags effect)
 +$  effect
-  $%  [%port =portal-id]  :: port player to turf
+  $%  [%list effects=(list effect)]
+      ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
+      [%port =portal-id]  :: port player to turf
+      :: todo: migrate [%jump to] -> [%move %user %absolute to]
       [%jump to=svec2]  :: move player in turf
       [%read note=@t]  :: show dialog box
       [%swap with=form-id]  :: for opening/closing doors
       [%seem var=@ud]  :: display item variation
       [%vary var=@ud]  :: set item variation
+      [%move =target to=fx-loc]
   ==
++$  target
+  $@  ?(%this %user)  absolute-target
++$  absolute-target
+  $%  [%item =shade-id]
+      [%player =ship]
+      :: [%ref ref-id=@ud]  :: 
+  ==
++$  fx-dir-8
+  $@  dir-8
+  $%  [%face =target]
+      [%relative fx-from-to]
+      [%round round=?(%ud %lr) dir=fx-dir-8]
+      [%rotate a=fx-dir-8 b=fx-dir-8]
+      [%flip-x dir=fx-dir-8]
+      [%flip-y dir=fx-dir-8]
+  ==
++$  fx-dir
+  $@  dir
+  $%  [%face =target]
+      [%relative round=?(%ud %lr) fx-from-to]
+      [%round round=?(%ud %lr) dir=fx-dir-8]
+      [%rotate a=fx-dir b=fx-dir]
+      [%flip-x dir=fx-dir]
+      [%flip-y dir=fx-dir]
+  ==
++$  fx-offset
+  $%  [%relative fx-from-to]
+      [%direction dir=fx-dir-8 distance=@ud]
+      [%rotate rotation=fx-dir offset=fx-offset]
+      [%flip-x offset=fx-offset]
+      [%flip-y offset=fx-offset]
+      :: [%multipy scalar=@ud offset=fx-offset]
+      [%combine a=fx-offset b=fx-offset]
+      [%absolute offset=svec2]
+  ==
++$  fx-loc
+  $%  [%target =target]
+      [%offset offset=fx-offset loc=fx-loc]
+      :: [%mean locs=(list fx-loc)]
+      [%absolute pos=svec2]
+  ==
++$  fx-from-to  [from=fx-loc to=fx-loc]
 ::
 +$  form-spec  [=form-id =form]
 +$  shade-spec  [pos=svec2 =form-id variation=@ud]

@@ -784,13 +784,22 @@ export function startPhaser(_owner, _container) {
       ids.forEach((id) => {
         const shadeObject = shades[id];
         const shadeData = turf.cave[id];
-        if (!shadeObject) {
+        function destroyShade() {
+          shades[id].destroy();
+          delete shades[id];
+        }
+        function makeShade() {
           if (isInTurf(turf, shadeData.pos)) {
             shades[id] = createShade(shadeData, id, turf);
           }
-        } else if (!shadeData) {
-          shades[id].destroy();
-          delete shades[id];
+        }
+        if (!shadeData) {
+          destroyShade();
+        } else if (!shadeObject) {
+          makeShade();
+        } else if (shadeData.formId !== shadeObject.shade.formId) {
+          destroyShade();
+          makeShade();
         } else {
           if (shadeObject.shade.variation !== shadeData.variation) {
             shadeObject.updateVariation(shadeData.variation);

@@ -10,6 +10,8 @@ import {
   vec2,
 } from 'lib/utils.js';
 import SmallButton from '@/SmallButton.jsx';
+import ItemButton from '@/ItemButton.jsx';
+import PathInput from '@/PathInput.jsx';
 
 function toPairs(str) {
   return str.split(', ').map((t) => t.split('  ')).map((p) => {
@@ -20,7 +22,9 @@ function toPairs(str) {
 // todo bump
 const triggers = toPairs('step, leave, interact, click');
 // todo: swap
-const effectTypes = toPairs('port  teleport, jump  jump, read  show text');
+const effectTypes = toPairs(
+  'port  teleport, jump, read  show text, swap  change base item',
+);
 
 function defaultArg(type, turf) {
   switch (type) {
@@ -29,6 +33,11 @@ function defaultArg(type, turf) {
       return '';
     case 'jump':
       return vec2(turf.offset);
+    case 'swap':
+      return '/';
+    case 'seem':
+    case 'vary':
+      return 0;
     default:
       return null;
   }
@@ -238,6 +247,16 @@ function ArgInput(props) {
                         (n) => props.$arg(vec2(props.arg.x, n)),
                       ]}
                     />
+                  </Match>
+                  <Match when={props.type === 'swap'}>
+                    <PathInput
+                      value={props.arg}
+                      $validValue={(p) => props.$arg(p)}
+                      warn={!state.e.skye[props.arg]}
+                    />
+                    <Show when={state.e.skye[props.arg]}>
+                      <ItemButton form={state.e.skye[props.arg]} />
+                    </Show>
                   </Match>
                 </Switch>
                 <Show when={props.allowSeeds}>

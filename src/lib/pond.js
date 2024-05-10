@@ -288,6 +288,13 @@ const pondGrits = {
       shade.collidable = collidable;
     }
   },
+  'set-shade-form-id': (turf, arg) => {
+    const { shadeId, formId } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      shade.formId = formId;
+    }
+  },
   'set-lunk': (turf, arg) => {
     turf.lunk = arg;
   },
@@ -737,6 +744,18 @@ function applyEffect(turf, ship, effect, shadeId) {
         goals: [{
           type: 'tele',
           arg: { ship, pos: effect.arg },
+        }],
+      };
+    }
+    case 'swap': {
+      return {
+        roars: [],
+        goals: [{
+          type: 'set-shade-form-id',
+          arg: {
+            shadeId,
+            formId: effect.arg,
+          },
         }],
       };
     }

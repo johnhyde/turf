@@ -25,6 +25,7 @@ import SmallButton from '@/SmallButton.jsx';
 import ItemButton from '@/ItemButton.jsx';
 import UploadButton from '@/UploadButton.jsx';
 import Radio from '@/Radio.jsx';
+import PathInput from '@/PathInput.jsx';
 import Modal from '@/Modal.jsx';
 import EffectsEditor from '@/EffectsEditor.jsx';
 import ListItemPicker from '@/ListItemPicker.jsx';
@@ -46,7 +47,6 @@ export default function FormEditor(props) {
   const formDef = mergeProps(props.form, newForm);
   const formId = () => formDef.formId;
   const form = () => formDef.form;
-  const offset = () => form().offset;
   const effects = () => {
     if (!form()) return {};
     const merged = mergeProps(
@@ -70,10 +70,10 @@ export default function FormEditor(props) {
     if (props.editing && !idChanged()) return false;
     return !!(props.skye && formId() && props.skye[formId()]);
   };
-  const idInputColor = () => {
-    if (form() && !idValid()) return 'bg-red-200';
-    return idClash() ? 'bg-orange-200' : '';
-  };
+  // const idInputColor = () => {
+  //   if (form() && !idValid()) return 'bg-red-200';
+  //   return idClash() ? 'bg-orange-200' : '';
+  // };
   const readyToSave = () => {
     if (!idValid()) return false;
     return (form().variations.length && form().variations.every((v) => {
@@ -106,7 +106,6 @@ export default function FormEditor(props) {
       }
     });
     if (readyToSave()) {
-      $newForm('form', 'offset', (offset) => vec2(offset));
       addFn()(
         {
           formId: formId(),
@@ -146,13 +145,6 @@ export default function FormEditor(props) {
 
   function setType(type) {
     $newForm('form', 'type', type);
-  }
-
-  function setOffset(offset) {
-    batch(() => {
-      $newForm('form', 'offset', 'x', offset.x);
-      $newForm('form', 'offset', 'y', offset.y);
-    });
   }
 
   function setVariation(...args) {
@@ -235,14 +227,22 @@ export default function FormEditor(props) {
             </div>
             <div>
               <p class='font-semibold'>Item ID</p>
-              <input
+              <PathInput
+                value={formId()}
+                $value={setFormId}
+                invalid={form() && !idValid()}
+                warn={idClash()}
+              />
+              {
+                /* <input
                 use:bind={[
                   formId,
                   setFormId,
                 ]}
                 class={'rounded-input ' + idInputColor()}
                 placeholder='/item/identifier'
-              />
+              /> */
+              }
               {idValid() && idClash() &&
                 (
                   <p>
@@ -268,41 +268,6 @@ export default function FormEditor(props) {
                 />
               </div>
             </Show>
-            {
-              /* <div class='flex gap-2'>
-              <span class='font-semibold'>Offset</span>
-              <div>
-                <span class='mr-1'>x:</span>
-                <input
-                  type='number'
-                  class='rounded-md pl-1 w-12'
-                  min={-tileSize}
-                  // todo: figure out some way to do this again?
-                  // but there an be many bmps of different size
-                  // max={spriteBmp()?.width || 0}
-                  max='99'
-                  use:bind={[
-                    () => form()?.offset?.x,
-                    (s) => $newForm('form', 'offset', 'x', Number(s)),
-                  ]}
-                />
-              </div>
-              <div>
-                <span class='mr-1'>y:</span>
-                <input
-                  type='number'
-                  class='rounded-md pl-1 w-12'
-                  min={-tileSize}
-                  // max={spriteBmp()?.height || 0}
-                  max='99'
-                  use:bind={[
-                    () => form()?.offset?.y,
-                    (s) => $newForm('form', 'offset', 'y', Number(s)),
-                  ]}
-                />
-              </div>
-            </div> */
-            }
             <Show when={form().variations.length > 1}>
               <span class='font-semibold'>Tint Override</span>
               <div class='flex gap-2 items-center'>
@@ -428,8 +393,6 @@ export default function FormEditor(props) {
                 var={form().variations[currentVar()]}
                 variation={currentVar()}
                 $var={setVariation}
-                offset={offset()}
-                $offset={setOffset}
                 onDel={() => delVariation(currentVar())}
               />
             </Show>

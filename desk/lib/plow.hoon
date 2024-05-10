@@ -1,5 +1,5 @@
 /-  *turf, pond, mist
-/+  *turf, vita-client
+/+  *turf, *effects, vita-client
 |%
 :: +$  [=bowl:gall =rock:pond top=?]
 ++  filter-mist-goal
@@ -533,6 +533,9 @@
     ?(%click %interact)
       =+  (pull-trigger-on-shade turf src.bowl -.goal shade-id.goal)
       [roars ~ goals]
+    %apply-effect
+      =+  (apply-effect turf src.bowl effect.goal shade-id.goal)
+      [roars ~ goals]
   ==
 ++  pull-trigger-at-pos
   |=  [=turf =ship =trigger pos=svec2]
@@ -562,19 +565,6 @@
     `~
   =/  res  (apply-effect turf ship u.effect shade-id)
   [roars.res goals.res]
-++  apply-effect
-  |=  [=turf =ship =effect =shade-id]
-  ^-  [=roars:pond =goals:pond]
-  ?+    -.effect  `~
-      %port
-    :-  ~
-    =/  portal  (~(gut by portals.deed.turf) portal-id.effect ~)
-    ?~  portal  ~
-    ?~  at.portal  ~
-    [%add-port-offer ship portal-id.effect]~
-      %jump
-    `[%tele ship to.effect]~
-  ==
 ++  path-to-turf-id
   |=  =path
   ^-  (unit turf-id)

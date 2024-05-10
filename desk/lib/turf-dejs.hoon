@@ -179,12 +179,14 @@
   ^-  ^effect
   %.  jon
   %+  ol  effect-type
-  :~  port+ni
+  :~  list+(ar effect)
+      port+ni
       jump+svec2
       read+so
       swap+pa
       seem+ni
       vary+ni
+      move+fx-move
   ==
 ++  port-offer
   |=  jon=json
@@ -198,6 +200,14 @@
   %.  jon
   %-  ot:soft
   ~[of+pa-turf-id-soft from+ni:soft at+ni:soft]
+++  fx-move
+  |=  jon=json
+  ^-  [=target loc=^fx-loc]
+  [%this *^fx-loc]
+++  fx-loc
+  |=  jon=json
+  ^-  ^fx-loc
+  *^fx-loc
 ++  dir
   |=  jon=json
   ^-  ^dir
@@ -253,6 +263,7 @@
   ?>  ?=([%o *] jon)
   =/  type  (typ (~(got by p.jon) 'type'))
   =/  argu  (~(got by p.jon) 'arg')
+  ~&  ['type, argu' type argu]
   |-
   ?-    arg
       :: [[key=@t wit=*] t=*]

@@ -46,6 +46,7 @@
       [%set-shade-var =shade-id variation=@ud]
       [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
       [%set-shade-collidable =shade-id collidable=(unit ?)]
+      [%set-shade-form-id =shade-id =form-id]
       [%set-lunk lunk=(unit lunk)]
       [%set-dink =portal-id approved=?]
       [%del-dink =portal-id]
@@ -108,6 +109,7 @@
       [%send-chat from=ship text=cord]
       [%click =shade-id]
       [%interact =shade-id]
+      [%apply-effect =effect =shade-id]
       ::
       [%join-player =ship =avatar]
       [%approve-dink =portal-id]
@@ -186,6 +188,7 @@
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)
     %set-shade-collidable  (set-shade-collidable turf +.grit)
+    %set-shade-form-id  (set-shade-form-id turf +.grit)
     ::
     %set-lunk  turf(lunk.deed lunk.grit)
     %set-dink
@@ -236,7 +239,7 @@
     ::
     %chat
       turf(chats.ephemera [chat.grit (scag 19 chats.ephemera.turf)])
-        ?(%move %tele)
+    ?(%move %tele)
       %^  jab-by-players  turf  ship.grit
       |=  =player
       player(pos pos.grit)

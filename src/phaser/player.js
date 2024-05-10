@@ -583,22 +583,47 @@ export class Player extends Phaser.GameObjects.Container {
       if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
         const newTilePos = vec2(this.tilePos);
         let newDir;
-        if (pos.x < this.tilePos.x) {
-          newDir = dirs.LEFT;
-          newTilePos.x--;
+        const xDiff = pos.x - this.tilePos.x;
+        const yDiff = pos.y - this.tilePos.y;
+        if (xDiff === 0 && yDiff === 0) return;
+        const xAbs = Math.abs(xDiff);
+        const yAbs = Math.abs(yDiff);
+        const ratio = Math.min(xAbs / yAbs, yAbs / xAbs);
+        const diag = ratio > 0.4142135624; // tan(π/8)
+        const vert = yAbs >= xAbs;
+        if (diag || vert) {
+          if (yDiff > 0) {
+            newDir = dirs.DOWN;
+            newTilePos.y++;
+          } else {
+            newDir = dirs.UP;
+            newTilePos.y--;
+          }
         }
-        if (pos.x > this.tilePos.x) {
-          newDir = dirs.RIGHT;
-          newTilePos.x++;
-        }
-        if (pos.y < this.tilePos.y) {
-          newDir = dirs.UP;
-          newTilePos.y--;
-        }
-        if (pos.y > this.tilePos.y) {
-          newDir = dirs.DOWN;
-          newTilePos.y++;
-        }
+        if (diag || !vert) {
+          if (xDiff > 0) {
+            newDir = dirs.RIGHT;
+            newTilePos.x++;
+          } else {
+            newDir = dirs.LEFT;
+            newTilePos.x--;
+          }
+        } // if (pos.x < this.tilePos.x) {
+        //   newDir = dirs.LEFT;
+        //   newTilePos.x--;
+        // }
+        // if (pos.x > this.tilePos.x) {
+        //   newDir = dirs.RIGHT;
+        //   newTilePos.x++;
+        // }
+        // if (pos.y < this.tilePos.y) {
+        //   newDir = dirs.UP;
+        //   newTilePos.y--;
+        // }
+        // if (pos.y > this.tilePos.y) {
+        //   newDir = dirs.DOWN;
+        //   newTilePos.y++;
+        // }
         if (!newTilePos.equals(this.tilePos)) {
           if (newDir && newDir !== this.dir) {
             this.s.setDir(newDir);

@@ -296,6 +296,53 @@
       $(y.tl (sum:si y.tl --1))
   $(x.tl (sum:si x.tl --1))
 ::
+++  round-dir-8
+  |=  [round=?(%ud %lr) =dir-8]
+  ^-  dir
+  ?:  ?=(dir dir-8)  dir-8
+  ?:  ?=(%ud round)
+    ?-  dir-8
+      ?(%ur %ul)  %up
+      ?(%dr %dl)  %down
+    ==
+  ?-  dir-8
+    ?(%dr %ur)  %right
+    ?(%dl %ul)  %left
+  ==
+++  rotate-dir-8
+  |=  [a=dir-8 b=dir-8]
+  ^-  dir-8
+  %-  int-to-dir-8
+  (add (dir-8-to-int a) (dir-8-to-int b))
+++  rotate-dir
+  |=  [a=dir b=dir]
+  ^-  dir
+  ::  should never need to round bc we're adding even numbers
+  %+  round-dir-8  %ud
+  %-  int-to-dir-8
+  (add (dir-8-to-int a) (dir-8-to-int b))
+++  dir-8-to-int
+  |=  dir=dir-8
+  ^-  @ud
+  %+  fall
+    (find ~[dir] dir-list-8)
+  0
+  :: ?-  dir
+  ::   %down  0
+  ::   %dr  1
+  ::   %right  2
+  ::   %ur  3
+  ::   %up  4
+  ::   %ul  5
+  ::   %left  6
+  ::   %dl  7
+  :: ==
+++  dir-list-8  `(list dir-8)`~[%down %dr %right %ur %up %ul %left %dl]
+++  int-to-dir-8
+  |=  i=@ud
+  ^-  dir-8
+  (snag (mod i 8) dir-list-8)
+::
 ++  clamp-pos
   |=  [pos=svec2 os=off-size]
   ^-  svec2
@@ -324,8 +371,14 @@
   ^-  svec2
   [(fun x.a x.b) (fun y.a y.b)]
 ++  sum-svec2  (merge-svec2 sum:si)
+++  dif-svec2  (merge-svec2 dif:si)
+++  pro-svec2  (merge-svec2 pro:si)
 ++  min-svec2  (merge-svec2 min-si)
 ++  max-svec2  (merge-svec2 max-si)
+++  abs-svec2
+  |=  a=svec2
+  ^-  vec2
+  [(abs:si x.a) (abs:si y.a)]
 ++  min-si
   |=  [a=@s b=@s]
   ?:  (lth-si a b)
@@ -564,8 +617,14 @@
   ^-  (unit portal-id)
   ?~  eff  ~
   ?@  u.eff  ~
-  ?.  ?=(%port -.u.eff)  ~
-  `portal-id.u.eff
+  ?.  ?=(%list -.u.eff)
+    ?.  ?=(%port -.u.eff)  ~
+    `portal-id.u.eff
+  |-  ^-  (unit portal-id)
+  ?~  effects.u.eff  ~
+  ?^  pid=(get-maybe-effect-portal `i.effects.u.eff)
+    pid
+  $(effects.u.eff t.effects.u.eff)
 ++  add-form
   |=  [=turf spec=form-spec]
   ^-  ^turf
@@ -684,6 +743,12 @@
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  _shade
   shade(collidable collidable)
+++  set-shade-form-id
+  |=  [=turf id=shade-id =form-id]
+  ^-  ^turf
+  %^  jab-by-shades  turf  id
+  |=  [=shade =form]  ^-  _shade
+  shade(form-id form-id)
 ++  add-portal
   |=  [=turf for=turf-id at=(unit portal-id)]
   ^-  ^turf
