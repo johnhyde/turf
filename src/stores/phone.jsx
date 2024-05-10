@@ -12,8 +12,8 @@ import {
 } from 'solid-js';
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import { horn as hornPromise } from 'lib/api.js';
-import { normalizeId } from 'lib/utils';
-import { useState } from 'stores/state';
+import { normalizeId } from 'lib/utils.js';
+import { useState } from 'stores/state.js';
 
 export const PhoneContext = createContext();
 

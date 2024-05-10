@@ -62,16 +62,18 @@ export function fillEmptySpace(turf, formId) {
 
   for (let x = 0; x < turf.size.x; x++) {
     for (let y = 0; y < turf.size.y; y++) {
-      if (turf.spaces[pos]?.tile) continue;
+      const pos = vec2(x, y).add(vec2(turf.offset));
+      const posStr = vecToStr(pos);
+      if (turf.spaces[posStr]?.tile) continue;
       const tile = generateHusk(formId, 0);
-      const pos = vecToStr(vec2(x, y).add(vec2(turf.offset)));
-      if (!turf.spaces[pos]) {
-        turf.spaces[pos] = {
+      tile.pos = pos;
+      if (!turf.spaces[posStr]) {
+        turf.spaces[posStr] = {
           tile: turf.stuffCounter,
           shades: [],
         };
       } else {
-        turf.spaces[pos].tile = turf.stuffCounter;
+        turf.spaces[posStr].tile = turf.stuffCounter;
       }
       turf.cave[turf.stuffCounter] = tile;
       turf.stuffCounter++;
