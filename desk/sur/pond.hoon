@@ -45,6 +45,7 @@
       [%cycle-shade =shade-id amt=@ud]
       [%set-shade-var =shade-id variation=@ud]
       [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
+      [%reset-shade-effects =shade-id]
       [%set-shade-collidable =shade-id collidable=(unit ?)]
       [%set-shade-form-id =shade-id =form-id]
       [%set-lunk lunk=(unit lunk)]
@@ -187,6 +188,7 @@
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)
+    %reset-shade-effects  (reset-shade-effects turf +.grit)
     %set-shade-collidable  (set-shade-collidable turf +.grit)
     %set-shade-form-id  (set-shade-form-id turf +.grit)
     ::

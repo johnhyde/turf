@@ -81,6 +81,8 @@
               'trigger'^s+trigger.grit
               'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
           ==
+        %reset-shade-effects
+          (frond 'shadeId' (numb +.grit))
         %set-shade-collidable
           (pairs ~['shadeId'^(numb shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
         %set-shade-form-id
@@ -583,36 +585,63 @@
 ++  effect-pairs
   |=  eff=^effect
   ^-  json
-  %-  pairs
-  :~  type+s+-.eff
-      :-  %arg
-      ^-  json
-      ?-  -.eff
-        %list  a+(turn effects.eff effect-pairs)
-        %port  (numb +.eff)
-        %jump  (svec2 +.eff)
-        %read  s+note.eff
-        %swap  (path +.eff)
-        %seem  (numb +.eff)
-        %vary  (numb +.eff)
-        %move  (fx-move +.eff)
-  ==  ==
+  %+  labeled  -.eff
+  ?-  -.eff
+    %list  a+(turn effects.eff effect-pairs)
+    %port  (numb +.eff)
+    %jump  (svec2 +.eff)
+    %read  s+note.eff
+    %swap  (path +.eff)
+    %seem  (numb +.eff)
+    %vary  (numb +.eff)
+    %move  (fx-move +.eff)
+  ==
+  :: %-  (labeled eff)
+  :: ?-  -.eff
+  ::   %list
+  ::     |=  effects=(list ^effect)
+  ::     a+(turn effects effect-pairs)
+  ::   %port  numb
+  ::   %jump  svec2
+  ::   %read  (lead %s)
+  ::   %swap  path
+  ::   %seem  numb
+  ::   %vary  numb
+  ::   %move  fx-move
+  :: ==
+  :: %-  (labeled eff)
+  :: :~
+  ::   :-  %list
+  ::   |=  effects=(list ^effect)
+  ::   a+(turn effects effect-pairs)
+  ::   ::
+  ::   port+numb
+  ::   jump+svec2
+  ::   read+(lead %s)
+  ::   swap+path
+  ::   seem+numb
+  ::   vary+numb
+  ::   move+fx-move
+  :: ==
 :: ++  labeled
-::   |*  fun=$-(* json)]
+::   |*  [type=term arg=*]
+::   |*  funs=(pole [term $-(_arg json)])
 ::   ^-  json
-::   %-  pairs
-::   :~  type+s+-.eff
-::       :-  %arg
-::       ^-  json
-::       ?-  -.eff
-::         %list  a+(turn effects.eff effect-pairs)
-::         %port  (numb +.eff)
-::         %jump  (svec2 +.eff)
-::         %read  s+note.eff
-::         %swap  (path +.eff)
-::         %seem  (numb +.eff)
-::         %vary  (numb +.eff)
-::   ==  ==
+::   ?~  funs  ~|(bad-key+type !!)
+::   ?:  ?=(_-<.funs type)
+::     %-  pairs
+::     :~  type+s+type
+::         arg+[~|(key+type (->.funs arg))]
+::     ==
+::   ((labeled type arg) +.funs)
+  :: $(funs +.funs)
+++  labeled
+  |=  [type=@tas arg=json]
+  ^-  json
+  %-  pairs
+  :~  type+s+type
+      arg+arg
+  ==
 ++  effect-type
   |=  [=trigger =^effect-type]
   ^-  (pair @t json)
@@ -625,26 +654,91 @@
   |=  =target
   ^-  json
   ?@  target  s+target
-  %+  frond  -.target
-  ?:  ?=(%item -.target)
-    (numb shade-id.target)
-  (ship-json ship.target)
+  :: %+  frond  -.target
+  :: ?:  ?=(%item -.target)
+  ::   (numb shade-id.target)
+  :: (ship-json ship.target)
+  %+  labeled  -.target
+  ?-  -.target
+    %item  (numb shade-id.target)
+    %player  (ship-json ship.target)
+  ==
 ++  fx-loc
   |=  loc=^fx-loc
   ^-  json
-  ~
+  %+  labeled  -.loc
+  ?-  -.loc
+    %target  (fx-target +.loc)
+    %offset
+      %-  pairs
+      :~  offset+(fx-offset offset.loc)
+          loc+(fx-loc loc.loc)
+      ==
+    %absolute  (svec2 +.loc)
+  ==
 ++  fx-offset
-  |=  offset=^fx-offset
+  |=  os=^fx-offset
   ^-  json
-  ~
-++  fx-dir
-  |=  dir=^fx-dir
-  ^-  json
-  ~
+  %+  labeled  -.os
+  ?-  -.os
+    %relative  (fx-from-to +.os)
+    %direction
+      %-  pairs
+      :~  dir+(fx-dir-8 dir.os)
+          direction+(numb distance.os)
+      ==
+    %rotate
+      %-  pairs
+      :~  rotation+(fx-dir rotation.os)
+          offset+(fx-offset offset.os)
+      ==
+    %flip-x  (fx-offset offset.os)
+    %flip-y  (fx-offset offset.os)
+    %combine
+      %-  pairs
+      :~  a+(fx-offset a.os)
+          b+(fx-offset b.os)
+      ==
+    %absolute  (svec2 +.os)
+  ==
+++  fx-dir  fx-dir-8
+  :: |=  dir=^fx-dir
+  :: ^-  json
+  :: ~
 ++  fx-dir-8
   |=  dir-8=^fx-dir-8
   ^-  json
-  ~
+  %+  labeled  -.dir-8
+  ?-  -.dir-8
+    %face  (fx-target +.dir-8)
+    %relative-8  (fx-from-to +.dir-8)
+    %relative
+      %-  pairs
+      :~  round+s+round.dir-8
+          from+(fx-loc from.dir-8)
+          to+(fx-loc to.dir-8)
+      ==
+    %round
+      %-  pairs
+      :~  round+s+round.dir-8
+          dir+(fx-dir-8 dir.dir-8)
+      ==
+    ?(%rotate-8 %rotate)
+      %-  pairs
+      :~  a+(fx-dir-8 a.dir-8)
+          b+(fx-dir-8 b.dir-8)
+      ==
+    ?(%flip-x-8 %flip-x)  (fx-dir-8 dir.dir-8)
+    ?(%flip-y-8 %flip-y)  (fx-dir-8 dir.dir-8)
+    ?(%absolute-8 %absolute)  s/+.dir-8
+  ==
+++  fx-from-to
+  |=  [from=^fx-loc to=^fx-loc]
+  ^-  json
+  %-  pairs
+  :~  from+(fx-loc from)
+      to+(fx-loc to)
+  ==
 ++  maybe-turf-id-path
   |=  tid=(unit ^turf-id)
   ^-  json

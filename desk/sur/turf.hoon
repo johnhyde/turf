@@ -189,23 +189,11 @@
       [%player =ship]
       :: [%ref ref-id=@ud]  :: 
   ==
-+$  fx-dir-8
-  $@  dir-8
-  $%  [%face =target]
-      [%relative fx-from-to]
-      [%round round=?(%ud %lr) dir=fx-dir-8]
-      [%rotate a=fx-dir-8 b=fx-dir-8]
-      [%flip-x dir=fx-dir-8]
-      [%flip-y dir=fx-dir-8]
-  ==
-+$  fx-dir
-  $@  dir
-  $%  [%face =target]
-      [%relative round=?(%ud %lr) fx-from-to]
-      [%round round=?(%ud %lr) dir=fx-dir-8]
-      [%rotate a=fx-dir b=fx-dir]
-      [%flip-x dir=fx-dir]
-      [%flip-y dir=fx-dir]
++$  fx-loc
+  $%  [%target =target]
+      [%offset offset=fx-offset loc=fx-loc]
+      :: [%mean locs=(list fx-loc)]
+      [%absolute pos=svec2]
   ==
 +$  fx-offset
   $%  [%relative fx-from-to]
@@ -217,11 +205,22 @@
       [%combine a=fx-offset b=fx-offset]
       [%absolute offset=svec2]
   ==
-+$  fx-loc
-  $%  [%target =target]
-      [%offset offset=fx-offset loc=fx-loc]
-      :: [%mean locs=(list fx-loc)]
-      [%absolute pos=svec2]
++$  fx-dir-8
+  $%  fx-dir
+      [%relative-8 fx-from-to]
+      [%rotate-8 a=fx-dir-8 b=fx-dir-8]
+      [%flip-x-8 dir=fx-dir-8]
+      [%flip-y-8 dir=fx-dir-8]
+      [%absolute-8 dir=dir-8]
+  ==
++$  fx-dir
+  $%  [%face =target]
+      [%relative round=?(%ud %lr) fx-from-to]
+      [%round round=?(%ud %lr) dir=fx-dir-8]
+      [%rotate a=fx-dir b=fx-dir]
+      [%flip-x dir=fx-dir]
+      [%flip-y dir=fx-dir]
+      [%absolute =dir]
   ==
 +$  fx-from-to  [from=fx-loc to=fx-loc]
 ::

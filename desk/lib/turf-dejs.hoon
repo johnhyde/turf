@@ -41,6 +41,7 @@
       cycle-shade+(ot ~['shadeId'^ni amount+ni])
       set-shade-var+(ot ~['shadeId'^ni variation+ni])
       set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
+      reset-shade-effects+(ot ~['shadeId'^ni])
       set-shade-collidable+(ot ~['shadeId'^ni collidable+bo:soft])
       approve-dink+(ot ~['portalId'^ni])
       :-  %create-bridge
@@ -200,18 +201,71 @@
   %.  jon
   %-  ot:soft
   ~[of+pa-turf-id-soft from+ni:soft at+ni:soft]
-++  fx-move
+++  fx-move  (ot ~[target+fx-target to+fx-loc])
+  :: |=  jon=json
+  :: ^-  [=target loc=^fx-loc]
+  :: [%this *^fx-loc]
+++  fx-target
   |=  jon=json
-  ^-  [=target loc=^fx-loc]
-  [%this *^fx-loc]
+  ?:  ?=([%s *] jon)
+    (target +.jon)
+  %.  jon
+  (ol (tags absolute-target) ~[item+ni player+shp])
 ++  fx-loc
   |=  jon=json
   ^-  ^fx-loc
-  *^fx-loc
-++  dir
+  %.  jon
+  %+  ol  (cork so (tags ^fx-loc))
+  :~  target+fx-target
+      offset+(ot ~[offset+fx-offset loc+fx-loc])
+      absolute+svec2
+  ==
+++  fx-offset
   |=  jon=json
-  ^-  ^dir
-  ;;(^dir (so jon))
+  ^-  ^fx-offset
+  %.  jon
+  %+  ol  (cork so (tags ^fx-offset))
+  :~  relative+fx-from-to
+      direction+(ot ~[dir+fx-dir-8 distance+ni])
+      rotate+(ot ~[rotation+fx-dir offset+fx-offset])
+      flip-x+fx-offset
+      flip-y+fx-offset
+      combine+(ot ~[a+fx-offset b+fx-offset])
+      absolute+svec2
+  ==
+++  fx-dir
+  |=  jon=json
+  ^-  ^fx-dir
+  %.  jon
+  (ol (cork so (tags ^fx-dir)) fx-dir-pairs)
+++  fx-dir-pairs
+  :~  face+fx-target
+      relative+(ot ~[round+fx-round from+fx-loc to+fx-loc])
+      round+(ot ~[round+fx-round dir+fx-dir-8])
+      rotate+(ot ~[a+fx-dir b+fx-dir])
+      flip-x+fx-dir
+      flip-y+fx-dir
+      absolute+dir
+  ==
+++  fx-dir-8
+  |=  jon=json
+  ^-  ^fx-dir-8
+  %.  jon
+  %+  ol  (tags ^fx-dir-8)
+  :*  relative-8+fx-from-to
+      rotate-8+(ot ~[a+fx-dir-8 b+fx-dir-8])
+      flip-x-8+fx-dir-8
+      flip-y-8+fx-dir-8
+      absolute-8+dir-8
+      fx-dir-pairs
+  ==
+++  fx-from-to  (ot ~[from+fx-loc to+fx-loc])
+++  fx-round  (cork so ?(%ud %lr))
+++  dir  (cork so ^dir)
+++  dir-8  (cork so ^dir-8)
+  :: |=  jon=json
+  :: ^-  ^dir
+  :: ;;(^dir (so jon))
 ++  svec2
   |=  jon=json
   ^-  ^svec2
@@ -263,7 +317,7 @@
   ?>  ?=([%o *] jon)
   =/  type  (typ (~(got by p.jon) 'type'))
   =/  argu  (~(got by p.jon) 'arg')
-  ~&  ['type, argu' type argu]
+  :: ~&  ['type, argu' @t=type argu]
   |-
   ?-    arg
       :: [[key=@t wit=*] t=*]

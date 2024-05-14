@@ -211,7 +211,8 @@ export default function FormEditor(props) {
         onClose={cancel}
       >
         <div class='flex'>
-          <div class='flex flex-col space-y-2 p-2'>
+          <div class='flex flex-col space-y-2 p-2 max-w-[220px] border-r border-yellow-950 pr-4 mr-2'>
+            {/* <div class='flex flex-col space-y-2 p-2 max-w-[220px]'> */}
             <div>
               <p class='font-semibold'>
                 Item Name
@@ -311,6 +312,7 @@ export default function FormEditor(props) {
                 <EffectsEditor
                   effects={effects()}
                   $effects={$effects}
+                  form={form()}
                   allowSeeds
                 />
               </div>

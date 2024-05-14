@@ -245,13 +245,13 @@ const pondGrits = {
     if (shade) {
       const formType = getForm(turf, shade.formId)?.type;
       const oldPos = shade.pos;
+      delShadeFromSpace(turf, shadeId, oldPos);
       if (formType === 'tile') {
         jabBySpaces(turf, pos, (space) => space.tile = shadeId);
       } else if (formType == 'wall' || formType == 'item') {
         jabBySpaces(turf, pos, (space) => space.shades.unshift(shadeId));
       } else return;
       shade.pos = pos;
-      delShadeFromSpace(turf, shadeId, oldPos);
     }
   },
   'cycle-shade': (turf, arg) => {
@@ -281,6 +281,13 @@ const pondGrits = {
       shade.effects[trigger] = effect;
     }
   },
+  'reset-shade-effects': (turf, arg) => {
+    const { shadeId } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      shade.effects = {};
+    }
+  },
   'set-shade-collidable': (turf, arg) => {
     const { shadeId, collidable } = arg;
     const shade = getShade(turf, shadeId);
@@ -292,7 +299,11 @@ const pondGrits = {
     const { shadeId, formId } = arg;
     const shade = getShade(turf, shadeId);
     if (shade) {
-      shade.formId = formId;
+      const newHusk = generateHusk(formId, 0);
+      turf.cave[shadeId] = {
+        pos: shade.pos,
+        ...newHusk,
+      };
     }
   },
   'set-lunk': (turf, arg) => {
@@ -755,6 +766,18 @@ function applyEffect(turf, ship, effect, shadeId) {
           arg: {
             shadeId,
             formId: effect.arg,
+          },
+        }],
+      };
+    }
+    case 'vary': {
+      return {
+        roars: [],
+        goals: [{
+          type: 'set-shade-var',
+          arg: {
+            shadeId,
+            variation: effect.arg,
           },
         }],
       };

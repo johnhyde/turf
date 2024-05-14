@@ -737,6 +737,12 @@
       effects
     (~(put by effects.shade) trigger effect)
   ==
+++  reset-shade-effects
+  |=  [=turf id=shade-id]
+  ^-  ^turf
+  %^  jab-by-shades  turf  id
+  |=  [=shade =form]  ^-  _shade
+  shade(effects ~)
 ++  set-shade-collidable
   |=  [=turf id=shade-id collidable=(unit ?)]
   ^-  ^turf
@@ -748,7 +754,7 @@
   ^-  ^turf
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  _shade
-  shade(form-id form-id)
+  [pos.shade form-id 0 *husk-bits]
 ++  add-portal
   |=  [=turf for=turf-id at=(unit portal-id)]
   ^-  ^turf

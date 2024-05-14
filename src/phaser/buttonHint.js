@@ -10,9 +10,9 @@ export class ButtonHint extends Phaser.GameObjects.Container {
     this.s = state;
     this.turfId = turfId;
     this.hint = scene.make.text({
-      text: 'press X to interact',
+      text: 'X',
       style: {
-        fontSize: 6 * factor + 'px',
+        fontSize: 8 * factor + 'px',
         ...defaultTextStyles,
         align: 'center',
         wordWrap: {
@@ -21,14 +21,30 @@ export class ButtonHint extends Phaser.GameObjects.Container {
         },
       },
     });
-    this.hint.setVisible(false);
-    this.add(this.hint);
+    this.hint.alpha = 0.8;
+    this.box = scene.make.graphics();
+    this.box.fillStyle(0xbbbbbb, 0.4);
+    this.box.lineStyle(1 * factor, 0xffffff, 0.7);
+    this.box.fillRoundedRect(...this.roundedRect);
+    this.box.strokeRoundedRect(...this.roundedRect);
+    this.setVisible(false);
+    this.add([this.box, this.hint]);
     this.setupEffects();
     this.scene.add.existing(this);
   }
 
   get t() {
     return state.ponds[this.turfId]?.ether;
+  }
+
+  get roundedRect() {
+    return [
+      -3 * factor,
+      0,
+      this.hint.width + 6 * factor,
+      this.hint.height,
+      3 * factor,
+    ];
   }
 
   setupEffects() {
@@ -43,14 +59,13 @@ export class ButtonHint extends Phaser.GameObjects.Container {
           return getEffectsByShade(this.t, shade).fullFx.interact?.arg;
         });
         const gamePos = interactPos.scale(tileFactor);
-        this.hint.setPosition(
+        this.setPosition(
           gamePos.x + (tileFactor / 2) - (this.hint.width / 2),
-          // gamePos.x,
-          gamePos.y,
+          gamePos.y + this.hint.height / 2,
         );
-        this.hint.setVisible(interactable);
+        this.setVisible(interactable);
       } else {
-        this.hint.setVisible(false);
+        this.setVisible(false);
       }
     });
   }

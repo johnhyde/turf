@@ -160,6 +160,13 @@ export function vecToStr(vec) {
   return vec.x + ',' + vec.y;
 }
 
+export function toPairs(str) {
+  return str.split(', ').map((t) => t.split('  ')).map((p) => {
+    if (p.length === 1) return [...p, ...p];
+    return p;
+  });
+}
+
 export function normalizeTermIsh(str) {
   return str.toLocaleLowerCase().replaceAll(/[^-_.~a-z0-9]+/g, '-');
 }

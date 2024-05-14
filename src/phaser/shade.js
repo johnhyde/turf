@@ -34,8 +34,8 @@ export class Shade extends Phaser.GameObjects.Sprite {
           });
         }
       });
-      this.updateVariation(shade.variation);
-      // this.glow = this.postFX.addGlow(hexToInt('#ffffff'));
+      this.varyVariation(shade.variation);
+      // this.glow = this.postFX.addGlow(0xffffff);
       // this.setGlowActive(false);
     }
   }
@@ -44,8 +44,19 @@ export class Shade extends Phaser.GameObjects.Sprite {
     this.setDepth(this.y / tileFactor + this.depthMod + this.indexDepthMod);
   }
 
-  updateVariation(varI) {
+  seemVariation(varI) {
+    this.seem = varI;
+    this.updateVariation();
+  }
+
+  varyVariation(varI) {
     this.shade.variation = varI;
+    this.seem = null;
+    this.updateVariation();
+  }
+
+  updateVariation() {
+    const varI = this.seem ?? this.shade.variation;
     const variation = this.form.variations[varI];
     this.offset = vec2(variation?.offset).add(
       vec2(this.shade.offset),
@@ -79,7 +90,7 @@ export class Shade extends Phaser.GameObjects.Sprite {
       }
       if (this.glow.active === active) return;
       this.glow.setActive(active);
-      console.log('set glow active', active);
+      // console.log('set glow active', active);
       // } else {
       //   // this.input.cursor = active ? 'pointer' : 'auto';
       //   if (active) this.input.cursor = active ? 'pointer' : 'pointer';

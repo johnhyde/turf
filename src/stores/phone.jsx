@@ -13,7 +13,7 @@ import {
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import { horn as hornPromise } from 'lib/api.js';
 import { normalizeId } from 'lib/utils.js';
-import { useState } from 'stores/state.js';
+import { useState } from 'stores/state.jsx';
 
 export const PhoneContext = createContext();
 
@@ -138,7 +138,6 @@ export function getPhone(state) {
   });
 
   createEffect(() => {
-    console.log('help');
     if (phone.publics?.host !== state.c.host) {
       if (phone.publics) phone.publics.cancel();
       if (state.c.host && horn()) {

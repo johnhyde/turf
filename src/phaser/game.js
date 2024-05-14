@@ -332,9 +332,7 @@ function createShade(shade, id, turf) {
   sprite.on('pointerover', (pointer) => {
     if (state.e && shade) {
       const effects = getEffectsByShade(state.e, shade).fullFx;
-      if (effects.interact?.type === 'read') {
-        addText(effects.interact.arg);
-      } else if (effects.click?.type === 'read') {
+      if (effects.click?.type === 'read') {
         addText(effects.click.arg);
       } else if (effects.step?.type === 'port') {
         const portal = state.e.portals[effects.step.arg];
@@ -589,6 +587,10 @@ export function startPhaser(_owner, _container) {
         addGritListener('pond-fakeGrit-chat', (e) => {
           if (e.fakeGrit.arg.from === our) chat(e.fakeGrit.arg);
         });
+        addGritListener('pond-roar-effect-seem', ({ roar, turfId }) => {
+          if (turfId !== state.c.id) return;
+          shades[roar.shadeId]?.seemVariation(roar.arg);
+        });
       }
 
       function update() {
@@ -802,7 +804,7 @@ export function startPhaser(_owner, _container) {
           makeShade();
         } else {
           if (shadeObject.shade.variation !== shadeData.variation) {
-            shadeObject.updateVariation(shadeData.variation);
+            shadeObject.varyVariation(shadeData.variation);
           }
           const pos = vec2(shadeData.pos).scale(tileFactor);
           shadeObject.setPosition(pos.x, pos.y);

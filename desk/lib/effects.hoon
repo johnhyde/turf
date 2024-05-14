@@ -124,17 +124,19 @@
 ++  resolve-fx-dir
   |=  [=ctx dir=fx-dir]
   ^-  (unit ^dir)
-  ?@  dir  `dir
   ?+    -.dir
       %-  (lift round-dir-8)
       ?-  -.dir
-        %face
-          (both `%ud (resolve-fx-dir-8 ctx dir))
         %relative
-          (both `round.dir (resolve-fx-dir-8 ctx [%relative [from to]:dir]))
+          (both `round.dir (resolve-fx-dir-8 ctx [%relative-8 [from to]:dir]))
         %round
           (both `round.dir (resolve-fx-dir-8 ctx dir.dir))
       ==
+    %face
+      ?~  target=(resolve-target ctx target.dir)
+        ~
+      ?:  ?=(%.n -.u.target)  ~
+      `dir.p.u.target
     %rotate
       ?~  a=(resolve-fx-dir ctx a.dir)  ~
       ?~  b=(resolve-fx-dir ctx b.dir)  ~
@@ -153,20 +155,15 @@
         %down  %up
         %up  %down
       ==
+    %absolute  `dir.dir
   ==
 ++  resolve-fx-dir-8
   |=  [=ctx dir=fx-dir-8]
   ^-  (unit dir-8)
-  ?@  dir  `dir
-  ?-  -.dir
-    %face
-      ?~  target=(resolve-target ctx target.dir)
-        ~
-      ?:  ?=(%.n -.u.target)  ~
-      `dir.p.u.target
-    %relative
+  ?+  -.dir  (resolve-fx-dir ctx dir)
+    %relative-8
       :: trig???
-      =/  offset  (resolve-fx-offset ctx dir)
+      =/  offset  (resolve-fx-offset ctx [%relative [from to]:dir])
       ?:  =(*svec2 offset)  ~
       :-  ~
       =/  syns  [x=(syn:si x.offset) y=(syn:si y.offset)]
@@ -186,14 +183,14 @@
       ?:  (lth x y)
         ?:(y.syns %down %up)
       ?:(x.syns %right %left)
-    %round
-      ?~  dir-8=(resolve-fx-dir-8 ctx dir.dir)  ~
-      `(round-dir-8 round.dir u.dir-8)
-    %rotate
+    :: %round
+    ::   ?~  dir-8=(resolve-fx-dir-8 ctx dir.dir)  ~
+    ::   `(round-dir-8 round.dir u.dir-8)
+    %rotate-8
       ?~  a=(resolve-fx-dir-8 ctx a.dir)  ~
       ?~  b=(resolve-fx-dir-8 ctx b.dir)  ~
       `(rotate-dir-8 u.a u.b)
-    %flip-x
+    %flip-x-8
       ?~  dir-8=(resolve-fx-dir-8 ctx dir.dir)  ~
       :-  ~
       ?+  u.dir-8  u.dir-8
@@ -204,7 +201,7 @@
         %ur  %ul
         %ul  %ur
       ==
-    %flip-y
+    %flip-y-8
       ?~  dir-8=(resolve-fx-dir-8 ctx dir.dir)  ~
       :-  ~
       ?+  u.dir-8  u.dir-8
@@ -215,6 +212,7 @@
         %ul  %dl
         %dl  %ul
       ==
+    %absolute-8  `dir.dir
   ==
 ++  absolutize-target
   |=  [=ctx =target]

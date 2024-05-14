@@ -415,6 +415,11 @@ export function getState() {
         */
       });
     },
+    resetShadeEffects(shadeId) {
+      this.sendPondWave('reset-shade-effects', {
+        shadeId: Number.parseInt(shadeId),
+      });
+    },
     setShadeCollidable(shadeId, collidable) {
       this.sendPondWave('set-shade-collidable', {
         shadeId: Number.parseInt(shadeId),

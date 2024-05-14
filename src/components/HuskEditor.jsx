@@ -1,4 +1,11 @@
-import { batch, createMemo, createSelector, mergeProps } from 'solid-js';
+import {
+  batch,
+  createEffect,
+  createMemo,
+  createSelector,
+  createSignal,
+  mergeProps,
+} from 'solid-js';
 import { createStore, produce, reconcile } from 'solid-js/store';
 import { getForm } from 'lib/turf.js';
 import { bind, input, jClone, vec2 } from 'lib/utils.js';
@@ -13,12 +20,33 @@ import EffectsEditor from '@/EffectsEditor.jsx';
 export default function HuskEditor(props) {
   const state = useState();
   const [newEffects, $newEffects] = createStore({});
+  const [shouldReset, $shouldReset] = createSignal(false);
   const husk = () => props.shade;
   const pos = () => props.shade?.pos;
   const form = () => husk().form;
+  const [huskEffects, $huskEffects] = createStore({});
+  // const huskEffects = mergeProps(husk().effects, huskResets);
+  createEffect(() => {
+    if (shouldReset()) {
+      $huskEffects(reconcile({}));
+    } else {
+      Object.keys(husk().effects).forEach((key) => {
+        $huskEffects(key, husk().effects[key]);
+      });
+    }
+  });
+  // const huskEffects = () => shouldReset() ? {} : husk().effects;
+  const nonFormEffects = mergeProps(huskEffects, newEffects);
 
   function clearNewEffects() {
     $newEffects(reconcile({}));
+  }
+
+  function resetEffects() {
+    batch(() => {
+      clearNewEffects();
+      $shouldReset(true);
+    });
   }
 
   const effects = createMemo(() => {
@@ -26,8 +54,7 @@ export default function HuskEditor(props) {
     const merged = mergeProps(
       form().seeds,
       form().effects,
-      husk().effects,
-      newEffects,
+      nonFormEffects,
     );
     return mapValues(merged, (effect) => {
       if (typeof effect === 'string') {
@@ -39,7 +66,8 @@ export default function HuskEditor(props) {
 
   function save() {
     batch(() => {
-      Object.entries(effects()).forEach(([trigger, effect]) => {
+      if (shouldReset()) state.resetShadeEffects(husk().id);
+      Object.entries(newEffects).forEach(([trigger, effect]) => {
         if (trigger === '') return;
         if (effect != null) {
           effect = effect.arg === null ? effect.type : effect;
@@ -47,7 +75,7 @@ export default function HuskEditor(props) {
         if (effect === '') return;
         state.setShadeEffect(husk().id, trigger, effect);
       });
-      clearNewEffects();
+      cancel();
     });
   }
 
@@ -65,6 +93,7 @@ export default function HuskEditor(props) {
 
   function cancel() {
     clearNewEffects();
+    $shouldReset(false);
   }
 
   function deleteItem() {
@@ -126,10 +155,28 @@ export default function HuskEditor(props) {
               onInput={(e) => setHuskCollidable(e.currentTarget.checked)}
             />
           </div>
-          Effects:
-          <EffectsEditor effects={effects()} $effects={$newEffects} />
+          <div class='flex items-center space-x-2'>
+            <span>Effects:</span>
+            <Show when={Object.keys(nonFormEffects).length}>
+              <SmallButton onClick={resetEffects}>
+                Reset Effects
+              </SmallButton>
+            </Show>
+          </div>
+          {
+            /* form: {JSON.stringify(form().effects, null, 2)}
+          husk: {JSON.stringify(husk().effects, null, 2)}
+          huskEffects: {JSON.stringify(huskEffects, null, 2)}
+          newEffects: {JSON.stringify(newEffects, null, 2)}
+          nonFormEffects: {JSON.stringify(nonFormEffects, null, 2)} */
+          }
+          <EffectsEditor
+            effects={effects()}
+            $effects={$newEffects}
+            form={form()}
+          />
           <div class='my-1 flex justify-center space-x-2'>
-            <Show when={Object.keys(newEffects).length}>
+            <Show when={Object.keys(newEffects).length || shouldReset()}>
               <SmallButton onClick={save}>
                 Save
               </SmallButton>
