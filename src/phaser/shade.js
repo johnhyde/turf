@@ -47,10 +47,6 @@ export class Shade extends Phaser.GameObjects.Sprite {
   updateVariation(varI) {
     this.shade.variation = varI;
     const variation = this.form.variations[varI];
-    this.offset = vec2(variation?.offset).add(
-      vec2(this.shade.offset),
-    );
-    this.setDisplayOrigin(this.offset.x, this.offset.y);
     const animId = varI.toString();
     if (this.anims.get(animId)) {
       this.play(animId);
@@ -58,6 +54,10 @@ export class Shade extends Phaser.GameObjects.Sprite {
       this.stop();
       this.setTexture(spriteName(this.turf.id, this.shade.formId, varI));
     }
+    this.offset = vec2(variation?.offset).add(
+      vec2(this.shade.offset),
+    );
+    this.setDisplayOrigin(this.offset.x, this.offset.y);
     if (variation?.tint != null) {
       this.setTint(variation.tint);
     } else {
