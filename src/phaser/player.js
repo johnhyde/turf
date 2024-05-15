@@ -140,11 +140,18 @@ export class Player extends Phaser.GameObjects.Container {
     createRoot((dispose) => {
       this.dispose = dispose;
       createEffect(() => {
-        // theoretically this means we can use this.p without fear
-        // in the other effects?
-        if (!this.p) dispose();
+        if (!this.p) {
+          dispose();
+          console.log(`reactive root for ${this.patp} disposed`);
+        }
       });
-      createEffect(() => {
+      const pEffect = (fn) => {
+        createEffect((...args) => {
+          if (!this.p) return;
+          return fn(...args);
+        });
+      };
+      pEffect(() => {
         const pos = this.p.pos;
         if (pos) {
           // make sure to use x and y so solid knows to track them
@@ -153,7 +160,7 @@ export class Player extends Phaser.GameObjects.Container {
           this.tilePos = vec2(pos.x, pos.y);
         }
       });
-      createEffect((lastColor) => {
+      pEffect((lastColor) => {
         const color = this.p?.avatar.body.color;
         if (this.bodyImage && color != null && lastColor !== color) {
           if (game.renderer.type === Phaser.CANVAS) {
@@ -165,7 +172,7 @@ export class Player extends Phaser.GameObjects.Container {
         }
         return color;
       });
-      createEffect(on(() => {
+      pEffect(on(() => {
         return [this.dir, this.walking(), this.napping()];
       }, async () => {
         if (this.p.avatar) {
@@ -173,7 +180,7 @@ export class Player extends Phaser.GameObjects.Container {
           setTimeout(this.updateAnims.bind(this), 0);
         }
       }));
-      createEffect(on(() => {
+      pEffect(on(() => {
         return jClone([this.p.avatar.body.thing, this.p.avatar.things]);
       }, async (input, prevInput) => {
         if (this.p.avatar && !isEqual(input, prevInput)) {
@@ -181,11 +188,11 @@ export class Player extends Phaser.GameObjects.Container {
           this.updateAnims();
         }
       }, { defer: true }));
-      createEffect(() => {
+      pEffect(() => {
         this.name.setText(this.hovering() ? this.patp : this.displayName);
         this.centerText(this.name);
       });
-      createEffect(() => {
+      pEffect(() => {
         this.setZzz();
       });
     });
@@ -695,7 +702,10 @@ export class Player extends Phaser.GameObjects.Container {
   }
 
   preDestroy(fromScene) {
-    if (this.dispose) this.dispose();
+    if (this.dispose) {
+      this.dispose();
+      console.log(`reactive root for ${this.patp} disposed in preDestroy()`);
+    }
     super.preDestroy(fromScene);
   }
 }

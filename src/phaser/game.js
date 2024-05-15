@@ -204,8 +204,14 @@ function createShade(shade, id, turf) {
     createEffect(() => {
       if (!shade()) dispose();
     });
+    const shadeEffect = (fn) => {
+      createEffect((...args) => {
+        if (!shade()) return;
+        return fn(...args);
+      });
+    };
     sprite.addListener('destroy', dispose);
-    createEffect(() => {
+    shadeEffect(() => {
       const form = state.e.skye[shade().formId];
       const variation = form?.variations?.[shade().variation];
       sprite.depthMod = 0;
@@ -225,7 +231,7 @@ function createShade(shade, id, turf) {
         stand.sort('depth');
       }
     });
-    createEffect(() => {
+    shadeEffect(() => {
       if (shade().formId === '/portal') {
         const step = shade().effects.step;
         if (
@@ -241,7 +247,7 @@ function createShade(shade, id, turf) {
         }
       }
     });
-    createEffect(() => {
+    shadeEffect(() => {
       const { fullFx } = getEffectsByShadeId(state.e, id);
       if (fullFx.click?.type != null) {
         sprite.input.cursor = 'pointer';
