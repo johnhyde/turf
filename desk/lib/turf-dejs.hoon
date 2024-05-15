@@ -210,7 +210,9 @@
   ?:  ?=([%s *] jon)
     (target +.jon)
   %.  jon
-  (ol (tags absolute-target) ~[item+ni player+shp])
+  %+  ol
+    (cork so (tags absolute-target))
+  ~[item+ni player+shp]
 ++  fx-loc
   |=  jon=json
   ^-  ^fx-loc

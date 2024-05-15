@@ -1,5 +1,6 @@
-import { toPairs } from 'lib/utils.js';
+import { bindNum, input, toPairs } from 'lib/utils.js';
 import Select from '@/Select.jsx';
+import PatpInput from '@/PatpInput.jsx';
 
 const targetTypes = toPairs('this, user, item, player');
 
@@ -41,12 +42,38 @@ export function FxTargetInput(props) {
         });
     }
   }
+
+  function $arg(arg) {
+    // if (type() === 'player') {
+    //   if (!isValidPatp(arg)) return;
+    // }
+    props.$value({
+      type: type(),
+      arg,
+    });
+  }
   return (
     <>
       <Select value={type()} $value={$type} options={targetTypes} />
+      <Show when={typeof props.value === 'object'}>
+        <span>:</span>
+        <span>{props.value.arg}</span>
+      </Show>
       <Show when={type() === 'item'}>
+        <input
+          type='number'
+          class='rounded-md pl-1'
+          min='0'
+          max={state.e.stuffCounter - 1}
+          use:input
+          use:bindNum={[
+            () => props.value.arg,
+            $arg,
+          ]}
+        />
       </Show>
       <Show when={type() === 'player'}>
+        <PatpInput value={props.value.arg} $validValue={$arg} normalize />
       </Show>
     </>
   );
