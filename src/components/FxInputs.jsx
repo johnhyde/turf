@@ -173,15 +173,25 @@ export function FxOffsetInput(props) {
 
       <Switch>
         <Match when={type() === 'relative'}>
+          <Indent>
+            <span>from</span>
+            <FxLocationInput value={props.value.arg.from} $value={(from) => $arg({ ...props.value.arg, from})} />
+          </Indent>
+          <Indent>
+            <span>to</span>
+            <FxLocationInput value={props.value.arg.to} $value={(to) => $arg({ ...props.value.arg, to})} />
+          </Indent>
         </Match>
         <Match when={type() === 'direction'}>
           <Indent>
-            <FxDirInput
+            <span>direction</span>
+            <FxDir8Input
               value={props.value.arg.dir}
               $value={(dir) => $arg({ ...props.value.arg, dir })}
             />
           </Indent>
           <Indent>
+            <span>distance</span>
             <input
               type='number'
               class='rounded-md pl-1'
