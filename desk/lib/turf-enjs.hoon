@@ -685,7 +685,7 @@
     %direction
       %-  pairs
       :~  dir+(fx-dir-8 dir.os)
-          direction+(numb distance.os)
+          distance+(numb distance.os)
       ==
     %rotate
       %-  pairs

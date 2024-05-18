@@ -452,12 +452,6 @@ export function startPhaser(_owner, _container) {
         keys = {
           f: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']),
         };
-        const graphics = this.add.graphics();
-
-        const color = 0xffff00;
-        const thickness = 2;
-        const alpha = 1;
-        let draw = false;
         function mapEdit(pos) {
           if (state.c.selectedForm) {
             if (state.c.selectedForm.type === 'wall') {

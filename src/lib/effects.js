@@ -42,7 +42,7 @@ export function newFxOffset(type = 'absolute') {
       return { type, arg };
     case 'direction':
       arg = {
-        direction: newFxDir8(),
+        dir: newFxDir8(),
         distance: 0,
       };
       return { type, arg };

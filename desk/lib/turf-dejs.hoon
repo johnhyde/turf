@@ -253,7 +253,7 @@
   |=  jon=json
   ^-  ^fx-dir-8
   %.  jon
-  %+  ol  (tags ^fx-dir-8)
+  %+  ol  (cork so (tags ^fx-dir-8))
   :*  relative-8+fx-from-to
       rotate-8+(ot ~[a+fx-dir-8 b+fx-dir-8])
       flip-x-8+fx-dir-8

@@ -22,11 +22,23 @@ const offsetTypes = toPairs(
   'relative  distance, direction, rotate  rotated offset, flip-x  flipped ↔, flip-y  flipped ↕, combine  combined offset, absolute  offset',
 );
 const dirTypes = toPairs(
-  'face, relative, round, rotate, flip-x, flip-y, absolute',
+  'face, relative, round, rotate, flip-x  flipped ↔, flip-y  flipped ↕, absolute',
 );
 const dir8Types = toPairs(
-  'relative-8, rotate-8, flip-x-8, flip-y-8, absolute-8',
+  'face, relative-8  relative, rotate-8  rotate, flip-x-8  flipped ↔, flip-y-8  flipped ↕, absolute-8  absolute',
 );
+
+function make$arg(input) {
+  return (arg, key) => {
+    const [value, $value] = input();
+    const type = value.type;
+    if (key) {
+      $value({ type, arg: { ...value.arg, [key]: arg } });
+    } else {
+      $value({ type, arg });
+    }
+  };
+}
 
 function Break() {
   return <span class='w-full' />;
@@ -175,11 +187,17 @@ export function FxOffsetInput(props) {
         <Match when={type() === 'relative'}>
           <Indent>
             <span>from</span>
-            <FxLocationInput value={props.value.arg.from} $value={(from) => $arg({ ...props.value.arg, from})} />
+            <FxLocationInput
+              value={props.value.arg.from}
+              $value={(from) => $arg({ ...props.value.arg, from })}
+            />
           </Indent>
           <Indent>
             <span>to</span>
-            <FxLocationInput value={props.value.arg.to} $value={(to) => $arg({ ...props.value.arg, to})} />
+            <FxLocationInput
+              value={props.value.arg.to}
+              $value={(to) => $arg({ ...props.value.arg, to })}
+            />
           </Indent>
         </Match>
         <Match when={type() === 'direction'}>
@@ -200,7 +218,7 @@ export function FxOffsetInput(props) {
               use:input
               use:bindNum={[
                 () => props.value.arg.distance,
-                (distance) => props.$arg({ ...props.value.arg, distance }),
+                (distance) => $arg({ ...props.value.arg, distance }),
               ]}
             />
           </Indent>
@@ -267,9 +285,20 @@ export function FxDirInput(props) {
   function $type(type) {
     return props.$value(newFxDir(type));
   }
-  function $arg(arg) {
-    props.$value({ type: type(), arg });
-  }
+  const $arg = make$arg(() => [props.value, props.$value]);
+  // function $arg(arg, key) {xxk
+  //   if (key) {
+  //     props.$value({
+  //       type: type(),
+  //       arg: {
+  //         ...props.value.arg,
+  //         [key]: arg,
+  //       },
+  //     });
+  //   } else {
+  //     props.$value({ type: type(), arg });
+  //   }
+  // }
   return (
     <>
       <Select value={type()} $value={$type} options={dirTypes} />
@@ -277,8 +306,31 @@ export function FxDirInput(props) {
 
       <Switch>
         <Match when={type() === 'face'}>
+          <FxTargetInput value={props.value?.arg} $value={$arg} />
         </Match>
         <Match when={type() === 'relative'}>
+          <Indent>
+            <span>round diagonals</span>
+            <Select
+              value={props.value.arg.round}
+              $value={(v) => $arg(v, 'round')}
+              options={toPairs('ud  up-down, lr  left-right')}
+            />
+          </Indent>
+          <Indent>
+            <span>from</span>
+            <FxLocationInput
+              value={props.value.arg.from}
+              $value={(v) => $arg(v, 'from')}
+            />
+          </Indent>
+          <Indent>
+            <span>to</span>
+            <FxLocationInput
+              value={props.value.arg.to}
+              $value={(v) => $arg(v, 'to')}
+            />
+          </Indent>
         </Match>
         <Match when={type() === 'round'}>
         </Match>
@@ -289,6 +341,11 @@ export function FxDirInput(props) {
         <Match when={type() === 'flip-y'}>
         </Match>
         <Match when={type() === 'absolute'}>
+          <Select
+            value={props.value.arg}
+            $value={$arg}
+            options={toPairs('down, right, up, left')}
+          />
         </Match>
       </Switch>
     </>
@@ -309,7 +366,24 @@ export function FxDir8Input(props) {
       <span>:</span>
 
       <Switch>
+        <Match when={type() === 'face'}>
+          <FxTargetInput value={props.value?.arg} $value={$arg} />
+        </Match>
         <Match when={type() === 'relative-8'}>
+          <Indent>
+            <span>from</span>
+            <FxLocationInput
+              value={props.value.arg.from}
+              $value={(from) => $arg({ ...props.value.arg, from })}
+            />
+          </Indent>
+          <Indent>
+            <span>to</span>
+            <FxLocationInput
+              value={props.value.arg.to}
+              $value={(to) => $arg({ ...props.value.arg, to })}
+            />
+          </Indent>
         </Match>
         <Match when={type() === 'rotate-8'}>
         </Match>
@@ -318,6 +392,13 @@ export function FxDir8Input(props) {
         <Match when={type() === 'flip-y-8'}>
         </Match>
         <Match when={type() === 'absolute-8'}>
+          <Select
+            value={props.value.arg}
+            $value={$arg}
+            options={toPairs(
+              'down, dr  down-right, right, ur  up-right, up, ul  up-left, left, dl  down-left',
+            )}
+          />
         </Match>
       </Switch>
     </>
