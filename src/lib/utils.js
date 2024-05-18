@@ -347,6 +347,24 @@ export const randVector = (length = 1) =>
 // export const randColor = (cA = new Color, cB = new Color(0,0,0,1), linear)=>
 //     linear ? cA.lerp(cB, rand()) : new Color(rand(cA.r,cB.r),rand(cA.g,cB.g),rand(cA.b,cB.b),rand(cA.a,cB.a));
 
+export const randBrightColorInt = () => {
+  const primary = randInt(256, 220);
+  let secondary = randInt(256, 0);
+  const tertiary = Math.floor(Math.random() * secondary);
+  secondary -= tertiary;
+  let rgb = [primary, secondary, tertiary];
+  if (Math.random() > 0.5) rgb.reverse();
+  const moves = randInt(3, 0);
+  for (let i = 0; i < moves; i++) {
+    rgb = [rgb[1], rgb[2], rgb[0]];
+  }
+  return (rgb[0] << 16) + (rgb[1] << 8) + rgb[2];
+};
+
+export const randBrightColor = () => {
+  return intToHex(randBrightColorInt(minBrightness));
+};
+
 /** The seed used by the randSeeded function, should not be 0
  *  @memberof Random */
 let randSeed = 1;

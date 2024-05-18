@@ -84,16 +84,29 @@ export class Shade extends Phaser.GameObjects.Sprite {
 
   setGlowActive(active) {
     if (this.scene.game.renderer.type === Phaser.WEBGL) {
-      if (!this.glow) {
-        if (!active) return;
-        this.glow = this.preFX.addGlow(hexToInt('#fffc99'));
+      if (active) {
+        if (!this.glow) {
+          this.glow = this.postFX.addGlow(0xfffc99);
+        }
+      } else if (this.glow) {
+        this.postFX.remove(this.glow);
+        this.glow = null;
       }
-      if (this.glow.active === active) return;
-      this.glow.setActive(active);
-      // console.log('set glow active', active);
-      // } else {
-      //   // this.input.cursor = active ? 'pointer' : 'auto';
-      //   if (active) this.input.cursor = active ? 'pointer' : 'pointer';
+    }
+  }
+
+  setSelected(color) {
+    if (this.scene.game.renderer.type === Phaser.WEBGL) {
+      const active = color != null;
+      if (active) {
+        if (!this.selectGlow) {
+          this.selectGlow = this.postFX.addGlow(color);
+        }
+        this.selectGlow.color = color;
+      } else if (this.selectGlow) {
+        this.postFX.remove(this.selectGlow);
+        this.selectGlow = null;
+      }
     }
   }
 }

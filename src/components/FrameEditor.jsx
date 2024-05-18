@@ -71,7 +71,7 @@ export default function FrameEditor(props) {
   }
 
   function onFrameUpload(frame) {
-    const frames = [frame].flat();
+    let frames = [frame].flat();
     if (frames.length) {
       if (frames.length === 1) {
         setFrame(frames[0]);

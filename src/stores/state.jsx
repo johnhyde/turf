@@ -31,7 +31,13 @@ function initEditorState() {
   return {
     selectedFormId: null,
     selectedShadeId: null,
+    // secondary select, e.g. in effects editor
+    // map of shade id (204) or pos ('5,6') to count of people showing it
+    selectedShadeIds: {},
+    selectedShadeColors: {},
     selectedTool: null,
+    // selectingPos: false,
+    // selectedPos: null,
     huskToPlace: null,
   };
 }
@@ -576,19 +582,56 @@ export function getState() {
     selectShade(id, _) {
       batch(() => {
         if (id) this.selectTool(null);
-        $state('editor', 'selectedShadeId', id);
+        if (this.editor.selectedShadeId !== id) {
+          $state('editor', 'selectedShadeId', id);
+        }
       });
     },
     deselectShade() {
       this.selectShade(null);
     },
+    highlightShade(id, colorInt) {
+      batch(() => {
+        $state(
+          'editor',
+          'selectedShadeIds',
+          id,
+          (count) => count == null ? 1 : count + 1,
+        );
+        $state(
+          'editor',
+          'selectedShadeColors',
+          id,
+          (colors) => [...(colors || []), colorInt],
+        );
+      });
+    },
+    unhighlightShade(id, colorInt) {
+      batch(() => {
+        $state(
+          'editor',
+          'selectedShadeIds',
+          id,
+          (count) => count > 0 ? count - 1 : 0,
+        );
+        if (colorInt != null) {
+          $state(
+            'editor',
+            'selectedShadeColors',
+            id,
+            (colors) => (colors ?? []).filter((c) => c !== colorInt),
+          );
+        }
+      });
+    },
     selectTool(tool) {
       batch(() => {
+        if (state.editor.selectedTool === tool) return;
         $state('editor', 'selectedTool', tool);
         if (tool === this.editor.tools.RESIZER) {
           this.setScaleLog(Math.max(this.scaleLog, 1));
         }
-        if (tool !== this.editor.tools.POINTER) {
+        if (tool) {
           $state('editor', 'huskToPlace', null);
         }
         this.deselectShade();

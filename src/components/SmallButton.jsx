@@ -6,6 +6,7 @@ export default function SmallButton(props) {
       class={buttonClasses +
         (props.selected ? ' bg-yellow-600' : ' bg-yellow-700') + ' ' +
         (props.class || '')}
+      style={props.style}
       onClick={props.onClick}
       disabled={props.disabled ?? false}
       tabindex={props.tabindex}

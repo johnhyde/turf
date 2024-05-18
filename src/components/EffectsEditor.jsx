@@ -10,12 +10,13 @@ import {
   turfIdToName,
   vec2,
 } from 'lib/utils.js';
+import { newFxLocation, newFxTarget } from 'lib/effects.js';
 import ListItemPicker from '@/ListItemPicker.jsx';
 import SmallButton from '@/SmallButton.jsx';
 import ItemButton from '@/ItemButton.jsx';
 import Select from '@/Select.jsx';
 import PathInput from '@/PathInput.jsx';
-import { FxLocationInput, FxMoveInput, FxTargetInput } from '@/FxInputs.jsx';
+import { FxMoveInput, PositionInput } from '@/FxInputs.jsx';
 
 // todo bump
 const triggers = toPairs('step, leave, interact, click');
@@ -38,11 +39,8 @@ function defaultArg(type, turf) {
       return 0;
     case 'move':
       return {
-        target: 'this',
-        to: {
-          type: 'target',
-          arg: 'this',
-        },
+        target: newFxTarget(),
+        to: newFxLocation(),
       };
     default:
       return null;
@@ -89,37 +87,39 @@ export default function EffectsEditor(props) {
 
             return (
               <Show when={effect() != null}>
-                <div class='w-full py-2 flex gap-2 items-start'>
-                  <div class='min-w-0 flex flex-wrap items-center gap-1 mb-1'>
-                    <div class='flex gap-1 items-center'>
+                {/* <div class='w-full py-2 flex gap-2 items-start'> */}
+                <div class='w-full py-2 flex flex-wrap items-center gap-1 mb-1'>
+                  <div className='w-full flex gap-2 items-start'>
+                    <div class='grow flex gap-1 items-center'>
                       <span>on</span>
                       <TriggerSelector
                         trigger={trigger()}
                         $trigger={$trigger}
                       />
                     </div>
-                    <div class='flex gap-1 items-center'>
-                      <span>do</span>
-                      <EffectTypeSelector
-                        type={effect().type}
-                        $type={$type}
-                      />
-                    </div>
-                    <ArgInput
+                    <SmallButton
+                      onClick={clearEffect}
+                      class=''
+                    >
+                      x
+                    </SmallButton>
+                  </div>
+                  <div class='flex gap-1 items-center'>
+                    <span>do</span>
+                    <EffectTypeSelector
                       type={effect().type}
-                      arg={effect().arg}
-                      $arg={(arg) => setArg(trigger(), effect().type, arg)}
-                      form={props.form}
-                      allowSeeds={props.allowSeeds}
+                      $type={$type}
                     />
                   </div>
-                  <SmallButton
-                    onClick={clearEffect}
-                    class=''
-                  >
-                    x
-                  </SmallButton>
+                  <ArgInput
+                    type={effect().type}
+                    arg={effect().arg}
+                    $arg={(arg) => setArg(trigger(), effect().type, arg)}
+                    form={props.form}
+                    allowSeeds={props.allowSeeds}
+                  />
                 </div>
+                {/* </div> */}
               </Show>
             );
           }}
@@ -200,7 +200,10 @@ function ArgInput(props) {
                 </Match>
                 <Match when={props.type === 'jump'}>
                   <div class='grow' />
-                  <span>to x:</span>
+                  <span>to</span>
+                  <PositionInput value={props.arg} $value={props.$arg} />
+                  {
+                    /* <span>to x:</span>
                   <input
                     type='number'
                     class='rounded-md pl-1'
@@ -223,7 +226,8 @@ function ArgInput(props) {
                       () => props.arg.y,
                       (n) => props.$arg(vec2(props.arg.x, n)),
                     ]}
-                  />
+                  /> */
+                  }
                 </Match>
                 <Match when={props.type === 'swap'}>
                   <PathInput
@@ -269,16 +273,6 @@ function ArgInput(props) {
                 </Match>
                 <Match when={props.type === 'move'}>
                   <FxMoveInput value={props.arg} $value={props.$arg} />
-                  {
-                    /* <FxTargetInput
-                    value={props.arg.target}
-                    $value={(t) => props.$arg('target', t)}
-                  />
-                  <FxLocationInput
-                    value={props.arg.to}
-                    $value={(t) => props.$arg('to', t)}
-                  /> */
-                  }
                 </Match>
               </Switch>
               <Show when={props.allowSeeds}>

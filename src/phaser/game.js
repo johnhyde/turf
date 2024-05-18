@@ -15,6 +15,7 @@ import { unwrap } from 'solid-js/store';
 import uniq from 'lodash/uniq';
 import { useState } from 'stores/state.jsx';
 import {
+  equalsV,
   jClone,
   near,
   pixelsToTiles,
@@ -40,14 +41,15 @@ import { Shade } from './shade.js';
 import { Preview } from './preview.js';
 import { Resizer } from './resizer.js';
 import { ButtonHint } from './buttonHint.js';
-import { TileIndicator } from './tileIndicator.js';
+import { TileIndicators } from './tileIndicators.js';
 
 import voidUrl from 'assets/sprites/void.png';
 
 let owner, setBounds, container;
 let gritController = new AbortController();
 var game, scene, cam, cursors, keys = {}, player, earth, flats, stand, preview;
-var formIndexMap, players = {}, shades = {};
+var shadeSelectCallback = null, posSelectCallback = null, posSelected = null;
+var players = {}, shades = {};
 window.shades = shades;
 
 function addGritListener(eventName, handler) {
@@ -255,6 +257,18 @@ function createShade(shade, id, turf) {
         sprite.input.cursor = 'auto';
       }
     });
+    shadeEffect(() => {
+      const red = 0xff0000;
+      if (state.editor.selectedShadeId === id) {
+        sprite.setSelected(red);
+      } else if (state.editor.selectedShadeIds[id]) {
+        const colors = state.editor.selectedShadeColors[id] || [];
+        const color = colors.length ? colors[colors.length - 1] : red;
+        sprite.setSelected(color);
+      } else {
+        sprite.setSelected();
+      }
+    });
     return dispose;
   });
   let textObj;
@@ -318,7 +332,11 @@ function createShade(shade, id, turf) {
     console.log('got click on shade', id, formId);
     lastClickedShadeId = id;
     if (state.editor.editing) {
-      if (state.editor.pointer) {
+      if (shadeSelectCallback) {
+        shadeSelectCallback(id);
+        shadeSelectCallback = null;
+        event.stopPropagation();
+      } else if (state.editor.pointer && !posSelectCallback) {
         state.selectShade(id);
         event.stopPropagation();
       }
@@ -496,6 +514,10 @@ export function startPhaser(_owner, _container) {
               }
               state.clearHuskToPlace();
             }
+          } else if (posSelectCallback) {
+            posSelectCallback(vec2(pos));
+            posSelected = pos;
+            // posSelectCallback = null;
           } else {
             if (state.editor.editing && state.editor.pointer) {
               if (gameObjects.length === 0 && !isInTurf(state.e, pos)) {
@@ -517,25 +539,42 @@ export function startPhaser(_owner, _container) {
             state.updateWallsAroundPos(pos, true);
             state.clearHuskToPlace();
           }
+          if (posSelected) {
+            posSelectCallback?.(null, true);
+            posSelectCallback = null;
+            posSelected = null;
+          }
         });
 
         this.input.on('pointermove', (pointer) => {
           if (pointer.isDown) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
-            mapEdit(pos);
-            const pastMoveThreshold =
-              pointer.getDistance() > 20 / window.devicePixelRatio;
-            if (lastClickedShadeId !== null && pastMoveThreshold) {
-              const pointerMode = state.editor.editing && state.editor.pointer;
-              const clickedOnGate =
-                lastClickedShadeId == state.e?.lunk?.shadeId;
-              const shouldMoveGate = state.selectedTab === state.tabs.TOWN &&
-                clickedOnGate;
-              if ((pointerMode || shouldMoveGate) && !state.huskToPlace) {
-                state.setHuskToPlace(lastClickedShadeId);
+            if (posSelectCallback) {
+              if (!equalsV(pos, posSelected)) {
+                console.log('setting pos on drag');
+                posSelectCallback(pos);
+                posSelected = pos;
               }
+            } else {
+              mapEdit(pos);
+              const pastMoveThreshold =
+                pointer.getDistance() > 20 / window.devicePixelRatio;
+              if (lastClickedShadeId !== null && pastMoveThreshold) {
+                const pointerMode = state.editor.editing &&
+                  state.editor.pointer;
+                const clickedOnGate =
+                  lastClickedShadeId == state.e?.lunk?.shadeId;
+                const shouldMoveGate = state.selectedTab === state.tabs.TOWN &&
+                  clickedOnGate;
+                if (
+                  (pointerMode || shouldMoveGate) && !state.huskToPlace &&
+                  !shadeSelectCallback && !posSelectCallback
+                ) {
+                  state.setHuskToPlace(lastClickedShadeId);
+                }
+              }
+              if (pastMoveThreshold) lastClickedShadeId = null;
             }
-            if (pastMoveThreshold) lastClickedShadeId = null;
           }
           if (preview) {
             preview.updatePointer(pointer);
@@ -753,7 +792,7 @@ export function startPhaser(_owner, _container) {
     window.stand = stand = scene.add.container();
     window.resizer = new Resizer(scene, turf.id);
     window.buttonHint = new ButtonHint(scene, turf.id);
-    window.tileIndicator = new TileIndicator(scene, turf.id);
+    window.tileIndicators = new TileIndicators(scene, turf.id);
     game.input.keyboard.preventDefault = false;
   }
 
@@ -824,4 +863,20 @@ export function startPhaser(_owner, _container) {
   function initShadePreview(turf) {
     preview = new Preview(scene, turf.id);
   }
+}
+
+export function requestShadeSelection(callback) {
+  shadeSelectCallback = callback;
+}
+
+export function clearShadeSelectionCallback(callback) {
+  if (shadeSelectCallback === callback) shadeSelectCallback = null;
+}
+
+export function requestPositionSelection(callback) {
+  posSelectCallback = callback;
+}
+
+export function clearPositionSelectionCallback(callback) {
+  if (posSelectCallback === callback) posSelectCallback = null;
 }

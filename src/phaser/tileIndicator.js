@@ -1,27 +1,31 @@
-import { batch, createEffect, untrack } from 'solid-js';
+import { batch, createEffect, createRoot, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state';
 import { getShade } from 'lib/turf';
 import { roundV } from 'lib/utils';
 
 export class TileIndicator extends Phaser.GameObjects.Container {
-  constructor(scene, turfId, strokeWidth = 4) {
+  constructor(scene, turfId, shadeIdOrPos, options = {}) {
     const state = useState();
     super(scene, 0, 0);
     this.s = state;
     this.turfId = turfId;
-    this.strokeWidth = strokeWidth;
+    this.shadeIdOrPos = shadeIdOrPos;
+    this.strokeWidth = options.strokeWidth ?? 4;
+    this.colors = options.colors ?? [options.color ?? 0xff0000];
+    this.style = options.style ?? 'rect';
 
     this.setDepth(this.offset.y + this.size.y + 20);
-    this.rects = [
-      new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
-      new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
-      new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
-      new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
-    ];
+    const newRect = () =>
+      new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0, 1);
+    this.rects = [newRect(), newRect(), newRect(), newRect()];
+    if (this.style === 'crosshair-rect') {
+      this.rects = [...this.rects, newRect(), newRect(), newRect(), newRect()];
+    }
     this.rects.forEach((r) => r.setOrigin(0, 0));
 
     this.updateShapes();
+    this.updateColors();
     this.add(this.rects);
     this.setupEffects();
     this.scene.add.existing(this);
@@ -36,17 +40,19 @@ export class TileIndicator extends Phaser.GameObjects.Container {
   get stroke() {
     return this.strokeWidth * this.scale;
   }
-  get shade() {
-    if (this.s.editor.selectedShadeId != null) {
-      const shade = getShade(this.t, this.s.editor.selectedShadeId);
-      if (shade) return shade;
-    }
+  get shadePos() {
+    const iop = this.shadeIdOrPos();
+    if (iop == null) return null;
+    const parts = iop.toString().split(',').map(Number);
+    if (parts.length >= 2) return vec2(parts[0], parts[1]);
+    const shade = getShade(this.t, parts[0]);
+    if (shade) return shade.pos;
     return null;
   }
   get offset() {
-    const shade = this.shade;
-    if (shade) {
-      return this.tileOffsetToOffset(shade.pos);
+    const pos = this.shadePos;
+    if (pos) {
+      return this.tileOffsetToOffset(pos);
     }
     return vec2();
   }
@@ -77,24 +83,68 @@ export class TileIndicator extends Phaser.GameObjects.Container {
     const offset = this.offset;
     const size = this.size;
     this.setPosition(offset.x, offset.y);
-    this.rects[0].setPosition(0, size.y - rectW);
-    this.rects[1].setPosition(size.x - rectW, 0);
-    this.rects[0].setSize(size.x, rectW);
-    this.rects[1].setSize(rectW, size.y);
-    this.rects[2].setSize(size.x, rectW);
-    this.rects[3].setSize(rectW, size.y);
+    if (this.style === 'rect') {
+      this.rects[0].setPosition(0, size.y - rectW);
+      this.rects[1].setPosition(size.x - rectW, 0);
+      this.rects[0].setSize(size.x, rectW);
+      this.rects[1].setSize(rectW, size.y);
+      this.rects[2].setSize(size.x, rectW);
+      this.rects[3].setSize(rectW, size.y);
+    } else if (this.style === 'crosshair-rect') {
+      this.rects[0].setPosition(size.x / 4, size.y);
+      this.rects[0].setSize(size.x / 2, rectW);
+      this.rects[1].setPosition(size.x, size.y / 4);
+      this.rects[1].setSize(rectW, size.y / 2);
+      this.rects[2].setPosition(size.x / 4, -rectW);
+      this.rects[2].setSize(size.x / 2, rectW);
+      this.rects[3].setPosition(-rectW, size.y / 4);
+      this.rects[3].setSize(rectW, size.y / 2);
+      // crosshairs
+      const crossLen = size.y / 4;
+      this.rects[4].setPosition((size.x - rectW) / 2, size.y + rectW / 2);
+      this.rects[4].setSize(rectW, crossLen);
+      this.rects[5].setPosition(size.x + rectW / 2, (size.y - rectW) / 2);
+      this.rects[5].setSize(crossLen, rectW);
+      this.rects[6].setPosition((size.x - rectW) / 2, -crossLen - rectW / 2);
+      this.rects[6].setSize(rectW, crossLen);
+      this.rects[7].setPosition(-crossLen - rectW / 2, (size.y - rectW) / 2);
+      this.rects[7].setSize(crossLen, rectW);
+    }
+  }
+
+  updateColors() {
+    this.rects.forEach((rect, i) =>
+      rect.setFillStyle(this.colors[i % this.colors.length])
+    );
   }
 
   setupEffects() {
-    createEffect(() => {
-      this.updateShapes();
+    createRoot((dispose) => {
+      this.dispose = dispose;
+      createEffect(() => {
+        this.updateShapes();
+      });
+      createEffect(() => {
+        if (this.t && state.editor.editing && this.shadePos) {
+          this.setVisible(true);
+        } else {
+          this.setVisible(false);
+        }
+      });
     });
-    createEffect(() => {
-      if (this.t && state.editor.editing && this.shade) {
-        this.setVisible(true);
-      } else {
-        this.setVisible(false);
-      }
-    });
+  }
+
+  changeColors(colors) {
+    colors = Array.isArray(colors) ? colors : [colors];
+    this.colors = colors;
+    // this.rects.forEach((rect) => rect.setFillStyle(color));
+    this.updateColors();
+  }
+
+  preDestroy(fromScene) {
+    if (this.dispose) {
+      this.dispose();
+    }
+    super.preDestroy(fromScene);
   }
 }

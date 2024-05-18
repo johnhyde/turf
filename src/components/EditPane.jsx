@@ -1,4 +1,4 @@
-import { createMemo, createSelector, onCleanup } from 'solid-js';
+import { batch, createMemo, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import { bind, isTextInputFocused } from 'lib/utils';
@@ -28,6 +28,7 @@ export default function EditPane() {
   function selectTool(tool) {
     state.selectForm(null);
     state.selectTool(tool);
+    if (tool == null) state.selectShade(null);
   }
   function selectForm(formId) {
     state.selectForm(formId);
@@ -55,7 +56,9 @@ export default function EditPane() {
         if (
           null != (state.editor.selectedTool ?? state.editor.selectedShadeId)
         ) {
-          selectTool(null);
+          batch(() => {
+            selectTool(null);
+          });
           if (buttons.point) buttons.point.focus();
           e.stopPropagation();
         }
