@@ -70,13 +70,15 @@ if [ -z "$WATCH_MODE" ]; then
 
     # Now, issue commands to the ship.
     # First, we must ensure the ship is on.
-    if ! [ -f $PIER/.http.ports ] ; then
-      $PIER/.run --no-tty&
-      while ! [ -f $PIER/.http.ports ] ; do
-        echo "Waiting for $PIER to boot before I can send instructions..."
-        sleep 1
-      done
-    fi
+    # Or: don't because then you end up with
+    # a running ship you have no access to
+    # if ! [ -f $PIER/.http.ports ] ; then
+    #   $PIER/.run --no-tty&
+    #   while ! [ -f $PIER/.http.ports ] ; do
+    #     echo "Waiting for $PIER to boot before I can send instructions..."
+    #     sleep 1
+    #   done
+    # fi
     port=$(cat $PIER/.http.ports | grep loopback | tr -s ' ' '\n' | head -n 1)
     # Now, the commands themselves:
     lensa 'hood' "+hood/new-desk %$DESK"

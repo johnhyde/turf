@@ -106,9 +106,9 @@
       :: for purposes of rotation, down is 0, right is π/2, up is π, left is 3π/2
       ?-  u.rot
         %down  os
-        %right  (pro-svec2 [y.os x.os] [-1 --1])
-        %up  (pro-svec2 os [--1 --1])
-        %left  (pro-svec2 [y.os x.os] [--1 -1])
+        %right  (pro-svec2 [y.os x.os] [--1 -1])
+        %up  (pro-svec2 os [-1 -1])
+        %left  (pro-svec2 [y.os x.os] [-1 --1])
       ==
     ?(%flip-x %flip-y)
       =/  os  (resolve-fx-offset ctx +.offset)
@@ -124,23 +124,33 @@
 ++  resolve-fx-dir
   |=  [=ctx dir=fx-dir]
   ^-  (unit ^dir)
-  ?+    -.dir
-      %-  (lift round-dir-8)
-      ?-  -.dir
-        %relative
-          (both `round.dir (resolve-fx-dir-8 ctx [%relative-8 [from to]:dir]))
-        %round
-          (both `round.dir (resolve-fx-dir-8 ctx dir.dir))
-      ==
+  ?-  -.dir
     %face
       ?~  target=(resolve-target ctx target.dir)
         ~
       ?:  ?=(%.n -.u.target)  ~
       `dir.p.u.target
+    %relative
+      :: trig???
+      =/  offset  (resolve-fx-offset ctx [%relative [from to]:dir])
+      ?:  =(*svec2 offset)  ~
+      :-  ~
+      =/  syns  [x=(syn:si x.offset) y=(syn:si y.offset)]
+      =/  abs  (abs-svec2 offset)
+      ?:  (lth x.abs y.abs)
+        ?:(y.syns %down %up)
+      ?:  (lth y.abs x.abs)
+        ?:(x.syns %right %left)
+      ?:  =(%ud round.dir)
+        ?:(y.syns %down %up)
+      ?:(x.syns %right %left)
     %rotate
       ?~  a=(resolve-fx-dir ctx a.dir)  ~
       ?~  b=(resolve-fx-dir ctx b.dir)  ~
       `(rotate-dir u.a u.b)
+    %round
+      %-  (lift round-dir-8)
+      (both `round.dir (resolve-fx-dir-8 ctx dir.dir))
     %flip-x
       ?~  dr=(resolve-fx-dir ctx dir.dir)  ~
       :-  ~

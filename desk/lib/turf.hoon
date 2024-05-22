@@ -16,8 +16,8 @@
         players.ephemera    (~(put by players.ephemera.turf) our (new-player mid-pos av))
         lunk.deed      `[0 %.n]
       ==
-    =.  turf  (fill-empty-space turf /grass)
     =.  turf  (add-shade turf [mid-pos /gate 0])
+    =.  turf  (fill-empty-space turf /grass)
     turf
   ++  default-skye
     ^-  skye
