@@ -180,7 +180,7 @@
   ^-  ^effect
   %.  jon
   %+  ol  effect-type
-  :~  list+(ar effect)
+  :~  list+(ot ~[serial+bo effects+(ar effect)])
       port+ni
       jump+svec2
       read+so

@@ -171,7 +171,7 @@
 +$  possible-effect  $@(effect-type effect)
 ++  effect-type  (tags effect)
 +$  effect
-  $%  [%list effects=(list effect)]
+  $%  [%list serial=? effects=(list effect)]
       ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
       [%port =portal-id]  :: port player to turf
       :: todo: migrate [%jump to] -> [%move %user %absolute to]

@@ -318,9 +318,7 @@
   |=  [a=dir b=dir]
   ^-  dir
   ::  should never need to round bc we're adding even numbers
-  %+  round-dir-8  %ud
-  %-  int-to-dir-8
-  (add (dir-8-to-int a) (dir-8-to-int b))
+  (round-dir-8 %ud (rotate-dir-8 a b))
 ++  dir-8-to-int
   |=  dir=dir-8
   ^-  @ud
@@ -577,8 +575,8 @@
   =/  form-eff  (~(get by effects.form.thing) trigger)
   =/  mpeff  (~(get by effects.thing) trigger)
   ?~  mpeff  form-eff
-  ?~  u.mpeff  form-eff
-  ?@  u.u.mpeff  form-eff
+  ?~  u.mpeff  ~
+  ?@  u.u.mpeff  ~
   `u.u.mpeff
 ++  get-effects-by-shade-id
   |=  [=turf =shade-id]

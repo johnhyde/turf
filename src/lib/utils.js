@@ -97,20 +97,119 @@ export function getDirFromVec(v) {
 }
 
 export function shiftVInDir(v, dir) {
+  return v.add(dir8ToVec(dir));
+}
+
+export function dir8ToVec(dir) {
   switch (dir) {
-    case dirs.DOWN: {
-      return v.add(vec2(0, 1));
+    case 'down':
+      return vec2(0, 1);
+    case 'dr':
+      return vec2(1, 1);
+    case 'right':
+      return vec2(1, 0);
+    case 'ur':
+      return vec2(1, -1);
+    case 'up':
+      return vec2(0, -1);
+    case 'ul':
+      return vec2(-1, -1);
+    case 'left':
+      return vec2(-1, 0);
+    case 'dl':
+    default:
+      return vec2(-1, 1);
+  }
+}
+
+function ud(v) {
+  return v.y > 0 ? 'down' : 'up';
+}
+
+function lr(v) {
+  return v.x > 0 ? 'right' : 'left';
+}
+
+export function vecToDir8(v) {
+  if (equalsV(vec2(), v)) return null;
+  const xAbs = Math.abs(v.x);
+  const yAbs = Math.abs(v.y);
+  const ratio = Math.min(xAbs / yAbs, yAbs / xAbs);
+  const diag = ratio > 0.4142135624; // tan(π/8)
+  const vert = yAbs >= xAbs;
+  if (diag) {
+    if (v.x > 0) {
+      return v.y > 0 ? 'dr' : 'ur';
+    } else {
+      return v.y > 0 ? 'dl' : 'ul';
     }
-    case dirs.RIGHT: {
-      return v.add(vec2(1, 0));
+  } else {
+    return vert ? ud(v) : lr(v);
+  }
+}
+
+export function vecToDir(v, round = 'ud') {
+  if (equalsV(vec2(), v)) return null;
+  const xAbs = Math.abs(v.x);
+  const yAbs = Math.abs(v.y);
+  const diag = xAbs === yAbs;
+  const vert = yAbs >= xAbs;
+  if (diag) {
+    return round === 'ud' ? ud(v) : lr(v);
+  } else {
+    return vert ? ud(v) : lr(v);
+  }
+}
+
+export function roundDir8(round, dir) {
+  if (round === 'ud') {
+    switch (dir) {
+      case 'ur':
+      case 'ul':
+        return 'up';
+      case 'dr':
+      case 'dl':
+        return 'down';
+      default:
+        return dir;
     }
-    case dirs.UP: {
-      return v.add(vec2(0, -1));
-    }
-    case dirs.LEFT: {
-      return v.add(vec2(-1, 0));
+  } else {
+    switch (dir) {
+      case 'dr':
+      case 'ur':
+        return 'right';
+      case 'dl':
+      case 'ul':
+        return 'left';
+      default:
+        return dir;
     }
   }
+}
+
+export function rotateDir8(a, b) {
+  return intToDir8(dir8ToInt(a) + dir8ToInt(b));
+}
+
+export function rotateDir(a, b) {
+  return roundDir8('ud', rotateDir8(a, b));
+}
+
+function dir8ToInt(dir) {
+  return {
+    down: 0,
+    dr: 1,
+    right: 2,
+    ur: 3,
+    up: 4,
+    ul: 5,
+    left: 6,
+    dl: 7,
+  }[dir] || 0;
+}
+
+function intToDir8(i) {
+  return 'down dr right ur up ul left dl'.split(' ')[i % 8];
 }
 
 export function uuidv4() {
@@ -445,11 +544,13 @@ export function bind(el, accessor) {
 export function bindNum(el, accessor) {
   const [v, set] = accessor();
   bind(el, () => [v, (s) => {
+    console.log('just got num');
     if (s === '') return;
     const n = Number(s);
     if (isNaN(n)) return;
     set(n);
   }]);
+  console.log('just bound');
 }
 
 export function autofocus(el, _) {

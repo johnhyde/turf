@@ -7,10 +7,15 @@
   ^-  [=roars:pond =goals:pond]
   ?+  -.effect  `~
     %list
-      :-  ~
-      %+  turn  effects.effect
-      |=  =^effect
-      apply-effect+[effect shade-id]
+      ?:  serial.effect
+        :-  ~
+        %+  turn  effects.effect
+        |=  =^effect
+        apply-effect+[effect shade-id]
+      %+  roll  effects.effect
+      |=  [=^effect =roars:pond =goals:pond]
+      =/  res  (apply-effect turf ship effect shade-id)
+      (weld roars roars.res)^(weld goals goals.res)
     %port
       :-  ~
       =/  portal  (~(gut by portals.deed.turf) portal-id.effect ~)
@@ -49,6 +54,13 @@
       (resolve-fx-offset ctx offset.loc)
     %absolute  `pos.loc
   ==
+++  resolve-target-pos
+  |=  [=ctx =target]
+  ^-  (unit svec2)
+  =/  utar  (resolve-target ctx target)  
+  %+  bind  utar
+  |=  tar=(each player shade)
+  [?:(?=(%.y -) pos.p pos.p)]:tar
 ++  resolve-target
   |=  [=ctx =target]
   =,  ctx
@@ -64,17 +76,6 @@
         ~
       `[%.n shade]
   ==
-++  resolve-target-pos
-  |=  [=ctx =target]
-  ^-  (unit svec2)
-  =/  utar  (resolve-target ctx target)  
-  %+  bind  utar
-  |=  tar=(each player shade)
-  [?:(?=(%.y -) pos.p pos.p)]:tar
-  :: ?-  -.target
-  ::   %.y  pos.p.target
-  ::   %.n  pos.p.target
-  :: ==
 ++  resolve-fx-offset
   |=  [=ctx offset=fx-offset]
   ^-  svec2
@@ -131,7 +132,6 @@
       ?:  ?=(%.n -.u.target)  ~
       `dir.p.u.target
     %relative
-      :: trig???
       =/  offset  (resolve-fx-offset ctx [%relative [from to]:dir])
       ?:  =(*svec2 offset)  ~
       :-  ~
@@ -144,13 +144,13 @@
       ?:  =(%ud round.dir)
         ?:(y.syns %down %up)
       ?:(x.syns %right %left)
+    %round
+      %-  (lift round-dir-8)
+      (both `round.dir (resolve-fx-dir-8 ctx dir.dir))
     %rotate
       ?~  a=(resolve-fx-dir ctx a.dir)  ~
       ?~  b=(resolve-fx-dir ctx b.dir)  ~
       `(rotate-dir u.a u.b)
-    %round
-      %-  (lift round-dir-8)
-      (both `round.dir (resolve-fx-dir-8 ctx dir.dir))
     %flip-x
       ?~  dr=(resolve-fx-dir ctx dir.dir)  ~
       :-  ~

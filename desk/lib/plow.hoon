@@ -549,11 +549,16 @@
     ?:  &(?=(%bump trigger) !(is-thing-collidable turf thing))
       ~
     `[shade-id u.effect]
-  %+  roll  effects
-  |=  [[=shade-id =effect] =roars:pond =goals:pond]
-  =/  res  (apply-effect turf ship effect shade-id)
-  :-  (weld roars roars.res)
-  (weld goals goals.res)
+  :-  ~
+  %+  turn  effects
+  |=  [=shade-id =effect]
+  ^-  goal:pond
+  [%apply-effect effect shade-id]
+  :: %+  roll  effects
+  :: |=  [[=shade-id =effect] =roars:pond =goals:pond]
+  :: =/  res  (apply-effect turf ship effect shade-id)
+  :: :-  (weld roars roars.res)
+  :: (weld goals goals.res)
 ++  pull-trigger-on-shade
   |=  [=turf =ship =trigger =shade-id]
   ^-  [=roars:pond =goals:pond]
@@ -563,8 +568,10 @@
   ?~  effect  `~
   ?:  &(?=(%bump trigger) !(is-thing-collidable turf u.thing))
     `~
-  =/  res  (apply-effect turf ship u.effect shade-id)
-  [roars.res goals.res]
+  :-  ~
+  [%apply-effect u.effect shade-id]~
+  :: =/  res  (apply-effect turf ship u.effect shade-id)
+  :: [roars.res goals.res]
 ++  path-to-turf-id
   |=  =path
   ^-  (unit turf-id)

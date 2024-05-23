@@ -219,14 +219,14 @@ export function FxOffsetInput(props) {
             <span>#1</span>
             <FxOffsetInput
               value={props.value.arg.a}
-              $value={(v) => $arg(v, a)}
+              $value={(v) => $arg(v, 'a')}
             />
           </Indent>
           <Indent>
             <span>#2</span>
             <FxOffsetInput
               value={props.value.arg.b}
-              $value={(v) => $arg(v, b)}
+              $value={(v) => $arg(v, 'b')}
             />
           </Indent>
         </Match>

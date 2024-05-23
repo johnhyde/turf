@@ -1,4 +1,5 @@
 import { batch, createSignal } from 'solid-js';
+import { reconcile } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import {
   autofocus,
@@ -17,6 +18,7 @@ import SmallButton from '@/SmallButton.jsx';
 import ItemButton from '@/ItemButton.jsx';
 import Select from '@/Select.jsx';
 import PathInput from '@/PathInput.jsx';
+import Radio from '@/Radio.jsx';
 import { FxMoveInput, PositionInput } from '@/FxInputs.jsx';
 
 // todo bump
@@ -29,7 +31,10 @@ const effectTypes = toPairs(
 function defaultArg(type, turf) {
   switch (type) {
     case 'list':
-      return [{ type: '', arg: null }];
+      return {
+        serial: false,
+        effects: [{ type: '', arg: null }],
+      };
     case 'port':
     case 'read':
       return '';
@@ -62,7 +67,7 @@ export default function EffectsEditor(props) {
   }
 
   function setArg(trigger, type, arg) {
-    props.$effects(trigger, { type, arg });
+    props.$effects(trigger, reconcile({ type, arg }));
   }
 
   return (
@@ -175,8 +180,11 @@ function ArgInput(props) {
   const notGarb = () => props.form?.type !== 'garb';
 
   function addListEffect() {
-    const list = props.arg.length ? props.arg : [];
-    props.$arg([...list, { type: '', arg: null }]);
+    const list = props.arg.effects.length ? props.arg.effects : [];
+    props.$arg({
+      ...props.arg,
+      effects: [...list, { type: '', arg: null }],
+    });
   }
 
   function updatePortal(portalId) {
@@ -204,22 +212,33 @@ function ArgInput(props) {
             <>
               <Switch>
                 <Match when={props.type === 'list'}>
-                  <For each={props.arg}>
+                  <Radio
+                    value={props.arg.serial}
+                    $value={(v) =>
+                      props.$arg({
+                        ...props.arg,
+                        serial: JSON.parse(v),
+                      })}
+                    items={[[true, 'Serial'], [false, 'Simultaneous']]}
+                    bg='border border-yellow-950'
+                    bgActive='border border-yellow-950 bg-yellow-600'
+                  />
+                  <For each={props.arg.effects}>
                     {(effect, i) => {
                       function $type(type) {
-                        const newList = [...props.arg];
+                        const newList = [...props.arg.effects];
                         newList[i()] = { type, arg: defaultArg(type, state.e) };
-                        props.$arg(newList);
+                        props.$arg({ ...props.arg, effects: newList });
                       }
                       function $arg(arg) {
-                        const newList = [...props.arg];
+                        const newList = [...props.arg.effects];
                         newList[i()] = { ...newList[i()], arg };
-                        props.$arg(newList);
+                        props.$arg({ ...props.arg, effects: newList });
                       }
                       function delEffect() {
-                        const newList = [...props.arg];
+                        const newList = [...props.arg.effects];
                         newList.splice(i(), 1);
-                        props.$arg(newList);
+                        props.$arg({ ...props.arg, effects: newList });
                       }
                       return (
                         <Indent>

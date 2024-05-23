@@ -23,6 +23,7 @@ import {
   jabBySpaces,
 } from 'lib/turf.js';
 import { jClone, turfIdToPath, vec2, vecToStr } from 'lib/utils.js';
+import { absolutizeTarget, resolveFxLoc } from 'lib/effects.js';
 import { getPool } from 'lib/pool.js';
 
 function getTurfGrid(turf) {
@@ -697,6 +698,13 @@ const filters = {
       grits: [],
     };
   },
+  'apply-effect': (turf, goal) => {
+    const res = applyEffect(turf, our, goal.arg.effect, goal.arg.shadeId);
+    return {
+      ...res,
+      grits: [],
+    };
+  },
 };
 
 function pullTriggerAtPos(turf, ship, trigger, pos) {
@@ -704,17 +712,27 @@ function pullTriggerAtPos(turf, ship, trigger, pos) {
   const effectsMap = things.map((
     thing,
   ) => [thing.id || pos, getEffectsByThing(thing)]);
-  let roars = [], goals = [];
+  // let roars = [], goals = [];
+  let goals = [];
+  // effectsMap.forEach(([shadeId, effects]) => {
+  //   const effect = effects.fullFx[trigger];
+  //   if (effect && effect.type) {
+  //     const res = applyEffect(turf, ship, effect, shadeId);
+  //     roars = [...roars, ...res.roars];
+  //     goals = [...goals, ...res.goals];
+  //   }
+  // });
   effectsMap.forEach(([shadeId, effects]) => {
     const effect = effects.fullFx[trigger];
     if (effect && effect.type) {
-      const res = applyEffect(turf, ship, effect, shadeId);
-      roars = [...roars, ...res.roars];
-      goals = [...goals, ...res.goals];
+      goals.push({
+        type: 'apply-effect',
+        arg: { effect, shadeId },
+      });
     }
   });
   return {
-    roars,
+    roars: [],
     goals,
   };
 }
@@ -725,19 +743,44 @@ function pullTriggerOnShade(turf, ship, trigger, shadeId) {
   if (!thing) return { roars, goals };
   const effects = getEffectsByThing(thing);
   const effect = effects.fullFx[trigger];
-  if (effect && effect.type) {
-    const res = applyEffect(turf, ship, effect, shadeId);
-    roars = [...roars, ...res.roars];
-    goals = [...goals, ...res.goals];
-  }
+  if (!effect || !effect.type) return { roars, goals };
+  //   const res = applyEffect(turf, ship, effect, shadeId);
+  //   roars = [...roars, ...res.roars];
+  //   goals = [...goals, ...res.goals];
+  // }
   return {
     roars,
-    goals,
+    goals: [{
+      type: 'apply-effect',
+      arg: { effect, shadeId },
+    }],
   };
 }
 
 function applyEffect(turf, ship, effect, shadeId) {
   switch (effect.type) {
+    case 'list': {
+      if (effect.arg.serial) {
+        return {
+          roars: [],
+          goals: effect.arg.effects.map((effect) => ({
+            type: 'apply-effect',
+            arg: {
+              effect,
+              shadeId,
+            },
+          })),
+        };
+      } else {
+        let roars = [], goals = [];
+        effect.arg.effects.forEach((effect) => {
+          const res = applyEffect(turf, ship, effect, shadeId);
+          roars = [...roars, ...res.roars];
+          goals = [...goals, ...res.goals];
+        });
+        return { roars, goals };
+      }
+    }
     case 'port': {
       const portal = turf.portals[effect.arg];
       if (!portal || !portal.at) return { roars: [], goals: [] };
@@ -780,6 +823,25 @@ function applyEffect(turf, ship, effect, shadeId) {
             variation: effect.arg,
           },
         }],
+      };
+    }
+    case 'move': {
+      const ctx = { turf, ship, shadeId };
+      const { target, to } = effect.arg;
+      const pos = resolveFxLoc(ctx, to);
+      if (!pos) return { roars: [], goals: [] };
+      const absTarget = absolutizeTarget(ctx, target);
+      const isPlayer = absTarget.type === 'player';
+      const goal = {
+        type: isPlayer ? 'tele' : 'move-shade',
+        arg: {
+          [isPlayer ? 'ship' : 'shadeId']: absTarget.arg,
+          pos,
+        },
+      };
+      return {
+        roars: [],
+        goals: [goal],
       };
     }
     default: {

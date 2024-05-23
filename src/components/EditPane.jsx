@@ -151,20 +151,22 @@ export default function EditPane() {
       <Show when={selectedShade()} keyed>
         {(shade) => <HuskEditor shade={shade} />}
       </Show>
-      <div class='h-full overflow-y-auto'>
-        <For each={types}>
-          {(type) => (
-            <FormSelect
-              forms={formsByType(type)}
-              select={(formId) =>
-                state.editor.selectedFormId === formId
-                  ? selectForm(null)
-                  : selectForm(formId)}
-              selectedId={state.editor.selectedFormId}
-            />
-          )}
-        </For>
-      </div>
+      <Show when={selectedShade() == null}>
+        <div class='overflow-y-auto'>
+          <For each={types}>
+            {(type) => (
+              <FormSelect
+                forms={formsByType(type)}
+                select={(formId) =>
+                  state.editor.selectedFormId === formId
+                    ? selectForm(null)
+                    : selectForm(formId)}
+                selectedId={state.editor.selectedFormId}
+              />
+            )}
+          </For>
+        </div>
+      </Show>
     </div>
   );
 }

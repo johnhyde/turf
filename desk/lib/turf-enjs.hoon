@@ -587,7 +587,7 @@
   ^-  json
   %+  labeled  -.eff
   ?-  -.eff
-    %list  a+(turn effects.eff effect-pairs)
+    %list  (fx-list +.eff)
     %port  (numb +.eff)
     %jump  (svec2 +.eff)
     %read  s+note.eff
@@ -646,6 +646,13 @@
   |=  [=trigger =^effect-type]
   ^-  (pair @t json)
   [trigger s+effect-type]
+++  fx-list
+  |=  [serial=? effects=(list ^effect)]
+  ^-  json
+  %-  pairs
+  :~  serial+b+serial
+      effects+a+(turn effects effect-pairs)
+  ==
 ++  fx-move
   |=  [tar=target to=^fx-loc]
   ^-  json

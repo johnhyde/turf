@@ -16,6 +16,7 @@ import FormInfo from '@/FormInfo.jsx';
 import ListItemPicker from '@/ListItemPicker.jsx';
 import ItemButton from '@/ItemButton.jsx';
 import EffectsEditor from '@/EffectsEditor.jsx';
+import leftCaret from 'assets/icons/left-caret.png';
 
 export default function HuskEditor(props) {
   const state = useState();
@@ -102,7 +103,15 @@ export default function HuskEditor(props) {
 
   return (
     <Show when={husk()}>
-      <div class='flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'>
+      <div class='flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700 grow overflow-y-auto'>
+        <div class='relative'>
+          <SmallButton
+            onClick={() => state.selectShade(null)}
+            class='absolute top-1.5 left-1.5 !p-0.5'
+          >
+            <img src={leftCaret} class='w-4 h-4' />
+          </SmallButton>
+        </div>
         <FormInfo formId={husk().formId} />
         <div class='my-2 border-t border-yellow-950'></div>
         <div class='mx-1'>
