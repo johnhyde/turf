@@ -69,7 +69,7 @@
           (add-shade-spec +.grit)
         %del-shade
           (frond 'shadeId' (numb +.grit))
-        %move-shade
+        ?(%move-shade %tele-shade)
           (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
         %cycle-shade
           (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
@@ -594,7 +594,7 @@
     %swap  (path +.eff)
     %seem  (numb +.eff)
     %vary  (numb +.eff)
-    %move  (fx-move +.eff)
+    ?(%move %tele)  (fx-move +.eff)
   ==
   :: %-  (labeled eff)
   :: ?-  -.eff
@@ -647,10 +647,15 @@
   ^-  (pair @t json)
   [trigger s+effect-type]
 ++  fx-list
-  |=  [serial=? effects=(list ^effect)]
+  |=  [serial=fx-serial effects=(list ^effect)]
   ^-  json
   %-  pairs
-  :~  serial+b+serial
+  :~  :-  %serial
+      ?-  serial
+        %.y  b+%.y
+        %.n  b+%.n
+        %atomic  s+'atomic'
+      ==
       effects+a+(turn effects effect-pairs)
   ==
 ++  fx-move

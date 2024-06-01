@@ -528,7 +528,7 @@ export function startPhaser(_owner, _container) {
           ) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             const oldPos = state.e?.cave?.[state.huskToPlace.shade]?.pos;
-            state.moveShade(state.huskToPlace.shade, pos);
+            state.teleShade(state.huskToPlace.shade, pos);
             if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
             state.updateWallsAroundPos(pos, true);
             state.clearHuskToPlace();

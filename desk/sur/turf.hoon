@@ -171,7 +171,7 @@
 +$  possible-effect  $@(effect-type effect)
 ++  effect-type  (tags effect)
 +$  effect
-  $%  [%list serial=? effects=(list effect)]
+  $%  [%list serial=fx-serial effects=(list effect)]
       ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
       [%port =portal-id]  :: port player to turf
       :: todo: migrate [%jump to] -> [%move %user %absolute to]
@@ -181,7 +181,9 @@
       [%seem var=@ud]  :: display item variation
       [%vary var=@ud]  :: set item variation
       [%move =target to=fx-loc]
+      [%tele =target to=fx-loc]
   ==
++$  fx-serial  ?(%.y %.n %atomic)
 +$  target
   $@  ?(%this %user)  absolute-target
 +$  absolute-target

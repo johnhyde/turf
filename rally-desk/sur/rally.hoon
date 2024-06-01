@@ -23,7 +23,7 @@
   $:  %0
       peers=clients
       noobs=clients  :: ships who have asked to join
-      filtered=(set ship)
+      filtered=ships
       admins=ships
       =access
       =visibility

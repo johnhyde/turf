@@ -7,15 +7,22 @@
   ^-  [=roars:pond =goals:pond]
   ?+  -.effect  `~
     %list
-      ?:  serial.effect
-        :-  ~
-        %+  turn  effects.effect
-        |=  =^effect
-        apply-effect+[effect shade-id]
-      %+  roll  effects.effect
-      |=  [=^effect =roars:pond =goals:pond]
-      =/  res  (apply-effect turf ship effect shade-id)
-      (weld roars roars.res)^(weld goals goals.res)
+      ?-  serial.effect
+        ?(%.y %atomic)
+          :-  ~
+          =/  goals
+            %+  turn  effects.effect
+            |=  =^effect
+            apply-effect+[effect shade-id]
+          ?:  =(%.y serial.effect)
+            goals
+          [%atomic 20 goals]~
+        %.n
+          %+  roll  effects.effect
+          |=  [=^effect =roars:pond =goals:pond]
+          =/  res  (apply-effect turf ship effect shade-id)
+          (weld roars roars.res)^(weld goals goals.res)
+      ==
     %port
       :-  ~
       =/  portal  (~(gut by portals.deed.turf) portal-id.effect ~)
@@ -28,16 +35,20 @@
       `[%set-shade-form-id shade-id with.effect]~
     %vary
       `[%set-shade-var shade-id var.effect]~
-    %move
+    ?(%move %tele)
       =/  ctx  [turf ship shade-id]
       =/  pos  (resolve-fx-loc ctx to.effect)
       ?~  pos  `~
       =/  target  (absolutize-target ctx target.effect)
       ?-  -.target
         %player
+          ?:  ?=(%move -.effect)
+            `[%move ship.target u.pos]~
           `[%tele ship.target u.pos]~
         %item
-          `[%move-shade shade-id.target u.pos]~
+          ?:  ?=(%move -.effect)
+            `[%move-shade shade-id.target u.pos]~
+          `[%tele-shade shade-id.target u.pos]~
       ==
     ::
   ==

@@ -2,9 +2,8 @@ import { onCleanup } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { usePhone } from 'stores/phone.jsx';
 import { isValidPatp } from 'urbit-ob';
-import { sendDM } from 'lib/api';
-import { input, normalizeId, isTextInputFocused } from 'lib/utils';
-import MediumButton from '@/MediumButton';
+import { sendDM } from 'lib/api.js';
+import { input, isTextInputFocused, normalizeId } from 'lib/utils.js';
 
 export default function ChatBar() {
   const state = useState();
@@ -52,7 +51,7 @@ export default function ChatBar() {
       console.log('chat ' + chatbox.value);
       sendChat(chatbox.value);
       chatbox.value = '';
-      chatbox.blur();
+      // chatbox.blur();
     }
   }
   function onKeyDown(e) {
@@ -90,16 +89,22 @@ export default function ChatBar() {
   onCleanup(() => document.removeEventListener('keydown', globalKeyHandler));
 
   return (
-    <div class="mt-1 flex text-sm overflow-y-hidden">
-        <textarea class="rounded-input w-full max-h-full resize-none border border-yellow-950"
-          ref={onChatBoxLoad} on:keydown={onKeyDown}
-          onInput={onInput}
-          use:input={{ onFocus: onInput, onBlur: onInput}}
-          placeholder='Press Space to chat'
-        ></textarea>
-        <button class="bg-yellow-700 border-yellow-950 border-2 rounded-md px-1.5 -py-2 ml-1 leading-none align-super font-bold text-xl" onClick={submit}>
-          ↑
-        </button>
+    <div class='mt-1 flex text-sm overflow-y-hidden'>
+      <textarea
+        class='rounded-input w-full max-h-full resize-none border border-yellow-950'
+        ref={onChatBoxLoad}
+        on:keydown={onKeyDown}
+        onInput={onInput}
+        use:input={{ onFocus: onInput, onBlur: onInput }}
+        placeholder='Press Space to chat'
+      >
+      </textarea>
+      <button
+        class='bg-yellow-700 border-yellow-950 border-2 rounded-md px-1.5 -py-2 ml-1 leading-none align-super font-bold text-xl'
+        onClick={submit}
+      >
+        ↑
+      </button>
     </div>
   );
 }

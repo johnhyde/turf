@@ -91,8 +91,16 @@
   =*  roars  roars:pond
   ^-  [roars grits:pond goals:pond]
   :: :-  ~
-  =-  [(weld pre-roars roars) (turn grits (lead *cur-grit-v:pond)) goals]
-  ^-  [=roars grits=cur-grits:pond =goals:pond]
+  =+  (filter-pond-goal-inner [bowl rock top] goal)
+  :+  (weld pre-roars roars)
+    (turn grits (lead *cur-grit-v:pond))
+  goals
+++  filter-pond-goal-inner
+  |=  [[=bowl:gall =rock:pond top=?] =goal:pond]
+  =*  roar  roar:pond
+  =*  roars  roars:pond
+  =/  ret  ,[=roars grits=cur-grits:pond =goals:pond]
+  ^-  ret
   :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   :: ~&  "filtering pond goal {<-.goal>}, top: {<top>}"
   =/  uturf  turf.rock
@@ -105,6 +113,25 @@
     ==
   =*  turf  u.uturf
   ?+  -.goal  `~[goal]~
+    %atomic
+      =;  res
+        ?~  res  ``~
+        :+  roars.u.res
+          grits.u.res
+        ?~  depth.goal
+          goals.u.res
+        [%atomic (dec depth.goal) goals.u.res]~
+      %+  roll  goals.goal
+      |=  [sub-goal=goal:pond res=$~(`*ret (unit ret))]
+      ?~  res  ~
+      =+  (filter-pond-goal-inner [bowl rock top] sub-goal)
+      ?:  =(``~ [roars grits goals])
+        :: throw out everything if anything fails
+        ~
+      :-  ~
+      :+  (weld roars.u.res roars)
+        (weld grits.u.res grits)
+      (weld goals.u.res goals)
     %add-shade
       :-  ~
       =/  form-type  (get-form-type turf form-id.goal)
@@ -135,19 +162,37 @@
           goals
         [[%set-lunk ~] goals]
       [~ [goal]~ goals]
-    %move-shade
-      :-  ~
+    ?(%move-shade %tele-shade)
       =/  shade  (~(gut by cave.plot.turf) shade-id.goal ~)
-      ?~  shade  `~
+      ?~  shade  ``~
       =/  form-type  (get-form-type turf form-id.shade)
-      ?~  form-type  `~
-      ?.  ?=(space-form-type u.form-type)  `~
+      ?~  form-type  ``~
+      ?.  ?=(space-form-type u.form-type)  ``~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
-      :-  [goal(pos pos)]~
-      ?.  ?=(%tile u.form-type)  ~
-      =/  space  (get-space spaces.plot.turf pos)
-      ?~  tile.space  ~
-      [%del-shade u.tile.space]~
+      ?:  =(pos pos.shade)  ``~
+      =/  move  ?=(%move-shade -.goal)
+      ?:  &(move (get-collidable turf pos))
+        ``~
+        :: =/  bump=[=roars =goals:pond]  (pull-trigger-at-pos turf ship.goal %bump pos)
+        :: [roars.bump ~ goals.bump]
+      =/  grits=cur-grits:pond  [goal(pos pos)]~
+      =/  =goals:pond
+        ?.  ?=(%tile u.form-type)  ~
+        =/  space  (get-space spaces.plot.turf pos)
+        ?~  tile.space  ~
+        [%del-shade u.tile.space]~
+      =/  leave=[roars goals:pond]
+        [~ ~]
+        :: ?.  move  [~ ~]
+        :: (pull-trigger-at-pos turf ship.goal %leave pos.shade)
+      =/  step=[roars goals:pond]
+        [~ ~]
+        :: ?.  move  [~ ~]
+        :: (pull-trigger-at-pos turf ship.goal %step pos)
+      :-  (weld -.leave -.step)
+      :-  grits
+      :(weld goals +.leave +.step)
+      
     %set-shade-effect
       =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
       ?~  shade-fx  ``~
@@ -389,23 +434,21 @@
       :-  [%portal-hark ?~(at.portal %rejected %discarded) is-link from.goal for.portal]~
       `[%del-portal from.goal loud=%.n]~
       ::
-        %send-chat
+    %send-chat
       ?.  =(src.bowl from.goal)  ``~
       ``[%chat from.goal now.bowl text.goal]~
-        %move
+    %move
       ?.  =(src.bowl ship.goal)  ``~
       =*  players  players.ephemera.turf
       =/  player  (~(get by players) ship.goal)
       ?~  player  ``~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
-      =/  player-colliding  (get-collidable turf pos.u.player)
-      =/  will-be-colliding  (get-collidable turf pos)
-      ?:  &(will-be-colliding !player-colliding)
+      ?:  =(pos pos.u.player)  ``~
+      ?:  (get-collidable turf pos)
         :: todo: get bump effects
-        =/  bump=[=roars =goals:pond]  (pull-trigger-at-pos turf ship.goal %bump pos.u.player)
+        =/  bump=[=roars =goals:pond]  (pull-trigger-at-pos turf ship.goal %bump pos)
         [roars.bump ~ goals.bump]
       ::  todo merge with identical code in %tele
-      ?:  =(pos pos.u.player)  ``~
       =/  leave=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %leave pos.u.player)
       =/  step=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %step pos)
       :-  (weld -.leave -.step)
@@ -417,8 +460,8 @@
       =/  player  (~(get by players) ship.goal)
       ?~  player  ``~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
-      ::  todo merge with identical code in %move
       ?:  =(pos pos.u.player)  ``~
+      ::  todo merge with identical code in %move
       =/  leave=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %leave pos.u.player)
       =/  step=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %step pos)
       :-  (weld -.leave -.step)

@@ -42,6 +42,7 @@
       [%add-shade add-shade-spec]
       [%del-shade =shade-id]
       [%move-shade =shade-id pos=svec2]
+      [%tele-shade =shade-id pos=svec2]
       [%cycle-shade =shade-id amt=@ud]
       [%set-shade-var =shade-id variation=@ud]
       [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
@@ -106,6 +107,7 @@
   ==
 +$  goal
   $%  cur-grit
+      [%atomic depth=$~(20 @) goals=(list goal)]
       [%call ships=(set ship) ~]
       [%send-chat from=ship text=cord]
       [%click =shade-id]
@@ -184,7 +186,7 @@
     %del-form  (del-form turf form-id.grit)
     %add-shade  (add-shade turf +>.grit)
     %del-shade  (del-shade turf +.grit)
-    %move-shade  (move-shade turf +.grit)
+    ?(%move-shade %tele-shade)  (move-shade turf +.grit)
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)

@@ -357,7 +357,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       if (top) depth = 0;
       if (depth > 20) return ret();
       const goal = goals[0];
-      const filtered = this.filterGoal(rock, goal, top);
+      const filtered = filterGoal(filters, rock, goal, top);
       wash($rock, filtered.grits, our, Date.now());
       const restGoals = [...filtered.goals, ...goals.slice(1)];
       depth += filtered.goals.length;
@@ -374,28 +374,27 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       }
       return goal;
     },
-
-    filterGoal(rock, goal, top = true) {
-      if (filters[goal.type]) {
-        const res = filters[goal.type](rock, goal, top);
-        if (res instanceof Array) {
-          return {
-            roars: [],
-            grits: res,
-            goals: [],
-          };
-        }
-        return {
-          roars: res.roars,
-          grits: res.grits,
-          goals: res.goals,
-        };
-      }
+  });
+}
+export function filterGoal(filters, rock, goal, top = true) {
+  if (filters[goal.type]) {
+    const res = filters[goal.type](rock, goal, top);
+    if (res instanceof Array) {
       return {
         roars: [],
-        grits: [goal],
+        grits: res,
         goals: [],
       };
-    },
-  });
+    }
+    return {
+      roars: res.roars,
+      grits: res.grits,
+      goals: res.goals,
+    };
+  }
+  return {
+    roars: [],
+    grits: [goal],
+    goals: [],
+  };
 }

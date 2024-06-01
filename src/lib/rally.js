@@ -1,5 +1,5 @@
 export class RallyList extends EventTarget {
-  constructor(urbit, path, dap=null, options={}) {
+  constructor(urbit, path, dap = null, options = {}) {
     super();
     this.urbit = urbit;
     this.dap = dap;
@@ -27,7 +27,7 @@ export class RallyList extends EventTarget {
       },
       quit: (data) => {
         this.dispatchEvent(new SubscriptionQuitEvent(this.path, data));
-      }
+      },
     });
     return this.promise;
   }
@@ -60,7 +60,7 @@ export class RallyList extends EventTarget {
 }
 
 export class RallyIncoming extends RallyList {
-  constructor(urbit, dap=null, options={}) {
+  constructor(urbit, dap = null, options = {}) {
     const path = '/0/feet/incoming' + (dap ? '/' + dap : '');
     super(urbit, path, dap, options);
   }
@@ -76,7 +76,7 @@ export class RallyIncoming extends RallyList {
 }
 
 export class RallyOutgoing extends RallyList {
-  constructor(urbit, dap=null, options={}) {
+  constructor(urbit, dap = null, options = {}) {
     const path = '/0/feet/outgoing' + (dap ? '/' + dap : '');
     super(urbit, path, dap, options);
   }
@@ -92,7 +92,7 @@ export class RallyOutgoing extends RallyList {
 }
 
 export class RallyActive extends RallyList {
-  constructor(urbit, dap=null, options={}) {
+  constructor(urbit, dap = null, options = {}) {
     const path = '/0/feet/active' + (dap ? '/' + dap : '');
     super(urbit, path, dap, options);
   }
@@ -108,7 +108,7 @@ export class RallyActive extends RallyList {
 }
 
 export class RallyPublics extends RallyList {
-  constructor(urbit, host, dap, options={}) {
+  constructor(urbit, host, dap, options = {}) {
     const path = `/0/crews/${host}/${dap}`;
     super(urbit, path, dap, options);
     this.host = host;
@@ -126,7 +126,11 @@ export class RallyPublics extends RallyList {
       } else {
         this.dests.forEach((dest) => {
           if (!this.crews[dest]) {
-            this.crews[dest] = new RallyCrewSub(this.urbit, stringToDest(dest), { app: this.app, dontEnter: true });
+            this.crews[dest] = new RallyCrewSub(
+              this.urbit,
+              stringToDest(dest),
+              { app: this.app, dontEnter: true },
+            );
           }
         });
       }
@@ -142,7 +146,7 @@ export class RallyPublics extends RallyList {
 const subStatuses = 'new | waiting | watching | kicked | closed'.split(' | ');
 
 export class RallyCrewSub extends EventTarget {
-  constructor(urbit, dest, options={}) {
+  constructor(urbit, dest, options = {}) {
     super();
     this.urbit = urbit;
     this.dest = dest;
@@ -182,14 +186,20 @@ export class RallyCrewSub extends EventTarget {
   }
 
   get activePeers() {
-    return Object.entries(this.crew.peers).filter(p => p[1].length).map(p => p[0])
+    return Object.entries(this.crew.peers).filter((p) => p[1].length).map((p) =>
+      p[0]
+    );
+  }
+
+  isAdmin(patp) {
+    return patp === this.host || this.crew?.admins.includes(this.our);
   }
 
   async init() {
     this.promise = this.urbit.subscribe({
       app: this.app,
       path: this.path,
-      event: update => this.handleUpdate(update),
+      event: (update) => this.handleUpdate(update),
       err: (err) => {
         this.setSubStatus('kicked');
         this.dispatchEvent(new SubscriptionErrorEvent(this.path, err));
@@ -197,7 +207,7 @@ export class RallyCrewSub extends EventTarget {
       quit: (data) => {
         this.setSubStatus('kicked');
         this.dispatchEvent(new SubscriptionQuitEvent(this.path, data));
-      }
+      },
     });
     await this.promise;
     this.setSubStatus('waiting');
@@ -207,7 +217,7 @@ export class RallyCrewSub extends EventTarget {
   handleUpdate(update) {
     const clientUpdateKinds = ['you-are', 'ejected'];
     if (clientUpdateKinds.includes(update.kind)) {
-      console.log('client update', update)
+      console.log('client update', update);
       this.dispatchEvent(new ClientUpdateEvent(update));
     } else {
       console.log('crew update', update);
@@ -268,7 +278,7 @@ export class RallyCrewSub extends EventTarget {
   invite(ships) {
     if (!Array.isArray(ships)) ships = [ships];
     return this.sendAction(
-      ships.map((ship) => ({ wave: { 'add-peer': { ship, uuids: [] } }}))
+      ships.map((ship) => ({ wave: { 'add-peer': { ship, uuids: [] } } })),
     );
   }
 
@@ -298,7 +308,11 @@ export class RallyCrewSub extends EventTarget {
         stirs,
       },
       onError: (e) => {
-        console.error('RallyCrew failed to send actions to crew at ' + this.path, stirs, e);
+        console.error(
+          'RallyCrew failed to send actions to crew at ' + this.path,
+          stirs,
+          e,
+        );
       },
     });
   }
@@ -307,7 +321,7 @@ export class RallyCrewSub extends EventTarget {
 const statuses = 'new | waiting | active | ejected'.split(' | ');
 
 export class RallyCrew extends RallyCrewSub {
-  constructor(urbit, dest, options={}) {
+  constructor(urbit, dest, options = {}) {
     super(urbit, dest, {
       ...options,
       waitToInit: true,
@@ -331,12 +345,18 @@ export class RallyCrew extends RallyCrewSub {
   }
 
   get active() {
-    return  (this.crew.peers?.[this.our] || []).includes(this.clientId);
+    return (this.crew.peers?.[this.our] || []).includes(this.clientId);
   }
 
-  get new() { return this.status === 'new'; }
-  get waiting() { return this.status === 'waiting'; }
-  get ejected() { return this.status === 'ejected'; }
+  get new() {
+    return this.status === 'new';
+  }
+  get waiting() {
+    return this.status === 'waiting';
+  }
+  get ejected() {
+    return this.status === 'ejected';
+  }
 
   handleUpdate(update) {
     if (update.kind === 'you-are') {
@@ -387,10 +407,18 @@ export class RallyCrew extends RallyCrewSub {
       },
     });
     if (this.options.leaveOtherClients) {
-      const clients = [...(this.crew?.peers?.[our] || []), ...(this.crew?.noobs?.[our] || [])]
-      clients.forEach(id => {
+      const clients = [
+        ...(this.crew?.peers?.[our] || []),
+        ...(this.crew?.noobs?.[our] || []),
+      ];
+      clients.forEach((id) => {
         if (id !== this.clientId) {
-          console.log('deleted clientId', id, 'not ours hopefully', this.clientId);
+          console.log(
+            'deleted clientId',
+            id,
+            'not ours hopefully',
+            this.clientId,
+          );
           this.delClient(id);
         }
       });
@@ -489,11 +517,14 @@ function leaveRally(urbit, dest, app = 'rally') {
     mark: 'rally-leave',
     json: { dest },
     onError: (e) => {
-      console.error('RallyCrew failed to fully leave crew at ' + destToString(dest), e);
+      console.error(
+        'RallyCrew failed to fully leave crew at ' + destToString(dest),
+        e,
+      );
     },
   });
 }
-  
+
 //
 // Helpers
 //
@@ -511,7 +542,7 @@ export function updateDestsList(dests, update) {
   }
 }
 
-export function updateCrew(crew, waves=[]) {
+export function updateCrew(crew, waves = []) {
   waves.forEach((wave) => washCrew(crew, wave));
 }
 
@@ -621,7 +652,7 @@ export function washCrew(crew, wave) {
     }
     case 'del-admin': {
       const shipSet = new Set(crew.admins);
-      wave.ships.forEach(ship => shipSet.delete(ship));
+      wave.ships.forEach((ship) => shipSet.delete(ship));
       crew.admins = Array.from(shipSet);
       break;
     }

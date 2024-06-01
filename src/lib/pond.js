@@ -24,7 +24,7 @@ import {
 } from 'lib/turf.js';
 import { jClone, turfIdToPath, vec2, vecToStr } from 'lib/utils.js';
 import { absolutizeTarget, resolveFxLoc } from 'lib/effects.js';
-import { getPool } from 'lib/pool.js';
+import { filterGoal, getPool } from 'lib/pool.js';
 
 function getTurfGrid(turf) {
   const grid = [];
@@ -254,6 +254,9 @@ const pondGrits = {
       } else return;
       shade.pos = pos;
     }
+  },
+  'tele-shade': (...args) => {
+    return pondGrits['move-shade'](...args);
   },
   'cycle-shade': (turf, arg) => {
     const { shadeId, amount } = arg;
@@ -522,6 +525,29 @@ const preFilters = {
 //   goals: Array<goal>, // what sub-goals does this trigger?
 // }
 const filters = {
+  'atomic': (turf, goal, top) => {
+    const { depth, goals: argGoals } = goal.arg;
+    let roars = [], grits = [], goals = [];
+    for (const goal of argGoals) {
+      const res = filterGoal(filters, turf, goal, top);
+      if (res.roars.length + res.grits.length + res.goals.length === 0) {
+        return [];
+      }
+      roars = [...roars, ...res.roars];
+      grits = [...grits, ...res.grits];
+      goals = [...goals, ...res.goals];
+    }
+    if (depth > 0) {
+      goals = [{
+        type: 'atomic',
+        arg: {
+          depth: depth - 1,
+          goals,
+        },
+      }];
+    }
+    return { roars, grits, goals };
+  },
   'add-shade': (turf, goal) => {
     const { pos, formId } = goal.arg;
     const formType = getForm(turf, formId)?.type;
@@ -543,6 +569,36 @@ const filters = {
     return [goal];
   },
   'move-shade': (turf, goal) => {
+    const { pos, shadeId } = goal.arg;
+    const shade = getShade(turf, shadeId);
+    const formType = getForm(turf, shade?.formId)?.type;
+    if (!isSpaceFormType(formType)) return [];
+    goal.arg.pos = clampToTurf(turf, pos);
+    if (goal.arg.pos.equals(shade.pos)) return [];
+
+    if (getCollision(turf, goal.arg.pos)) {
+      // const bump = pullTriggerAtPos(turf, ship, 'bump', newPos);
+      // return { ...bump, grits: [] };
+      return [];
+    }
+    const grits = [goal];
+    // const leave = pullTriggerAtPos(turf, ship, 'leave', shade.pos);
+    // const step = pullTriggerAtPos(turf, ship, 'step', goal.arg.pos);
+    // const roars = [...leave.roars, ...step.roars];
+    // const goals = [...leave.goals, ...step.goals];
+    const roars = [], goals = [];
+    if (formType === 'tile') {
+      const tileId = getTileId(turf, goal.arg.pos);
+      if (tileId != null) {
+        goals.unshift({
+          type: 'del-shade',
+          arg: { shadeId: tileId },
+        });
+      }
+    }
+    return { roars, grits, goals };
+  },
+  'tele-shade': (turf, goal) => {
     const { pos, shadeId } = goal.arg;
     const shade = getShade(turf, shadeId);
     const formType = getForm(turf, shade?.formId)?.type;
@@ -633,9 +689,10 @@ const filters = {
     const player = turf.players[ship];
     if (!player) return [];
     const newPos = clampToTurf(turf, pos);
-    const playerColliding = getCollision(turf, player.pos);
-    const willBeColliding = getCollision(turf, newPos);
-    if (willBeColliding && !playerColliding) return [];
+    if (getCollision(turf, newPos)) {
+      const bump = pullTriggerAtPos(turf, ship, 'bump', newPos);
+      return { ...bump, grits: [] };
+    }
     if (newPos.equals(player.pos)) return [];
     goal.arg.pos = newPos;
     const leave = pullTriggerAtPos(turf, ship, 'leave', player.pos);
@@ -760,16 +817,26 @@ function pullTriggerOnShade(turf, ship, trigger, shadeId) {
 function applyEffect(turf, ship, effect, shadeId) {
   switch (effect.type) {
     case 'list': {
-      if (effect.arg.serial) {
+      if (effect.arg.serial) { // true or 'atomic'
+        let goals = effect.arg.effects.map((effect) => ({
+          type: 'apply-effect',
+          arg: {
+            effect,
+            shadeId,
+          },
+        }));
+        if (effect.arg.serial === 'atomic') {
+          goals = [{
+            type: 'atomic',
+            arg: {
+              depth: 20,
+              goals,
+            },
+          }];
+        }
         return {
           roars: [],
-          goals: effect.arg.effects.map((effect) => ({
-            type: 'apply-effect',
-            arg: {
-              effect,
-              shadeId,
-            },
-          })),
+          goals,
         };
       } else {
         let roars = [], goals = [];
@@ -825,7 +892,8 @@ function applyEffect(turf, ship, effect, shadeId) {
         }],
       };
     }
-    case 'move': {
+    case 'move':
+    case 'tele': {
       const ctx = { turf, ship, shadeId };
       const { target, to } = effect.arg;
       const pos = resolveFxLoc(ctx, to);
@@ -833,7 +901,7 @@ function applyEffect(turf, ship, effect, shadeId) {
       const absTarget = absolutizeTarget(ctx, target);
       const isPlayer = absTarget.type === 'player';
       const goal = {
-        type: isPlayer ? 'tele' : 'move-shade',
+        type: isPlayer ? effect.type : `${effect.type}-shade`,
         arg: {
           [isPlayer ? 'ship' : 'shadeId']: absTarget.arg,
           pos,

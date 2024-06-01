@@ -2,6 +2,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  on,
   onCleanup,
   onMount,
 } from 'solid-js';
@@ -26,7 +27,7 @@ export default function CallInfo(props) {
     conns: {},
     connScreens: {},
     crew: {},
-    camera: true,
+    camera: false,
     mic: true,
     screen: false,
     videoBoxRatio: null,
@@ -112,19 +113,69 @@ export default function CallInfo(props) {
 
   let videoBox;
   onMount(() => {
-    navigator.mediaDevices
-      .getUserMedia({
-        video: { facingMode: 'user' },
-        audio: !dev,
-      })
-      .then((stream) => {
+    const controller = new AbortController();
+    async function getUserMedia() {
+      try {
+        await getMedia({
+          video: { facingMode: 'user' },
+          audio: !dev,
+          // audio: true,
+        });
+      } catch {
+        try {
+          await getMedia({
+            video: { facingMode: 'user' },
+            audio: false,
+          });
+        } catch {
+          try {
+            await getMedia({
+              video: false,
+              audio: true,
+            });
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      }
+    }
+    async function getMedia(config) {
+      const stream = await navigator.mediaDevices.getUserMedia(config);
+      setOurStream(stream);
+      window.str = stream;
+    }
+    function setOurStream(stream) {
+      if (ourStream()) {
+        ourStream().getTracks().forEach((t) => {
+          t.stop();
+          ourStream().removeTrack(t);
+          ourStream().dispatchEvent(
+            new MediaStreamTrackEvent('removetrack', {
+              track: t,
+            }),
+          );
+        });
+        stream.getTracks().forEach((t) => {
+          ourStream().addTrack(t);
+          ourStream().dispatchEvent(
+            new MediaStreamTrackEvent('addtrack', {
+              track: t,
+            }),
+          );
+        });
+        if (!store.camera) {
+          ourStream().getVideoTracks().forEach((t) => t.enabled = false);
+        }
+        if (!store.mic) {
+          ourStream().getAudioTracks().forEach((t) => t.enabled = false);
+        }
+      } else {
         $ourStream(stream);
-        window.str = stream;
-      })
-      .catch((error) => console.error(error));
+      }
+    }
     function vidResize() {
       $store('videoBoxRatio', videoBox.clientWidth / videoBox.clientHeight);
-      if (videoBox.clientHeight !== videoBox.scrollHeight) {
+      if (!popout() && videoBox.clientHeight !== videoBox.scrollHeight) {
         // counteract scrollbar width to avoid jittering between scrolling and not scrolling
         $store('videoBoxWidth', videoBox.clientWidth + 20);
       } else {
@@ -134,7 +185,11 @@ export default function CallInfo(props) {
       console.log('videoBoxWidth', videoBox.clientWidth);
     }
     new ResizeObserver(vidResize).observe(videoBox);
+    getUserMedia();
     vidResize();
+    navigator.mediaDevices.addEventListener('devicechange', getUserMedia, {
+      signal: controller.signal,
+    });
     onCleanup(() => {
       if (ourStream()) {
         ourStream().getTracks().forEach((t) => t.stop());
@@ -142,19 +197,20 @@ export default function CallInfo(props) {
       if (ourScreen()) {
         ourScreen().getTracks().forEach((t) => t.stop());
       }
+      controller.abort();
     });
   });
 
-  createEffect(() => {
+  createEffect(on(() => [ourStream(), store.camera], () => {
     if (ourStream()) {
       ourStream().getVideoTracks().forEach((t) => t.enabled = store.camera);
     }
-  });
-  createEffect(() => {
+  }));
+  createEffect(on(() => [ourStream(), store.mic], () => {
     if (ourStream()) {
       ourStream().getAudioTracks().forEach((t) => t.enabled = store.mic);
     }
-  });
+  }));
   createEffect(() => {
     if (ourScreen()) {
       if (!store.screen) {
@@ -203,6 +259,8 @@ export default function CallInfo(props) {
               screen={ourScreen()}
               videoStyle={videoStyle()}
               $screen={(...args) => $store('connScreens', ...args)}
+              admin={weAreAdmin()}
+              call={props.call}
             />
           );
         }}
@@ -341,6 +399,8 @@ function Conn(props) {
   const [theirStream, $theirStream] = createSignal();
   const [theirScreen, $theirScreen] = createSignal();
 
+  const patp = () => '~' + props.conn.peer;
+
   createEffect(() => {
     const controller = new AbortController();
     const sigOpts = { signal: controller.signal };
@@ -391,14 +451,34 @@ function Conn(props) {
       props.$screen(props.conn.uuid, undefined);
     });
   });
+  const streamTracks = {};
   createEffect(() => {
+    const controller = new AbortController();
+    const sigOpts = { signal: controller.signal };
     if (props.stream && props.conn) {
       props.stream.getTracks().forEach((track) => {
         try {
-          props.conn.addTrack(track, props.stream);
+          addTrack(track);
         } catch (e) {}
       });
+      props.stream.addEventListener('addtrack', ({ track }) => {
+        addTrack(track);
+      }, sigOpts);
+      props.stream.addEventListener('removetrack', ({ track }) => {
+        if (streamTracks[track.id]) {
+          props.conn.removeTrack(streamTracks[track.id]);
+          delete streamTracks[track.id];
+        }
+      }, sigOpts);
     }
+    function addTrack(track) {
+      const connTrack = props.conn.addTrack(track, props.stream);
+      streamTracks[track.id] = connTrack;
+    }
+    onCleanup(() => {
+      controller.abort();
+      // streamTracks = {};
+    });
   });
   createEffect(() => {
     if (props.conn?.uuid) {
@@ -448,13 +528,23 @@ function Conn(props) {
   return (
     <>
       <div style={props.videoStyle}>
-        <VideoSquare stream={theirStream()} label={'~' + props.conn.peer} />
+        <VideoSquare stream={theirStream()} label={'~' + props.conn.peer}>
+          {props.admin &&
+            (
+              <button
+                onClick={() => props.call.delPeer(patp())}
+                class='px-2 py-1'
+              >
+                Kick
+              </button>
+            )}
+        </VideoSquare>
       </div>
       <Show when={theirScreen()}>
         <div style={props.videoStyle}>
           <VideoSquare
             stream={theirScreen()}
-            label={'~' + props.conn.peer + "'s screen"}
+            label={patp() + "'s screen"}
           />
         </div>
       </Show>
@@ -463,15 +553,66 @@ function Conn(props) {
 }
 
 function VideoSquare(props) {
-  let video;
+  const [speaking, $speaking] = createSignal(false);
+  const [menuOpen, $menuOpen] = createSignal(false);
+  let video, analyze, analyzer, controller = new AbortController();
   createEffect(() => {
     if (props.stream) {
       video.srcObject = props.stream;
+      stopAnalyzing();
+      controller = new AbortController();
+      props.stream.addEventListener('addtrack', () => {
+        mediaAnalyze(props.stream);
+      }, { signal: controller.signal });
+      mediaAnalyze(props.stream);
+    } else {
+      stopAnalyzing();
     }
   });
 
+  function mediaAnalyze(stream) {
+    let frequencyData;
+    try {
+      analyze = true;
+      const audioCtx = new AudioContext();
+      analyzer = audioCtx.createAnalyser();
+      window.an = analyzer;
+      if (!stream.getAudioTracks().length) return;
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyzer);
+      analyzer.fftSize = 128;
+
+      frequencyData = new Uint8Array(analyzer.frequencyBinCount);
+      renderFrame();
+    } catch (e) {
+      console.log(e);
+    }
+    function renderFrame() {
+      analyzer.getByteFrequencyData(frequencyData);
+      const max = frequencyData.reduce((a, b) => Math.max(a, b), 0);
+      $speaking(max > 100);
+      // console.log('analyzing audio');
+      if (analyze) {
+        analyze = setTimeout(renderFrame, 100);
+      }
+    }
+  }
+
+  function stopAnalyzing() {
+    clearTimeout(analyze);
+    analyze = false;
+    controller.abort();
+  }
+
+  onCleanup(() => {
+    stopAnalyzing();
+  });
+
   return (
-    <div class='w-full h-full relative flex place-content-center bg-gray-800 text-white rounded-xl'>
+    <div
+      class={'w-full h-full relative flex place-content-center bg-gray-800 text-white rounded-xl border-2 border-transparent' +
+        ' ' + (speaking() ? 'bg-green-500' : '')}
+    >
       <video
         class='absolute top-0 left-0 w-full h-full rounded-xl'
         ref={video}
@@ -489,10 +630,26 @@ function VideoSquare(props) {
         </div>
       </Show>
       <Show when={props.label}>
-        <span class='absolute top-0 left-0 m-2 px-2 py-1 bg-gray-500 rounded-lg opacity-70 pointer-events-none'>
+        <span class='absolute top-0 left-0 m-2 px-2 py-1 bg-gray-500/70 rounded-lg'>
           {props.label}
         </span>
-        <span class='absolute top-0 left-0 m-2 px-2 py-1'>{props.label}</span>
+        {/* <span class='absolute top-0 left-0 m-2 px-2 py-1'>{props.label}</span> */}
+      </Show>
+      <Show when={props.children}>
+        <div class='absolute top-0 right-0 m-2 text-right'>
+          <button
+            onClick={() => $menuOpen((o) => !o)}
+            class={'px-2 -pt-1 pb-2 bg-gray-500/70 rounded-lg' + ' ' +
+              (menuOpen() ? 'rounded-b-none' : '')}
+          >
+            ...
+          </button>
+          <Show when={menuOpen()}>
+            <div class='bg-gray-500/70 rounded-lg rounded-tr-none'>
+              {props.children}
+            </div>
+          </Show>
+        </div>
       </Show>
       {
         /* <span class="absolute top-0 left-0 m-2 px-2 py-1 bg-gray-500 rounded-lg opacity-70 pointer-events-none"

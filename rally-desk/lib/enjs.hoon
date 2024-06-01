@@ -82,6 +82,7 @@
   :~  version+(numb -.kru)
       peers+(clients peers.kru)
       noobs+(clients noobs.kru)
+      filtered+(ships filtered.kru)
       admins+(ships admins.kru)
       access+(access access.kru)
       visibility+s+visibility.kru

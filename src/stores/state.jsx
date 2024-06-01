@@ -324,7 +324,7 @@ export function getState() {
       });
     },
     setPos(pos) {
-      this.sendPondWave('move', {
+      return this.sendPondWave('move', {
         ship: our,
         pos,
       });
@@ -387,8 +387,8 @@ export function getState() {
         shadeId: Number.parseInt(shadeId),
       });
     },
-    moveShade(shadeId, pos) {
-      this.sendPondWave('move-shade', {
+    teleShade(shadeId, pos) {
+      this.sendPondWave('tele-shade', {
         shadeId: Number.parseInt(shadeId),
         pos: vec2(pos),
       });

@@ -22,10 +22,10 @@ import Radio from '@/Radio.jsx';
 import { FxMoveInput, PositionInput } from '@/FxInputs.jsx';
 
 // todo bump
-const triggers = toPairs('step, leave, interact, click');
+const triggers = toPairs('step, leave, bump, interact, click');
 // todo: swap
 const effectTypes = toPairs(
-  'list  multiple, port  teleport, jump, read  show text, swap  replace item, seem  show variation, vary  change variation, move',
+  'list  multiple, port  teleport, jump, read  show text, swap  replace item, seem  show variation, vary  change variation, move, tele  move instantly',
 );
 
 function defaultArg(type, turf) {
@@ -46,6 +46,7 @@ function defaultArg(type, turf) {
     case 'vary':
       return 0;
     case 'move':
+    case 'tele':
       return {
         target: newFxTarget(),
         to: newFxLocation(),
@@ -219,7 +220,11 @@ function ArgInput(props) {
                         ...props.arg,
                         serial: JSON.parse(v),
                       })}
-                    items={[[true, 'Serial'], [false, 'Simultaneous']]}
+                    items={[
+                      [true, 'Serial'],
+                      [false, 'Simultaneous'],
+                      ['"atomic"', 'Atomic'], // because we're JSON.parse-ing (bc of bools)
+                    ]}
                     bg='border border-yellow-950'
                     bgActive='border border-yellow-950 bg-yellow-600'
                   />
@@ -357,7 +362,7 @@ function ArgInput(props) {
                     }}
                   />
                 </Match>
-                <Match when={props.type === 'move'}>
+                <Match when={props.type === 'move' || props.type === 'tele'}>
                   <FxMoveInput value={props.arg} $value={props.$arg} />
                 </Match>
               </Switch>

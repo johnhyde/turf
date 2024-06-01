@@ -38,6 +38,7 @@
       add-shade+add-shade-spec
       del-shade+(ot ~['shadeId'^ni])
       move-shade+(ot ~['shadeId'^ni pos+svec2])
+      tele-shade+(ot ~['shadeId'^ni pos+svec2])
       cycle-shade+(ot ~['shadeId'^ni amount+ni])
       set-shade-var+(ot ~['shadeId'^ni variation+ni])
       set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
@@ -180,7 +181,7 @@
   ^-  ^effect
   %.  jon
   %+  ol  effect-type
-  :~  list+(ot ~[serial+bo effects+(ar effect)])
+  :~  list+(ot ~[serial+fx-serial effects+(ar effect)])
       port+ni
       jump+svec2
       read+so
@@ -188,6 +189,7 @@
       seem+ni
       vary+ni
       move+fx-move
+      tele+fx-move
   ==
 ++  port-offer
   |=  jon=json
@@ -205,6 +207,12 @@
   :: |=  jon=json
   :: ^-  [=target loc=^fx-loc]
   :: [%this *^fx-loc]
+++  fx-serial
+  |=  jon=json
+  ^-  ^fx-serial
+  ?:  ?=([%b ?] jon)
+    +.jon
+  %atomic
 ++  fx-target
   |=  jon=json
   ?:  ?=([%s *] jon)

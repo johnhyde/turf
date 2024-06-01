@@ -21,6 +21,7 @@ import {
   vec2,
 } from 'lib/utils.js';
 import {
+  getCollision,
   getSpriteFps,
   getThingsAtPos,
   getVariationWithDir,
@@ -550,7 +551,14 @@ export class Player extends Phaser.GameObjects.Container {
             this.turning = false;
           }, 50);
         }
-        if (tilePosChanged && (!this.turning || justMoved)) {
+        const playerColliding = getCollision(this.t, this.tilePos);
+        const willBeColliding = getCollision(this.t, newTilePos);
+        const willBump = willBeColliding && !playerColliding;
+        if (!willBump) this.bumped = false;
+        if (tilePosChanged && !this.bumped && (!this.turning || justMoved)) {
+          if (willBump) {
+            this.bumped = true;
+          }
           this.s.setPos(newTilePos);
           justMoved = true;
         }
