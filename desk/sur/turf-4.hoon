@@ -1,4 +1,4 @@
-/-  turf-4
+/-  turf-3
 :: util from rally-desk
 /+  vita-client, *util
 |%
@@ -130,7 +130,7 @@
 +$  husk-bits
   $:  offset=svec2  :: added to form offset
       collidable=(unit flug)  :: use form collidable if null
-      effects=(unit fx)  :: override form effects
+      effects=ufx  :: override form effects and implement form seeds
   ==
 +$  form
   $+  form
@@ -142,6 +142,7 @@
 +$  form-bits
   $:  collidable=flug
       effects=fx
+      seeds=sfx
   ==
 +$  form-type  ?(%tile %wall %item %garb)
 +$  space-form-type  ?(%tile %wall %item)
@@ -162,67 +163,37 @@
       frames=(list png)
   ==
 +$  anim-type  ?(%loop %once %pong %rand)
-+$  fx  (list [root=root-condition =effect])
-++  trigger-type  (tags trigger)
-+$  trigger
-  $%  [%move start=svec2 end=svec2 collide=? smooth=?]
-      [%bump ~]
-      [%interact ~]
-      [%click ~]
-      [%message msg=@t]
-  ==
-+$  trigger-condition
-  $%  [%move relation=movement-relation collide=(unit ?) smooth=(unit ?)]
-      [%bump ~]
-      [%interact ~]
-      [%click ~]
-      [%message msg=@t]
-  ==
-+$  movement-relation
-  $%  [%enter radius=@ud]
-      [%leave radius=@ud]
-      [%within pos=?(%start %end %both) radius=@ud]
-  ==
-+$  root-condition
-  $%  [%or roots=(list root-condition)]
-      [%and root=root-condition con=condition]
-      [%trigger trigger=trigger-condition]
-+$  condition
-  $%  [%and cons=(list condition)]
-      [%or cons=(list condition)]
-      [%not con=condition]
-      [%eq cons=(list condition)]
-      [%initiator ?(%item %player)]
-      [%trigger trigger=trigger-condition]
-  ==
++$  fx   (map trigger effect)
++$  sfx  (map trigger effect-type)
++$  pfx  (map trigger possible-effect)
++$  ufx  (map trigger (unit possible-effect))
++$  trigger  ?(%step %leave %bump %interact %click)
++$  possible-effect  $@(effect-type effect)
 ++  effect-type  (tags effect)
 +$  effect
   $%  [%list serial=fx-serial effects=(list effect)]
       ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
-      [%noop ~]
       [%port =portal-id]  :: port player to turf
-      [%read note=@t action=(list [@t effect])]  :: show dialog box
+      :: todo: migrate [%jump to] -> [%move %user %absolute to]
+      [%jump to=svec2]  :: move player in turf
+      [%read note=@t]  :: show dialog box
       [%swap with=form-id]  :: for opening/closing doors
       [%seem var=@ud]  :: display item variation
       [%vary var=@ud]  :: set item variation
-      [%move =target to=fx-loc collide=? smooth=?]
-      [%message target=item-target msg=@t]  :: what does message a player mean? goofy
+      [%move =target to=fx-loc]
+      [%tele =target to=fx-loc]
   ==
-+$  fx-serial  ?(%serial %simult %atomic)
++$  fx-serial  ?(%.y %.n %atomic)
 +$  target
-  $@  ?(%this %user %initiator)  absolute-target
+  $@  ?(%this %user)  absolute-target
 +$  absolute-target
   $%  [%item =shade-id]
       [%player =ship]
       :: [%ref ref-id=@ud]  :: 
   ==
-+$  item-target
-  $@  ?(%this %initiator)
-  [%item =shade-id]
 +$  fx-loc
   $%  [%target =target]
       [%offset offset=fx-offset loc=fx-loc]
-      [%movement ?(%start %end)]
       :: [%mean locs=(list fx-loc)]
       [%absolute pos=svec2]
   ==

@@ -1,5 +1,5 @@
 /-  *turf
-/-  pold=pond-4
+/-  pold=pond-3
 /+  *turf
 =<
 |%
@@ -17,7 +17,7 @@
 ++  wash  wash-grit
 --
 |%
-+$  rock  $+  pond-rock  [%5 =stir-ids turf=(unit turf)]
++$  rock  $+  pond-rock  [%4 =stir-ids turf=(unit turf)]
 +$  rock-v  _-:*rock
 +$  vock
   :: $%  [%future ~]
@@ -41,7 +41,8 @@
       [%del-form =form-id]
       [%add-shade add-shade-spec]
       [%del-shade =shade-id]
-      [%move-shade =shade-id pos=svec2 collide=? smooth=?]
+      [%move-shade =shade-id pos=svec2]
+      [%tele-shade =shade-id pos=svec2]
       [%cycle-shade =shade-id amt=@ud]
       [%set-shade-var =shade-id variation=@ud]
       [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
@@ -61,7 +62,8 @@
       [%portal-confirmed from=portal-id at=portal-id]
       ::
       [%chat =chat]
-      [%move =ship pos=svec2 collide=? smooth=?]
+      [%move =ship pos=svec2]
+      [%tele =ship pos=svec2]
       [%face =ship =dir]
       [%ping-player =ship by=ship]
       [%set-avatar =ship =avatar]
