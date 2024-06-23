@@ -1,4 +1,4 @@
-/-  turf-4
+/-  told=turf-4
 :: util from rally-desk
 /+  vita-client, *util
 |%
@@ -130,7 +130,7 @@
 +$  husk-bits
   $:  offset=svec2  :: added to form offset
       collidable=(unit flug)  :: use form collidable if null
-      effects=(unit fx)  :: override form effects
+      fx=(unit fx)  :: override form effects
   ==
 +$  form
   $+  form
@@ -141,7 +141,7 @@
   ==
 +$  form-bits
   $:  collidable=flug
-      effects=fx
+      =fx
   ==
 +$  form-type  ?(%tile %wall %item %garb)
 +$  space-form-type  ?(%tile %wall %item)
@@ -162,7 +162,20 @@
       frames=(list png)
   ==
 +$  anim-type  ?(%loop %once %pong %rand)
-+$  fx  (list [root=root-condition =effect])
++$  fx  (list reflex)
++$  reflex  [root=root-condition =effect]
++$  root-condition
+  $%  [%or roots=(list root-condition)]
+      [%and root=root-condition cons=(list condition)]
+      [%trigger trigger=trigger-condition]
++$  condition
+  $%  [%and cons=(list condition)]
+      [%or cons=(list condition)]
+      [%not con=condition]
+      [%eq cons=(list condition)]
+      [%initiator ?(%item %player)]
+      [%trigger trigger=trigger-condition]
+  ==
 ++  trigger-type  (tags trigger)
 +$  trigger
   $%  [%move start=svec2 end=svec2 collide=? smooth=?]
@@ -182,18 +195,6 @@
   $%  [%enter radius=@ud]
       [%leave radius=@ud]
       [%within pos=?(%start %end %both) radius=@ud]
-  ==
-+$  root-condition
-  $%  [%or roots=(list root-condition)]
-      [%and root=root-condition con=condition]
-      [%trigger trigger=trigger-condition]
-+$  condition
-  $%  [%and cons=(list condition)]
-      [%or cons=(list condition)]
-      [%not con=condition]
-      [%eq cons=(list condition)]
-      [%initiator ?(%item %player)]
-      [%trigger trigger=trigger-condition]
   ==
 ++  effect-type  (tags effect)
 +$  effect
@@ -314,26 +315,61 @@
     %del-form  (~(del by sky) form-id.grit)
   ==
 ++  uvtr
-  |=  vtr=avatar:turf-3
+  |=  vtr=avatar:told
   ^-  avatar
   `vtr(things (turn things.vtr utng), thing.body (utng thing.body.vtr))
 ++  utng
-  |=  tng=thing:turf-3
+  |=  tng=thing:told
   ^-  thing
-  tng(form (ufrm form.tng))
+  :-  (uhsk -.tng)
+  (ufrm form.tng)
+++  uhsk
+  |=  hsk=husk:told
+  ^-  husk
+  hsk(effects (uufx effects))
 ++  ufrm
-  |=  frm=form:turf-3
+  |=  frm=form:told
   ^-  form
-  frm(variations (turn variations.frm (curr uluk offset.frm)), |3 |4.frm)
-++  uluk
-  |=  [luk=luuk:turf-3 offset=svec2]
-  ^-  luuk
-  ?~  luk  ~
-  :-  ~
-  :^  deep.u.luk  offset  ~  (uspr sprite.u.luk)
-++  uspr
-  |=  spr=sprite:turf-3
-  ^-  sprite
-  ?@  spr  spr
-  :+  -.spr  ~  +.spr
+  frm(|4 (u-fx effects.frm))
+++  uufx
+  |=  [=ufx:told]
+  ^-  (unit fx)
+  %+  murn  ~(tap by ufx)
+  |=  [=trigger:told upe=(unit possible-effect:told)]
+  ?~  upe  ~
+  ?@  u.upe  ~
+  `(trigger-effect-to-reflex trigger u.upe)
+++  u-fx
+  |=  [fax=fx:told]
+  ^-  fx
+  (turn ~(tap by fx) trigger-effect-to-reflex)
+++  trigger-effect-to-reflex
+  |=  [=trigger:told =effect:told]
+  ^-  reflex
+  :-  [%trigger (old-trigger-to-trigger-condition trigger)]
+  (ueff effect)
+++  old-trigger-to-trigger-condition
+  |=  trg=trigger:told
+  ^-  trigger-condition
+  ?+  trg  [trg ~]
+    %step  [%move]
+    %leave  
+  ==
+++  ueff
+  |=  eff=effect:told
+  ^-  effect
+  ?+  -.eff  eff
+    %list  [%list (usrl serial.eff) (turn effects.eff ueff)]
+    %jump  [%move %user absolute+to.eff %.n %.n]
+    %read  [%read note.eff ~]
+    %move  [%move target.eff to.eff %.y %.y]
+    %tele  [%move target.eff to.eff %.n %.n]
+  ==
+++  usrl
+  |=  srl=serial:told
+  ^-  serial
+  ?+  srl  srl
+    %.y  %serial
+    %.n  %simult
+  ==
 --

@@ -44,8 +44,11 @@
       [%move-shade =shade-id pos=svec2 collide=? smooth=?]
       [%cycle-shade =shade-id amt=@ud]
       [%set-shade-var =shade-id variation=@ud]
-      [%set-shade-effect =shade-id =trigger effect=(unit possible-effect)]
-      [%reset-shade-effects =shade-id]
+      [%set-shade-fx =shade-id fx=(unit fx)]
+      [%add-shade-reflex =shade-id =reflex]
+      [%del-shade-reflex =shade-id index=@ud]
+      [%set-shade-reflex =shade-id index=@ud =reflex]
+      [%set-shade-effect =shade-id =trigger effect=(unit effect)]
       [%set-shade-collidable =shade-id collidable=(unit ?)]
       [%set-shade-form-id =shade-id =form-id]
       [%set-lunk lunk=(unit lunk)]
@@ -187,8 +190,10 @@
     ?(%move-shade %tele-shade)  (move-shade turf +.grit)
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
-    %set-shade-effect  (set-shade-effect turf +.grit)
-    %reset-shade-effects  (reset-shade-effects turf +.grit)
+    %set-shade-fx  (set-shade-fx turf +.grit)
+    %add-shade-reflex  (add-shade-reflex  +.grit)
+    %del-shade-reflex  (del-shade-reflex  +.grit)
+    %set-shade-reflex  (set-shade-reflex  +.grit)    
     %set-shade-collidable  (set-shade-collidable turf +.grit)
     %set-shade-form-id  (set-shade-form-id turf +.grit)
     ::
@@ -371,19 +376,20 @@
       grit(turf (turf-to-next turf.grit))
     %add-form
       grit(form (ufrm form.grit))
-    %add-husk  [%add-shade +.grit]
-    %cycle-husk
-      ?^  husk-id.grit  noop+~
-      [%cycle-shade +.grit]
-    %set-husk-var
-      ?^  husk-id.grit  noop+~
-      [%set-shade-var +.grit]
-    %set-husk-effect
-      ?^  husk-id.grit  noop+~
-      [%set-shade-effect +.grit]
-    %set-husk-collidable
-      ?^  husk-id.grit  noop+~
-      [%set-shade-collidable +.grit]
+    %set-shade-effect
+      =|  index=@ud
+      |-  
+      =/  del
+        ?~  index  [%noop ~]
+        [%del-shade-reflex shade-id.grit u.index]
+      ?~  effect.grit  del
+      ?@  u.effect.grit  del
+      =/  =reflex  (trigger-effect-to-reflex [trigger u.effect]:grit)
+      ?~  index
+        [%add-shade-reflex shade-id.grit reflex]
+      [%set-shade-reflex shade-id.grit u.index reflex]
+    %reset-shade-effects
+      [%set-shade-fx shade-id.grit ~]
     %set-avatar
       grit(avatar (uvtr avatar.grit))
     %add-port-req
