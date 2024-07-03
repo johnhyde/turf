@@ -395,7 +395,8 @@ const pondGrits = {
     const { ship, from } = arg;
     turf.portOffers[ship] = from;
   },
-  'del-port-offer': (turf, ship) => {
+  'del-port-offer': (turf, arg) => {
+    const { ship } = arg;
     delete turf.portOffers[ship];
   },
   'add-port-req': (turf, arg) => {
@@ -404,7 +405,8 @@ const pondGrits = {
       turf.portReqs[ship] = { from, avatar };
     }
   },
-  'del-port-req': (turf, ship) => {
+  'del-port-req': (turf, arg) => {
+    const { ship } = arg;
     delete turf.portReqs[ship];
   },
   'add-port-rec': (turf, arg) => {
@@ -526,7 +528,7 @@ const preFilters = {
 // }
 const filters = {
   'atomic': (turf, goal, top) => {
-    const { depth, goals: argGoals } = goal.arg;
+    const { goals: argGoals } = goal.arg;
     let roars = [], grits = [], goals = [];
     for (const goal of argGoals) {
       const res = filterGoal(filters, turf, goal, top);
@@ -537,15 +539,15 @@ const filters = {
       grits = [...grits, ...res.grits];
       goals = [...goals, ...res.goals];
     }
-    if (depth > 0) {
-      goals = [{
-        type: 'atomic',
-        arg: {
-          depth: depth - 1,
-          goals,
-        },
-      }];
-    }
+    // if (depth > 0) {
+    //   goals = [{
+    //     type: 'atomic',
+    //     arg: {
+    //       depth: depth - 1,
+    //       goals,
+    //     },
+    //   }];
+    // }
     return { roars, grits, goals };
   },
   'add-shade': (turf, goal) => {
@@ -829,7 +831,7 @@ function applyEffect(turf, ship, effect, shadeId) {
           goals = [{
             type: 'atomic',
             arg: {
-              depth: 20,
+              // depth: 20,
               goals,
             },
           }];

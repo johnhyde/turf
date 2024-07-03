@@ -395,6 +395,10 @@
   |=  =path
   (crip (zing (join "-" (turn path trip))))
 ++  welk  (cury cat 3)
+++  numbt
+  |=  a=@u
+  ^-  @t
+  (crip (a-co:co a))
 ++  murp
   |*  [a=(map) b=$-((pair) (unit (pair)))]
   %-  malt
@@ -418,18 +422,18 @@
   =/  form  (get-form turf form-id)
   ?~  form  ~
   `type.u.form
-++  get-thing-by-shade-id
+++  get-comp-by-shade-id
   |=  [=turf =shade-id]
-  ^-  (unit thing)
+  ^-  (unit comp)
   =/  shade  (~(get by cave.plot.turf) shade-id)
   ?~  shade  ~
-  (get-thing-by-shade turf u.shade)
-++  get-thing-by-shade
-  |=  [=turf =shade]
-  ^-  (unit thing)
+  (get-comp-by-shade turf shade-id u.shade)
+++  get-comp-by-shade
+  |=  [=turf =shade-id =shade]
+  ^-  (unit comp)
   =/  form  (get-form turf form-id.shade)
   ?~  form  ~
-  `[+.shade u.form]
+  `[shade-id shade u.form]
 ++  jab-by-spaces
   |=  [=turf pos=svec2 fun=$-(space space)]
   ^-  ^turf
@@ -476,46 +480,36 @@
     (fun shade u.form)
   turf
 ::
-++  shade-is-lunk
-  |=  [=turf =shade-id]
-  ^-  ?
-  =*  lunk  lunk.deed.turf
-  ?~  lunk  %.n
-  =(shade-id.u.lunk shade-id)
 ++  portal-is-lunk
-  |=  [=turf p=$@(portal-id portal)]
+  |=  [=turf =portal-id]
   ^-  ?
-  =/  portal
-    ?^  p  p
-    (~(gut by portals.deed.turf) p ~)
-  ?~  portal  %.n
-  ?~  shade-id.portal  %.n
-  (shade-is-lunk turf u.shade-id.portal)
-++  lunk-is-approved
-  |=  =turf
-  ^-  ?
-  =*  lunk  lunk.deed.turf
-  ?~  lunk  %.n
-  approved.u.lunk
+  =(`portal-id lunk.deed.turf)
 ++  portal-is-dink
   |=  [=turf =portal-id]
   ^-  ?
   (~(has by dinks.deed.turf) portal-id)
-++  dink-is-approved
-  |=  [=turf =portal-id]
-  (~(gut by dinks.deed.turf) portal-id %.n)
-++  get-lunk-pos
+++  get-gate-pos
   |=  =turf
   ^-  (unit svec2)
-  =*  lunk  lunk.deed.turf
-  ?~  lunk  ~
-  =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk ~)
+  =*  gate  gate.deed.turf
+  ?~  gate  ~
+  =/  shade  (~(gut by cave.plot.turf) u.gate ~)
   ?~  shade  ~
+  `pos.shade
+++  get-portal-outlet-pos
+  |=  [=turf =portal-id]
+  ^-  (unit svec2)
+  =/  portal  (~(gut by portals.deed.turf) portal-id ~)
+  ?~  portal  ~
+  ?~  outlet.portal
+    `(get-entry-pos turf)
+  =/  shade  (~(gut by cave.plot.turf) u.outlet.portal ~)
+  ?~  shade  `(get-entry-pos turf)
   `pos.shade
 ++  get-entry-pos
   |=  =turf
   ^-  svec2
-  %+  fall  (get-lunk-pos turf)
+  %+  fall  (get-gate-pos turf)
   %+  sum-svec2  offset.plot.turf
   (sign-vec2 (div-vec2 size.plot.turf 2))
 ++  is-husk-collidable
@@ -549,15 +543,15 @@
   =/  shade  (~(get by cave.plot.turf) id)
   ?~  shade  ~
   `[id u.shade]
-++  get-things
+++  get-comps
   |=  [=turf pos=svec2]
-  ^-  (list [shade-id thing])
+  ^-  (list comp)
   =/  shades  (get-shades turf pos)
   %+  murn  shades
   |=  [=shade-id =shade]
   =/  form  (get-form turf form-id.shade)
   ?~  form  ~
-  `[shade-id +.shade u.form]
+  `[shade-id shade u.form]
 ::
 ++  get-collidable
   |=  [=turf pos=svec2]
@@ -569,60 +563,11 @@
   ?:  &(?=(^ shade) (is-husk-collidable turf +.u.shade))
     %.y
   $(shade-ids t.shade-ids)
-++  get-effect
-  |=  [=thing =trigger]
-  ^-  (unit effect)
-  =/  form-eff  (~(get by effects.form.thing) trigger)
-  =/  mpeff  (~(get by effects.thing) trigger)
-  ?~  mpeff  form-eff
-  ?~  u.mpeff  ~
-  ?@  u.u.mpeff  ~
-  `u.u.mpeff
-++  get-effects-by-shade-id
-  |=  [=turf =shade-id]
-  ^-  %-  unit
-      $:  full-fx=ufx
-          husk-fx=ufx
-          form-fx=pfx
-      ==
-  =/  shade  (~(get by cave.plot.turf) shade-id)
-  ?~  shade  ~
-  `(get-effects-by-shade turf u.shade)
-++  get-effects-by-shade
-  |=  [=turf =shade]
-  ^-  $:  full-fx=ufx
-          husk-fx=ufx
-          form-fx=pfx
-      ==
-  =/  form  (get-form turf form-id.shade)
-  ?~  form  [effects.shade effects.shade ~]
-  =/  form-fx  (~(uni by `pfx`seeds.u.form) `pfx`effects.u.form)
-  :-  (~(uni by `ufx`(~(run by form-fx) some)) effects.shade)
-  [effects.shade form-fx]
-++  count-portal-effects
-  |=  =ufx
-  ^-  (map portal-id @)
-  %+  roll  ~(val by ufx)
-  |=  [eff=(unit possible-effect) count=(map portal-id @)]
-  ?~  eff  count
-  ?@  u.eff  count
-  ?.  ?=(%port -.u.eff)  count
-  %+  ~(put by count)  portal-id.u.eff
-  =/  c  (~(get by count) portal-id.u.eff)
-  ?~(c 1 +(u.c))
-++  get-maybe-effect-portal
-  |=  eff=(unit possible-effect)
-  ^-  (unit portal-id)
-  ?~  eff  ~
-  ?@  u.eff  ~
-  ?.  ?=(%list -.u.eff)
-    ?.  ?=(%port -.u.eff)  ~
-    `portal-id.u.eff
-  |-  ^-  (unit portal-id)
-  ?~  effects.u.eff  ~
-  ?^  pid=(get-maybe-effect-portal `i.effects.u.eff)
-    pid
-  $(effects.u.eff t.effects.u.eff)
+++  get-fx
+  |=  =comp
+  ?~  fx.comp
+    fx.form.comp
+  u.fx.comp
 ++  add-form
   |=  [=turf spec=form-spec]
   ^-  ^turf
@@ -726,21 +671,27 @@
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  _shade
   shade(variation (mod variation (lent variations.form)))
+++  set-shade-fx
+  |=  [=turf id=shade-id fax=(unit fx)]
+  ^-  ^turf
+  %^  jab-by-shades  turf  id
+  |=  [=shade =form]  ^-  ^shade
+  shade(fx fax)
 ++  set-shade-effect
-  |=  [=turf id=shade-id =trigger effect=(unit possible-effect)]
+  |=  [=turf id=shade-id root=root-condition eff=(unit effect)]
   ^-  ^turf
   %^  jab-by-shades  turf  id
-  |=  [=shade =form]  ^-  _shade
-  %=    shade
-      effects
-    (~(put by effects.shade) trigger effect)
-  ==
-++  reset-shade-effects
-  |=  [=turf id=shade-id]
-  ^-  ^turf
-  %^  jab-by-shades  turf  id
-  |=  [=shade =form]  ^-  _shade
-  shade(effects ~)
+  |=  [=shade =form]  ^-  ^shade
+  =/  fax=fx  (fall fx.shade ~)
+  =/  fex=fx
+    %+  murn  fx
+    |=  [rt=root-condition ef=effect]
+    ?.  =(rt root)  `[rt ef]
+    ?~  eff  ~
+    `[rt u.eff]
+  =?  fex  &(=(fax fex) ?=(^ eff))
+    (snoc fex [root u.eff])
+  shade(fx `fx)
 ++  set-shade-collidable
   |=  [=turf id=shade-id collidable=(unit ?)]
   ^-  ^turf
@@ -767,13 +718,4 @@
   %=  turf
     portals.deed  (~(del by portals.deed.turf) from)
   ==
-++  burn-bridge
-  |=  [=turf from=portal-id]
-  ^-  ^turf
-  =/  portals  portals.deed.turf
-  =/  portal  (~(get by portals) from)
-  ?~  portal  turf
-  =?  turf  ?=(^ shade-id.u.portal)
-    (del-shade turf u.shade-id.u.portal)
-  (del-portal turf from)
 --

@@ -75,57 +75,60 @@
           (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
         %set-shade-var
           (pairs ~['shadeId'^(numb shade-id.grit) variation+(numb variation.grit)])
+        %set-shade-fx
+          :: (pairs ~['shadeId'^(numb shade-id.grit) fx+?~(fx.grit ~ (fx u.fx.grit))])
+          (pairs ~['shadeId'^(numb shade-id.grit) fx+((mayb fx) fx.grit)])
         %set-shade-effect
           %-  pairs
           :~  'shadeId'^(numb shade-id.grit)
-              'trigger'^s+trigger.grit
-              'effect'^+:(maybe-possible-effect trigger.grit effect.grit)
+              'trigger'^(root-condition trigger.grit)
+              :: 'effect'^?~(effect.grit ~ (effect u.effect.grit))
+              'effect'^((mayb effect) effect.grit)
           ==
-        %reset-shade-effects
-          (frond 'shadeId' (numb +.grit))
         %set-shade-collidable
-          (pairs ~['shadeId'^(numb shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
+          :: (pairs ~['shadeId'^(numb shade-id.grit) collidable+?~(collidable.grit ~ b+u.collidable.grit)])
+          (pairs ~['shadeId'^(numb shade-id.grit) collidable+((mayb (lead %b)) collidable.grit)])
         %set-shade-form-id
           (pairs ~['shadeId'^(numb shade-id.grit) 'formId'^(path form-id.grit)])
+        %set-gate
+          :: (frond 'gate' ?~(gate.grit ~ (numb u.gate.grit)))
+          (frond 'gate' ((mayb numb) gate.grit)))
         %set-lunk
-          (maybe-lunk lunk.grit)
-        %set-dink
-          %-  pairs
-          :~  'portalId'^(numb portal-id.grit)
-              approved+b+approved.grit
-          ==
+          :: (frond 'lunk' ?~(lunk.grit ~ (numb u.lunk.grit)))
+          (frond 'lunk' ((mayb numb) lunk.grit)))
+        %add-dink
+          (frond 'portalId' (numb portal-id.grit))
         %del-dink
           (frond 'portalId' (numb portal-id.grit))
         %add-portal
           %-  pairs
           :~  for+(turf-id for.grit)
-              at+?~(at.grit ~ (numb u.at.grit))
+              :: at+?~(at.grit ~ (numb u.at.grit))
+              at+((mayb numb) at.grit)
           ==
         %del-portal
           %-  pairs
-          :~  from+(numb from.grit)
+          :~  'portalId'^(numb from.grit)
               loud+b+loud.grit
           ==
-        %add-shade-to-portal
+        %set-portal-outlet
           %-  pairs
-          :~  'from'^(numb from.grit)
-              'shadeId'^(numb shade-id.grit)
+          :~  'portalId'^(numb from.grit)
+              'outlet'^((mayb numb) outlet.grit)
           ==
-        %del-shade-from-portal
-          %-  pairs
-          :~  'from'^(numb from.grit)
-              'shadeId'^(numb shade-id.grit)
-          ==
-        %del-portal-from-shade
-          %-  pairs
-          :~  'shadeId'^(numb shade-id.grit)
-              'portalId'^(numb portal-id.grit)
-          ==
+        %confirm-portal
+          (frond 'portalId' (numb portal-id.grit))
+        %revive-portal
+          (frond 'portalId' (numb portal-id.grit))
+        ::
         %portal-confirmed
           %-  pairs
           :~  from+(numb from.grit)
               at+(numb at.grit)
           ==
+        %portal-discarded
+          (frond 'from' (numb from.grit))
+        ::
         %chat  (chat chat.grit)
         %move  (move +.grit)
         %tele  (move +.grit)
@@ -142,14 +145,15 @@
           :~  ship+(ship-json ship.grit)
               from+(numb from.grit)
           ==
-        %del-port-offer  (ship-json ship.grit)
+        %nil-port-offer  (frond 'ship' (ship-json ship.grit))
+        %del-port-offer  (frond 'ship' (ship-json ship.grit))
         %add-port-req
           %-  pairs
           :~  ship+(ship-json ship.grit)
               from+?@(from.grit s+`@t`from.grit (numb u.from.grit))
               avatar+(avatar avatar.grit)
           ==
-        %del-port-req  (ship-json ship.grit)
+        %del-port-req  (frond 'ship' (ship-json ship.grit))
         %add-port-rec
           %-  pairs
           :~  from+(numb from.grit)
@@ -284,7 +288,9 @@
       'portReqs'^port-reqs
       'portRecs'^port-recs
       'portOffers'^port-offers
-      lunk+(maybe-lunk lunk)
+      'autoconfirmDinks'^b+autoconfirm-dinks
+      gate+((mayb numb) gate)
+      lunk+((mayb numb) lunk)
       dinks+(^dinks dinks)
       back+(background back)
       size+(vec2 size)
@@ -341,7 +347,7 @@
     |=  [key=^ship =portal-id]
     ^-  [@t json]
     :-  (ship-cord key)
-    (numb portal-id)
+    ((mayb numb) portal-id)
   ++  spaces
     ^-  json
     %-  pairs
@@ -377,23 +383,22 @@
       from+?@(via.po ~ (numb from.u.via.po))
       at+?@(via.po ~ (numb at.u.via.po))
   ==
-++  maybe-lunk
-  |=  lunk=(unit lunk)
-  ^-  json
-  ?~  lunk  ~
-  %-  pairs
-  :~  'shadeId'^(numb shade-id.u.lunk)
-      approved+b+approved.u.lunk
-  ==
 ++  dinks
   |=  =^dinks
   ^-  json
+  ::  make an object because set is not a js primitive
   %-  pairs
-  %+  turn  ~(tap by dinks)
-  |=  [=portal-id approved=?]
+  %+  turn  ~(tap in dinks)
+  |=  =portal-id
   ^-  [@t json]
   :-  (numbt portal-id)
-  b+approved
+  b+%.y
+++  mayb
+  |*  fun=$-(* json)
+  |=  a=(unit _+6.fun)
+  ^-  json
+  ?~  a  ~
+  (fun u.a)
 ++  vec2
   |=  =^vec2
   ^-  json
@@ -468,9 +473,10 @@
   |=  pol=^portal
   ^-  json
   %-  pairs
-  :~  'shadeId'^?~(shade-id.pol ~ (numb u.shade-id.pol))
+  :~  outlet+((mayb numb) shade-id.pol)
       for+(turf-id for.pol)
-      at+?~(at.pol ~ (numb u.at.pol))
+      at+((mayb numb) at.pol)
+      pending+b+pending.pol
   ==
 ++  background
   |=  back=^background
@@ -507,8 +513,8 @@
       variation+(numb variation)
       offset+(svec2 offset)
       :: collidable+(fall (bind collidable |=(c=? b+c)) ~)
-      collidable+?~(collidable ~ b+u.collidable)
-      effects+(pairs (turn ~(tap by effects) maybe-possible-effect))
+      collidable+((mayb (lead %b)) collidable)
+      fx+((mayb ^fx) fx)
   ==
 ++  shade-pairs
   |=  =shade
@@ -528,8 +534,7 @@
       variations+a+(turn variations luuk)
       :: offset+(svec2 offset)
       collidable+b+collidable
-      effects+(pairs (turn ~(tap by effects) effect))
-      seeds+(pairs (turn ~(tap by seeds) effect-type))
+      fx+(^fx fx)
   ==
 ++  form-spec
   |=  spec=^form-spec
@@ -567,22 +572,19 @@
       timing+a+(turn timing.sprite numb)
       frames+a+(turn frames.sprite (lead %s))
   ==
-++  maybe-possible-effect
-  |=  [=trigger eff=(unit ^possible-effect)]
-  ^-  (pair @t json)
-  ?~  eff  trigger^~
-  (possible-effect trigger u.eff)
-++  possible-effect
-  |=  [=trigger eff=^possible-effect]
-  ^-  (pair @t json)
-  ?@  eff
-    (effect-type trigger eff)
-  (effect trigger eff)
+++  fx
+  |=  fax=^fx
+  ^-  json
+  a+(turn fax reflex)
+++  reflex
+  |=  ref=^reflex
+  ^-  json
+  %-  pairs
+  :~  root+(root-condition root.ref)
+      effect+(effect effect.ref)
+  ==
+:: ++  root-condition
 ++  effect
-  |=  [=trigger eff=^effect]
-  ^-  (pair @t json)
-  [trigger (effect-pairs eff)]
-++  effect-pairs
   |=  eff=^effect
   ^-  json
   %+  labeled  -.eff

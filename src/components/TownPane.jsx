@@ -1,7 +1,13 @@
-import { createSignal, createMemo, createSelector, onMount, onCleanup } from 'solid-js';
+import {
+  createMemo,
+  createSelector,
+  createSignal,
+  onCleanup,
+  onMount,
+} from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { getTownHost, isLunkApproved } from 'lib/turf';
-import { bind, isTextInputFocused, input, normalizeId } from 'lib/utils';
+import { bind, input, isTextInputFocused, normalizeId } from 'lib/utils';
 import { isValidPatp } from 'urbit-ob';
 import SmallButton from '@/SmallButton';
 import MediumButton from '@/MediumButton';
@@ -17,13 +23,19 @@ export default function TownPane() {
   const weAreHost = our.length <= 7;
   const thisIsTown = () => state.c.host.length <= 7;
   const thisHost = createMemo(() => state.portals.lunk?.for?.ship);
+  const lunkExists = () =>
+    state.e?.lunk?.shadeId != null && state.e.cave[state.e.lunk.shadeId];
   const dinks = () => state.portals.dinks;
-  const ourDink = createMemo(() => [...dinks().approved, ...dinks().confirmed].find((dink) => {
-    return dink.for.ship === our;
-  }));
+  const ourDink = createMemo(() =>
+    [...dinks().approved, ...dinks().confirmed].find((dink) => {
+      return dink.for.ship === our;
+    })
+  );
   const ourHomeTown = () => !!ourDink();
   const ourConfirmedHomeTown = () => !!ourDink()?.shadeId;
-  const movingGate = () => state.huskToPlace?.shade === state.e?.lunk?.shadeId && state.e?.lunk?.shadeId !== undefined;
+  const movingGate = () =>
+    state.huskToPlace?.shade === state.e?.lunk?.shadeId &&
+    state.e?.lunk?.shadeId !== undefined;
 
   const summary = () => {
     const isUs = state.thisIsUs;
@@ -36,10 +48,10 @@ export default function TownPane() {
       const resident = state.c.host;
       if (thisHost()) {
         if (isLunkApproved(state.e)) {
-          a = isUs ? 'Your' : resident + "'s"
+          a = isUs ? 'Your' : resident + "'s";
           b = 'home Town is ' + thisHost() + '.';
         } else {
-          a = isUs ? 'You are' : resident + " is"
+          a = isUs ? 'You are' : resident + ' is';
           b = 'awaiting admission to ' + thisHost() + '.';
         }
       } else {
@@ -48,16 +60,16 @@ export default function TownPane() {
       }
     }
     return a + ' ' + b;
-  }
+  };
 
   const isHomeTownText = () => {
     if (weAreHost) return null;
     if (thisIsTown()) {
-      return `This is${ourHomeTown() ? ' ' : ' not '}your home Town.`
+      return `This is${ourHomeTown() ? ' ' : ' not '}your home Town.`;
     } else {
       return null;
     }
-  }
+  };
 
   function leaveHost() {
     if (thisHost()) {
@@ -74,7 +86,7 @@ export default function TownPane() {
   }
 
   function placeGate() {
-    const gateId = state.e?.lunk?.shadeId;
+    const gateId = lunkExists() ? state.e?.lunk?.shadeId : undefined;
     if (gateId === undefined) {
       state.setHuskToPlace({
         formId: '/gate',
@@ -94,18 +106,19 @@ export default function TownPane() {
   const pClass = 'm-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50';
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto">
+    <div class='flex flex-col h-full overflow-y-auto'>
       <Show when={state.thisIsUs}>
         <p class={pClass}>
-          Your Gate is where you enter your turf. {!weAreHost && 'It is also how you travel to your home Town.'}
+          Your Gate is where you enter your turf.{' '}
+          {!weAreHost && 'It is also how you travel to your home Town.'}
         </p>
         <MediumButton onClick={placeGate} enabled={!movingGate()}>
-            {state.e?.lunk ? (movingGate() ? 'Moving' : 'Move') : 'Place'} Gate
-          </MediumButton>
+          {lunkExists() ? (movingGate() ? 'Moving' : 'Move') : 'Place'} Gate
+        </MediumButton>
       </Show>
       <Show when={isHomeTownText()}>
         <p class={pClass}>
-        {isHomeTownText()}
+          {isHomeTownText()}
         </p>
       </Show>
       <p class={pClass}>
@@ -118,57 +131,88 @@ export default function TownPane() {
       </Show>
       <Show when={state.thisIsUs && !weAreHost}>
         {thisHost() &&
-          <MediumButton onClick={leaveHost}>
-            Leave {thisHost()}
-          </MediumButton>
-        }
+          (
+            <MediumButton onClick={leaveHost}>
+              Leave {thisHost()}
+            </MediumButton>
+          )}
         <p class={'mb-2 ' + pClass}>
-          Pick a {thisHost() ? 'new' : ''} star to request admission to its Town.
-          <br/>
+          Pick a {thisHost() ? 'new' : ''}{' '}
+          star to request admission to its Town.
+          <br />
           (try ~pandux, it's open)
         </p>
-        <BridgeBuilder formId='/gate' isLunk={true} shadeId={state.e?.lunk?.shadeId} blockLower blockSame
-          placeholder="~pandux"
+        <BridgeBuilder
+          formId='/gate'
+          isLunk={true}
+          shadeId={state.e?.lunk?.shadeId}
+          blockLower
+          blockSame
+          placeholder='~pandux'
         />
       </Show>
       <Show when={state.thisIsUs}>
-          <Show when={state.portals.dinks.pending.length > 0}>
-            <div class="my-2">
-              <Heading>
-                Pending Requests
-              </Heading>
-              <For each={state.portals.dinks.pending} >
-                {(portal) => {
-                  return <Dink icon={portalFrom} label="PENDING" portal={portal} approve={approveDink} discard={discardDink}/>;
-                }}
-              </For>
-            </div>
-          </Show>
-          <Show when={state.portals.dinks.approved.length > 0}>
-            <div class="my-2">
-              <Heading>
-                Approved Residents
-              </Heading>
-              <For each={state.portals.dinks.approved} >
-                {(portal) => {
-                  return <Dink icon={portalTo} label="APPROVED" portal={portal} approve={approveDink} discard={discardDink}/>;
-                }}
-              </For>
-            </div>
-          </Show>
-        </Show>
-        <Show when={state.portals.dinks.confirmed.length > 0}>
-          <div class="my-2">
+        <Show when={state.portals.dinks.pending.length > 0}>
+          <div class='my-2'>
             <Heading>
-              Current Residents
+              Pending Requests
             </Heading>
-            <For each={state.portals.dinks.confirmed} >
+            <For each={state.portals.dinks.pending}>
               {(portal) => {
-                return <Dink icon={portalWith} label="CONFIRMED" portal={portal} approve={approveDink} discard={discardDink}/>;
+                return (
+                  <Dink
+                    icon={portalFrom}
+                    label='PENDING'
+                    portal={portal}
+                    approve={approveDink}
+                    discard={discardDink}
+                  />
+                );
               }}
             </For>
           </div>
         </Show>
+        <Show when={state.portals.dinks.approved.length > 0}>
+          <div class='my-2'>
+            <Heading>
+              Approved Residents
+            </Heading>
+            <For each={state.portals.dinks.approved}>
+              {(portal) => {
+                return (
+                  <Dink
+                    icon={portalTo}
+                    label='APPROVED'
+                    portal={portal}
+                    approve={approveDink}
+                    discard={discardDink}
+                  />
+                );
+              }}
+            </For>
+          </div>
+        </Show>
+      </Show>
+      <Show when={state.portals.dinks.confirmed.length > 0}>
+        <div class='my-2'>
+          <Heading>
+            Current Residents
+          </Heading>
+          <For each={state.portals.dinks.confirmed}>
+            {(portal) => {
+              return (
+                <Dink
+                  icon={portalWith}
+                  label='CONFIRMED'
+                  portal={portal}
+                  approve={approveDink}
+                  discard={discardDink}
+                />
+              );
+            }}
+          </For>
+        </div>
+      </Show>
     </div>
   );
 }
@@ -176,21 +220,27 @@ export default function TownPane() {
 function Dink(props) {
   const state = useState();
   return (
-    <div class="flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700">
-      <div class="flex flex-wrap space-x-2 items-center flex-grow">
-        <span class="font-bold text-sm font-mono">
+    <div class='flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700'>
+      <div class='flex flex-wrap space-x-2 items-center flex-grow'>
+        <span class='font-bold text-sm font-mono'>
           {props.portal.for.ship}
         </span>
       </div>
-      <Switch fallback="✓">
+      <Switch fallback='✓'>
         <Match when={!props.portal.approved}>
-          {state.thisIsUs && <SmallButton onClick={[props.approve, props.portal.id]}>✓</SmallButton>}
+          {state.thisIsUs && (
+            <SmallButton onClick={[props.approve, props.portal.id]}>
+              ✓
+            </SmallButton>
+          )}
         </Match>
         <Match when={props.portal.shadeId === null}>
           ...
         </Match>
       </Switch>
-      {(state.thisIsUs || props.portal.for.ship === our) && <SmallButton onClick={[props.discard, props.portal.id]}>x</SmallButton>}
+      {(state.thisIsUs || props.portal.for.ship === our) && (
+        <SmallButton onClick={[props.discard, props.portal.id]}>x</SmallButton>
+      )}
     </div>
   );
 }

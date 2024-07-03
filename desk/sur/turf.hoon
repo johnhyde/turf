@@ -55,7 +55,12 @@
       =port-reqs
       =port-recs
       =port-offers
-      lunk=(unit lunk)
+      autoconfirm-dinks=flug
+      gate=(unit shade-id)
+      :: links between planets and stars
+      :: lunk = uplink
+      :: dink = downlink
+      lunk=(unit portal-id)
       =dinks
   ==
 +$  invites  (map invite-id invite)
@@ -70,23 +75,21 @@
 +$  portals  (map portal-id portal)
 +$  portal-id  shade-id
 +$  portal
-  $:  shade-id=(unit shade-id)  :: the shade that triggers the portal
+  $:  =outlet  :: where someone lands after coming through the portal
       for=turf-id
       at=(unit portal-id)  :: the portal on the other side
+      pending=?  :: if not pending, open or closed based on `at`
   ==
++$  outlet  (unit shade-id)  :: defaults to gate pos or center of turf
 +$  port-reqs  (map ship [=portal-id =avatar])
 +$  port-recs  (jug portal-id ship)
-+$  port-offers  (map ship portal-id)
++$  port-offers  (map ship (unit portal-id))
 +$  port-offer  [for=turf-id =via]
 ::
 :: via is weird because I wanted to pack more info into a unit
 :: but I didn't want to break interface
 +$  via  $@(?(~ invite-id) [~ u=[of=turf-id from=portal-id at=portal-id]])
-:: links between planets and stars
-:: lunk = uplink
-:: dink = downlink
-+$  lunk  [=shade-id approved=?]
-+$  dinks  (map portal-id ?)
++$  dinks  (set portal-id)
 ::
 +$  plot
   $:  back=background
@@ -120,6 +123,11 @@
 +$  shade
   $:  pos=svec2
       husk
+  ==
++$  comp
+  $:  =shade-id
+      shade
+      =form
   ==
 +$  husk
   $+  husk
@@ -162,6 +170,7 @@
       frames=(list png)
   ==
 +$  anim-type  ?(%loop %once %pong %rand)
++$  fx-ctx  [=trigger =shade-id init-id=(unit shade-id)]
 +$  fx  (list reflex)
 +$  reflex  [root=root-condition =effect]
 +$  root-condition
@@ -172,9 +181,16 @@
   $%  [%and cons=(list condition)]
       [%or cons=(list condition)]
       [%not con=condition]
-      [%eq cons=(list condition)]
-      [%initiator ?(%item %player)]
+      [%eq a=condition b=condition]
+      [%initiator type=?(%item %player)]
+      [%initiator-eq =target]
+      [%user-eq =ship]
       [%trigger trigger=trigger-condition]
+      [%item-exists item=item-target]
+      [%variation item=item-target con=int-rel]
+      [%move-collide collide=?]
+      [%move-smooth smooth=?]
+      [%loc-eq a=fx-loc b=fx-loc]
   ==
 ++  trigger-type  (tags trigger)
 +$  trigger
@@ -185,16 +201,25 @@
       [%message msg=@t]
   ==
 +$  trigger-condition
-  $%  [%move relation=movement-relation collide=(unit ?) smooth=(unit ?)]
+  $%  [%move con=move-condition]
       [%bump ~]
       [%interact ~]
       [%click ~]
-      [%message msg=@t]
+      [%message con=[%eq msg=@t]]  :: todo: add contains & contained-by
   ==
-+$  movement-relation
-  $%  [%enter radius=@ud]
-      [%leave radius=@ud]
-      [%within pos=?(%start %end %both) radius=@ud]
++$  move-condition
+  $%  [%onto ~]
+      [%off ~]
+      :: [%enter radius=@ud]
+      :: [%leave radius=@ud]
+      :: [%within pos=?(%start %end) radius=@ud]
+  ==
++$  int-rel
+  $%  [%eq num=@ud]
+      :: [%lth num=@ud]
+      :: [%lte num=@ud]
+      :: [%gth num=@ud]
+      :: [%gte num=@ud]
   ==
 ++  effect-type  (tags effect)
 +$  effect
@@ -202,7 +227,8 @@
       ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
       [%noop ~]
       [%port =portal-id]  :: port player to turf
-      [%read note=@t action=(list [@t effect])]  :: show dialog box
+      [%read note=@t actions=(list [name=@t =effect])]  :: show dialog box
+      [%clear-actions actions=(list root-condition)]
       [%swap with=form-id]  :: for opening/closing doors
       [%seem var=@ud]  :: display item variation
       [%vary var=@ud]  :: set item variation
@@ -220,10 +246,11 @@
 +$  item-target
   $@  ?(%this %initiator)
   [%item =shade-id]
++$  absolute-item-target  (unit shade-id)  :: null if initiator not item
 +$  fx-loc
   $%  [%target =target]
       [%offset offset=fx-offset loc=fx-loc]
-      [%movement ?(%start %end)]
+      [%initiator-start ~]
       :: [%mean locs=(list fx-loc)]
       [%absolute pos=svec2]
   ==
@@ -258,7 +285,7 @@
 ::
 +$  form-spec  [=form-id =form]
 +$  shade-spec  [pos=svec2 =form-id variation=@ud]
-+$  add-shade-spec  [is-lunk=? shade-spec]
++$  add-shade-spec  [is-gate=? shade-spec]
 ::
 +$  pond-path  [%pond *]
 +$  mist-path  [%mist *]
@@ -346,14 +373,19 @@
 ++  trigger-effect-to-reflex
   |=  [=trigger:told =effect:told]
   ^-  reflex
-  :-  [%trigger (old-trigger-to-trigger-condition trigger)]
+  :-  (old-trigger-to-root-condition trigger)
   (ueff effect)
+++  old-trigger-to-root-condition
+  |=  trg=trigger:told
+  ^-  root-condition
+  :-  %trigger
+  (old-trigger-to-trigger-condition trg)
 ++  old-trigger-to-trigger-condition
   |=  trg=trigger:told
   ^-  trigger-condition
   ?+  trg  [trg ~]
-    %step  [%move]
-    %leave  
+    %step  [%move %onto ~]
+    %leave  [%move %off ~]
   ==
 ++  ueff
   |=  eff=effect:told

@@ -773,7 +773,7 @@
         %+  pond-stir-card
             ::  [%portal-request (scot %ud from.roar) path.turf-id.stir]
           for.roar
-        [%portal-requested for=turf-id.stir at=from.roar is-link.roar]
+        [%portal-requested for=turf-id.stir at=from.roar]
           %portal-retract
         :_  state
         :_  ~
@@ -803,8 +803,9 @@
         :: ~&  ["using id" id]
         =/  wer=path  :(weld turf-path /portal [(crip (a-co:co from.roar))]~)
         =/  =rope:hark  [~ ~ %turf wer]
+        =/  is-link  !=((is-host our.bowl) (is-host ship.for.roar))
         =/  msg=content:hark
-          ?:  is-link.roar
+          ?:  is-link
             ?-  event.roar
               %requested  ' would like to live in your town'
               %retracted  ' no longer wants to live in your town'
@@ -943,11 +944,6 @@
   ?.  &(=(our.bowl ship.u.ctid.u.mi) (turf-exists u.ctid.u.mi))
     `state
   (give-pond-goal u.ctid.u.mi set-avatar+[our.bowl avatar.u.mi])
-++  add-player
-  |=  =ship
-  ^-  (quip card _state)
-  :: ~&  "trying to add player. pub-pond wyt: {<~(wyt by +.pub-pond)>}"
-  (give-pond-goal dtid join-player+[ship default-avatar:gen])
 ++  del-player
   |=  =ship
   ^-  (quip card _state)

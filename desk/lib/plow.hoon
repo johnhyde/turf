@@ -73,7 +73,7 @@
     %export-self
       :-  [%port-offer-accept +.goal]~
       `[[%clear-port-offer ~] [%set-ctid `for.goal] ~]
-        %port-accepted
+    %port-accepted
       :_  `~
       ?.  =(ship.for.goal src.bowl)  ~
       ?.  =(`for.goal ctid.rock)  ~
@@ -114,13 +114,17 @@
   =*  turf  u.uturf
   ?+  -.goal  `~[goal]~
     %atomic
+    :: todo: fix this so that it actually does things in order
+    :: and can handle serial OR simultaneous
+    :: instead of badly handling simultaneous
       =;  res
         ?~  res  ``~
         :+  roars.u.res
           grits.u.res
-        ?~  depth.goal
-          goals.u.res
-        [%atomic (dec depth.goal) goals.u.res]~
+        :: ?~  depth.goal
+        :: goals.u.res
+        :: [%atomic (dec depth.goal) goals.u.res]~
+        [%atomic goals.u.res]~
       %+  roll  goals.goal
       |=  [sub-goal=goal:pond res=$~(`*ret (unit ret))]
       ?~  res  ~
@@ -139,30 +143,22 @@
       ?.  ?=(space-form-type u.form-type)  `~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
       :-  [goal(pos pos)]~
-      =/  lunk-goals=goals:pond
-        ?.  is-lunk.goal  ~
-        [%set-lunk `[stuff-counter.plot.turf %.n]]~
+      =/  gate-goals=goals:pond
+        ?.  is-gate.goal  ~
+        [%set-gate `stuff-counter.plot.turf]~
       =/  tile-goals=goals:pond
         ?.  ?=(%tile u.form-type)  ~
         =/  space  (get-space spaces.plot.turf pos)
         ?~  tile.space  ~
         [%del-shade u.tile.space]~
-      (weld tile-goals lunk-goals)
+      (weld gate-goals tile-goals)
     %del-shade
-      =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
-      ?~  shade-fx  ``~
-      =/  portal-counts  (count-portal-effects full-fx.u.shade-fx)
-      =/  =goals:pond
-        %+  turn  ~(tap in ~(key by portal-counts))
-        |=  =portal-id
-        [%del-shade-from-portal portal-id shade-id.goal]
-      =.  goals
-        ?~  lunk.deed.turf  goals
-        ?.  =(shade-id.goal shade-id.u.lunk.deed.turf)
-          goals
-        [[%set-lunk ~] goals]
-      [~ [goal]~ goals]
-    ?(%move-shade %tele-shade)
+      :-  ~
+      :-  [goal]~
+      ?.  =(`shade-id.goal gate.deed.turf)
+        ~
+      [%set-gate ~]
+    %move-shade
       =/  shade  (~(gut by cave.plot.turf) shade-id.goal ~)
       ?~  shade  ``~
       =/  form-type  (get-form-type turf form-id.shade)
@@ -170,109 +166,54 @@
       ?.  ?=(space-form-type u.form-type)  ``~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
       ?:  =(pos pos.shade)  ``~
-      =/  move  ?=(%move-shade -.goal)
-      ?:  &(move (get-collidable turf pos))
-        ``~
-        :: =/  bump=[=roars =goals:pond]  (pull-trigger-at-pos turf ship.goal %bump pos)
-        :: [roars.bump ~ goals.bump]
+      ?:  &(collide.goal (get-collidable turf pos))
+        =/  bump-goals=goals:pond
+          (pull-trigger-at-pos turf ship.goal bump+~ pos `shade-id.goal)
+        ``bump-goals
       =/  grits=cur-grits:pond  [goal(pos pos)]~
       =/  =goals:pond
         ?.  ?=(%tile u.form-type)  ~
         =/  space  (get-space spaces.plot.turf pos)
         ?~  tile.space  ~
         [%del-shade u.tile.space]~
-      =/  leave=[roars goals:pond]
-        [~ ~]
-        :: ?.  move  [~ ~]
-        :: (pull-trigger-at-pos turf ship.goal %leave pos.shade)
-      =/  step=[roars goals:pond]
-        [~ ~]
-        :: ?.  move  [~ ~]
-        :: (pull-trigger-at-pos turf ship.goal %step pos)
-      :-  (weld -.leave -.step)
-      :-  grits
-      :(weld goals +.leave +.step)
-      
-    %set-shade-effect
-      =/  shade-fx  (get-effects-by-shade-id turf shade-id.goal)
-      ?~  shade-fx  ``~
-      =,  u.shade-fx
-      =/  og-effect  (~(get by full-fx) trigger.goal) 
-      =/  del-portal-id=(unit portal-id)
-        ?~  og-effect  ~
-        (get-maybe-effect-portal u.og-effect)
-      =/  add-portal-id  (get-maybe-effect-portal effect.goal)
-      ?:  ?&  !=(del-portal-id add-portal-id)
-              ?=(^ add-portal-id)
-              (portal-is-dink turf u.add-portal-id)
-              !(dink-is-approved turf u.add-portal-id)
-          ==
-        :: don't add shades to unapproved dinks
-        ``~
-      =/  =goals:pond
-        ?:  =(del-portal-id add-portal-id)
-          ~
-        =/  portal-counts  (count-portal-effects full-fx)
-        %+  weld
-          ^-  goals:pond
-          ?~  add-portal-id  ~
-          ?:  (~(has by portal-counts) u.add-portal-id)
-            ~
-          [%add-shade-to-portal u.add-portal-id shade-id.goal]~
-        ^-  goals:pond
-        ?~  del-portal-id  ~
-        =/  count  (~(gut by portal-counts) u.del-portal-id 0)
-        ?:  (gth count 1)  ~
-        [%del-shade-from-portal u.del-portal-id shade-id.goal]~
-      [~ [goal]~ goals]
-    ::
-    :: %add-lunk
-    ::   ?:  &(top !=(our src):bowl)  ``~
-    ::   :-  ~
-    ::   :-  ~
-    ::   :~  [%add-shade +.goal]
-    ::       [%set-lunk `[stuff-counter.plot.turf %.n]]
-    ::   ==
+      =/  =trigger
+        [%move pos.shade pos collide.goal smooth.goal]
+      =/  leave-goals
+        (pull-trigger-at-pos turf ship.goal trigger pos.shade `shade-id.goal)
+      =/  step-goals
+        (pull-trigger-at-pos turf ship.goal trigger pos `shade-id.goal)
+      :+  ~  grits
+      :(weld goals leave-goals step-goals)
+    %set-gate
+      ?:  &(top !=(our src):bowl))  ``~
+      `~[goal]~
     %set-lunk
-      ?:  =(+.goal lunk.deed.turf)
-        ``~
-      =/  =goals:pond
-        ?~  lunk.goal
-          ?~  lunk.deed.turf  ~  :: vain
-          =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk.deed.turf ~)
-          ?~  shade  ~
-          ?.  =(1 variation.shade)  ~
-          :: active lunk is being 
-          [%set-shade-var shade-id.u.lunk.deed.turf 0]~
-        =/  shade  (~(gut by cave.plot.turf) shade-id.u.lunk.goal ~)
-        ?~  shade  ~  :: todo cancel goal in this case
-        ?.  =(/gate (scag 1 form-id.shade))  ~
-        ::  This is kinda goofy, but since %.y=0 and %.n=1
-        ::  We set the variation to be !approved
-        ::  Because variation 0 is for unapproved
-        ::  and variation 1 is for an approved lunk
-        ?.  =(approved.u.lunk.goal variation.shade)  ~
-        [%set-shade-var shade-id.u.lunk.goal `@`!approved.u.lunk.goal]~
-      [~ [goal]~ goals]
-    %approve-dink
-      ?.  (portal-is-dink turf portal-id.goal)  ``~
-      =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
-      ?:  ?|(?=(~ portal) ?=(~ at.portal))
-        ``[%del-dink portal-id.goal]~
-      :-  [%portal-confirm from=portal-id.goal for.portal u.at.portal]~
-      `[%set-dink portal-id.goal %.y]~
+      ?:  &(top !=(our src):bowl))  ``~
+      ?:  =(+.goal lunk.deed.turf)  ``~
+      :+  ~  [goal]~
+      ?~  lunk.deed.turf  ~
+      ?~  +.goal  ~  :: don't del in this case to avoid infinite loop
+      [%del-portal u.lunk.deed.turf]~
+    %add-dink
+      ?:  &(top !=(our src):bowl))  ``~
+      `~[goal]~
+    %del-dink
+      ?:  &(top !=(our src):bowl))  ``~
+      `~[goal]~
     ::
     %create-bridge
       :: $:  %create-bridge
       ::     shade=?(shade-id add-shade-spec) 
-      ::     =trigger
+      ::     trigger=root-condition
       ::     portal=?(portal-id turf-id)
       :: ==
       =/  is-approved-dink
         ?^  portal.goal  %.n
-        ?.  (dink-is-approved turf portal.goal)  %.n
+        ?.  (portal-is-dink turf portal.goal)  %.n
         =/  portal  (~(gut by portals.deed.turf) portal.goal ~)
         ?~  portal  %.n
+        ?~  at.portal  %.n
+        ?:  pending.portal  %.n
         =(src.bowl ship.for.portal)
       ?:  &(top !=(our src):bowl !is-approved-dink)  ``~
       =/  shade-id
@@ -282,116 +223,95 @@
         ?@  portal.goal  portal.goal
         ?^  shade.goal  +(shade-id)
         stuff-counter.plot.turf
-      =/  is-lunk
-        ?^  shade.goal  is-lunk.shade.goal
-        (shade-is-lunk turf shade.goal)
-      =/  dest=(unit ship)
-        ?^  portal.goal  `ship.portal.goal
+      =/  portal-valid
+        ?^  portal.goal  %.y
         =/  portal  (~(gut by portals.deed.turf) portal.goal ~)
-        ?~  portal  ~
-        `ship.for.portal
-      ?~  dest  ``~
-      ?.  |(is-lunk is-approved-dink =((is-host our.bowl) (is-host u.dest)))  ``~
+        ?=(^ portal)
+      =/  shade-valid
+        ?^  shade.goal  %.y
+        =/  shade  (~(gut by cave.plot.turf) shade.goal ~)
+        ?=(^ shade)
+      ?.  &(portal-valid shade-valid)  ``~
       =/  =goals:pond
-        %+  murn
-          ^-  (list (unit cur-grit:pond))
-          :~  ?@(shade.goal ~ `[%add-shade shade.goal])
-              ?@(portal.goal ~ `[%add-portal portal.goal ~])
-              `[%set-shade-effect shade-id trigger.goal `port+portal-id]
-          ==
-        same
+        %-  murn  :_  same
+        ^-  (list (unit cur-grit:pond))
+        :~  ?@(shade.goal ~ `[%add-shade shade.goal])
+            ?@(portal.goal ~ `[%add-portal portal.goal ~])
+            `[%set-shade-effect shade-id trigger.goal `port+portal-id]
+            `[%set-portal-outlet portal-id `shade-id]
+        ==
       ``goals
     ::
     %add-portal
       ?:  &(top !=(our src):bowl)  ``~
-      `~[goal]~
+      =/  is-link  !=((is-host our.bowl) (is-host src.bowl))
+      =/  is-dink  &(is-link (gth src.bowl our.bowl))
+      =/  portal-id  stuff-counter.plot.turf
+      :-  ?^  at.goal  ~
+          [%portal-request portal-id for.goal]~
+      :-  [goal]~
+      ?.  is-link  ~
+      ?:  is-dink
+        :-  [%add-dink portal-id]
+        ?.  |(autoconfirm-dinks.deed.turf =(our.bowl ~pandux))
+          ~
+        [%confirm-portal portal-id]~
+      [%set-lunk `portal-id]~
     ::
     %del-portal
-      =/  is-dink
-        ?.  (portal-is-dink turf from.goal)  %.n
-        =/  portal  (~(gut by portals.deed.turf) from.goal ~)
-        ?~  portal  %.n
-        =(src.bowl ship.for.portal)
-      ?:  &(top !=(our src):bowl !is-dink)  ``~
-      =/  portal  (~(get by portals.deed.turf) from.goal)
-      ?~  portal  ``~
-      =/  roars
-        ?.  loud.goal  ~
-        ?~  at.u.portal
-          [%portal-retract from.goal for.u.portal]~
-        [%portal-discard for.u.portal u.at.u.portal]~
-      =/  grits  [goal]~
-      =/  =goals:pond  [%del-port-recs from.goal]~
-      =?  goals  ?=(^ shade-id.u.portal)
-        :_  goals
-        [%del-portal-from-shade u.shade-id.u.portal from.goal]
-      =?  goals  (~(has by dinks.deed.turf) from.goal)
-        :_  goals
-        [%del-dink from.goal]
-      [roars grits goals]
-    ::
-    %add-shade-to-portal
+      ?:  &(top !=(our src):bowl)  ``~
+      =/  is-link  !=((is-host our.bowl) (is-host src.bowl))
+      =/  is-dink  &(is-link (gth src.bowl our.bowl))
       =/  portal  (~(gut by portals.deed.turf) from.goal ~)
       ?~  portal  ``~
-      =/  is-link  (shade-is-lunk turf shade-id.goal)
-      =/  roars
-        ?^  shade-id.portal  ~
-        ?~  at.portal
-          [%portal-request from.goal for.portal is-link]~
-        ?:  is-link  ~  :: we've already confirmed it when we approved the dink
-        [%portal-confirm from.goal for.portal u.at.portal]~
-      =/  =goals:pond
-        ?~  shade-id.portal  ~
-        ?:  =(shade-id.portal `shade-id.goal)
-          ~
-        [%del-portal-from-shade u.shade-id.portal from.goal]~
-      =?  goals  is-link
-        :_  goals
-        [%set-lunk `[shade-id.goal %.n]]
-      [roars [goal]~ goals]
-    ::
-    %del-shade-from-portal
-      =/  portal  (~(get by portals.deed.turf) from.goal)
+      :-  ?.  loud.goal  ~
+          ?~  at.portal
+            [%portal-retract from.goal for.portal]~
+          [%portal-discard for.portal u.at.portal]~
+      :-  [goal]~
+      ^-  goals:pond
+      :-  [%del-port-recs from.goal]
+      ?.  is-link  ~
+      ?:  is-dink
+        [%del-dink from.goal]~
+      ?.  (portal-is-lunk turf from.goal)
+        ~
+      [%set-lunk ~]~
+    %set-portal-outlet
+      ?:  &(top !=(our src):bowl)  ``~
+      =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
-      ?.  =(shade-id.u.portal `shade-id.goal)
-        ``~
-      =/  =goals:pond  [%del-portal from.goal loud=%.y]~
-      =?  goals  (shade-is-lunk turf shade-id.goal)
-        :_  goals
-        [%set-lunk `[shade-id.goal %.n]]
-      [~ [goal]~ goals]
-    ::
-    %del-portal-from-shade
-      =/  shade  (~(gut by cave.plot.turf) shade-id.goal ~)
-      ?~  shade  ``~
-      =/  =goals:pond
-        ?.  =(/portal (scag 1 form-id.shade))  ~
-        =/  shade-fx  (get-effects-by-shade turf shade)
-        =/  portal-counts  (count-portal-effects full-fx.shade-fx)
-        ?.  (~(has by portal-counts) portal-id.goal)
-          ~
-        ?.  =(~(wyt by portal-counts) 1)
-          ~
-        [%del-shade shade-id.goal]~
-      =?  goals  (shade-is-lunk turf shade-id.goal)
-        :_  goals
-        [%set-lunk `[shade-id.goal %.n]]
-      [~ [goal]~ goals]
+      :-  ?~  at.portal  ~
+          ?.  pending.portal  ~
+          [%confirm-portal portal-id.goal]~
+      ~[goal]~
+    %confirm-portal
+      ?:  &(top !=(our src):bowl)  ``~
+      =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
+      ?~  portal  ``~
+      ?~  at.portal  ``~
+      :-  [%portal-confirm from=portal-id.goal for.portal u.at.portal]~
+      ~[goal]~
+    %revive-portal
+      ?:  &(top !=(our src):bowl)  ``~
+      =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
+      ?~  portal  ``~
+      ?^  at.portal  ``~
+      :-  [%portal-request portal-id.goal for.portal]~
+      ~[goal]~
     ::
     %portal-requested
       ?.  =(src.bowl ship.for.goal)  ``~
-      ?.  |(is-link.goal =((is-host our.bowl) (is-host src.bowl)))
+      =/  is-link  !=((is-host our.bowl) (is-host src.bowl))
+      =/  is-dink  &(is-link (gth src.bowl our.bowl))
+      ?:  &(is-link !is-dink)
+        :: allow dinks but not lunks
+        :: todo allow lunk requests but don't override current lunk
         :_  `~
         [%portal-discard for.goal at.goal]~
-      =/  dink-id  stuff-counter.plot.turf
-      :-  [%portal-hark %requested is-link.goal dink-id for.goal]~
+      :-  [%portal-hark %requested dink-id for.goal]~
       :-  ~
-      ^-  goals:pond
-      :-  [%add-portal for.goal `at.goal]
-      ?.  is-link.goal  ~
-      :-  [%set-dink dink-id %.n]
-      ?.  =(our.bowl ~pandux)  ~
-      [%approve-dink dink-id]~
+      [%add-portal for.goal `at.goal]~
     ::
     %portal-retracted
       ?.  =(src.bowl ship.for.goal)  ``~
@@ -405,69 +325,46 @@
         $(portals t.portals)
       :: ~&  "we got this portal id based on our search: {<portal-id>}"
       ?~  portal-id  ``~
-      =/  is-link  (portal-is-dink turf u.portal-id)
-      :-  [%portal-hark %retracted is-link u.portal-id for.goal]~
+      :-  [%portal-hark %retracted u.portal-id for.goal]~
       `[%del-portal u.portal-id loud=%.n]~
     ::
     %portal-confirmed
-      =/  portal  (~(get by portals.deed.turf) from.goal)
+      =/  portal  (~(gut by portals.deed.turf) from.goal ~)
       ?~  portal  ``~
-      ?.  =(src.bowl ship.for.u.portal)  ``~
-      =/  lunk-id=(unit shade-id)
-        ?~  shade-id.u.portal  ~
-        ?.  (shade-is-lunk turf u.shade-id.u.portal)
-          ~
-        `u.shade-id.u.portal
-      :-  [%portal-hark %confirmed ?=(^ lunk-id) from.goal for.u.portal]~
-      :-  [goal]~
-      ?~  lunk-id  ~
-      [%set-lunk `[u.lunk-id %.y]]~
+      ?.  =(src.bowl ship.for.portal)  ``~
+      :: portal must be an outgoing request
+      ?^  at.portal  ``~  :: don't let them confirm a portal they requested!
+      :-  [%portal-hark %confirmed from.goal for.portal]~
+      ~[goal]~
     ::
     %portal-discarded
       =/  portal  (~(gut by portals.deed.turf) from.goal ~)
       ?~  portal  ``~
       ?.  =(src.bowl ship.for.portal)  ``~
-      =/  is-link
-        ?|  (portal-is-dink turf from.goal)
-            (portal-is-lunk turf portal)
-        ==
-      :-  [%portal-hark ?~(at.portal %rejected %discarded) is-link from.goal for.portal]~
-      `[%del-portal from.goal loud=%.n]~
+      :-  [%portal-hark ?~(at.portal %rejected %discarded) from.goal for.portal]~
+      ~[goal]~
       ::
     %send-chat
       ?.  =(src.bowl from.goal)  ``~
       ``[%chat from.goal now.bowl text.goal]~
     %move
-      ?.  =(src.bowl ship.goal)  ``~
+      ?:  &(top !=(src.bowl ship.goal))  ``~
+      ?:  &(top !=(src our):bowl |(!collide.goal !smooth.goal))  ``~
       =*  players  players.ephemera.turf
       =/  player  (~(get by players) ship.goal)
       ?~  player  ``~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
       ?:  =(pos pos.u.player)  ``~
-      ?:  (get-collidable turf pos)
-        :: todo: get bump effects
-        =/  bump=[=roars =goals:pond]  (pull-trigger-at-pos turf ship.goal %bump pos)
-        [roars.bump ~ goals.bump]
-      ::  todo merge with identical code in %tele
-      =/  leave=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %leave pos.u.player)
-      =/  step=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %step pos)
-      :-  (weld -.leave -.step)
+      ?:  &(collide.goal (get-collidable turf pos))
+        =/  bump-goals  (pull-trigger-at-pos turf ship.goal bump+~ pos ~)
+        ``bump-goals
+      =/  =trigger  [%move pos.u.player pos collide.goal smooth.goal]
+      =/  leave-goals  (pull-trigger-at-pos turf ship.goal trigger pos.u.player ~)
+      =/  step-goals  (pull-trigger-at-pos turf ship.goal trigger pos ~)
+      :-  ~
       :-  [goal(pos pos)]~
-      (weld +.leave +.step)
-    %tele
-      ?:  &(top !=(our src):bowl)  ``~
-      =*  players  players.ephemera.turf
-      =/  player  (~(get by players) ship.goal)
-      ?~  player  ``~
-      =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
-      ?:  =(pos pos.u.player)  ``~
-      ::  todo merge with identical code in %move
-      =/  leave=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %leave pos.u.player)
-      =/  step=[roars goals:pond]  (pull-trigger-at-pos turf ship.goal %step pos)
-      :-  (weld -.leave -.step)
-      :-  [goal(pos pos)]~
-      (weld +.leave +.step)
-        %ping-player
+      (weld leave-goals step-goals)
+    %ping-player
       ?.  =(src.bowl by.goal)  ``~
       `~[goal]~
     ::
@@ -475,17 +372,22 @@
       ?.  =(src.bowl ship.goal)  ``~
       =/  offer  (~(get by port-offers.deed.turf) ship.goal)
       ?~  offer  ``~
-      =/  portal  (~(gut by portals.deed.turf) u.offer ~)
+      ?~  u.offer  ``~
+      =/  portal  (~(gut by portals.deed.turf) u.u.offer ~)
       ?:  |(?=(~ portal) ?=(~ at.portal))
         ``[%del-port-offer ship.goal]~
       :: ?~  at.portal  ``~
       :-  [%port ship.goal for.portal u.at.portal]~
-      `[%del-player ship.goal]~
-        %port-offer-rejected
+      :-  ~
+      :~  [%nil-port-offer ship.goal]
+          [%del-player ship.goal]
+      ==
+    %port-offer-rejected
       ?.  =(src.bowl ship.goal)  ``~
       =/  offer  (~(get by port-offers.deed.turf) ship.goal)
       ?~  offer  ``~
-      ?.  =(u.offer from.goal)  ``~
+      ?~  u.offer  ``~
+      ?.  =(u.u.offer from.goal)  ``~
       ``[%del-port-offer ship.goal]~
     ::
     %import-player
@@ -494,42 +396,29 @@
       :-  ~
       =/  pos=(unit svec2)
         ?@  from.goal  `(get-entry-pos turf)
-        =/  portal  (~(gut by portals.deed.turf) u.from.goal ~)
-        ?~  portal  ~
-        ?~  shade-id.portal
-          ?.  (dink-is-approved turf u.from.goal)  ~
-          `(get-entry-pos turf)
-          :: lunk if dink
-        =/  shade  (~(gut by cave.plot.turf) u.shade-id.portal ~)
-        ?~  shade  ~
-        `pos.shade
+        (get-portal-outlet-pos turf u.from.goal)
       ?~  pos  ~
       =|  =player
       =.  wake.player  `now.bowl
       =.  pos.player  u.pos
       =.  avatar.player  avatar.goal
-      %+  murn
-        ^-  (list (unit goal:pond))
-        :~  `[%add-player ship.goal player]
-          ::
-            ?@  from.goal  ~
-            ?.  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
-              ~
-            `[%del-port-rec u.from.goal ship.goal]
-          ::
-            ?.  (~(has by port-reqs.deed.turf) ship.goal)
-              ~
-            `[%del-port-req ship.goal]
-        ==
-      same
+      %-  murn  :_  same
+      ^-  (list (unit goal:pond))
+      :~  `[%add-player ship.goal player]
+        ::
+          ?@  from.goal  ~
+          ?.  (~(has ju port-recs.deed.turf) u.from.goal ship.goal)
+            ~
+          `[%del-port-rec u.from.goal ship.goal]
+        ::
+          ?.  (~(has by port-reqs.deed.turf) ship.goal)
+            ~
+          `[%del-port-req ship.goal]
+      ==
     %add-port-offer
       =/  portal  (~(gut by portals.deed.turf) from.goal ~)
       ?~  portal  ``~
       ?~  at.portal  ``~
-      =/  is-lunk=?
-        ?~  shade-id.portal  %.n
-        (shade-is-lunk turf u.shade-id.portal)
-      ?:  &(is-lunk !(lunk-is-approved turf))  ``~
       :-  [%port-offer ship.goal from.goal for.portal u.at.portal]~
       ~[goal]~
     %add-port-req
@@ -537,6 +426,9 @@
         ?.  =(ship.goal src.bowl)  ``~
         ?@  from.goal
           ?:  =(ship.goal our.bowl)
+            ``[%import-player +.goal]~
+          ?:  ?=([~ ~] (~(get by port-offers.deed.turf) ship.goal))
+            :: allow people to retrace their steps if a port goes bad
             ``[%import-player +.goal]~
           =/  invite  (~(gut by invites.deed.turf) `@t`from.goal ~)
           ?~  invite  ``~
@@ -558,13 +450,6 @@
       ?.  =(portal-id.req from.goal)
         `~[goal]~
       ``[%import-player ship.goal `from.goal avatar.req]~
-    %join-player
-      =|  =player
-      =.  wake.player  `now.bowl
-      ``[%add-player ship.goal player(avatar avatar.goal)]~
-        %add-player
-      :-  [%player-add ship.goal]~
-      ~[goal]~
     %del-player
       ?.  |(=(our src):bowl =(ship.goal src.bowl))  ``~
       :-  [%player-del ship.goal]~
@@ -574,47 +459,40 @@
       :_  `~
       [%host-call (~(put in ships.goal) src.bowl) ~]~
     ?(%click %interact)
-      =+  (pull-trigger-on-shade turf src.bowl -.goal shade-id.goal)
-      [roars ~ goals]
+      ``(pull-trigger-on-shade turf src.bowl -.goal^~ shade-id.goal ~)
+    %pull-trigger
+      ?:  top  ``~
+      ``(pull-trigger-on-shade turf src.bowl ctx.goal)
     %apply-effect
-      =+  (apply-effect turf src.bowl effect.goal shade-id.goal)
+      ?:  top  ``~
+      =+  (~(apply-effect ap [turf src.bowl ctx.goal]) effect.goal)
       [roars ~ goals]
   ==
 ++  pull-trigger-at-pos
-  |=  [=turf =ship =trigger pos=svec2]
-  ^-  [=roars:pond =goals:pond]
-  =/  things  (get-things turf pos)
+  |=  [=turf =ship =trigger pos=svec2 init-id=(unit shade-id)]
+  ^-  =goals:pond
+  =/  comps  (get-comps turf pos)
+  (pull-trigger-on-comps turf ship trigger comps init-id)
+++  pull-trigger-on-shade
+  |=  [=turf =ship ctx=fx-ctx]
+  ^-  goals:pond
+  =/  comp  (get-comp-by-shade-id turf shade-id.ctx)
+  ?~  comp  `~
+  (pull-trigger-on-comps turf ship trigger.ctx [u.comp]~ init-id.ctx)
+++  pull-trigger-on-comps
+  |=  [=turf =ship =trigger comps=(list comp) init-id=(unit shade-id)]
+  ^-  goals:pond
   =/  effects=(list [shade-id effect])
-    %+  murn  things
-    |=  [=shade-id =thing]
-    =/  effect  (get-effect thing trigger)
-    ?~  effect  ~
-    ?:  &(?=(%bump trigger) !(is-thing-collidable turf thing))
-      ~
-    `[shade-id u.effect]
-  :-  ~
+    %-  zing
+    %+  turn  comps
+    |=  [=shade-id =comp]
+    ^-  (list [shade-id effect])
+    %+  turn  (get-effects comp turf ship trigger shade-id init-id)
+    |=  =effect  [shade-id effect]
   %+  turn  effects
   |=  [=shade-id =effect]
   ^-  goal:pond
-  [%apply-effect effect shade-id]
-  :: %+  roll  effects
-  :: |=  [[=shade-id =effect] =roars:pond =goals:pond]
-  :: =/  res  (apply-effect turf ship effect shade-id)
-  :: :-  (weld roars roars.res)
-  :: (weld goals goals.res)
-++  pull-trigger-on-shade
-  |=  [=turf =ship =trigger =shade-id]
-  ^-  [=roars:pond =goals:pond]
-  =/  thing  (get-thing-by-shade-id turf shade-id)
-  ?~  thing  `~
-  =/  effect  (get-effect u.thing trigger)
-  ?~  effect  `~
-  ?:  &(?=(%bump trigger) !(is-thing-collidable turf u.thing))
-    `~
-  :-  ~
-  [%apply-effect u.effect shade-id]~
-  :: =/  res  (apply-effect turf ship u.effect shade-id)
-  :: [roars.res goals.res]
+  [%apply-effect effect trigger shade-id init-id]
 ++  path-to-turf-id
   |=  =path
   ^-  (unit turf-id)

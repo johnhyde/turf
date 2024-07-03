@@ -116,16 +116,14 @@
     |=  res=(response:poke lake paths)
     ^-  (quip card:agent:gall subs)
     =*  current  [src.bowl dude.res path.res]
-    :: ~?  ?=(~ (~(get by sub) current))
-    ::   "key {<current>} not found in sub {<sub>}"
-    ?:  ?=(%future what.res)  `0/(~(del by sub) current)
     =/  old=flow  (fall (~(got by sub) current) *flow)
+    ?:  ?=(%future what.res)  `0/(~(del by sub) current)
     ?:  ?=(%tomb what.res)
       =/  =flow  old(stale &)
       :_  0/(~(put by sub) current `flow)  :_  ~
       (on-rock-poke fake=& current flow ~)
     ::
-    =/  [wave=(unit vave:lake) new=(unit flow)]
+    =/  [wave=(unit wave:lake) new=(unit flow)]
       ?-  what.res
         %rock  ?:  (lte aeon.res aeon.old)  [~ ~]
                [~ `[aeon.res | | (urck:lake rock.res)]]
@@ -157,13 +155,13 @@
         %poke   sss-to-pub/[result-type `result`[where dap.bowl]]
     ==
   ++  on-rock-poke
-    |=  [fake=? [=ship =dude path=paths] flow wave=(unit vave:lake)]
+    |=  [fake=? [=ship =dude path=paths] flow wave=(unit wave:lake)]
     ^-  card:agent:gall
     :*  %pass   %+  zoom  ?:(fake %fake %on-rock)
                 (scot %ud aeon)^(scot %p ship)^dude^path
         %agent  [our dap]:bowl
         %poke   ?:(fake %sss-fake-on-rock %sss-on-rock)
-        on-rock-type  `from`[path ship dude stale fail (urck:lake rock) (bind wave uwve:lake)]
+        on-rock-type  `from`[path ship dude stale fail (urck:lake rock) wave]
     ==
   --
 ++  du                                       ::  Manage publications.
@@ -392,7 +390,6 @@
     |=  [payload=_|2:*(response:poke lake paths) =ship =dude path=paths]
     ^-  card:agent:gall
     =*  mark  (cat 3 %sss- name:lake)
-    :: ?:  ?=(%future what.payload)  ~&('this should never happen' *card:agent:gall)
     ~?  ?=(%future what.payload)  'this should never happen. if you see this in dojo, please tell ~midlev-mindyr'
     =/  callback=^path
       ?:  ?=(?(%tomb %future) what.payload)  (zoom tomb-response/(scot %p ship)^dude^path)

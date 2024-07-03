@@ -45,23 +45,26 @@
       [%cycle-shade =shade-id amt=@ud]
       [%set-shade-var =shade-id variation=@ud]
       [%set-shade-fx =shade-id fx=(unit fx)]
-      [%add-shade-reflex =shade-id =reflex]
-      [%del-shade-reflex =shade-id index=@ud]
-      [%set-shade-reflex =shade-id index=@ud =reflex]
-      [%set-shade-effect =shade-id =trigger effect=(unit effect)]
+      :: [%add-shade-reflex =shade-id =reflex]
+      :: [%del-shade-reflex =shade-id index=@ud]
+      :: [%set-shade-reflex =shade-id index=@ud =reflex]
+      [%set-shade-effect =shade-id trigger=root-condition effect=(unit effect)]
       [%set-shade-collidable =shade-id collidable=(unit ?)]
       [%set-shade-form-id =shade-id =form-id]
-      [%set-lunk lunk=(unit lunk)]
-      [%set-dink =portal-id approved=?]
-      [%del-dink =portal-id]
-      [%add-portal for=turf-id at=(unit portal-id)]
-      [%del-portal from=portal-id loud=?]
       ::  secret grits
-      [%add-shade-to-portal from=portal-id =shade-id]
-      [%del-shade-from-portal from=portal-id =shade-id]
-      [%del-portal-from-shade =shade-id =portal-id]
+      [%set-gate gate=(unit shade-id)]
+      [%set-lunk lunk=(unit portal-id)]
+      [%add-dink =portal-id]
+      [%del-dink =portal-id]
+      ::  end secret grits
+      [%add-portal for=turf-id at=(unit portal-id)]
+      [%del-portal =portal-id loud=?]
+      [%set-portal-outlet =portal-id =outlet]
+      [%confirm-portal =portal-id]
+      [%revive-portal =portal-id]
       ::
       [%portal-confirmed from=portal-id at=portal-id]
+      [%portal-discarded from=portal-id]
       ::
       [%chat =chat]
       [%move =ship pos=svec2 collide=? smooth=?]
@@ -71,6 +74,7 @@
       [%add-invite id=invite-id =invite]
       [%del-invite id=invite-id]
       [%add-port-offer =ship from=portal-id]
+      [%nil-port-offer =ship]
       [%del-port-offer =ship]
       [%add-port-req =ship from=$@(?(~ invite-id) [~ u=portal-id]) =avatar]
       [%del-port-req =ship]
@@ -102,27 +106,26 @@
 +$  create-bridge-goal
   $:  %create-bridge
       shade=?(shade-id add-shade-spec) 
-      =trigger
+      trigger=root-condition
       portal=?(portal-id turf-id)
       :: link=(unit ?(%lunk %dink))
   ==
 +$  goal
   $%  cur-grit
-      [%atomic depth=$~(20 @) goals=(list goal)]
+      [%atomic goals=(list goal)]
       [%call ships=(set ship) ~]
       [%send-chat from=ship text=cord]
       [%click =shade-id]
       [%interact =shade-id]
-      [%apply-effect =effect =shade-id]
+      :: init-id refers to the item that triggered the effect, if any
+      [%pull-trigger ctx=fx-ctx]
+      [%apply-effect =effect ctx=fx-ctx]
       ::
-      [%join-player =ship =avatar]
-      [%approve-dink =portal-id]
       create-bridge-goal
       ::  we are receiving updates about a peer's portal
       ::  these are produced from roars of various goals
-      [%portal-requested for=turf-id at=portal-id is-link=?]
+      [%portal-requested for=turf-id at=portal-id]
       [%portal-retracted for=turf-id at=portal-id]
-      [%portal-discarded from=portal-id]
       ::
       [%port-offer-accepted =ship from=portal-id]
       [%port-offer-rejected =ship from=portal-id]
@@ -134,11 +137,11 @@
 :: which update state and produce cards
 +$  portal-event  ?(%requested %retracted %confirmed %rejected %discarded)
 +$  roar
-  $%  [%portal-request from=portal-id for=turf-id is-link=?]
+  $%  [%portal-request from=portal-id for=turf-id]
       [%portal-retract from=portal-id for=turf-id]
       [%portal-confirm from=portal-id for=turf-id at=portal-id]
       [%portal-discard for=turf-id at=portal-id]
-      [%portal-hark event=portal-event is-link=? from=portal-id for=turf-id]
+      [%portal-hark event=portal-event from=portal-id for=turf-id]
       [%port =ship for=turf-id at=portal-id]
       [%port-offer =ship from=portal-id for=turf-id at=portal-id]
       [%port-reject =ship]
@@ -187,66 +190,55 @@
     %del-form  (del-form turf form-id.grit)
     %add-shade  (add-shade turf +>.grit)
     %del-shade  (del-shade turf +.grit)
-    ?(%move-shade %tele-shade)  (move-shade turf +.grit)
+    %move-shade  (move-shade turf shade-id.grit pos.grit)
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-fx  (set-shade-fx turf +.grit)
-    %add-shade-reflex  (add-shade-reflex  +.grit)
-    %del-shade-reflex  (del-shade-reflex  +.grit)
-    %set-shade-reflex  (set-shade-reflex  +.grit)    
+    :: %add-shade-reflex  (add-shade-reflex  +.grit)
+    :: %del-shade-reflex  (del-shade-reflex  +.grit)
+    :: %set-shade-reflex  (set-shade-reflex  +.grit)
+    %set-shade-effect  (set-shade-effect turf +.grit)
     %set-shade-collidable  (set-shade-collidable turf +.grit)
     %set-shade-form-id  (set-shade-form-id turf +.grit)
     ::
+    %set-gate  turf(gate.deed gate.grit)
     %set-lunk  turf(lunk.deed lunk.grit)
-    %set-dink
+    %add-dink
       =.  dinks.deed.turf
-        (~(put by dinks.deed.turf) portal-id.grit approved.grit)
+        (~(put in dinks.deed.turf) portal-id.grit)
       turf
     %del-dink
       =.  dinks.deed.turf
-        (~(del by dinks.deed.turf) portal-id.grit)
+        (~(del in dinks.deed.turf) portal-id.grit)
       turf
     %add-portal  (add-portal turf for.grit at.grit)
-    %del-portal  (del-portal turf from.grit)
-    %add-shade-to-portal
-      %^  jab-by-portals  turf  from.grit
+    %del-portal  (del-portal turf portal-id.grit)
+    %set-portal-outlet
+      %^  jab-by-portals  turf  portal-id.grit
       |=  =portal
-      portal(shade-id `shade-id.grit)
-    %del-shade-from-portal
-      %^  jab-by-portals  turf  from.grit
+      portal(outlet outlet.grit)
+    %confirm-portal
+      %^  jab-by-portals  turf  portal-id.grit
       |=  =portal
-      ?.  =(shade-id.portal `shade-id.grit)
-        portal
-      portal(shade-id ~)
-    %del-portal-from-shade
-      ?.  (~(has by cave.plot.turf) shade-id.grit)
-        turf
-      =.  cave.plot.turf
-        %+  ~(jab by cave.plot.turf)  shade-id.grit
-        |=  =shade
-        =+  (get-effects-by-shade turf shade)
-        =/  overrides
-          %-  malt
-          %+  murn  ~(tap by full-fx)
-          |=  [=trigger eff=(unit possible-effect)]
-          ^-  (unit [_trigger _eff])
-          ?~  eff  ~
-          ?@  u.eff  ~
-          ?.  ?=(%port -.u.eff)  ~
-          ?.  =(portal-id.u.eff portal-id.grit)
-            ~
-          `[trigger `%port]
-        shade(effects (~(uni by husk-fx) overrides))
-      turf
-    ::
+      ?~  at.portal  portal
+      portal(pending %.n)
+    %revive-portal
+      %^  jab-by-portals  turf  portal-id.grit
+      |=  =portal
+      ?^  at.portal  portal
+      portal(pending %.y)
     %portal-confirmed
       %^  jab-by-portals  turf  from.grit
       |=  =portal
-      portal(at `at.grit)
+      portal(at `at.grit, pending %.n)
+    %portal-discarded
+      %^  jab-by-portals  turf  portal-id.grit
+      |=  =portal
+      portal(at ~, pending %.n)
     ::
     %chat
       turf(chats.ephemera [chat.grit (scag 19 chats.ephemera.turf)])
-    ?(%move %tele)
+    %move
       %^  jab-by-players  turf  ship.grit
       |=  =player
       player(pos pos.grit)
@@ -262,7 +254,11 @@
       player(avatar avatar.grit)
     %add-port-offer
       =.  port-offers.deed.turf
-        (~(put by port-offers.deed.turf) ship.grit from.grit)
+        (~(put by port-offers.deed.turf) ship.grit `from.grit)
+      turf
+    %nil-port-offer
+      =.  port-offers.deed.turf
+        (~(put by port-offers.deed.turf) ship.grit ~)
       turf
     %del-port-offer
       =.  port-offers.deed.turf
@@ -326,38 +322,62 @@
   |=  =turf:pold
   ^-  ^turf
   =/  players  (~(run by players.ephemera.turf) uplr)
-  =/  port-reqs
-    %-  ~(run by port-reqs.deed.turf)
-    |=  [pid=portal-id vtr=avatar:pold]
-    pid^(uvtr vtr)
   =/  plot  (uplt plot.turf)
   %=  turf
     players.ephemera  players
-    port-reqs.deed  port-reqs
+    deed  (uded deed.turf cave.turf)
     plot  plot
   ==
 ++  uplr
   |=  plr=player:pold
   ^-  player
   plr(avatar (uvtr avatar.plr))
+++  uded
+  |=  [ded=deed:pold cav=cave:pold]
+  ^-  deed
+  =/  =portals
+    %-  ~(run by portals.ded)
+    |=  [pid=portal-id ptl=portal]
+    :-  pid
+    :^  shade-id.ptl  for.ptl  at.ptl
+    ?~  at.ptl  %.y
+    ?^  shade-id.ptl
+      %.n  :: if shade is set, portal is stable
+    ?:  ?=([~ %.y] (~(get by dinks.ded) pid))
+      %.n  :: dink approved, portal is stable
+    %.y  :: no dink approved, pending
+  =/  =port-reqs
+    %-  ~(run by port-reqs.ded)
+    |=  [pid=portal-id vtr=avatar:pold]
+    pid^(uvtr vtr)
+  =/  [gate lunk]
+    ?~  lunk.ded  `~
+    :-  `shade-id.u.lunk.ded
+    ?~  shade=(~(gut by cav) shade-id.u.lunk.ded ~)
+      ~
+    ?~  eff=(~(get by effects.shade) %step)
+      ~
+    ?~  eff  ~
+    ?.  ?=([%port *] u.eff)  ~
+    `portal-id.u.eff
+  =/  back
+    :*  portals
+        port-reqs
+        port-recs.ded
+        (~(run by port-offers.ded) some)
+        %.n
+        gate
+        lunk
+        ~(key by dinks.ded)
+    ==
+  ded(|3 back)
 ++  uplt
   |=  plt=plot:pold
   ^-  plot
-  :-  color+0xa6.e4e8
-  :^  size.plt  offset.plt  tile-size.plt
-  =/  [=spaces cav=cave count=@ud]
-    =/  acc  [spaces=*spaces cav=cave.plt count=stuff-counter.plt]
-    %-  ~(rep by spaces.plt)
-    |=  [[pos=svec2 spc=space:pold] _acc]
-    ^-  _acc
-    ?~  tile.spc
-      :-  (~(put by spaces) pos spc)
-      [cav count]
-    :+  (~(put by spaces) pos spc(tile `count))
-      (~(put by cav) count [pos u.tile.spc])
-    +(count)
-  =/  sky  (~(run by skye.plt) ufrm)
-  [spaces sky cav count]
+  %=  plt
+    cave  (~(run by cave.plt) uhsk)
+    skye  (~(run by skye.plt) ufrm)
+  ==
 ::
 ++  ugrt
   |=  g=vrit
@@ -377,17 +397,13 @@
     %add-form
       grit(form (ufrm form.grit))
     %set-shade-effect
-      =|  index=@ud
-      |-  
-      =/  del
-        ?~  index  [%noop ~]
-        [%del-shade-reflex shade-id.grit u.index]
-      ?~  effect.grit  del
-      ?@  u.effect.grit  del
-      =/  =reflex  (trigger-effect-to-reflex [trigger u.effect]:grit)
-      ?~  index
-        [%add-shade-reflex shade-id.grit reflex]
-      [%set-shade-reflex shade-id.grit u.index reflex]
+      =/  eff=(unit effect)
+        ?~  effect.grit  ~
+        ?@  u.effect.grit  ~
+        `(ueff u.effect.grit)
+      :^  %set-shade-effect  shade-id.grit
+        (old-trigger-to-root-condition trigger.grit)
+      eff
     %reset-shade-effects
       [%set-shade-fx shade-id.grit ~]
     %set-avatar
