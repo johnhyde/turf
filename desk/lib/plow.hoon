@@ -157,7 +157,7 @@
       :-  [goal]~
       ?.  =(`shade-id.goal gate.deed.turf)
         ~
-      [%set-gate ~]
+      [%set-gate ~]~
     %move-shade
       =/  shade  (~(gut by cave.plot.turf) shade-id.goal ~)
       ?~  shade  ``~
@@ -168,7 +168,7 @@
       ?:  =(pos pos.shade)  ``~
       ?:  &(collide.goal (get-collidable turf pos))
         =/  bump-goals=goals:pond
-          (pull-trigger-at-pos turf ship.goal bump+~ pos `shade-id.goal)
+          (pull-trigger-at-pos turf src.bowl bump+~ pos `shade-id.goal)
         ``bump-goals
       =/  grits=cur-grits:pond  [goal(pos pos)]~
       =/  =goals:pond
@@ -179,26 +179,26 @@
       =/  =trigger
         [%move pos.shade pos collide.goal smooth.goal]
       =/  leave-goals
-        (pull-trigger-at-pos turf ship.goal trigger pos.shade `shade-id.goal)
+        (pull-trigger-at-pos turf src.bowl trigger pos.shade `shade-id.goal)
       =/  step-goals
-        (pull-trigger-at-pos turf ship.goal trigger pos `shade-id.goal)
+        (pull-trigger-at-pos turf src.bowl trigger pos `shade-id.goal)
       :+  ~  grits
       :(weld goals leave-goals step-goals)
     %set-gate
-      ?:  &(top !=(our src):bowl))  ``~
+      ?:  &(top !=(our src):bowl)  ``~
       `~[goal]~
     %set-lunk
-      ?:  &(top !=(our src):bowl))  ``~
+      ?:  &(top !=(our src):bowl)  ``~
       ?:  =(+.goal lunk.deed.turf)  ``~
       :+  ~  [goal]~
       ?~  lunk.deed.turf  ~
       ?~  +.goal  ~  :: don't del in this case to avoid infinite loop
-      [%del-portal u.lunk.deed.turf]~
+      [%del-portal u.lunk.deed.turf loud=%.y]~
     %add-dink
-      ?:  &(top !=(our src):bowl))  ``~
+      ?:  &(top !=(our src):bowl)  ``~
       `~[goal]~
     %del-dink
-      ?:  &(top !=(our src):bowl))  ``~
+      ?:  &(top !=(our src):bowl)  ``~
       `~[goal]~
     ::
     %create-bridge
@@ -262,29 +262,29 @@
       ?:  &(top !=(our src):bowl)  ``~
       =/  is-link  !=((is-host our.bowl) (is-host src.bowl))
       =/  is-dink  &(is-link (gth src.bowl our.bowl))
-      =/  portal  (~(gut by portals.deed.turf) from.goal ~)
+      =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
       :-  ?.  loud.goal  ~
           ?~  at.portal
-            [%portal-retract from.goal for.portal]~
+            [%portal-retract portal-id.goal for.portal]~
           [%portal-discard for.portal u.at.portal]~
       :-  [goal]~
       ^-  goals:pond
-      :-  [%del-port-recs from.goal]
+      :-  [%del-port-recs portal-id.goal]
       ?.  is-link  ~
       ?:  is-dink
-        [%del-dink from.goal]~
-      ?.  (portal-is-lunk turf from.goal)
+        [%del-dink portal-id.goal]~
+      ?.  (portal-is-lunk turf portal-id.goal)
         ~
       [%set-lunk ~]~
     %set-portal-outlet
       ?:  &(top !=(our src):bowl)  ``~
       =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
-      :-  ?~  at.portal  ~
-          ?.  pending.portal  ~
-          [%confirm-portal portal-id.goal]~
-      ~[goal]~
+      :+  ~  [goal]~
+      ?~  at.portal  ~
+      ?.  pending.portal  ~
+      [%confirm-portal portal-id.goal]~
     %confirm-portal
       ?:  &(top !=(our src):bowl)  ``~
       =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
@@ -309,7 +309,7 @@
         :: todo allow lunk requests but don't override current lunk
         :_  `~
         [%portal-discard for.goal at.goal]~
-      :-  [%portal-hark %requested dink-id for.goal]~
+      :-  [%portal-hark %requested stuff-counter.plot.turf for.goal]~
       :-  ~
       [%add-portal for.goal `at.goal]~
     ::
@@ -459,25 +459,26 @@
       :_  `~
       [%host-call (~(put in ships.goal) src.bowl) ~]~
     ?(%click %interact)
-      ``(pull-trigger-on-shade turf src.bowl -.goal^~ shade-id.goal ~)
+      =/  trigger  ?:(?=(%click -.goal) -.goal^~ -.goal^~)
+      ``(pull-trigger-on-shade turf src.bowl trigger shade-id.goal ~)
     %pull-trigger
       ?:  top  ``~
       ``(pull-trigger-on-shade turf src.bowl ctx.goal)
     %apply-effect
       ?:  top  ``~
-      =+  (~(apply-effect ap [turf src.bowl ctx.goal]) effect.goal)
+      =+  (apply-effect [turf src.bowl ctx.goal] effect.goal)
       [roars ~ goals]
   ==
 ++  pull-trigger-at-pos
   |=  [=turf =ship =trigger pos=svec2 init-id=(unit shade-id)]
-  ^-  =goals:pond
+  ^-  goals:pond
   =/  comps  (get-comps turf pos)
   (pull-trigger-on-comps turf ship trigger comps init-id)
 ++  pull-trigger-on-shade
   |=  [=turf =ship ctx=fx-ctx]
   ^-  goals:pond
   =/  comp  (get-comp-by-shade-id turf shade-id.ctx)
-  ?~  comp  `~
+  ?~  comp  ~
   (pull-trigger-on-comps turf ship trigger.ctx [u.comp]~ init-id.ctx)
 ++  pull-trigger-on-comps
   |=  [=turf =ship =trigger comps=(list comp) init-id=(unit shade-id)]
@@ -485,10 +486,10 @@
   =/  effects=(list [shade-id effect])
     %-  zing
     %+  turn  comps
-    |=  [=shade-id =comp]
+    |=  =comp
     ^-  (list [shade-id effect])
-    %+  turn  (get-effects comp turf ship trigger shade-id init-id)
-    |=  =effect  [shade-id effect]
+    %+  turn  (get-effects comp turf ship trigger shade-id.comp init-id)
+    |=  =effect  [shade-id.comp effect]
   %+  turn  effects
   |=  [=shade-id =effect]
   ^-  goal:pond

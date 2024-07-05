@@ -11,10 +11,10 @@
     =/  mid-pos  (get-entry-pos turf)
     =.  turf
       %=  turf
-        skye.plot           default-skye
+        skye.plot         default-skye
         :: spaces.plot         (fill-space size offset /grass)
-        players.ephemera    (~(put by players.ephemera.turf) our (new-player mid-pos av))
-        lunk.deed      `[0 %.n]
+        players.ephemera  (~(put by players.ephemera.turf) our (new-player mid-pos av))
+        gate.deed         `0
       ==
     =.  turf  (add-shade turf [mid-pos /gate 0])
     =.  turf  (fill-empty-space turf /grass)
@@ -69,7 +69,6 @@
         =/  sign  (new-form-offset %item 'Sign' sign [--0 --6])
         %=  sign
           collidable  %.y
-          seeds  (malt [%interact %read]~)
         ==
       ::
         :-  /tree
@@ -97,34 +96,20 @@
         (new-form-variations [%wall %flat] 'Grassy Path' grassy-path *svec2)
       ::
         :-  /portal
-        =/  portal  (new-form %item 'Portal' portal)
-        %=  portal
-          seeds  (malt [%step %port]~)
-        ==
+        (new-form %item 'Portal' portal)
       ::
         :-  /gate
-        =/  gate  (new-form-variations %item 'Gate' gate [--16 --32])
-        %=  gate
-          seeds   (malt [%step %port]~)
-        ==
+        (new-form-variations %item 'Gate' gate [--16 --32])
       ::
         :-  /portal/house
         =/  house  (new-form-offset %item 'House Portal' house [--12 --32])
-        %=  house
-          seeds  (malt [%step %port]~)
-        ==
+        house(collidable %.y)
       ::
         :-  /tunnel
-        =/  tunnel  (new-form %item 'Tunnel' tunnel)
-        %=  tunnel
-          seeds  (malt [%step %jump]~)
-        ==
+        (new-form %item 'Tunnel' tunnel)
       ::
         :-  /tunnel/big
-        =/  tunnel-big  (new-form %item 'Big Tunnel' tunnel-big)
-        %=  tunnel-big
-          seeds  (malt [%step %jump]~)
-        ==
+        (new-form %item 'Big Tunnel' tunnel-big)
       ::
         :-  /flowers/red
         (new-form %item 'Red Flowers' flowers-red)
@@ -487,7 +472,7 @@
 ++  portal-is-dink
   |=  [=turf =portal-id]
   ^-  ?
-  (~(has by dinks.deed.turf) portal-id)
+  (~(has in dinks.deed.turf) portal-id)
 ++  get-gate-pos
   |=  =turf
   ^-  (unit svec2)
@@ -683,15 +668,20 @@
   %^  jab-by-shades  turf  id
   |=  [=shade =form]  ^-  ^shade
   =/  fax=fx  (fall fx.shade ~)
-  =/  fex=fx
-    %+  murn  fx
-    |=  [rt=root-condition ef=effect]
-    ?.  =(rt root)  `[rt ef]
-    ?~  eff  ~
-    `[rt u.eff]
-  =?  fex  &(=(fax fex) ?=(^ eff))
-    (snoc fex [root u.eff])
-  shade(fx `fx)
+  =/  index
+    =|  i=@ud
+    |-  ^-  (unit @ud)
+    ?~  fax  ~
+    ?:  =(root.i.fax root)
+      `i
+    $(i +(i), fax t.fax)
+  =.  fax
+    ?~  index
+      ?~  eff  fax
+      (snoc fax [root u.eff])
+    ?~  eff  (oust [u.index 1] fax)
+    (snap fax u.index [root u.eff])
+  shade(fx `fax)
 ++  set-shade-collidable
   |=  [=turf id=shade-id collidable=(unit ?)]
   ^-  ^turf
@@ -709,7 +699,9 @@
   ^-  ^turf
   =/  portals  portals.deed.turf
   %=  turf
-    portals.deed  (~(put by portals) stuff-counter.plot.turf [~ for at])
+    portals.deed
+      %+  ~(put by portals)  stuff-counter.plot.turf
+      [~ for at pending=%.y]
     stuff-counter.plot  +(stuff-counter.plot.turf)
   ==
 ++  del-portal

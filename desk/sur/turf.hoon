@@ -177,6 +177,7 @@
   $%  [%or roots=(list root-condition)]
       [%and root=root-condition cons=(list condition)]
       [%trigger trigger=trigger-condition]
+  ==
 +$  condition
   $%  [%and cons=(list condition)]
       [%or cons=(list condition)]
@@ -192,20 +193,19 @@
       [%move-smooth smooth=?]
       [%loc-eq a=fx-loc b=fx-loc]
   ==
-++  trigger-type  (tags trigger)
 +$  trigger
   $%  [%move start=svec2 end=svec2 collide=? smooth=?]
       [%bump ~]
       [%interact ~]
       [%click ~]
-      [%message msg=@t]
+      [%tell msg=@t]
   ==
 +$  trigger-condition
   $%  [%move con=move-condition]
       [%bump ~]
       [%interact ~]
       [%click ~]
-      [%message con=[%eq msg=@t]]  :: todo: add contains & contained-by
+      [%tell con=msg-condition]
   ==
 +$  move-condition
   $%  [%onto ~]
@@ -213,6 +213,10 @@
       :: [%enter radius=@ud]
       :: [%leave radius=@ud]
       :: [%within pos=?(%start %end) radius=@ud]
+  ==
++$  msg-condition
+  :: todo: add contains & contained-by
+  $%  [%eq msg=@t]
   ==
 +$  int-rel
   $%  [%eq num=@ud]
@@ -227,14 +231,15 @@
       ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
       [%noop ~]
       [%port =portal-id]  :: port player to turf
-      [%read note=@t actions=(list [name=@t =effect])]  :: show dialog box
-      [%clear-actions actions=(list root-condition)]
+      [%read note=@t actions=fx-actions-def]  :: show dialog box
+      [%wipe actions=(list root-condition)]
       [%swap with=form-id]  :: for opening/closing doors
       [%seem var=@ud]  :: display item variation
       [%vary var=@ud]  :: set item variation
       [%move =target to=fx-loc collide=? smooth=?]
-      [%message target=item-target msg=@t]  :: what does message a player mean? goofy
+      [%tell target=item-target msg=@t]
   ==
++$  fx-actions-def  (list [name=@t =effect])
 +$  fx-serial  ?(%serial %simult %atomic)
 +$  target
   $@  ?(%this %user %initiator)  absolute-target
@@ -250,7 +255,7 @@
 +$  fx-loc
   $%  [%target =target]
       [%offset offset=fx-offset loc=fx-loc]
-      [%initiator-start ~]
+      [%mover-pos ?(%start %end)]
       :: [%mean locs=(list fx-loc)]
       [%absolute pos=svec2]
   ==
@@ -344,16 +349,21 @@
 ++  uvtr
   |=  vtr=avatar:told
   ^-  avatar
-  `vtr(things (turn things.vtr utng), thing.body (utng thing.body.vtr))
+  vtr(things (turn things.vtr utng), thing.body (utng thing.body.vtr))
 ++  utng
   |=  tng=thing:told
   ^-  thing
   :-  (uhsk -.tng)
   (ufrm form.tng)
+++  ushd
+  |=  shd=shade:told
+  ^-  shade
+  :-  pos.shd
+  (uhsk +.shd)
 ++  uhsk
   |=  hsk=husk:told
   ^-  husk
-  hsk(effects (uufx effects))
+  hsk(effects (uufx effects.hsk))
 ++  ufrm
   |=  frm=form:told
   ^-  form
@@ -361,6 +371,8 @@
 ++  uufx
   |=  [=ufx:told]
   ^-  (unit fx)
+  ?:  =(~ ufx)  ~  :: avoid type info
+  :-  ~
   %+  murn  ~(tap by ufx)
   |=  [=trigger:told upe=(unit possible-effect:told)]
   ?~  upe  ~
@@ -369,7 +381,7 @@
 ++  u-fx
   |=  [fax=fx:told]
   ^-  fx
-  (turn ~(tap by fx) trigger-effect-to-reflex)
+  (turn ~(tap by fax) trigger-effect-to-reflex)
 ++  trigger-effect-to-reflex
   |=  [=trigger:told =effect:told]
   ^-  reflex
@@ -383,7 +395,10 @@
 ++  old-trigger-to-trigger-condition
   |=  trg=trigger:told
   ^-  trigger-condition
-  ?+  trg  [trg ~]
+  ?-  trg
+    %bump  trg^~
+    %click  trg^~
+    %interact  trg^~
     %step  [%move %onto ~]
     %leave  [%move %off ~]
   ==
@@ -398,8 +413,8 @@
     %tele  [%move target.eff to.eff %.n %.n]
   ==
 ++  usrl
-  |=  srl=serial:told
-  ^-  serial
+  |=  srl=fx-serial:told
+  ^-  fx-serial
   ?+  srl  srl
     %.y  %serial
     %.n  %simult

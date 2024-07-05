@@ -494,10 +494,14 @@ export function startPhaser(_owner, _container) {
             if (typeof state.huskToPlace.shade === 'object') {
               const shade = state.huskToPlace.shade;
               if (state.huskToPlace.portal !== undefined) {
-                state.createBridge({
-                  ...shade,
-                  pos,
-                }, state.huskToPlace.portal);
+                state.createBridge(
+                  {
+                    ...shade,
+                    pos,
+                  },
+                  state.huskToPlace.portal,
+                  shadeformId === '/portal/house' ? 'interact' : 'move onto', // todo: trigger how??
+                );
               } else {
                 state.addShade(
                   pos,

@@ -1,4 +1,4 @@
-/-  *turf, pond, mist, hark, turf-3
+/-  *turf, pond, mist, hark, turf-3, turf-4
 /+  *turf, *sss, *ssio, *plow, default-agent, dbug, verb, agentio, vita-client
 /%  sss-mist-mark  %sss-mist
 /%  sss-pond-mark  %sss-pond
@@ -27,6 +27,7 @@
   $%  state-0
       state-1
       state-2
+      state-3
   ==
 +$  state-0
   $:  %0
@@ -46,10 +47,17 @@
   $:  %2
       =reset
       =skye-reset
+      closet=skye:turf-4
+      lakes
+  ==
++$  state-3
+  $:  %3
+      =reset
+      =skye-reset
       =closet
       lakes
   ==
-+$  current-state  state-2
++$  current-state  state-3
 +$  reset  _63
 +$  skye-reset  _10
 +$  closet  $~(default-closet:gen skye)
@@ -117,6 +125,8 @@
     (state-0-to-1 cards-0 old)
   =?  quolp  ?=(%1 -.old)
     (state-1-to-2 cards-0 old)
+  =?  quolp  ?=(%2 -.old)
+    (state-2-to-3 cards-0 old)
   :: =/  old  *current-state
   ?>  ?=(_-:*current-state -.old)
   =.  state  old
@@ -159,6 +169,12 @@
     ^-  (quip card state-2)
     :-  cards
     :-  %2
+    +.s(closet (~(run by closet.s) ufrm:turf-4))
+  ++  state-2-to-3
+    |=  [cards=(list card) s=state-2]
+    ^-  (quip card state-3)
+    :-  cards
+    :-  %3
     +.s(closet (~(run by closet.s) ufrm))
   --
 ::

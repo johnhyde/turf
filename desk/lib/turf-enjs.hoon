@@ -69,8 +69,8 @@
           (add-shade-spec +.grit)
         %del-shade
           (frond 'shadeId' (numb +.grit))
-        ?(%move-shade %tele-shade)
-          (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit)])
+        %move-shade
+          (pairs ~['shadeId'^(numb shade-id.grit) pos+(svec2 pos.grit) collide+b+collide.grit smooth+b+smooth.grit])
         %cycle-shade
           (pairs ~['shadeId'^(numb shade-id.grit) amount+(numb amt.grit)])
         %set-shade-var
@@ -92,10 +92,10 @@
           (pairs ~['shadeId'^(numb shade-id.grit) 'formId'^(path form-id.grit)])
         %set-gate
           :: (frond 'gate' ?~(gate.grit ~ (numb u.gate.grit)))
-          (frond 'gate' ((mayb numb) gate.grit)))
+          (frond 'gate' ((mayb numb) gate.grit))
         %set-lunk
           :: (frond 'lunk' ?~(lunk.grit ~ (numb u.lunk.grit)))
-          (frond 'lunk' ((mayb numb) lunk.grit)))
+          (frond 'lunk' ((mayb numb) lunk.grit))
         %add-dink
           (frond 'portalId' (numb portal-id.grit))
         %del-dink
@@ -108,12 +108,12 @@
           ==
         %del-portal
           %-  pairs
-          :~  'portalId'^(numb from.grit)
+          :~  'portalId'^(numb portal-id.grit)
               loud+b+loud.grit
           ==
         %set-portal-outlet
           %-  pairs
-          :~  'portalId'^(numb from.grit)
+          :~  'portalId'^(numb portal-id.grit)
               'outlet'^((mayb numb) outlet.grit)
           ==
         %confirm-portal
@@ -131,7 +131,6 @@
         ::
         %chat  (chat chat.grit)
         %move  (move +.grit)
-        %tele  (move +.grit)
         %face  (face +.grit)
         %ping-player
           %-  pairs
@@ -344,10 +343,10 @@
     ^-  json
     %-  pairs
     %+  turn  ~(tap by ^port-offers)
-    |=  [key=^ship =portal-id]
+    |=  [key=^ship pid=(unit portal-id)]
     ^-  [@t json]
     :-  (ship-cord key)
-    ((mayb numb) portal-id)
+    ((mayb numb) pid)
   ++  spaces
     ^-  json
     %-  pairs
@@ -395,7 +394,7 @@
   b+%.y
 ++  mayb
   |*  fun=$-(* json)
-  |=  a=(unit _+6.fun)
+  |*  a=(unit _+6:fun)
   ^-  json
   ?~  a  ~
   (fun u.a)
@@ -473,7 +472,7 @@
   |=  pol=^portal
   ^-  json
   %-  pairs
-  :~  outlet+((mayb numb) shade-id.pol)
+  :~  outlet+((mayb numb) outlet.pol)
       for+(turf-id for.pol)
       at+((mayb numb) at.pol)
       pending+b+pending.pol
@@ -548,7 +547,7 @@
   =,  add-shade-spec
   ^-  json
   %-  pairs
-  :~  'isLunk'^b+is-lunk
+  :~  'isGate'^b+is-gate
       pos+(svec2 pos)
       'formId'^(path form-id)
       variation+(numb variation)
@@ -583,60 +582,98 @@
   :~  root+(root-condition root.ref)
       effect+(effect effect.ref)
   ==
-:: ++  root-condition
+++  root-condition
+  |=  rut=^root-condition
+  ^-  json
+  %+  labeled  -.rut
+  ?-  -.rut
+    %or
+      a+(turn roots.rut root-condition)
+    %and
+      (pairs ~[root+(root-condition root.rut) cons+(conditions cons.rut)])
+    %trigger
+      (trigger-condition trigger.rut)
+  ==
+++  conditions
+  |=  cons=(list ^condition)  
+  ^-  json
+  a+(turn cons condition)
+++  condition
+  |=  con=^condition
+  ^-  json
+  %+  labeled  -.con
+  ?-  -.con
+    ?(%and %or)  (conditions cons.con)
+    %not  (condition con.con)
+    %eq  (pairs ~[a+(condition a.con) b+(condition b.con)])
+    %initiator  s+type.con
+    %initiator-eq  (fx-target target.con)
+    %user-eq  (ship-json ship.con)
+    %trigger  (trigger-condition trigger.con)
+    %item-exists  (fx-item-target item.con)
+    %variation  (pairs ~[item+(fx-item-target item.con) con+(int-rel con.con)])
+    %move-collide  b+collide.con
+    %move-smooth  b+smooth.con
+    %loc-eq  (pairs ~[a+(fx-loc a.con) b+(fx-loc b.con)])
+  ==
+++  trigger-condition
+  |=  ton=^trigger-condition
+  ^-  json
+  %+  labeled  -.ton
+  ?+  -.ton  ~
+    %move  (move-condition con.ton)
+    %tell  (msg-condition con.ton)
+  ==
+++  move-condition
+  |=  mon=^move-condition
+  ^-  json
+  %+  labeled  -.mon  ~
+++  msg-condition
+  |=  mon=^msg-condition
+  ^-  json
+  %+  labeled  -.mon
+  ?-  -.mon
+    %eq  s+msg.mon
+  ==
+++  int-rel
+  |=  rel=^int-rel
+  ^-  json
+  %+  labeled  -.rel
+  ?-  -.rel
+    %eq  (numb num.rel)
+  ==
+::
 ++  effect
   |=  eff=^effect
   ^-  json
   %+  labeled  -.eff
   ?-  -.eff
     %list  (fx-list +.eff)
+    %noop  ~
     %port  (numb +.eff)
-    %jump  (svec2 +.eff)
-    %read  s+note.eff
+    %read  (fx-read +.eff)
+    %wipe
+      a+(turn actions.eff root-condition)
     %swap  (path +.eff)
     %seem  (numb +.eff)
     %vary  (numb +.eff)
-    ?(%move %tele)  (fx-move +.eff)
+    %move  (fx-move +.eff)
+    %tell
+      (pairs ~[target+(fx-item-target target.eff) msg+s+msg.eff])
   ==
-  :: %-  (labeled eff)
-  :: ?-  -.eff
-  ::   %list
-  ::     |=  effects=(list ^effect)
-  ::     a+(turn effects effect-pairs)
-  ::   %port  numb
-  ::   %jump  svec2
-  ::   %read  (lead %s)
-  ::   %swap  path
-  ::   %seem  numb
-  ::   %vary  numb
-  ::   %move  fx-move
-  :: ==
-  :: %-  (labeled eff)
-  :: :~
-  ::   :-  %list
-  ::   |=  effects=(list ^effect)
-  ::   a+(turn effects effect-pairs)
-  ::   ::
-  ::   port+numb
-  ::   jump+svec2
-  ::   read+(lead %s)
-  ::   swap+path
-  ::   seem+numb
-  ::   vary+numb
-  ::   move+fx-move
-  :: ==
-:: ++  labeled
-::   |*  [type=term arg=*]
-::   |*  funs=(pole [term $-(_arg json)])
-::   ^-  json
-::   ?~  funs  ~|(bad-key+type !!)
-::   ?:  ?=(_-<.funs type)
-::     %-  pairs
-::     :~  type+s+type
-::         arg+[~|(key+type (->.funs arg))]
-::     ==
-::   ((labeled type arg) +.funs)
-  :: $(funs +.funs)
+++  fx-read
+  |=  [note=@t actions=(list [name=@t =^effect])]
+  ^-  json
+  %-  pairs
+  :~  note+s+note
+      ::
+      :-  'actions'
+      :-  %a
+      %+  turn  actions
+      |=  [name=@t eff=^effect]
+      ^-  json
+      (pairs ~[name+s+name effect+(effect eff)])
+  ==
 ++  labeled
   |=  [type=@tas arg=json]
   ^-  json
@@ -644,38 +681,33 @@
   :~  type+s+type
       arg+arg
   ==
-++  effect-type
-  |=  [=trigger =^effect-type]
-  ^-  (pair @t json)
-  [trigger s+effect-type]
 ++  fx-list
   |=  [serial=fx-serial effects=(list ^effect)]
   ^-  json
   %-  pairs
-  :~  :-  %serial
-      ?-  serial
-        %.y  b+%.y
-        %.n  b+%.n
-        %atomic  s+'atomic'
-      ==
-      effects+a+(turn effects effect-pairs)
+  :~  serial+s+serial
+      effects+a+(turn effects effect)
   ==
 ++  fx-move
-  |=  [tar=target to=^fx-loc]
+  |=  [tar=target to=^fx-loc collide=? smooth=?]
   ^-  json
-  (pairs ~[target+(fx-target tar) to+(fx-loc to)])
+  (pairs ~[target+(fx-target tar) to+(fx-loc to) collide+b+collide smooth+b+smooth])
 ++  fx-target
   |=  =target
   ^-  json
   ?@  target  s+target
-  :: %+  frond  -.target
-  :: ?:  ?=(%item -.target)
-  ::   (numb shade-id.target)
-  :: (ship-json ship.target)
   %+  labeled  -.target
   ?-  -.target
     %item  (numb shade-id.target)
     %player  (ship-json ship.target)
+  ==
+++  fx-item-target
+  |=  target=item-target
+  ^-  json
+  ?@  target  s+target
+  %+  labeled  -.target
+  ?-  -.target
+    %item  (numb shade-id.target)
   ==
 ++  fx-loc
   |=  loc=^fx-loc
@@ -688,6 +720,7 @@
       :~  offset+(fx-offset offset.loc)
           loc+(fx-loc loc.loc)
       ==
+    %mover-pos  s++.loc
     %absolute  (svec2 +.loc)
   ==
 ++  fx-offset
@@ -770,11 +803,13 @@
       path+(path path.id)
   ==
 ++  move
-  |=  [shp=^ship pos=^svec2]
+  |=  [shp=^ship pos=^svec2 collide=? smooth=?]
   ^-  json
   %-  pairs
   :~  ship+(ship-json shp)
       pos+(svec2 pos)
+      collide+b+collide
+      smooth+b+smooth
   ==
 ++  face
   |=  [shp=^ship =dir]

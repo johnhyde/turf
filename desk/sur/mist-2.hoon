@@ -12,7 +12,7 @@
 ++  urck  ^urck
 ++  ugrt  ^ugrt
 ++  ufam  foam
-++  wash  wash-grit
+:: ++  wash  wash-grit
 --
 |%
 :: +$  rock  $~(default-avatar:gen avatar)

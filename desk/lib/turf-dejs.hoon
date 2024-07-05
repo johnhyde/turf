@@ -37,25 +37,26 @@
       del-form+(ot ~['formId'^pa])
       add-shade+add-shade-spec
       del-shade+(ot ~['shadeId'^ni])
-      move-shade+(ot ~['shadeId'^ni pos+svec2])
-      tele-shade+(ot ~['shadeId'^ni pos+svec2])
+      move-shade+(ot ~['shadeId'^ni pos+svec2 collide+bo smooth+bo])
       cycle-shade+(ot ~['shadeId'^ni amount+ni])
       set-shade-var+(ot ~['shadeId'^ni variation+ni])
-      set-shade-effect+(ot ~['shadeId'^ni trigger+(cork so trigger) effect+maybe-possible-effect])
-      reset-shade-effects+(ot ~['shadeId'^ni])
+      set-shade-fx+(ot ~['shadeId'^ni fx+(mayb fx)])
+      set-shade-effect+(ot ~['shadeId'^ni trigger+root-condition effect+(mayb effect)])
       set-shade-collidable+(ot ~['shadeId'^ni collidable+bo:soft])
-      approve-dink+(ot ~['portalId'^ni])
       :-  %create-bridge
       %-  ot
       :~  shade+(maybe-ni add-shade-spec)
-          trigger+(cork so trigger)
+          trigger+root-condition
           portal+(maybe-ni ot-turf-id)
       ==
       ::
       add-portal+(ot ~[for+ot-turf-id at+ni:soft])
-      del-portal+(ot ~[from+ni loud+bo])
+      del-portal+(ot ~['portalId'^ni loud+bo])
+      set-portal-outlet+(ot ~['portalId'^ni outlet+ni:soft])
+      confirm-portal+(ot ~['portalId'^ni])
+      revive-portal+(ot ~['portalId'^ni])
       send-chat+(ot ~[from+shp text+so])
-      move+(ot ~[ship+shp pos+svec2])
+      move+(ot ~[ship+shp pos+svec2 collide+bo smooth+bo])
       face+(ot ~[ship+shp dir+dir])
       ping-player+(ot ~[ship+shp by+shp])
       del-player+(ot ~[ship+shp])
@@ -127,21 +128,8 @@
       type+(cork so form-type)
       variations+(ar luuk)
       collidable+bo
-      effects+fx
-      seeds+sfx
+      fx+fx
   ==
-++  fx
-  |=  jon=json
-  ^-  ^fx
-  ;;  ^fx
-  %.  jon
-  (om effect)
-++  sfx
-  |=  jon=json
-  ^-  ^sfx
-  ;;  ^sfx
-  %.  jon
-  (om effect-type)
 ++  luuk
   |=  jon=json
   ^-  ^luuk
@@ -167,29 +155,88 @@
   ^-  ^add-shade-spec
   %.  jon
   (ot ~['isLunk'^bo pos+svec2 'formId'^pa variation+ni])
-++  maybe-possible-effect
+++  fx  (ar reflex)
+++  reflex
   |=  jon=json
-  ^-  (unit possible-effect)
-  ?~  jon  ~
-  :-  ~
-  ?:  ?=([%s *] jon)
-    (effect-type jon)
-  (effect jon)
-++  effect-type  (cork so ^effect-type)
+  ^-  ^reflex
+  %.  jon
+  (ot ~[root+root-condition effect+effect])
+++  root-condition
+  |=  jon=json
+  ^-  ^root-condition
+  %.  jon
+  %+  ol  (cork so (tags ^root-condition))
+  :~  or+(ar root-condition)
+      and+(ot ~[root+root-condition cons+(ar condition)])
+      trigger+trigger-condition
+  ==
+++  condition
+  |=  jon=json
+  ^-  ^condition
+  %.  jon
+  %+  ol  (cork so (tags ^condition))
+  :~  and+(ar condition)
+      or+(ar condition)
+      not+condition
+      eq+(ot ~[a+condition b+condition])
+      initiator+(cork so ?(%item %player))
+      initiator-eq+fx-target
+      user-eq+shp
+      trigger+trigger-condition
+      item-exists+fx-item-target
+      variation+(ot ~[item+fx-item-target con+int-rel])
+      move-collide+bo
+      move-smooth+bo
+      loc-eq+(ot ~[a+fx-loc b+fx-loc])
+  ==
+++  trigger-condition
+  |=  jon=json
+  ^-  ^trigger-condition
+  %.  jon
+  %+  ol  (cork so (tags ^trigger-condition))
+  :~  move+move-condition
+      bump+ul
+      interact+ul
+      click+ul
+      tell+msg-condition
+  ==
+++  move-condition
+  |=  jon=json
+  ^-  ^move-condition
+  %.  jon
+  %+  ol  (cork so (tags ^move-condition))
+  :~  onto+ul
+      off+ul
+  ==
+++  msg-condition
+  |=  jon=json
+  ^-  ^msg-condition
+  %.  jon
+  %+  ol  (cork so (tags ^msg-condition))
+  :~  eq+so
+  ==
+++  int-rel
+  |=  jon=json
+  ^-  ^int-rel
+  %.  jon
+  %+  ol  (cork so (tags ^int-rel))
+  :~  eq+ni
+  ==
 ++  effect
   |=  jon=json
   ^-  ^effect
   %.  jon
   %+  ol  effect-type
   :~  list+(ot ~[serial+fx-serial effects+(ar effect)])
+      noop+ul
       port+ni
-      jump+svec2
-      read+so
+      read+(ot ~[note+so actions+(ar (ot ~[name+so effect+effect]))])
+      wipe+(ar root-condition)
       swap+pa
       seem+ni
       vary+ni
-      move+fx-move
-      tele+fx-move
+      move+(ot ~[target+fx-target to+fx-loc collide+bo smooth+bo])
+      tell+(ot ~[target+fx-item-target msg+so])
   ==
 ++  port-offer
   |=  jon=json
@@ -203,16 +250,10 @@
   %.  jon
   %-  ot:soft
   ~[of+pa-turf-id-soft from+ni:soft at+ni:soft]
-++  fx-move  (ot ~[target+fx-target to+fx-loc])
   :: |=  jon=json
   :: ^-  [=target loc=^fx-loc]
   :: [%this *^fx-loc]
-++  fx-serial
-  |=  jon=json
-  ^-  ^fx-serial
-  ?:  ?=([%b ?] jon)
-    +.jon
-  %atomic
+++  fx-serial  (cork so ^fx-serial)
 ++  fx-target
   |=  jon=json
   ?:  ?=([%s *] jon)
@@ -221,6 +262,13 @@
   %+  ol
     (cork so (tags absolute-target))
   ~[item+ni player+shp]
+++  fx-item-target
+  |=  jon=json
+  ?:  ?=([%s *] jon)
+    (item-target +.jon)
+  %.  jon
+  %+  ol  (cork so ,%item)
+  ~[item+ni]
 ++  fx-loc
   |=  jon=json
   ^-  ^fx-loc
@@ -228,6 +276,7 @@
   %+  ol  (cork so (tags ^fx-loc))
   :~  target+fx-target
       offset+(ot ~[offset+fx-offset loc+fx-loc])
+      mover-pos+(cork so ?(%start %end))
       absolute+svec2
   ==
 ++  fx-offset
@@ -284,10 +333,16 @@
   |=  jon=json
   ^-  ^vec2
   ((ot ~[x+ni y+ni]) jon)
+++  mayb
+  |*  wit=fist
+  |=  jon=json
+  ^-  (unit _*wit)
+  ?~  jon  ~
+  `(wit jon)
 ++  maybe-ni
   |*  wit=fist
   |=  jon=json
-  ^-  ?(@ud _(wit *json))
+  ^-  ?(@ud _*wit)
   ?:  ?=(%n -.jon)
     (ni jon)
   (wit jon)

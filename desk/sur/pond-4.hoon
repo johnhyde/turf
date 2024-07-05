@@ -13,7 +13,7 @@
 ++  urck  ^urck
 ++  ugrt  ^ugrt
 ++  ufam  foam
-++  wash  wash-grit
+:: ++  wash  wash-grit
 --
 |%
 +$  rock  $+  pond-rock  [%4 =stir-ids turf=(unit turf)]

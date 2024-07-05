@@ -232,7 +232,7 @@
       |=  =portal
       portal(at `at.grit, pending %.n)
     %portal-discarded
-      %^  jab-by-portals  turf  portal-id.grit
+      %^  jab-by-portals  turf  from.grit
       |=  =portal
       portal(at ~, pending %.n)
     ::
@@ -325,7 +325,7 @@
   =/  plot  (uplt plot.turf)
   %=  turf
     players.ephemera  players
-    deed  (uded deed.turf cave.turf)
+    deed  (uded deed.turf cave.plot.turf)
     plot  plot
   ==
 ++  uplr
@@ -336,8 +336,9 @@
   |=  [ded=deed:pold cav=cave:pold]
   ^-  deed
   =/  =portals
-    %-  ~(run by portals.ded)
-    |=  [pid=portal-id ptl=portal]
+    %-  malt
+    %+  turn  ~(tap by portals.ded)
+    |=  [pid=portal-id ptl=portal:pold]
     :-  pid
     :^  shade-id.ptl  for.ptl  at.ptl
     ?~  at.ptl  %.y
@@ -350,16 +351,16 @@
     %-  ~(run by port-reqs.ded)
     |=  [pid=portal-id vtr=avatar:pold]
     pid^(uvtr vtr)
-  =/  [gate lunk]
+  =/  [gate=(unit shade-id) lunk=(unit portal-id)]
     ?~  lunk.ded  `~
     :-  `shade-id.u.lunk.ded
     ?~  shade=(~(gut by cav) shade-id.u.lunk.ded ~)
       ~
     ?~  eff=(~(get by effects.shade) %step)
       ~
-    ?~  eff  ~
-    ?.  ?=([%port *] u.eff)  ~
-    `portal-id.u.eff
+    ?~  u.eff  ~
+    ?.  ?=([%port *] u.u.eff)  ~
+    `portal-id.u.u.eff
   =/  back
     :*  portals
         port-reqs
@@ -375,7 +376,7 @@
   |=  plt=plot:pold
   ^-  plot
   %=  plt
-    cave  (~(run by cave.plt) uhsk)
+    cave  (~(run by cave.plt) ushd)
     skye  (~(run by skye.plt) ufrm)
   ==
 ::
@@ -396,6 +397,10 @@
       grit(turf (turf-to-next turf.grit))
     %add-form
       grit(form (ufrm form.grit))
+    %move-shade
+      [%move-shade shade-id.grit pos.grit %.y %.y]
+    %tele-shade
+      [%move-shade shade-id.grit pos.grit %.n %.n]
     %set-shade-effect
       =/  eff=(unit effect)
         ?~  effect.grit  ~
@@ -406,6 +411,20 @@
       eff
     %reset-shade-effects
       [%set-shade-fx shade-id.grit ~]
+    %set-lunk
+      [%set-gate ?~(lunk.grit ~ `shade-id.u.lunk.grit)]
+    %set-dink
+      [%add-dink portal-id.grit]
+    %add-shade-to-portal
+      [%set-portal-outlet from.grit `shade-id.grit]
+    %del-shade-from-portal
+      :: lossy conversion, bc maybe this shade wasn't the outlet
+      [%set-portal-outlet from.grit ~]
+    %del-portal-from-shade  noop+~  :: even lossier
+    %move
+      [%move ship.grit pos.grit %.y %.y]
+    %tele
+      [%move ship.grit pos.grit %.n %.n]
     %set-avatar
       grit(avatar (uvtr avatar.grit))
     %add-port-req
