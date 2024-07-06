@@ -7,7 +7,157 @@ import {
   vecToDir,
   vecToDir8,
 } from 'lib/utils.js';
-import { getShade } from 'lib/turf.js';
+import { getShade, getShadeWithForm } from 'lib/turf.js';
+
+export function trig(type, ...args) {
+  switch (type) {
+    case 'move':
+      return {
+        type,
+        arg: {
+          start: args[0],
+          end: args[1],
+          collide: args[2] ?? true,
+          smooth: args[3] ?? true,
+        },
+      };
+    case 'bump':
+    case 'interact':
+    case 'click':
+      return { type, arg: null };
+    case 'tell':
+      return {
+        type,
+        arg: args[0],
+      };
+    // fake triggers for convenience
+    case 'step': {
+      const [turf, shadeId, collide, smooth] = args;
+      const shade = getShade(turf, shadeId);
+      const start = vec2(turf.offset);
+      const end = shade?.pos || start;
+      return trig('move', start, end, collide, smooth);
+    }
+    default:
+      throw new Error('invalid trigger type: ' + type);
+  }
+}
+
+export function getEffectsByShadeId(turf, shadeId, trigger, opts = {}) {
+  const comp = getShadeWithForm(turf, shadeId);
+  return getEffectsByComp(turf, comp, trigger, opts);
+}
+
+export function getEffectsByComp(turf, comp, trigger, opts = {}) {
+  if (!comp) return [];
+  const fx = comp.fx || comp.form.fx;
+  return fx.filter((reflex) => {
+    return matchRootCondition(reflex.root, {
+      comp,
+      turf,
+      ship: opts.ship || our,
+      trigger,
+      initId: opts.initId ?? null,
+    });
+  }).map((reflex) => reflex.effect);
+}
+
+export function apCtx(ctx) {
+  return {
+    turf: ctx.turf,
+    ship: ctx.ship,
+    trigger: ctx.trigger,
+    shadeId: ctx.comp.id,
+    initId: ctx.nitId,
+  };
+}
+
+export function matchRootCondition(ctx, root) {
+  switch (root.type) {
+    case 'or':
+      return root.arg.some((rut) => matchRootCondition(ctx, rut));
+    case 'and':
+      if (!matchRootCondition(ctx, root.arg.root)) return false;
+      return root.arg.cons.every((con) => matchCondition(ctx, con));
+    case 'trigger':
+      return matchTriggerCondition(ctx, root.arg);
+  }
+}
+
+export function matchCondition(ctx, con) {
+  const { arg } = con;
+  switch (con.type) {
+    case 'and':
+      return arg.every((con) => matchCondition(ctx, con));
+    case 'or':
+      return arg.some((con) => matchCondition(ctx, con));
+    case 'not':
+      return !matchCondition(ctx, arg);
+    case 'eq':
+      return matchCondition(ctx, arg.a) === matchCondition(ctx, arg.b);
+    case 'initiator':
+      if (ctx.initId == null) {
+        return arg === 'player';
+      }
+      return arg === 'item';
+    case 'initiator-eq': {
+      if (arg === 'initiator') return true;
+      const target = absolutizeTarget(apCtx(ctx), arg);
+      if (ctx.initId == null) {
+        return target.type === 'player' && target.arg === ctx.ship;
+      }
+      return target.type === 'item' && target.arg === ctx.initId;
+    }
+    case 'user-eq':
+      return arg === ctx.ship;
+    case 'trigger':
+      return matchTriggerCondition(ctx, arg);
+    case 'item-exists':
+      return !!resolveItemTarget(apCtx(ctx), arg);
+    case 'variation': {
+      const shade = resolveItemTarget(apCtx(ctx), arg.item);
+      if (!shade) return false;
+      return matchIntRel(arg.con, shade.variation);
+    }
+    case 'move-collide':
+      return ctx.trigger.type === 'move' && ctx.trigger.arg.collide === arg;
+    case 'move-smooth':
+      return ctx.trigger.type === 'move' && ctx.trigger.arg.smooth === arg;
+    case 'loc-eq': {
+      const ctx = apCtx(ctx);
+      return resolveFxLoc(ctx, arg.a) === resolveFxLoc(ctx, arg.b);
+    }
+  }
+}
+
+export function matchTriggerCondition(ton, ctx) {
+  const { arg } = ton;
+  if (ton.type !== ctx.trigger.type) return false;
+  switch (ton.type) {
+    case 'move':
+      switch (arg.type) {
+        case 'onto':
+          return ctx.comp.pos === ctx.trigger.arg.end;
+        case 'off':
+          return ctx.comp.pos === ctx.trigger.arg.start;
+        default:
+          throw new Error('invalid move condition type: ' + arg.type);
+      }
+    case 'tell':
+      return arg.arg === ctx.trigger.arg.msg;
+    default:
+      return true;
+  }
+}
+
+export function matchIntRel(rel, int) {
+  switch (rel.type) {
+    case 'eq':
+      return rel.arg === int;
+    default:
+      throw new Error('invalid int rel type: ' + rel.type);
+  }
+}
 
 export function newFxTarget(type = 'this') {
   switch (type) {
@@ -147,6 +297,123 @@ export function newFxFromTo() {
   };
 }
 
+//
+// application, resolution, absolutization
+//
+
+export function applyEffect(ctx, effect) {
+  const { turf, ship, shadeId } = ctx;
+  switch (effect.type) {
+    case 'list': {
+      if (effect.arg.serial) { // true or 'atomic'
+        let goals = effect.arg.effects.map((effect) => ({
+          type: 'apply-effect',
+          arg: {
+            effect,
+            shadeId,
+          },
+        }));
+        if (effect.arg.serial === 'atomic') {
+          goals = [{
+            type: 'atomic',
+            arg: {
+              // depth: 20,
+              goals,
+            },
+          }];
+        }
+        return {
+          roars: [],
+          goals,
+        };
+      } else {
+        let roars = [], goals = [];
+        effect.arg.effects.forEach((effect) => {
+          const res = applyEffect(ctx, effect);
+          roars = [...roars, ...res.roars];
+          goals = [...goals, ...res.goals];
+        });
+        return { roars, goals };
+      }
+    }
+    case 'port': {
+      const portal = turf.portals[effect.arg];
+      if (!portal || !portal.at) return { roars: [], goals: [] };
+      return {
+        roars: [],
+        goals: [{
+          type: 'add-port-offer',
+          arg: { ship, from: effect.arg },
+        }],
+      };
+    }
+    case 'jump': {
+      return {
+        roars: [],
+        goals: [{
+          type: 'tele',
+          arg: { ship, pos: effect.arg },
+        }],
+      };
+    }
+    case 'swap': {
+      return {
+        roars: [],
+        goals: [{
+          type: 'set-shade-form-id',
+          arg: {
+            shadeId,
+            formId: effect.arg,
+          },
+        }],
+      };
+    }
+    case 'vary': {
+      return {
+        roars: [],
+        goals: [{
+          type: 'set-shade-var',
+          arg: {
+            shadeId,
+            variation: effect.arg,
+          },
+        }],
+      };
+    }
+    case 'move':
+    case 'tele': {
+      const ctx = { turf, ship, shadeId };
+      const { target, to } = effect.arg;
+      const pos = resolveFxLoc(ctx, to);
+      if (!pos) return { roars: [], goals: [] };
+      const absTarget = absolutizeTarget(ctx, target);
+      const isPlayer = absTarget.type === 'player';
+      const goal = {
+        type: isPlayer ? effect.type : `${effect.type}-shade`,
+        arg: {
+          [isPlayer ? 'ship' : 'shadeId']: absTarget.arg,
+          pos,
+        },
+      };
+      return {
+        roars: [],
+        goals: [goal],
+      };
+    }
+    default: {
+      return {
+        roars: [{
+          type: 'effect-' + effect.type,
+          arg: effect.arg,
+          ship,
+          shadeId,
+        }],
+        goals: [],
+      };
+    }
+  }
+}
+
 export function resolveFxLoc(ctx, loc) {
   switch (loc.type) {
     case 'target': {
@@ -157,6 +424,11 @@ export function resolveFxLoc(ctx, loc) {
       if (!start) return null;
       const offset = resolveFxOffset(ctx, loc.arg.offset);
       return vec2(start).add(offset);
+    }
+    case 'mover-pos': {
+      if (ctx.trigger.type !== 'trigger') return null;
+      if (loc.arg === 'start') return ctx.trigger.arg.start;
+      return ctx.trigger.arg.end;
     }
     case 'absolute': {
       return vec2(loc.arg);
@@ -181,6 +453,12 @@ export function resolveTarget(ctx, target) {
     if (!shade) return null;
     return { ...absTarget, arg: shade };
   }
+}
+
+export function resolveItemTarget(ctx, target) {
+  const shadeId = absolutizeItemTarget(ctx, target);
+  if (shadeId == null) return null;
+  return getShade(ctx.turf, shadeId);
 }
 
 export function resolveFxOffset(ctx, offset) {
@@ -357,6 +635,16 @@ export function resolveFxDir8(ctx, dir) {
 }
 
 export function absolutizeTarget(ctx, target) {
+  if (target === 'initiator') {
+    if (ctx.initId == null) {
+      target = 'user';
+    } else {
+      target = {
+        type: 'item',
+        arg: ctx.initId,
+      };
+    }
+  }
   if (target === 'this') {
     return {
       type: 'item',
@@ -370,4 +658,15 @@ export function absolutizeTarget(ctx, target) {
   } else {
     return target;
   }
+}
+
+export function absolutizeItemTarget(ctx, target) {
+  if (target === 'initiator') {
+    return ctx.initId ?? null;
+  }
+  if (target === 'this') {
+    return ctx.shadeId;
+  }
+  // type = 'item'
+  return target.arg;
 }

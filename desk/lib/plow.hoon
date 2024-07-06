@@ -477,23 +477,19 @@
 ++  pull-trigger-on-shade
   |=  [=turf =ship ctx=fx-ctx]
   ^-  goals:pond
-  =/  comp  (get-comp-by-shade-id turf shade-id.ctx)
-  ?~  comp  ~
+  ?~  comp=(get-comp-by-shade-id turf shade-id.ctx)
+    ~
   (pull-trigger-on-comps turf ship trigger.ctx [u.comp]~ init-id.ctx)
 ++  pull-trigger-on-comps
   |=  [=turf =ship =trigger comps=(list comp) init-id=(unit shade-id)]
   ^-  goals:pond
-  =/  effects=(list [shade-id effect])
-    %-  zing
-    %+  turn  comps
-    |=  =comp
-    ^-  (list [shade-id effect])
-    %+  turn  (get-effects comp turf ship trigger shade-id.comp init-id)
-    |=  =effect  [shade-id.comp effect]
-  %+  turn  effects
-  |=  [=shade-id =effect]
+  %-  zing  %+  turn  comps
+  |=  =comp
+  ^-  goals:pond
+  %+  turn  (get-effects comp turf ship trigger shade-id.comp init-id)
+  |=  =effect
   ^-  goal:pond
-  [%apply-effect effect trigger shade-id init-id]
+  [%apply-effect effect trigger shade-id.comp init-id]
 ++  path-to-turf-id
   |=  =path
   ^-  (unit turf-id)

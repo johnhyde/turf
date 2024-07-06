@@ -59,7 +59,7 @@
   ==
 +$  current-state  state-3
 +$  reset  _63
-+$  skye-reset  _10
++$  skye-reset  _11
 +$  closet  $~(default-closet:gen skye)
 +$  lakes
   $:  sub-pond=$~(sub-pond-init _sub-pond-init)

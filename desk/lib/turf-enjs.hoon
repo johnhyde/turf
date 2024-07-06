@@ -1,6 +1,13 @@
 /-  *turf, pond, mist
 /+  *turf, *plow, vita-client
 =,  enjs:format
+::  Note about whether args are raw values or fronds
+::  For pond and skye grits, we always wrap in a frond, so the json
+::  would be { type: 'del-portal', arg: { portalId: 5 } }
+::  not      { type: 'del-portal', arg: 5 }
+::  However in other places like mist grits and conditions,
+::  for convenience we will provide raw values like
+::           { type: 'initiator',  arg: 'item' }
 |%
 ++  pond-stirred
   |=  strd=stirred:pond

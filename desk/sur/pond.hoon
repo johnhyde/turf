@@ -45,9 +45,6 @@
       [%cycle-shade =shade-id amt=@ud]
       [%set-shade-var =shade-id variation=@ud]
       [%set-shade-fx =shade-id fx=(unit fx)]
-      :: [%add-shade-reflex =shade-id =reflex]
-      :: [%del-shade-reflex =shade-id index=@ud]
-      :: [%set-shade-reflex =shade-id index=@ud =reflex]
       [%set-shade-effect =shade-id trigger=root-condition effect=(unit effect)]
       [%set-shade-collidable =shade-id collidable=(unit ?)]
       [%set-shade-form-id =shade-id =form-id]
@@ -108,7 +105,6 @@
       shade=?(shade-id add-shade-spec) 
       trigger=root-condition
       portal=?(portal-id turf-id)
-      :: link=(unit ?(%lunk %dink))
   ==
 +$  goal
   $%  cur-grit
@@ -194,9 +190,6 @@
     %cycle-shade  (cycle-shade turf +.grit)
     %set-shade-var  (set-shade-var turf +.grit)
     %set-shade-fx  (set-shade-fx turf +.grit)
-    :: %add-shade-reflex  (add-shade-reflex  +.grit)
-    :: %del-shade-reflex  (del-shade-reflex  +.grit)
-    :: %set-shade-reflex  (set-shade-reflex  +.grit)
     %set-shade-effect  (set-shade-effect turf +.grit)
     %set-shade-collidable  (set-shade-collidable turf +.grit)
     %set-shade-form-id  (set-shade-form-id turf +.grit)
@@ -309,7 +302,6 @@
   ^-  ^rock
   ?+  -.rock     $(rock (urck:pold rock))
     rock-v       rock
-    :: %future      *^rock
     rock-v:pold  (rock-to-next rock)
   ==
 ++  rock-to-next

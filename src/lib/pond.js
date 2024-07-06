@@ -1,6 +1,7 @@
 import { createMemo, createSignal } from 'solid-js';
 import { produce, reconcile } from 'solid-js/store';
 import cloneDeep from 'lodash/cloneDeep';
+import isEqual from 'lodash/isEqual';
 import * as api from 'lib/api.js';
 import {
   clampToTurf,
@@ -10,8 +11,6 @@ import {
   fillEmptySpace,
   generateHusk,
   getCollision,
-  getEffectsByShade,
-  getEffectsByThing,
   getForm,
   getShade,
   getShadeWithForm,
@@ -23,7 +22,7 @@ import {
   jabBySpaces,
 } from 'lib/turf.js';
 import { jClone, turfIdToPath, vec2, vecToStr } from 'lib/utils.js';
-import { absolutizeTarget, resolveFxLoc } from 'lib/effects.js';
+import { applyEffect, getEffectsByComp, trig } from 'lib/effects.js';
 import { filterGoal, getPool } from 'lib/pool.js';
 
 function getTurfGrid(turf) {
@@ -255,9 +254,6 @@ const pondGrits = {
       shade.pos = pos;
     }
   },
-  'tele-shade': (...args) => {
-    return pondGrits['move-shade'](...args);
-  },
   'cycle-shade': (turf, arg) => {
     const { shadeId, amount } = arg;
     const shade = getShade(turf, shadeId);
@@ -278,18 +274,29 @@ const pondGrits = {
       }
     }
   },
+  'set-shade-fx': (turf, arg) => {
+    const { shadeId, fx } = arg;
+    const shade = getShade(turf, shadeId);
+    if (shade) {
+      shade.fx = fx;
+    }
+  },
   'set-shade-effect': (turf, arg) => {
     const { shadeId, trigger, effect } = arg;
     const shade = getShade(turf, shadeId);
     if (shade) {
-      shade.effects[trigger] = effect;
-    }
-  },
-  'reset-shade-effects': (turf, arg) => {
-    const { shadeId } = arg;
-    const shade = getShade(turf, shadeId);
-    if (shade) {
-      shade.effects = {};
+      const fx = shade.fx || [];
+      const index = fx.findIndex((eff) => isEqual(eff.root, trigger));
+      if (index === -1) {
+        if (effect != null) fx.push({ root: trigger, effect });
+      } else {
+        if (effect == null) {
+          fx.splice(index, 1);
+        } else {
+          fx[index] = { root: trigger, effect };
+        }
+      }
+      shade.fx = fx;
     }
   },
   'set-shade-collidable': (turf, arg) => {
@@ -310,12 +317,15 @@ const pondGrits = {
       };
     }
   },
-  'set-lunk': (turf, arg) => {
-    turf.lunk = arg;
+  'set-gate': (turf, arg) => {
+    turf.gate = arg.gate;
   },
-  'set-dink': (turf, arg) => {
-    const { portalId, approved } = arg;
-    turf.dinks[portalId] = approved;
+  'set-lunk': (turf, arg) => {
+    turf.lunk = arg.lunk;
+  },
+  'add-dink': (turf, arg) => {
+    const { portalId } = arg;
+    turf.dinks[portalId] = true;
   },
   'del-dink': (turf, arg) => {
     const { portalId } = arg;
@@ -326,39 +336,46 @@ const pondGrits = {
       shadeId: null,
       for: arg.for,
       at: arg.at,
+      pending: true,
     };
     turf.stuffCounter++;
   },
   'del-portal': (turf, arg) => {
-    delPortal(turf, arg.from);
+    delPortal(turf, arg.portalId);
   },
-  'add-shade-to-portal': (turf, arg) => {
-    const portal = turf.portals[arg.from];
+  'set-portal-outlet': (turf, arg) => {
+    const { portalId, outlet } = arg;
+    const portal = turf.portals[portalId];
     if (portal) {
-      portal.shadeId = arg.shadeId;
+      portal.outlet = outlet;
     }
   },
-  'del-shade-from-portal': (turf, arg) => {
-    const portal = turf.portals[arg.from];
-    if (portal?.shadeId === arg.shadeId) {
-      portal.shadeId = null;
+  'confirm-portal': (turf, arg) => {
+    const { portalId } = arg;
+    const portal = turf.portals[portalId];
+    if (portal && portal.at != null) {
+      portal.pending = false;
     }
   },
-  'del-portal-from-shade': (turf, arg) => {
-    const { shadeId, portalId } = arg;
-    const shade = getShade(turf, shadeId);
-    if (shade) {
-      const { fullFx } = getEffectsByShade(turf, shade);
-      Object.entries(fullFx).forEach(([trigger, effect]) => {
-        if (effect?.type === 'port' && effect?.arg === portalId) {
-          shade.effects[trigger] = 'port';
-        }
-      });
+  'revive-portal': (turf, arg) => {
+    const { portalId } = arg;
+    const portal = turf.portals[portalId];
+    if (portal && portal.at == null) {
+      portal.pending = true;
     }
   },
   'portal-confirmed': (turf, arg) => {
-    if (turf.portals[arg.from]) {
-      turf.portals[arg.from].at = arg.at;
+    const portal = turf.portals[arg.from];
+    if (portal) {
+      portal.at = arg.at;
+      portal.pending = false;
+    }
+  },
+  'portal-discarded': (turf, arg) => {
+    const portal = turf.portals[arg.from];
+    if (portal) {
+      portal.at = null;
+      portal.pending = false;
     }
   },
   'chat': (turf, arg) => {
@@ -366,13 +383,6 @@ const pondGrits = {
     turf.chats = turf.chats.slice(0, 20);
   },
   'move': (turf, arg) => {
-    const player = turf.players[arg.ship];
-    if (player) {
-      player.pos.x = arg.pos.x;
-      player.pos.y = arg.pos.y;
-    }
-  },
-  'tele': (turf, arg) => {
     const player = turf.players[arg.ship];
     if (player) {
       player.pos.x = arg.pos.x;
@@ -394,6 +404,10 @@ const pondGrits = {
   'add-port-offer': (turf, arg) => {
     const { ship, from } = arg;
     turf.portOffers[ship] = from;
+  },
+  'nil-port-offer': (turf, arg) => {
+    const { ship } = arg;
+    turf.portOffers[ship] = null;
   },
   'del-port-offer': (turf, arg) => {
     const { ship } = arg;
@@ -510,6 +524,7 @@ const preFilters = {
     const { pos, formId } = goal.arg;
     if (!isInTurf(turf, pos)) return false;
     const dupsOfForm = getThingsAtPosByFormId(turf, pos, formId);
+    // todo: check if variation is same and allow different variations to stack?
     if (dupsOfForm.length === 0) {
       return goal;
     }
@@ -540,55 +555,74 @@ const filters = {
       goals = [...goals, ...res.goals];
     }
     // if (depth > 0) {
-    //   goals = [{
-    //     type: 'atomic',
-    //     arg: {
-    //       depth: depth - 1,
-    //       goals,
-    //     },
-    //   }];
+    goals = [{
+      type: 'atomic',
+      arg: {
+        // depth: depth - 1,
+        goals,
+      },
+    }];
     // }
     return { roars, grits, goals };
   },
   'add-shade': (turf, goal) => {
-    const { pos, formId } = goal.arg;
+    const { pos, formId, isGate } = goal.arg;
     const formType = getForm(turf, formId)?.type;
     if (!isSpaceFormType(formType)) return [];
     goal.arg.pos = clampToTurf(turf, pos);
+    const goals = [];
+    if (isGate) {
+      goals.push({ type: 'set-gate', arg: { gate: turf.stuffCounter } });
+    }
     if (formType === 'tile') {
       const tileId = getTileId(turf, goal.arg.pos);
       if (tileId != null) {
-        return {
-          roars: [],
-          grits: [goal],
-          goals: [{
-            type: 'del-shade',
-            arg: { shadeId: tileId },
-          }],
-        };
+        goals.push({
+          type: 'del-shade',
+          arg: { shadeId: tileId },
+        });
       }
     }
-    return [goal];
+    return {
+      roars: [],
+      grits: [goal],
+      goals,
+    };
+  },
+  'del-shade': (turf, goal) => {
+    const { shadeId } = goal.arg;
+    const goals = [];
+    if (shadeId === turf.gate) {
+      goals.push({ type: 'set-gate', arg: { gate: null } });
+    }
+    return { roars: [], grits: [goal], goals };
   },
   'move-shade': (turf, goal) => {
-    const { pos, shadeId } = goal.arg;
+    const { pos, shadeId, collide, smooth } = goal.arg;
     const shade = getShade(turf, shadeId);
     const formType = getForm(turf, shade?.formId)?.type;
     if (!isSpaceFormType(formType)) return [];
     goal.arg.pos = clampToTurf(turf, pos);
     if (goal.arg.pos.equals(shade.pos)) return [];
 
-    if (getCollision(turf, goal.arg.pos)) {
-      // const bump = pullTriggerAtPos(turf, ship, 'bump', newPos);
-      // return { ...bump, grits: [] };
-      return [];
+    if (collide && getCollision(turf, goal.arg.pos)) {
+      return {
+        roars: [],
+        grits: [],
+        goals: pullTriggerAtPos(
+          turf,
+          ship,
+          trig('bump'),
+          goal.arg.pos,
+          shadeId,
+        ),
+      };
     }
     const grits = [goal];
-    // const leave = pullTriggerAtPos(turf, ship, 'leave', shade.pos);
-    // const step = pullTriggerAtPos(turf, ship, 'step', goal.arg.pos);
-    // const roars = [...leave.roars, ...step.roars];
-    // const goals = [...leave.goals, ...step.goals];
-    const roars = [], goals = [];
+    const trigger = trig('move', shade.pos, goal.arg.pos, collide, smooth);
+    const leave = pullTriggerAtPos(turf, ship, trigger, shade.pos, shadeId);
+    const step = pullTriggerAtPos(turf, ship, trigger, goal.arg.pos, shadeId);
+    const goals = [...leave, ...step];
     if (formType === 'tile') {
       const tileId = getTileId(turf, goal.arg.pos);
       if (tileId != null) {
@@ -598,28 +632,7 @@ const filters = {
         });
       }
     }
-    return { roars, grits, goals };
-  },
-  'tele-shade': (turf, goal) => {
-    const { pos, shadeId } = goal.arg;
-    const shade = getShade(turf, shadeId);
-    const formType = getForm(turf, shade?.formId)?.type;
-    if (!isSpaceFormType(formType)) return [];
-    goal.arg.pos = clampToTurf(turf, pos);
-    if (formType === 'tile') {
-      const tileId = getTileId(turf, goal.arg.pos);
-      if (tileId != null) {
-        return {
-          roars: [],
-          grits: [goal],
-          goals: [{
-            type: 'del-shade',
-            arg: { shadeId: tileId },
-          }],
-        };
-      }
-    }
-    return [goal];
+    return { roars: [], grits, goals };
   },
   'create-bridge': (turf, goal) => {
     const { shade, trigger, portal } = goal.arg;
@@ -662,11 +675,11 @@ const filters = {
           },
         },
       },
-      { // TODO: don't add this here, but in a filter on 'set-shade-effect'
-        type: 'add-shade-to-portal',
+      {
+        type: 'set-portal-outlet',
         arg: {
-          from: portalId,
-          shadeId,
+          portalId,
+          outlet: shadeId,
         },
       },
     ];
@@ -687,38 +700,25 @@ const filters = {
     }];
   },
   'move': (turf, goal) => {
-    const { ship, pos } = goal.arg;
+    const { ship, pos, collide, smooth } = goal.arg;
     const player = turf.players[ship];
     if (!player) return [];
     const newPos = clampToTurf(turf, pos);
-    if (getCollision(turf, newPos)) {
-      const bump = pullTriggerAtPos(turf, ship, 'bump', newPos);
-      return { ...bump, grits: [] };
+    if (newPos.equals(player.pos)) return [];
+    goal.arg.pos = newPos;
+    if (collide && getCollision(turf, newPos)) {
+      return {
+        roars: [],
+        grits: [],
+        goals: pullTriggerAtPos(turf, ship, trig('bump'), newPos),
+      };
     }
-    if (newPos.equals(player.pos)) return [];
-    goal.arg.pos = newPos;
-    const leave = pullTriggerAtPos(turf, ship, 'leave', player.pos);
-    const step = pullTriggerAtPos(turf, ship, 'step', newPos);
-    return {
-      roars: [...leave.roars, ...step.roars],
-      grits: [goal],
-      goals: [...leave.goals, ...step.goals],
-    };
-  },
-  'tele': (turf, goal) => {
-    const { ship, pos } = goal.arg;
-    const player = turf.players[ship];
-    if (!player) return [];
-    const newPos = clampToTurf(turf, pos);
-    if (newPos.equals(player.pos)) return [];
-    goal.arg.pos = newPos;
-    const leave = pullTriggerAtPos(turf, ship, 'leave', player.pos);
-    const step = pullTriggerAtPos(turf, ship, 'step', newPos);
-    return {
-      roars: [...leave.roars, ...step.roars],
-      grits: [goal],
-      goals: [...leave.goals, ...step.goals],
-    };
+    const grits = [goal];
+    const trigger = trig('move', player.pos, newPos, collide, smooth);
+    const leave = pullTriggerAtPos(turf, ship, trigger, player.pos);
+    const step = pullTriggerAtPos(turf, ship, trigger, newPos);
+    const goals = [...leave, ...step];
+    return { roars: [], grits, goals };
   },
   'add-port-offer': (turf, goal) => {
     const { ship, from } = goal.arg;
@@ -739,26 +739,40 @@ const filters = {
     };
   },
   'click': (turf, goal) => {
-    const click = pullTriggerOnShade(turf, our, 'click', goal.arg.shadeId);
     return {
-      ...click,
+      roars: [],
       grits: [],
+      goals: pullTriggerOnShade(turf, our, trig('click'), goal.arg.shadeId),
     };
   },
   'interact': (turf, goal) => {
-    const interact = pullTriggerOnShade(
-      turf,
-      our,
-      'interact',
-      goal.arg.shadeId,
-    );
     return {
-      ...interact,
+      roars: [],
       grits: [],
+      goals: pullTriggerOnShade(turf, our, trig('interact'), goal.arg.shadeId),
+    };
+  },
+  'pull-trigger': (turf, goal) => {
+    return {
+      roars: [],
+      grits: [],
+      goals: pullTriggerOnShade(
+        turf,
+        our,
+        goal.arg.trigger,
+        goal.arg.shadeId,
+        goal.arg.initId,
+      ),
     };
   },
   'apply-effect': (turf, goal) => {
-    const res = applyEffect(turf, our, goal.arg.effect, goal.arg.shadeId);
+    const res = applyEffect({
+      turf,
+      ship: our,
+      trigger: goal.arg.trigger,
+      shadeId: goal.arg.shadeId,
+      initId: goal.arg.initId,
+    }, goal.arg.effect);
     return {
       ...res,
       grits: [],
@@ -766,166 +780,36 @@ const filters = {
   },
 };
 
-function pullTriggerAtPos(turf, ship, trigger, pos) {
-  const things = getThingsAtPos(turf, pos);
-  const effectsMap = things.map((
-    thing,
-  ) => [thing.id || pos, getEffectsByThing(thing)]);
-  // let roars = [], goals = [];
-  let goals = [];
-  // effectsMap.forEach(([shadeId, effects]) => {
-  //   const effect = effects.fullFx[trigger];
-  //   if (effect && effect.type) {
-  //     const res = applyEffect(turf, ship, effect, shadeId);
-  //     roars = [...roars, ...res.roars];
-  //     goals = [...goals, ...res.goals];
-  //   }
-  // });
-  effectsMap.forEach(([shadeId, effects]) => {
-    const effect = effects.fullFx[trigger];
-    if (effect && effect.type) {
-      goals.push({
-        type: 'apply-effect',
-        arg: { effect, shadeId },
-      });
-    }
-  });
-  return {
-    roars: [],
-    goals,
-  };
+// returns a list of goals
+function pullTriggerAtPos(turf, ship, trigger, pos, initId) {
+  const comps = getThingsAtPos(turf, pos);
+  return pullTriggerOnComps(turf, ship, trigger, comps, initId);
 }
 
-function pullTriggerOnShade(turf, ship, trigger, shadeId) {
-  let roars = [], goals = [];
-  const thing = getShadeWithForm(turf, shadeId);
-  if (!thing) return { roars, goals };
-  const effects = getEffectsByThing(thing);
-  const effect = effects.fullFx[trigger];
-  if (!effect || !effect.type) return { roars, goals };
-  //   const res = applyEffect(turf, ship, effect, shadeId);
-  //   roars = [...roars, ...res.roars];
-  //   goals = [...goals, ...res.goals];
-  // }
-  return {
-    roars,
-    goals: [{
-      type: 'apply-effect',
-      arg: { effect, shadeId },
-    }],
-  };
+// returns a list of goals
+function pullTriggerOnShade(turf, ship, trigger, shadeId, initId) {
+  const comp = getShadeWithForm(turf, shadeId);
+  if (!comp) return [];
+  return pullTriggerOnComps(turf, ship, trigger, [comp], initId);
 }
 
-function applyEffect(turf, ship, effect, shadeId) {
-  switch (effect.type) {
-    case 'list': {
-      if (effect.arg.serial) { // true or 'atomic'
-        let goals = effect.arg.effects.map((effect) => ({
+// returns a list of goals
+function pullTriggerOnComps(turf, ship, trigger, comps, initId) {
+  return comps.map((comp) => {
+    return getEffectsByComp(turf, comp, trigger, { ship, initId }).map(
+      (effect) => {
+        return {
           type: 'apply-effect',
           arg: {
             effect,
-            shadeId,
+            shadeId: comp.id,
+            trigger,
+            initId,
           },
-        }));
-        if (effect.arg.serial === 'atomic') {
-          goals = [{
-            type: 'atomic',
-            arg: {
-              // depth: 20,
-              goals,
-            },
-          }];
-        }
-        return {
-          roars: [],
-          goals,
         };
-      } else {
-        let roars = [], goals = [];
-        effect.arg.effects.forEach((effect) => {
-          const res = applyEffect(turf, ship, effect, shadeId);
-          roars = [...roars, ...res.roars];
-          goals = [...goals, ...res.goals];
-        });
-        return { roars, goals };
-      }
-    }
-    case 'port': {
-      const portal = turf.portals[effect.arg];
-      if (!portal || !portal.at) return { roars: [], goals: [] };
-      return {
-        roars: [],
-        goals: [{
-          type: 'add-port-offer',
-          arg: { ship, from: effect.arg },
-        }],
-      };
-    }
-    case 'jump': {
-      return {
-        roars: [],
-        goals: [{
-          type: 'tele',
-          arg: { ship, pos: effect.arg },
-        }],
-      };
-    }
-    case 'swap': {
-      return {
-        roars: [],
-        goals: [{
-          type: 'set-shade-form-id',
-          arg: {
-            shadeId,
-            formId: effect.arg,
-          },
-        }],
-      };
-    }
-    case 'vary': {
-      return {
-        roars: [],
-        goals: [{
-          type: 'set-shade-var',
-          arg: {
-            shadeId,
-            variation: effect.arg,
-          },
-        }],
-      };
-    }
-    case 'move':
-    case 'tele': {
-      const ctx = { turf, ship, shadeId };
-      const { target, to } = effect.arg;
-      const pos = resolveFxLoc(ctx, to);
-      if (!pos) return { roars: [], goals: [] };
-      const absTarget = absolutizeTarget(ctx, target);
-      const isPlayer = absTarget.type === 'player';
-      const goal = {
-        type: isPlayer ? effect.type : `${effect.type}-shade`,
-        arg: {
-          [isPlayer ? 'ship' : 'shadeId']: absTarget.arg,
-          pos,
-        },
-      };
-      return {
-        roars: [],
-        goals: [goal],
-      };
-    }
-    default: {
-      return {
-        roars: [{
-          type: 'effect-' + effect.type,
-          arg: effect.arg,
-          ship,
-          shadeId,
-        }],
-        goals: [],
-      };
-    }
-  }
+      },
+    );
+  }).flat();
 }
 
 // We mutate everything I guess!

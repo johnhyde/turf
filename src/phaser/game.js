@@ -28,14 +28,13 @@ import {
   vecToStr,
 } from 'lib/utils.js';
 import {
-  getEffectsByShade,
-  getEffectsByShadeId,
   getShadeWithForm,
   getSpace,
   getWallVariationAtPos,
   isInTurf,
 } from 'lib/turf.js';
 import { extractPlayerSprites, extractSkyeSprites } from 'lib/turf.js';
+import { getEffectsByShadeId, trig } from 'lib/effects.js';
 import { Player } from './player.js';
 import { Shade } from './shade.js';
 import { Preview } from './preview.js';
@@ -235,11 +234,16 @@ function createShade(shade, id, turf) {
     });
     shadeEffect(() => {
       if (shade().formId === '/portal') {
-        const step = shade().effects.step;
+        const stepEffects = getEffectsByShadeId(
+          state.e,
+          id,
+          trig('move', state.player.pos, shade().pos),
+        );
+        const port = stepEffects.find((e) => e.type === 'port');
         if (
-          step?.type === 'port' &&
-          step.arg != null &&
-          state.e.portals[step.arg]?.at != null
+          port &&
+          port.arg != null &&
+          state.e.portals[port.arg]?.at != null
         ) {
           sprite.setAlpha(1);
           sprite.setTint(0xffffff);
@@ -250,8 +254,8 @@ function createShade(shade, id, turf) {
       }
     });
     shadeEffect(() => {
-      const { fullFx } = getEffectsByShadeId(state.e, id);
-      if (fullFx.click?.type != null) {
+      const clickEffects = getEffectsByShadeId(state.e, id, trig('click'));
+      if (clickEffects.length) {
         sprite.input.cursor = 'pointer';
       } else {
         sprite.input.cursor = 'auto';
@@ -355,17 +359,25 @@ function createShade(shade, id, turf) {
   });
   sprite.on('pointerover', (pointer) => {
     if (state.e && shade) {
-      const effects = getEffectsByShade(state.e, shade).fullFx;
-      if (effects.click?.type === 'read') {
-        addText(effects.click.arg);
-      } else if (effects.step?.type === 'port') {
-        const portal = state.e.portals[effects.step.arg];
+      const clickEffects = getEffectsByShadeId(state.e, id, trig('click'));
+      const readEffect = clickEffects.find((e) => e.type === 'read');
+      const stepEffects = getEffectsByShadeId(
+        state.e,
+        id,
+        trig('step', state.e, id),
+      );
+      const portEffect = stepEffects.find((e) => e.type === 'port');
+
+      if (portEffect) {
+        const portal = state.e.portals[portEffect.arg];
         if (portal) {
           addText(turfIdToName(portal.for));
         }
+      } else if (readEffect) {
+        addText(readEffect.arg.note);
       }
 
-      if (effects.click) {
+      if (clickEffects.length) {
         sprite.setGlowActive(true);
       }
     }
@@ -483,8 +495,7 @@ export function startPhaser(_owner, _container) {
           ) {
             const clickConsumed = gameObjects.some((obj) => {
               if (obj instanceof Player) return true;
-              return !!getEffectsByShadeId(state.e, obj.id)
-                .fullFx?.['click']?.arg;
+              return getEffectsByShadeId(state.e, obj.id, trig('click')).length;
             });
             if (!clickConsumed) {
               player?.moveTo?.(pos);

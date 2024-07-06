@@ -12,11 +12,7 @@ import {
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils.js';
-import {
-  getEffectsByShade,
-  getWallsAtPos,
-  getWallVariationAtPos,
-} from 'lib/turf.js';
+import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf.js';
 import { Pond } from 'lib/pond.js';
 import { Mist } from 'lib/mist.js';
 export const StateContext = createContext();
@@ -323,10 +319,12 @@ export function getState() {
         text: message,
       });
     },
-    setPos(pos) {
+    setPos(pos, collide = true, smooth = true) {
       return this.sendPondWave('move', {
         ship: our,
         pos,
+        collide,
+        smooth,
       });
     },
     setDir(dir) {
@@ -388,9 +386,11 @@ export function getState() {
       });
     },
     teleShade(shadeId, pos) {
-      this.sendPondWave('tele-shade', {
+      this.sendPondWave('move-shade', {
         shadeId: Number.parseInt(shadeId),
         pos: vec2(pos),
+        collide: false,
+        smooth: false,
       });
     },
     cycleShade(shadeId, amount = 1) {
@@ -405,6 +405,12 @@ export function getState() {
         variation: Number.parseInt(variation),
       });
     },
+    setShadeFx(shadeId, fx) {
+      this.sendPondWave('set-shade-fx', {
+        shadeId: Number.parseInt(shadeId),
+        fx,
+      });
+    },
     setShadeEffect(shadeId, trigger, effect) {
       this.sendPondWave('set-shade-effect', {
         shadeId: Number.parseInt(shadeId),
@@ -415,15 +421,14 @@ export function getState() {
         {
           type: [string],
           arg: [depends on type]
-        } or
-        [string] which is the type, or
-        null
+        } or null
         */
       });
     },
     resetShadeEffects(shadeId) {
-      this.sendPondWave('reset-shade-effects', {
+      this.sendPondWave('set-shade-fx', {
         shadeId: Number.parseInt(shadeId),
+        fx: null,
       });
     },
     setShadeCollidable(shadeId, collidable) {

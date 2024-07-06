@@ -193,37 +193,6 @@ export function getCollision(turf, pos) {
   return shades.some(isHuskCollidable);
 }
 
-export function getEffectsByShadeId(turf, shadeId) {
-  const shade = getShade(turf, shadeId);
-  if (!shade) return { fullFx: {}, huskFx: {}, formFx: {} };
-  return getEffectsByShade(turf, shade);
-}
-
-export function getEffectsByShade(turf, shade) {
-  const form = getForm(turf, shade.formId);
-  return getEffectsByThing({
-    ...shade,
-    form,
-  });
-}
-
-export function getEffectsByThing(thing) {
-  if (!thing.form) {
-    return {
-      fullFx: thing.effects,
-      huskFx: thing.effects,
-      formFx: {},
-    };
-  }
-  const formFx = Object.assign({}, thing.form.seeds, thing.form.effects);
-  const fullFx = Object.assign({}, formFx, thing.effects);
-  return {
-    fullFx,
-    huskFx: thing.effects,
-    formFx,
-  };
-}
-
 export function delShade(turf, shadeId) {
   const shade = getShade(turf, shadeId);
   if (shade) {
