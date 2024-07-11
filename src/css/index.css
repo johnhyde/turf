@@ -91,3 +91,7 @@ input[type="color"]::-moz-color-swatch {
 .rounded-input {
   @apply px-2 py-0.5 rounded-md;
 }
+
+.small-caps {
+  font-variant: small-caps;
+}

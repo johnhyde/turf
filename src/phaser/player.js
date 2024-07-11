@@ -28,6 +28,7 @@ import {
   pickVariationWithDir,
   spriteNameWithDir,
 } from 'lib/turf.js';
+import { moveTheThing } from './move.js';
 
 export class Player extends Phaser.GameObjects.Container {
   constructor(scene, turfId, patp, load) {
@@ -128,6 +129,12 @@ export class Player extends Phaser.GameObjects.Container {
   get fullName() {
     if (this.p.avatar.nick) return `${this.p.avatar.nick}\n(${this.patp})`;
     return this.patp;
+  }
+
+  get targetPos() {
+    return vec2(
+      this.actionQueue.length ? this.actionQueue[0].arg.pos : this.tilePos,
+    ).scale(tileFactor);
   }
 
   effectiveVariation(thing) {
@@ -479,52 +486,58 @@ export class Player extends Phaser.GameObjects.Container {
       Object.values(this.keys).forEach((k) => k.reset());
     }
     //Action queue retirement here. The objects in the action queue are just grits. The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger only on confirmed events. So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
-    if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
-      this.actionQueue = [];
-      console.log(
-        this.patp,
-        this.player,
-        'has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.',
-      );
-    }
-    while (this.actionQueue[0] && this.actionQueue[0].type !== 'move') {
-      const action = this.actionQueue[0];
-      if (action.type === 'face') {
-        this.$apparentDir(action.arg.dir);
-      } else if (action.type === 'tele') {
-        this.dPos = vec2(action.arg.pos).scale(tileFactor);
-        this.setPosition(this.dPos.x, this.dPos.y);
-      }
-      this.actionQueue.shift();
-    }
-    const speed = 170 * factor;
-    let justMoved = false;
-    let targetPos = () =>
-      vec2(this.actionQueue.length ? this.actionQueue[0].arg.pos : this.tilePos)
-        .scale(tileFactor);
-    this.dPos = this.dPos || vec2(this.x, this.y);
-    if (this.dPos.equals(targetPos())) {
-      this.actionQueue.shift(); //Remove the item from the action queue
-    }
-    if (!this.dPos.equals(targetPos())) {
-      //just move like regular
-      const dif = vec2(targetPos()).subtract(this.dPos);
-      let step = speed * dt / 1000;
-      if (step > dif.length()) {
-        this.dPos = vec2(targetPos());
-        this.setPosition(targetPos().x, targetPos().y);
-      } else {
-        const change = vec2(dif).normalize().scale(step);
-        this.dPos.add(change);
-        this.setPosition(Math.round(this.dPos.x), Math.round(this.dPos.y));
-      }
-      justMoved = true;
-    }
+    // if (this.actionQueue.length > 100) { //lazy way of limiting the action queue, because I haven't had any better ideas yet.
+    //   this.actionQueue = [];
+    //   console.log(
+    //     this.patp,
+    //     this.player,
+    //     'has dropped its action queue, as the queue contained more than 100 items. This generally indicates something weird is happening.',
+    //   );
+    // }
+    // while (this.actionQueue[0] && this.actionQueue[0].type !== 'move') {
+    //   const action = this.actionQueue[0];
+    //   if (action.type === 'face') {
+    //     this.$apparentDir(action.arg.dir);
+    //   } else if (action.type === 'tele') {
+    //     this.dPos = vec2(action.arg.pos).scale(tileFactor);
+    //     this.setPosition(this.dPos.x, this.dPos.y);
+    //   }
+    //   this.actionQueue.shift();
+    // }
+    // const speed = 170 * factor;
+    // let justMoved = false;
+    // let targetPos = () =>
+    //   vec2(this.actionQueue.length ? this.actionQueue[0].arg.pos : this.tilePos)
+    //     .scale(tileFactor);
+    // this.dPos = this.dPos || vec2(this.x, this.y);
+    // if (this.dPos.equals(this.targetPos)) {
+    //   this.actionQueue.shift(); //Remove the item from the action queue
+    // }
+    // if (!this.dPos.equals(this.targetPos)) {
+    //   //just move like regular
+    //   const dif = vec2(this.targetPos).subtract(this.dPos);
+    //   let step = speed * dt / 1000;
+    //   if (step > dif.length()) {
+    //     this.dPos = vec2(this.targetPos);
+    //     this.setPosition(this.targetPos.x, this.targetPos.y);
+    //   } else {
+    //     const change = vec2(dif).normalize().scale(step);
+    //     this.dPos.add(change);
+    //     this.setPosition(Math.round(this.dPos.x), Math.round(this.dPos.y));
+    //   }
+    //   justMoved = true;
+    // }
+    let justMoved = moveTheThing(
+      this,
+      dt,
+      this.$apparentDir.bind(this),
+      this.setPosition.bind(this),
+    );
 
     if (this.isUs) {
       const newTilePos = vec2(this.tilePos);
       let newDir;
-      if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
+      if (this.dPos.equals(this.targetPos) && this.actionQueue.length === 0) {
         if (this.keys.left.isDown || this.keys.a.isDown) {
           newDir = dirs.LEFT;
           newTilePos.x--;
@@ -551,9 +564,10 @@ export class Player extends Phaser.GameObjects.Container {
             this.turning = false;
           }, 50);
         }
-        const playerColliding = getCollision(this.t, this.tilePos);
+        // const playerColliding = getCollision(this.t, this.tilePos);
         const willBeColliding = getCollision(this.t, newTilePos);
-        const willBump = willBeColliding && !playerColliding;
+        // const willBump = willBeColliding && !playerColliding;
+        const willBump = willBeColliding;
         if (!willBump) this.bumped = false;
         if (tilePosChanged && !this.bumped && (!this.turning || justMoved)) {
           if (willBump) {
@@ -590,12 +604,8 @@ export class Player extends Phaser.GameObjects.Container {
 
   moveTo(pos) {
     if (this.isUs) {
-      let targetPos = () =>
-        vec2(
-          this.actionQueue.length ? this.actionQueue[0].arg.pos : this.tilePos,
-        ).scale(tileFactor);
       this.dPos = this.dPos || vec2(this.x, this.y);
-      if (this.dPos.equals(targetPos()) && this.actionQueue.length === 0) {
+      if (this.dPos.equals(this.targetPos) && this.actionQueue.length === 0) {
         const newTilePos = vec2(this.tilePos);
         let newDir;
         const xDiff = pos.x - this.tilePos.x;

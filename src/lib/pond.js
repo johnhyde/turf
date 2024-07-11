@@ -60,6 +60,11 @@ export class Pond { // we use a class so we can put it inside a store without ge
           window.dispatchEvent(new PondEvent('grit', grit, id));
         });
       },
+      onUnpredictedGrits: (grits) => {
+        grits.forEach((grit) => {
+          window.dispatchEvent(new PondEvent('unpredictedGrit', grit, id));
+        });
+      },
       onNewFakeGrits: (grits) => {
         grits.forEach((grit) =>
           window.dispatchEvent(new PondEvent('fakeGrit', grit, id))
@@ -180,6 +185,9 @@ const pondGrits = {
   },
   'set-back': (turf, arg) => {
     turf.back = arg;
+  },
+  'set-autoconfirm-dinks': (turf, arg) => {
+    turf.autoconfirmDinks = arg.confirm;
   },
   'size-turf': (turf, arg) => {
     turf.offset = arg.offset;
@@ -333,7 +341,7 @@ const pondGrits = {
   },
   'add-portal': (turf, arg) => {
     turf.portals[turf.stuffCounter] = {
-      shadeId: null,
+      outlet: null,
       for: arg.for,
       at: arg.at,
       pending: true,
@@ -461,7 +469,7 @@ export function washTurf(update, grits, src, wen) {
   if (src && wen) {
     update(produce((turf) => {
       if (turf && turf.players[src]) {
-        turf.players[src].wake = wen;
+        turf.players[src].wake = wen ? new Date(wen) : null;
       }
     }));
   }
@@ -611,7 +619,7 @@ const filters = {
         grits: [],
         goals: pullTriggerAtPos(
           turf,
-          ship,
+          our,
           trig('bump'),
           goal.arg.pos,
           shadeId,
@@ -620,8 +628,8 @@ const filters = {
     }
     const grits = [goal];
     const trigger = trig('move', shade.pos, goal.arg.pos, collide, smooth);
-    const leave = pullTriggerAtPos(turf, ship, trigger, shade.pos, shadeId);
-    const step = pullTriggerAtPos(turf, ship, trigger, goal.arg.pos, shadeId);
+    const leave = pullTriggerAtPos(turf, our, trigger, shade.pos, shadeId);
+    const step = pullTriggerAtPos(turf, our, trigger, goal.arg.pos, shadeId);
     const goals = [...leave, ...step];
     if (formType === 'tile') {
       const tileId = getTileId(turf, goal.arg.pos);

@@ -47,20 +47,21 @@ export default function FormEditor(props) {
   const formDef = mergeProps(props.form, newForm);
   const formId = () => formDef.formId;
   const form = () => formDef.form;
-  const effects = () => {
-    if (!form()) return {};
-    const merged = mergeProps(
-      form().seeds,
-      form().effects,
-    );
-    return mapValues(merged, (effect) => {
-      if (typeof effect === 'string') {
-        return { type: effect, arg: null };
-      }
-      return effect;
-    });
-  };
-  const $effects = (...args) => $newForm('form', 'effects', ...args);
+  const fx = () => form().fx;
+  // const fx = () => {
+  //   if (!form()) return {};
+  //   const merged = mergeProps(
+  //     form().seeds,
+  //     form().fx,
+  //   );
+  //   return mapValues(merged, (effect) => {
+  //     if (typeof effect === 'string') {
+  //       return { type: effect, arg: null };
+  //     }
+  //     return effect;
+  //   });
+  // };
+  const $fx = (...args) => $newForm('form', 'fx', ...args);
   const notGarb = () => form()?.type !== 'garb';
   const [idValid, $idValid] = createSignal(null);
   const [currentVar, $currentVar] = createSignal(0);
@@ -95,25 +96,11 @@ export default function FormEditor(props) {
   });
 
   function save() {
-    const seeds = {}, fx = {};
-    Object.entries(effects()).forEach(([trigger, effect]) => {
-      if (trigger === '') return;
-      if (!effect) return;
-      if (effect.arg === null) {
-        seeds[trigger] = effect.type;
-      } else {
-        fx[trigger] = effect;
-      }
-    });
     if (readyToSave()) {
       addFn()(
         {
           formId: formId(),
-          form: {
-            ...jClone(form()),
-            seeds,
-            effects: jClone(fx),
-          },
+          form: jClone(form()),
         },
         idChanged() ? props.form?.formId : undefined,
       );
@@ -310,8 +297,8 @@ export default function FormEditor(props) {
                   Effects
                 </label>
                 <EffectsEditor
-                  effects={effects()}
-                  $effects={$effects}
+                  fx={fx()}
+                  $fx={$fx}
                   form={form()}
                   allowSeeds
                 />

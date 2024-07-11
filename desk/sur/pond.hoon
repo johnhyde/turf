@@ -36,6 +36,7 @@
       [%del-turf ~]
       [%set-name name=@t]
       [%set-back back=background]
+      [%set-autoconfirm-dinks confirm=?]
       [%size-turf off-size]
       [%add-form form-spec]
       [%del-form =form-id]
@@ -170,6 +171,7 @@
     ::
     %set-name  turf(name.deed name.grit)
     %set-back  turf(back.plot back.grit)
+    %set-autoconfirm-dinks  turf(autoconfirm-dinks.deed confirm.grit)
     %size-turf
       =.  turf  %=  turf
           offset.plot  offset.grit

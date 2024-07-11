@@ -1,4 +1,4 @@
-import { createMemo, createResource } from 'solid-js';
+import { createMemo, createResource, createSignal } from 'solid-js';
 import { produce } from 'solid-js/store';
 import cloneDeep from 'lodash/cloneDeep';
 import * as api from 'lib/api.js';
@@ -31,6 +31,7 @@ export class Mist { // we use a class so we can put it inside a store without ge
     this._local = local;
     this.refetchLocal = refetch;
     this._closet = new Skye('/closet', 'closet-stir');
+    [this.possibleReturn, this.$possibleReturn] = createSignal(null);
 
     this.sub = null;
     this.subscribe();
@@ -89,10 +90,20 @@ export class Mist { // we use a class so we can put it inside a store without ge
   }
 
   acceptInvite(turfId, inviteId) {
+    this.$possibleReturn(this.vapor?.currentTurfId);
     this.sendWave('export-self', {
       for: turfId,
       via: inviteId,
     });
+  }
+
+  returnWhenceCame() {
+    if (this.possibleReturn() == null) return;
+    this.sendWave('export-self', {
+      for: this.possibleReturn(),
+      via: null,
+    });
+    this.$possibleReturn(null);
   }
 
   acceptInviteCode(code) {
@@ -105,6 +116,7 @@ export class Mist { // we use a class so we can put it inside a store without ge
 
   acceptPortOffer(portOffer) {
     if (portOffer) {
+      this.$possibleReturn(this.vapor?.currentTurfId);
       this.sendWave('accept-port-offer', portOffer.for);
     }
   }

@@ -1,6 +1,7 @@
 import {
   dir8ToVec,
   equalsV,
+  jClone,
   rotateDir,
   rotateDir8,
   roundDir8,
@@ -8,40 +9,6 @@ import {
   vecToDir8,
 } from 'lib/utils.js';
 import { getShade, getShadeWithForm } from 'lib/turf.js';
-
-export function trig(type, ...args) {
-  switch (type) {
-    case 'move':
-      return {
-        type,
-        arg: {
-          start: args[0],
-          end: args[1],
-          collide: args[2] ?? true,
-          smooth: args[3] ?? true,
-        },
-      };
-    case 'bump':
-    case 'interact':
-    case 'click':
-      return { type, arg: null };
-    case 'tell':
-      return {
-        type,
-        arg: args[0],
-      };
-    // fake triggers for convenience
-    case 'step': {
-      const [turf, shadeId, collide, smooth] = args;
-      const shade = getShade(turf, shadeId);
-      const start = vec2(turf.offset);
-      const end = shade?.pos || start;
-      return trig('move', start, end, collide, smooth);
-    }
-    default:
-      throw new Error('invalid trigger type: ' + type);
-  }
-}
 
 export function getEffectsByShadeId(turf, shadeId, trigger, opts = {}) {
   const comp = getShadeWithForm(turf, shadeId);
@@ -52,13 +19,13 @@ export function getEffectsByComp(turf, comp, trigger, opts = {}) {
   if (!comp) return [];
   const fx = comp.fx || comp.form.fx;
   return fx.filter((reflex) => {
-    return matchRootCondition(reflex.root, {
+    return matchRootCondition({
       comp,
       turf,
       ship: opts.ship || our,
       trigger,
       initId: opts.initId ?? null,
-    });
+    }, reflex.root);
   }).map((reflex) => reflex.effect);
 }
 
@@ -68,7 +35,7 @@ export function apCtx(ctx) {
     ship: ctx.ship,
     trigger: ctx.trigger,
     shadeId: ctx.comp.id,
-    initId: ctx.nitId,
+    initId: ctx.initId,
   };
 }
 
@@ -109,10 +76,12 @@ export function matchCondition(ctx, con) {
       return target.type === 'item' && target.arg === ctx.initId;
     }
     case 'user-eq':
+      if (ctx.ship[0] !== '~') console.error(`Invalid src @p: ${ctx.ship}`);
       return arg === ctx.ship;
     case 'trigger':
       return matchTriggerCondition(ctx, arg);
     case 'item-exists':
+      // if (ctx.trigger.type === 'move' && ctx.trigger.arg.start.x > 0) debugger;
       return !!resolveItemTarget(apCtx(ctx), arg);
     case 'variation': {
       const shade = resolveItemTarget(apCtx(ctx), arg.item);
@@ -124,27 +93,30 @@ export function matchCondition(ctx, con) {
     case 'move-smooth':
       return ctx.trigger.type === 'move' && ctx.trigger.arg.smooth === arg;
     case 'loc-eq': {
-      const ctx = apCtx(ctx);
-      return resolveFxLoc(ctx, arg.a) === resolveFxLoc(ctx, arg.b);
+      const ap = apCtx(ctx);
+      const a = resolveFxLoc(ap, arg.a);
+      const b = resolveFxLoc(ap, arg.b);
+      if (!a || !b) return false;
+      return equalsV(a, b);
     }
   }
 }
 
-export function matchTriggerCondition(ton, ctx) {
+export function matchTriggerCondition(ctx, ton) {
   const { arg } = ton;
   if (ton.type !== ctx.trigger.type) return false;
   switch (ton.type) {
     case 'move':
       switch (arg.type) {
         case 'onto':
-          return ctx.comp.pos === ctx.trigger.arg.end;
+          return equalsV(ctx.comp.pos, ctx.trigger.arg.end);
         case 'off':
-          return ctx.comp.pos === ctx.trigger.arg.start;
+          return equalsV(ctx.comp.pos, ctx.trigger.arg.start);
         default:
           throw new Error('invalid move condition type: ' + arg.type);
       }
     case 'tell':
-      return arg.arg === ctx.trigger.arg.msg;
+      return arg.arg === ctx.trigger.arg;
     default:
       return true;
   }
@@ -159,12 +131,199 @@ export function matchIntRel(rel, int) {
   }
 }
 
+// generators
+
+export function trig(type, ...args) {
+  switch (type) {
+    case 'move':
+      return {
+        type,
+        arg: {
+          start: vec2(args[0]),
+          end: vec2(args[1]),
+          collide: args[2] ?? true,
+          smooth: args[3] ?? true,
+        },
+      };
+    case 'bump':
+    case 'interact':
+    case 'click':
+      return { type, arg: null };
+    case 'tell':
+      return {
+        type,
+        arg: args[0],
+      };
+    // fake triggers for convenience
+    case 'step': {
+      const [turf, shadeId, collide, smooth] = args;
+      const shade = turf ? getShade(turf, shadeId) : null;
+      const start = turf ? vec2(turf.offset) : null;
+      const end = shade?.pos || start;
+      return trig('move', start, end, collide, smooth);
+    }
+    default:
+      throw new Error('invalid trigger type: ' + type);
+      // return { type: '', arg: null };
+  }
+}
+export function newFxTriggerCondition(type, ...args) {
+  switch (type) {
+    case 'move':
+      return {
+        type,
+        arg: { type: args[0] || 'onto', arg: null },
+      };
+    case 'bump':
+    case 'interact':
+    case 'click':
+      return { type, arg: null };
+    case 'tell':
+      return {
+        type,
+        arg: { type: 'eq', arg: args[0] ?? null },
+      };
+    // fake trigger conditionss for convenience
+    case 'step':
+      return newFxTriggerCondition('move', 'onto');
+    case 'leave':
+      return newFxTriggerCondition('move', 'off');
+    default:
+      // throw new Error('invalid trigger type: ' + type);
+      return { type: '', arg: null };
+  }
+}
+
+export function newReflex() {
+  return {
+    root: { type: '', arg: null },
+    effect: { type: '', arg: null },
+  };
+}
+
+export function newFxRootCondition(type, root) {
+  if (root) root = jClone(root);
+  switch (type) {
+    case 'or':
+      return {
+        type,
+        arg: root ? [root, newFxRootCondition()] : [newFxRootCondition()],
+      };
+    case 'and':
+      return {
+        type,
+        arg: {
+          root: root ?? newFxRootCondition(),
+          cons: root ? [newFxCondition()] : [],
+        },
+      };
+    case 'trigger':
+      return { type, arg: newFxTriggerCondition() };
+    default:
+      return { type: 'trigger', arg: newFxTriggerCondition(type) };
+  }
+}
+
+export function newFxCondition(type, con) {
+  if (con) con = jClone(con);
+  if (!type) return { type: '', arg: null };
+  switch (type) {
+    case 'and':
+    case 'or':
+      return { type, arg: con ? [con, newFxCondition()] : [newFxCondition()] };
+    case 'not':
+      return { type, arg: con ?? newFxCondition() };
+    case 'eq':
+      return {
+        type,
+        arg: {
+          a: newFxCondition(),
+          b: newFxCondition(),
+        },
+      };
+    case 'initiator':
+      return { type, arg: 'item' };
+    case 'initiator-eq':
+      return { type, arg: newFxTarget() };
+    case 'user-eq':
+      return { type, arg: null };
+    case 'trigger':
+      return { type, arg: newFxTriggerCondition() };
+    case 'item-exists':
+      return { type, arg: newFxItemTarget() };
+    case 'variation':
+      return { type, arg: { item: newFxItemTarget(), con: newFxIntRel() } };
+    case 'move-collide':
+      return { type, arg: true };
+    case 'move-smooth':
+      return { type, arg: true };
+    case 'loc-eq':
+      return { type, arg: { a: newFxLocation(), b: newFxLocation() } };
+    default:
+      return { type: 'trigger', arg: newFxTriggerCondition(type) };
+  }
+}
+
+export function newFxIntRel() {
+  return {
+    type: 'eq',
+    arg: 0,
+  };
+}
+
+export function newEffect() {
+  return { type: '', arg: null };
+}
+
+export function newFxRead() {
+  return {
+    note: '',
+    actions: [],
+  };
+}
+
+export function newFxAction() {
+  return {
+    name: '',
+    effect: newEffect(),
+  };
+}
+
+export function newFxMove() {
+  return {
+    target: newFxTarget(),
+    to: newFxLocation(),
+    collide: true,
+    smooth: true,
+  };
+}
+
+export function newFxTell() {
+  return {
+    target: newFxItemTarget(),
+    msg: '',
+  };
+}
+
 export function newFxTarget(type = 'this') {
   switch (type) {
     case 'this':
     case 'user':
+    case 'initiator':
       return type;
     default: // item & player
+      return {
+        type,
+        arg: null,
+      };
+  }
+}
+export function newFxItemTarget(type = 'this') {
+  switch (type) {
+    case 'this':
+    case 'initiator':
+      return type;
+    default: // item
       return {
         type,
         arg: null,
@@ -186,6 +345,8 @@ export function newFxLocation(type = 'target') {
           loc: newFxLocation(),
         },
       };
+    case 'mover-pos':
+      return { type, arg: 'start' };
     default: // absolute
       return {
         type,
@@ -302,15 +463,25 @@ export function newFxFromTo() {
 //
 
 export function applyEffect(ctx, effect) {
-  const { turf, ship, shadeId } = ctx;
+  const { turf, ship, trigger, shadeId, initId } = ctx;
   switch (effect.type) {
     case 'list': {
-      if (effect.arg.serial) { // true or 'atomic'
+      if (effect.arg.serial === 'simult') {
+        let roars = [], goals = [];
+        effect.arg.effects.forEach((effect) => {
+          const res = applyEffect(ctx, effect);
+          roars = [...roars, ...res.roars];
+          goals = [...goals, ...res.goals];
+        });
+        return { roars, goals };
+      } else {
         let goals = effect.arg.effects.map((effect) => ({
           type: 'apply-effect',
           arg: {
             effect,
+            trigger,
             shadeId,
+            initId,
           },
         }));
         if (effect.arg.serial === 'atomic') {
@@ -326,14 +497,6 @@ export function applyEffect(ctx, effect) {
           roars: [],
           goals,
         };
-      } else {
-        let roars = [], goals = [];
-        effect.arg.effects.forEach((effect) => {
-          const res = applyEffect(ctx, effect);
-          roars = [...roars, ...res.roars];
-          goals = [...goals, ...res.goals];
-        });
-        return { roars, goals };
       }
     }
     case 'port': {
@@ -344,15 +507,6 @@ export function applyEffect(ctx, effect) {
         goals: [{
           type: 'add-port-offer',
           arg: { ship, from: effect.arg },
-        }],
-      };
-    }
-    case 'jump': {
-      return {
-        roars: [],
-        goals: [{
-          type: 'tele',
-          arg: { ship, pos: effect.arg },
         }],
       };
     }
@@ -380,24 +534,40 @@ export function applyEffect(ctx, effect) {
         }],
       };
     }
-    case 'move':
-    case 'tele': {
-      const ctx = { turf, ship, shadeId };
-      const { target, to } = effect.arg;
+    case 'move': {
+      const { target, to, collide, smooth } = effect.arg;
       const pos = resolveFxLoc(ctx, to);
       if (!pos) return { roars: [], goals: [] };
       const absTarget = absolutizeTarget(ctx, target);
       const isPlayer = absTarget.type === 'player';
       const goal = {
-        type: isPlayer ? effect.type : `${effect.type}-shade`,
+        type: isPlayer ? 'move' : 'move-shade',
         arg: {
           [isPlayer ? 'ship' : 'shadeId']: absTarget.arg,
           pos,
+          collide,
+          smooth,
         },
       };
       return {
         roars: [],
         goals: [goal],
+      };
+    }
+    case 'tell': {
+      const { target, msg } = effect.arg;
+      const targetId = absolutizeItemTarget(ctx, target);
+      if (targetId == null) return { roars: [], goals: [] };
+      return {
+        roars: [],
+        goals: [{
+          type: 'pull-trigger',
+          arg: {
+            trigger: trig('tell', msg),
+            shadeId: targetId,
+            initId: shadeId,
+          },
+        }],
       };
     }
     default: {
@@ -426,9 +596,9 @@ export function resolveFxLoc(ctx, loc) {
       return vec2(start).add(offset);
     }
     case 'mover-pos': {
-      if (ctx.trigger.type !== 'trigger') return null;
-      if (loc.arg === 'start') return ctx.trigger.arg.start;
-      return ctx.trigger.arg.end;
+      if (ctx.trigger.type !== 'move') return null;
+      if (loc.arg === 'start') return vec2(ctx.trigger.arg.start);
+      return vec2(ctx.trigger.arg.end);
     }
     case 'absolute': {
       return vec2(loc.arg);

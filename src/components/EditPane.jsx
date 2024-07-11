@@ -1,14 +1,14 @@
 import { batch, createMemo, createSelector, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
-import { bind, isTextInputFocused } from 'lib/utils';
-import { getShadeWithForm, getTile, isSpecialFormId } from 'lib/turf';
-import Button from '@/Button';
-import FormEditor from '@/FormEditor';
-import HuskEditor from '@/HuskEditor';
-import FormSelect from '@/FormSelect';
-import FormInfo from '@/FormInfo';
-import MediumButton from '@/MediumButton';
+import { bind, isTextInputFocused } from 'lib/utils.js';
+import { getShadeWithForm, getTile, isSpecialFormId } from 'lib/turf.js';
+import Button from '@/Button.jsx';
+import FormEditor from '@/FormEditor.jsx';
+import ShadeEditor from '@/ShadeEditor.jsx';
+import FormSelect from '@/FormSelect.jsx';
+import FormInfo from '@/FormInfo.jsx';
+import MediumButton from '@/MediumButton.jsx';
 import point from 'assets/icons/point.png';
 import erase from 'assets/icons/delete.png';
 import dropper from 'assets/icons/dropper.png';
@@ -149,7 +149,7 @@ export default function EditPane() {
         </div>
       </Show>
       <Show when={selectedShade()} keyed>
-        {(shade) => <HuskEditor shade={shade} />}
+        {(shade) => <ShadeEditor shade={shade} />}
       </Show>
       <Show when={selectedShade() == null}>
         <div class='overflow-y-auto'>

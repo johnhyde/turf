@@ -66,6 +66,8 @@
           (frond 'name' s+name.grit)
         %set-back
           (background back.grit)
+        %set-autoconfirm-dinks
+          (frond 'confirm' b+confirm.grit)
         %size-turf
           (pairs ~[offset+(svec2 offset.grit) size+(vec2 size.grit)])
         %add-form

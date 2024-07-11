@@ -2,7 +2,13 @@ import { createSelector, createSignal, onCleanup, onMount } from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { usePhone } from 'stores/phone.jsx';
 import * as api from 'lib/api.js';
-import { autofocus, jClone, stripPathPrefix } from 'lib/utils.js';
+import {
+  autofocus,
+  jClone,
+  pathToTurfId,
+  stripPathPrefix,
+  turfIdToName,
+} from 'lib/utils.js';
 import Modal from '@/Modal.jsx';
 import MediumButton from './MediumButton.jsx';
 
@@ -126,13 +132,27 @@ export default function Modals() {
                 </p>
               )}
               <div class='flex w-full justify-center mt-4 space-x-4'>
-                <button
-                  use:autofocus
-                  class='bg-teal-800 rounded-lg px-4 py-2'
-                  onClick={goHome}
+                <Show when={ourPond !== state.c.id}>
+                  <button
+                    use:autofocus
+                    class='bg-teal-800 rounded-lg px-4 py-2'
+                    onClick={goHome}
+                  >
+                    Go Home {state.c.id ? 'Instead' : ''}
+                  </button>
+                </Show>
+                <Show
+                  when={state.c.id && state.mist.possibleReturn() &&
+                    state.mist.possibleReturn() !== ourPond}
                 >
-                  Go Home {state.c.id ? 'Instead' : ''}
-                </button>
+                  <button
+                    class='bg-teal-800 rounded-lg px-4 py-2'
+                    onClick={() => state.mist.returnWhenceCame()}
+                  >
+                    Return to{' '}
+                    {turfIdToName(pathToTurfId(state.mist.possibleReturn()))}
+                  </button>
+                </Show>
               </div>
             </Modal>
           </Match>

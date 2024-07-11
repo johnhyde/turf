@@ -3,6 +3,8 @@ import { useState } from 'stores/state.jsx';
 import { isValidPatp } from 'urbit-ob';
 import { bind, input, isTextInputFocused, normalizeId } from 'lib/utils';
 import SmallButton from '@/SmallButton';
+import portal from 'assets/icons/portal.png';
+import portalNot from 'assets/icons/portal-not.png';
 
 export default function BridgeBuilder(props) {
   const state = useState();
@@ -34,7 +36,7 @@ export default function BridgeBuilder(props) {
     const patp = toShip();
     if (isValidInput(patp)) {
       const portal = {
-        ship: toShip(),
+        ship: patp,
         path: '/',
       };
       if (props.shadeId !== undefined) {
@@ -43,11 +45,19 @@ export default function BridgeBuilder(props) {
       } else {
         state.setPortalToPlace(portal, {
           formId: props.formId || '/portal',
-          isLunk: props.isLunk === true,
+          isGate: props.isGate === true,
         });
+        // state.createPortal(toShip(), '/');
       }
     } else {
       $toShipValid(false);
+    }
+  }
+
+  function addPortal() {
+    const patp = toShip();
+    if (isValidInput(patp)) {
+      state.createPortal(patp, '/');
     }
   }
 
@@ -78,12 +88,23 @@ export default function BridgeBuilder(props) {
         placeholder={props.placeholder || ''}
       />
       {state.huskToPlace?.portal?.ship === toShip()
-        ? <SmallButton onClick={cancel}>–</SmallButton>
+        ? (
+          <SmallButton onClick={cancel}>
+            <img src={portalNot} class='w-4 h-4 my-0.5' />
+          </SmallButton>
+        )
         : (
           <SmallButton onClick={submit}>
-            {props.shadeId === undefined ? '+' : '✓'}
+            {props.shadeId === undefined
+              ? <img src={portal} class='w-4 h-4 my-0.5' />
+              : '✓'}
           </SmallButton>
         )}
+      <Show when={props.shadeId == null}>
+        <SmallButton onClick={addPortal}>
+          ✓
+        </SmallButton>
+      </Show>
     </div>
   );
 }

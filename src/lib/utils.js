@@ -348,6 +348,14 @@ export function turfIdToName(turfId) {
   return turfId.ship + (turfId.path !== '/' ? turfId.path : '');
 }
 
+export function pathToTurfId(path) {
+  const parts = path.split('/');
+  return {
+    ship: parts[2],
+    path: '/' + parts.slice(3).join('/'),
+  };
+}
+
 export function truncateString(str, maxLength) {
   if (str.length > maxLength) {
     const truncated = str.slice(0, maxLength - 3);
@@ -583,6 +591,7 @@ export function input(el, callbacks) {
     const { onSubmit, dontEscape } = callbacks();
     if (e.key === 'Enter' && onSubmit) {
       onSubmit(e);
+      blur();
       e.stopPropagation();
     }
     if (e.key === 'Escape' && !dontEscape) {

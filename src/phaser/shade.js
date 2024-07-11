@@ -1,5 +1,6 @@
 import { hexToInt, jClone } from 'lib/utils.js';
 import { getForm, getSpriteFps, spriteName } from 'lib/turf.js';
+import { moveTheThing } from './move.js';
 
 export class Shade extends Phaser.GameObjects.Sprite {
   constructor(scene, shade, turf, indexDepthMod) {
@@ -13,9 +14,11 @@ export class Shade extends Phaser.GameObjects.Sprite {
     this.turf = turf;
     this.shade = jClone(shade);
     this.form = getForm(turf, shade.formId);
+    this.tilePos = vec2(shade.pos);
     if (!this.form) {
       this.destroy();
     } else {
+      this.actionQueue = [];
       this.depthMod = 0;
       this.indexDepthMod = indexDepthMod;
       this.offset = vec2(this.form.variations[shade.variation]?.offset).add(
@@ -38,6 +41,10 @@ export class Shade extends Phaser.GameObjects.Sprite {
       // this.glow = this.postFX.addGlow(0xffffff);
       // this.setGlowActive(false);
     }
+  }
+
+  preUpdate(_time, dt) {
+    moveTheThing(this, dt, () => {}, this.setPosition.bind(this));
   }
 
   updateDepth() {
@@ -74,6 +81,10 @@ export class Shade extends Phaser.GameObjects.Sprite {
     } else {
       this.clearTint();
     }
+  }
+
+  setTilePos(...args) {
+    this.tilePos = vec2(...args);
   }
 
   setPosition(...args) {

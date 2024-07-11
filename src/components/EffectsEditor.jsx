@@ -1,5 +1,5 @@
 import { batch, createSignal } from 'solid-js';
-import { reconcile } from 'solid-js/store';
+import { produce, reconcile } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
 import {
   autofocus,
@@ -11,107 +11,113 @@ import {
   turfIdToName,
   vec2,
 } from 'lib/utils.js';
-import { newFxLocation, newFxTarget } from 'lib/effects.js';
-import { Indent } from '@/GroupIndent.jsx';
+import { newFxMove, newFxRead, newFxTell, newReflex } from 'lib/effects.js';
+import { Group, Indent } from '@/GroupIndent.jsx';
 import ListItemPicker from '@/ListItemPicker.jsx';
 import SmallButton from '@/SmallButton.jsx';
 import ItemButton from '@/ItemButton.jsx';
 import Select from '@/Select.jsx';
 import PathInput from '@/PathInput.jsx';
 import Radio from '@/Radio.jsx';
-import { FxMoveInput, PositionInput } from '@/FxInputs.jsx';
+import { FxCondition, FxMoveInput, FxTellInput } from '@/FxInputs.jsx';
 
-// todo bump
-const triggers = toPairs('step, leave, bump, interact, click');
-// todo: swap
 const effectTypes = toPairs(
-  'list  multiple, port  teleport, jump, read  show text, swap  replace item, seem  show variation, vary  change variation, move, tele  move instantly',
+  'list  multiple, port  teleport, read  show text, swap  replace item, ' +
+    'seem  show variation, vary  change variation, move, tell  trigger item',
 );
 
 function defaultArg(type, turf) {
   switch (type) {
     case 'list':
       return {
-        serial: false,
+        serial: 'simult',
         effects: [{ type: '', arg: null }],
       };
     case 'port':
-    case 'read':
       return '';
-    case 'jump':
-      return vec2(turf.offset);
+    case 'read':
+      return newFxRead();
     case 'swap':
       return '/';
     case 'seem':
     case 'vary':
       return 0;
     case 'move':
-    case 'tele':
-      return {
-        target: newFxTarget(),
-        to: newFxLocation(),
-      };
+      return newFxMove();
+    case 'tell':
+      return newFxTell();
     default:
       return null;
   }
 }
 
 export default function EffectsEditor(props) {
-  // props.effects, props.$effects
+  // props.fx, props.$fx
 
-  const noEmptyEffect = () => props.effects[''] == null;
+  // const noEmptyEffect = () => props.fx[''] == null;
 
   function addEmptyEffect() {
-    if (noEmptyEffect()) {
-      setArg('', '', null);
-    }
+    // if (noEmptyEffect()) {
+    //   setArg('', '', null);
+    // }
+    props.$fx((fx) => [...fx, newReflex()]);
   }
 
-  function setArg(trigger, type, arg) {
-    props.$effects(trigger, reconcile({ type, arg }));
+  function setArg(index, type, arg) {
+    // props.$fx(trigger, reconcile({ type, arg }));
+    if (index >= props.fx.length) return;
+    props.$fx(index, 'effect', () => {
+      return { type, arg };
+    });
   }
 
   return (
     <>
       <div class='flex flex-col divide-y divide-yellow-950'>
-        <Index each={Object.entries(props.effects)}>
-          {(item) => {
-            const trigger = () => item()[0];
-            const effect = () => item()[1];
+        <For each={props.fx}>
+          {(reflex, i) => {
+            const root = () => reflex.root;
+            const effect = () => reflex.effect;
 
-            function clearEffect() {
-              props.$effects(trigger(), null);
+            function delReflex() {
+              props.$fx(produce((fx) => fx.splice(i(), 1)));
             }
 
-            function $trigger(newTrigger) {
-              batch(() => {
-                clearEffect();
-                props.$effects(newTrigger, effect());
-              });
+            function $root(newRoot) {
+              props.$fx(i(), 'root', () => newRoot);
             }
 
             function $type(type) {
-              setArg(trigger(), type, defaultArg(type, state.e));
+              setArg(i(), type, defaultArg(type, state.e));
             }
 
             function $arg(arg) {
-              setArg(trigger(), effect().type, arg);
+              setArg(i(), effect().type, arg);
             }
 
             return (
               <Show when={effect() != null}>
                 {/* <div class='w-full py-2 flex gap-2 items-start'> */}
                 <div class='w-full py-2 flex flex-wrap items-center gap-1 mb-1'>
+                  {/* <div>{JSON.stringify(root(), null, 2)}</div> */}
+                  {
+                    /* <div>
+                  {JSON.stringify(effect(), null, 2)}
+                </div> */
+                  }
                   <div className='w-full flex gap-2 items-start'>
-                    <div class='grow flex gap-1 items-center'>
-                      <span>on</span>
-                      <TriggerSelector
-                        trigger={trigger()}
-                        $trigger={$trigger}
-                      />
+                    <div class='grow flex flex-wrap items-center gap-1 mb-1'>
+                      <p>when</p>
+                      <Group>
+                        <FxCondition
+                          condition={root()}
+                          $condition={$root}
+                          root
+                        />
+                      </Group>
                     </div>
                     <SmallButton
-                      onClick={clearEffect}
+                      onClick={delReflex}
                       class=''
                     >
                       x
@@ -123,18 +129,15 @@ export default function EffectsEditor(props) {
                     $type={$type}
                     $arg={$arg}
                     form={props.form}
-                    allowSeeds={props.allowSeeds}
                   />
                 </div>
                 {/* </div> */}
               </Show>
             );
           }}
-        </Index>
+        </For>
       </div>
-      <Show when={noEmptyEffect()}>
-        <SmallButton onClick={addEmptyEffect}>New Effect</SmallButton>
-      </Show>
+      <SmallButton onClick={addEmptyEffect}>New Effect</SmallButton>
     </>
   );
 }
@@ -218,12 +221,12 @@ function ArgInput(props) {
                     $value={(v) =>
                       props.$arg({
                         ...props.arg,
-                        serial: JSON.parse(v),
+                        serial: v,
                       })}
                     items={[
-                      [true, 'Serial'],
-                      [false, 'Simultaneous'],
-                      ['"atomic"', 'Atomic'], // because we're JSON.parse-ing (bc of bools)
+                      ['serial', 'Serial'],
+                      ['simult', 'Simultaneous'],
+                      ['atomic', 'Atomic'],
                     ]}
                     bg='border border-yellow-950'
                     bgActive='border border-yellow-950 bg-yellow-600'
@@ -284,41 +287,10 @@ function ArgInput(props) {
                     use:autofocus
                     use:input
                     use:bind={[
-                      () => props.arg,
-                      (s) => props.$arg(s || ''),
+                      () => props.arg.note,
+                      (s) => props.$arg({ ...props.arg, note: s || '' }),
                     ]}
                   />
-                </Match>
-                <Match when={props.type === 'jump'}>
-                  <div class='grow' />
-                  <span>to</span>
-                  <PositionInput value={props.arg} $value={props.$arg} />
-                  {
-                    /* <span>to x:</span>
-                  <input
-                    type='number'
-                    class='rounded-md pl-1'
-                    min={state.e.offset.x}
-                    max={state.e.offset.x + state.e.size.x - 1}
-                    use:input
-                    use:bindNum={[
-                      () => props.arg.x,
-                      (n) => props.$arg(vec2(n, props.arg.y)),
-                    ]}
-                  />
-                  <span>y:</span>
-                  <input
-                    type='number'
-                    class='rounded-md pl-1'
-                    min={state.e.offset.y}
-                    max={state.e.offset.y + state.e.size.y - 1}
-                    use:input
-                    use:bindNum={[
-                      () => props.arg.y,
-                      (n) => props.$arg(vec2(props.arg.x, n)),
-                    ]}
-                  /> */
-                  }
                 </Match>
                 <Match when={props.type === 'swap'}>
                   <PathInput
@@ -362,8 +334,11 @@ function ArgInput(props) {
                     }}
                   />
                 </Match>
-                <Match when={props.type === 'move' || props.type === 'tele'}>
+                <Match when={props.type === 'move'}>
                   <FxMoveInput value={props.arg} $value={props.$arg} />
+                </Match>
+                <Match when={props.type === 'tell'}>
+                  <FxTellInput value={props.arg} $value={props.$arg} />
                 </Match>
               </Switch>
               <Show when={props.allowSeeds}>

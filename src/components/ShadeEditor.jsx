@@ -6,10 +6,11 @@ import {
   createSignal,
   mergeProps,
 } from 'solid-js';
-import { createStore, produce, reconcile } from 'solid-js/store';
+import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
 import { getForm } from 'lib/turf.js';
 import { bind, input, jClone, vec2 } from 'lib/utils.js';
 import mapValues from 'lodash/mapValues';
+import isEqual from 'lodash/isEqual';
 import { useState } from 'stores/state.jsx';
 import SmallButton from '@/SmallButton.jsx';
 import FormInfo from '@/FormInfo.jsx';
@@ -18,91 +19,104 @@ import ItemButton from '@/ItemButton.jsx';
 import EffectsEditor from '@/EffectsEditor.jsx';
 import leftCaret from 'assets/icons/left-caret.png';
 
-export default function HuskEditor(props) {
+export default function ShadeEditor(props) {
   const state = useState();
-  const [newEffects, $newEffects] = createStore({});
+  const [newFx, $_newFx] = createStore([]);
+  const [fx, $fx] = createStore([]);
+  // const [newInited, $newInited] = createSignal(false);
   const [shouldReset, $shouldReset] = createSignal(false);
-  const husk = () => props.shade;
+  const $newFx = (...args) => {
+    $shouldReset(false);
+    $_newFx(...args);
+  };
+  const shade = () => props.shade;
   const pos = () => props.shade?.pos;
-  const form = () => husk().form;
-  const [huskEffects, $huskEffects] = createStore({});
-  // const huskEffects = mergeProps(husk().effects, huskResets);
-  createEffect(() => {
-    if (shouldReset()) {
-      $huskEffects(reconcile({}));
-    } else {
-      Object.keys(husk().effects).forEach((key) => {
-        $huskEffects(key, husk().effects[key]);
-      });
-    }
-  });
-  // const huskEffects = () => shouldReset() ? {} : husk().effects;
-  const nonFormEffects = mergeProps(huskEffects, newEffects);
+  const form = () => shade().form;
+  // const shadeEffects = mergeProps(shade().fx, shadeResets);
+  // createEffect(() => {
+  //   if (shouldReset()) {
+  //     $shadeEffects(reconcile([]));
+  //   } else {
+  //     Object.keys(shade().fx).forEach((key) => {
+  //       $shadeEffects(key, shade().fx[key]);
+  //     });
+  //   }
+  // });
+  // const shadeEffects = () => shouldReset() ? {} : shade().fx;
+  // const nonFormEffects = mergeProps(shadeEffects, newFx);
 
-  function clearNewEffects() {
-    $newEffects(reconcile({}));
-  }
+  // function clearNewEffects() {
+  //   $newFx(reconcile([]));
+  // }
 
   function resetEffects() {
     batch(() => {
-      clearNewEffects();
+      // clearNewEffects();
       $shouldReset(true);
+      updateNewFx();
     });
   }
 
-  const effects = createMemo(() => {
-    if (!husk()) return {};
-    const merged = mergeProps(
-      form().seeds,
-      form().effects,
-      nonFormEffects,
-    );
-    return mapValues(merged, (effect) => {
-      if (typeof effect === 'string') {
-        return { type: effect, arg: null };
-      }
-      return effect;
-    });
-  });
+  createEffect(updateNewFx);
+  function updateNewFx() {
+    if (!shade()) {
+      $_newFx(reconcile([]));
+    } else if (!shade().fx || shouldReset()) {
+      $_newFx(reconcile(jClone(shade().form.fx || [])));
+    } else {
+      // if (!newInited()) {
+      $_newFx(reconcile(jClone(shade().fx)));
+    }
+    // } else {
+    //   $fx(reconcile(shade().fx));
+    // }
+  }
 
   function save() {
     batch(() => {
-      if (shouldReset()) state.resetShadeEffects(husk().id);
-      Object.entries(newEffects).forEach(([trigger, effect]) => {
-        if (trigger === '') return;
-        if (effect != null) {
-          effect = effect.arg === null ? effect.type : effect;
-        }
-        if (effect === '') return;
-        state.setShadeEffect(husk().id, trigger, effect);
-      });
+      if (shouldReset()) {
+        state.setShadeFx(shade().id, null);
+      } else {
+        state.setShadeFx(shade().id, jClone(newFx));
+      }
+      // Object.entries(newFx).forEach(([trigger, effect]) => {
+      //   if (trigger === '') return;
+      //   if (effect != null) {
+      //     effect = effect.arg === null ? effect.type : effect;
+      //   }
+      //   if (effect === '') return;
+      //   state.setShadeEffect(shade().id, trigger, effect);
+      // });
       cancel();
     });
   }
 
-  function cycleHusk(amount) {
-    state.cycleShade(husk().id, amount);
+  function cycleShade(amount) {
+    state.cycleShade(shade().id, amount);
   }
 
-  function setHuskVariation(variation) {
-    state.setShadeVariation(husk().id, variation);
+  function setShadeVariation(variation) {
+    state.setShadeVariation(shade().id, variation);
   }
 
-  function setHuskCollidable(collidable) {
-    state.setShadeCollidable(husk().id, collidable);
+  function setShadeCollidable(collidable) {
+    state.setShadeCollidable(shade().id, collidable);
   }
 
   function cancel() {
-    clearNewEffects();
-    $shouldReset(false);
+    // clearNewEffects();
+    batch(() => {
+      $shouldReset(false);
+      updateNewFx();
+    });
   }
 
   function deleteItem() {
-    state.delShade(husk().id);
+    state.delShade(shade().id);
   }
 
   return (
-    <Show when={husk()}>
+    <Show when={shade()}>
       <div class='flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700 grow overflow-y-auto'>
         <div class='relative'>
           <SmallButton
@@ -112,39 +126,39 @@ export default function HuskEditor(props) {
             <img src={leftCaret} class='w-4 h-4' />
           </SmallButton>
         </div>
-        <FormInfo formId={husk().formId} />
+        <FormInfo formId={shade().formId} />
         <div class='my-2 border-t border-yellow-950'></div>
         <div class='mx-1'>
           <div class='flex justify-center'>
             <Show when={form().variations.length > 1}>
               <SmallButton
-                onClick={() => cycleHusk(form().variations.length - 1)}
+                onClick={() => cycleShade(form().variations.length - 1)}
               >
                 {'<'}
               </SmallButton>
             </Show>
             <div class='grow min-h-[64px] flex justify-center'>
-              <ItemButton form={form()} variation={husk().variation} />
+              <ItemButton form={form()} variation={shade().variation} />
             </div>
             <Show when={form().variations.length > 1}>
-              <SmallButton onClick={[cycleHusk, 1]}>
+              <SmallButton onClick={[cycleShade, 1]}>
                 {'>'}
               </SmallButton>
             </Show>
           </div>
           <Show
             when={form().variations.length > 1 ||
-              husk().variation >= form().variations.length}
+              shade().variation >= form().variations.length}
           >
             <ListItemPicker
               wall={form().type === 'wall'}
               items={form().variations}
-              selected={husk().variation}
-              onSelect={(i) => setHuskVariation(i)}
+              selected={shade().variation}
+              onSelect={(i) => setShadeVariation(i)}
             />
           </Show>
           <p class='text-center'>
-            Variation: {husk().variation + 1} of {form().variations.length}
+            Variation: {shade().variation + 1} of {form().variations.length}
           </p>
           <div class='text-center'>
             Position: {pos().x}x{pos().y}
@@ -160,32 +174,37 @@ export default function HuskEditor(props) {
             <input
               type='checkbox'
               id='collidable'
-              checked={husk().collidable ?? form().collidable}
-              onInput={(e) => setHuskCollidable(e.currentTarget.checked)}
+              checked={shade().collidable ?? form().collidable}
+              onInput={(e) => setShadeCollidable(e.currentTarget.checked)}
             />
           </div>
           <div class='flex items-center space-x-2'>
             <span>Effects:</span>
-            <Show when={Object.keys(nonFormEffects).length}>
+            <Show when={!isEqual(jClone(newFx), jClone(shade().form.fx))}>
               <SmallButton onClick={resetEffects}>
                 Reset Effects
               </SmallButton>
             </Show>
           </div>
           {
-            /* form: {JSON.stringify(form().effects, null, 2)}
-          husk: {JSON.stringify(husk().effects, null, 2)}
-          huskEffects: {JSON.stringify(huskEffects, null, 2)}
-          newEffects: {JSON.stringify(newEffects, null, 2)}
+            /* form: {JSON.stringify(form().fx, null, 2)}
+          shade: {JSON.stringify(shade().fx, null, 2)}
+          shadeEffects: {JSON.stringify(shadeEffects, null, 2)}
+          newFx: {JSON.stringify(newFx, null, 2)}
           nonFormEffects: {JSON.stringify(nonFormEffects, null, 2)} */
           }
           <EffectsEditor
-            effects={effects()}
-            $effects={$newEffects}
+            fx={newFx}
+            $fx={$newFx}
             form={form()}
           />
           <div class='my-1 flex justify-center space-x-2'>
-            <Show when={Object.keys(newEffects).length || shouldReset()}>
+            <Show
+              when={!isEqual(
+                newFx,
+                shade().fx || shade().form.fx,
+              ) || shouldReset()}
+            >
               <SmallButton onClick={save}>
                 Save
               </SmallButton>

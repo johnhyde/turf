@@ -142,6 +142,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           }
           if (!noop && noPulses && noCharges) {
             wash(this.updateFake.bind(this), grits, src, wen);
+            options.onUnpredictedGrits?.(grits);
           } else {
             this.updatePulses(noop, id, src, wen, grits);
           }
@@ -190,19 +191,33 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       const matches = pulseI >= 0;
       const matchesFirst = pulseI === 0;
       // const confirms = !noop && matches && isEqual(jClone(this.pulses[pulseI].grits), grits);
+      const pulseGrits = matches ? jClone(this.pulses[pulseI].grits) : [];
       const confirms = matches &&
-        isEqual(jClone(this.pulses[pulseI].grits), grits);
+        isEqual(pulseGrits, grits);
       const changesSomething = !noop || matches;
       const fakeInvalidated = changesSomething && !(matchesFirst && confirms);
       if (matches) {
         // once we can guarantee that pokes are send to ship in order,
         // we can throw out any pulses before the matched one
         // this.$('pulses', p => [...p.slice(0, pulseI), ...p.slice(pulseI + 1)]);
-        if (!confirms) console.log('DID NOT CONFIRM\nDID NOT CONFIRM');
+        if (!confirms) {
+          console.log('DID NOT CONFIRM\nDID NOT CONFIRM');
+          if (grits) {
+            const unpredicted = grits.slice(0, -1).filter((grit, i) =>
+              !isEqual(grit, pulseGrits[i])
+            );
+            options.onUnpredictedGrits?.([
+              ...unpredicted,
+              grits[grits.length - 1],
+            ]);
+          }
+        }
         if (pulseI > 0) {
           console.log(`THROWING AWAY ${pulseI} UNMATCHED PULSE(S)`);
         }
         this.$('pulses', (p) => p.slice(pulseI + 1));
+      } else {
+        if (grits) options.onUnpredictedGrits?.(grits);
       }
       if (fakeInvalidated) {
         this.replayFake();

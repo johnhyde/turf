@@ -34,7 +34,7 @@ import {
   isInTurf,
 } from 'lib/turf.js';
 import { extractPlayerSprites, extractSkyeSprites } from 'lib/turf.js';
-import { getEffectsByShadeId, trig } from 'lib/effects.js';
+import { getEffectsByShadeId, newFxRootCondition, trig } from 'lib/effects.js';
 import { Player } from './player.js';
 import { Shade } from './shade.js';
 import { Preview } from './preview.js';
@@ -233,17 +233,26 @@ function createShade(shade, id, turf) {
       }
     });
     shadeEffect(() => {
-      if (shade().formId === '/portal') {
+      if (['/portal', '/portal/house', '/gate'].includes(shade().formId)) {
         const stepEffects = getEffectsByShadeId(
           state.e,
           id,
           trig('move', state.player.pos, shade().pos),
         );
-        const port = stepEffects.find((e) => e.type === 'port');
+        const interactEffects = getEffectsByShadeId(
+          state.e,
+          id,
+          trig('interact'),
+        );
+        const port = [...stepEffects, ...interactEffects].find((e) =>
+          e.type === 'port'
+        );
         if (
-          port &&
-          port.arg != null &&
-          state.e.portals[port.arg]?.at != null
+          (shade().formId === '/gate' && !port) || (
+            port &&
+            port.arg != null &&
+            state.e.portals[port.arg]?.at != null
+          )
         ) {
           sprite.setAlpha(1);
           sprite.setTint(0xffffff);
@@ -335,12 +344,15 @@ function createShade(shade, id, turf) {
   function onClick(pointer, event) {
     console.log('got click on shade', id, formId);
     lastClickedShadeId = id;
-    if (state.editor.editing) {
-      if (shadeSelectCallback) {
-        shadeSelectCallback(id);
-        shadeSelectCallback = null;
-        event.stopPropagation();
-      } else if (state.editor.pointer && !posSelectCallback) {
+    if (
+      shadeSelectCallback &&
+      (state.editor.editing || state.selectedTab === state.tabs.PORTALS)
+    ) {
+      shadeSelectCallback(id);
+      shadeSelectCallback = null;
+      event.stopPropagation();
+    } else if (state.editor.editing) {
+      if (state.editor.pointer && !posSelectCallback) {
         state.selectShade(id);
         event.stopPropagation();
       }
@@ -504,21 +516,23 @@ export function startPhaser(_owner, _container) {
           if (state.editor.huskToPlace) {
             if (typeof state.huskToPlace.shade === 'object') {
               const shade = state.huskToPlace.shade;
-              if (state.huskToPlace.portal !== undefined) {
+              if (state.huskToPlace.portal != null) {
                 state.createBridge(
                   {
                     ...shade,
                     pos,
                   },
                   state.huskToPlace.portal,
-                  shadeformId === '/portal/house' ? 'interact' : 'move onto', // todo: trigger how??
+                  newFxRootCondition(
+                    shade.formId === '/portal/house' ? 'interact' : 'step',
+                  ),
                 );
               } else {
                 state.addShade(
                   pos,
                   shade.formId,
                   shade.variation,
-                  shade.isLunk,
+                  shade.isGate,
                 );
               }
               state.clearHuskToPlace();
@@ -626,6 +640,13 @@ export function startPhaser(_owner, _container) {
         addGritListener('pond-fakeGrit-move', usMoveQueuer);
         addGritListener('pond-fakeGrit-tele', usMoveQueuer);
         addGritListener('pond-fakeGrit-face', usMoveQueuer);
+
+        const shadeMover = (e) => {
+          const grit = e.unpredictedGrit || e.fakeGrit;
+          shades[grit.arg.shadeId]?.actionQueue.push(grit);
+        };
+        addGritListener('pond-unpredictedGrit-move-shade', shadeMover);
+        addGritListener('pond-fakeGrit-move-shade', shadeMover);
 
         function chat({ from, text }) {
           players[from]?.speakBubble?.(text); //do the visual speech bubble part
@@ -860,8 +881,9 @@ export function startPhaser(_owner, _container) {
           if (shadeObject.shade.variation !== shadeData.variation) {
             shadeObject.varyVariation(shadeData.variation);
           }
-          const pos = vec2(shadeData.pos).scale(tileFactor);
-          shadeObject.setPosition(pos.x, pos.y);
+          // const pos = vec2(shadeData.pos).scale(tileFactor);
+          // shadeObject.setPosition(pos.x, pos.y);
+          shadeObject.setTilePos(shadeData.pos);
         }
       });
     }

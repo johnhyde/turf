@@ -93,7 +93,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[245px] sm:min-w-[245px] ' +
+      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[288px] sm:min-w-[245px] ' +
         (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show
@@ -128,23 +128,24 @@ function Sidebar() {
             tooltip='H or ?'
           />
           <Button
-            onClick={[toggleTab, state.tabs.LAB]}
-            src={lab}
-            selected={isSelected(state.tabs.LAB)}
-            tooltip='P'
-          />
-          <Button
-            onClick={[toggleTab, state.tabs.EDITOR]}
-            src={shovel}
-            selected={isSelected(state.tabs.EDITOR)}
-            tooltip='E'
-          />
-          <Button
             onClick={[toggleTab, state.tabs.SETTINGS]}
             src={gear}
             selected={isSelected(state.tabs.SETTINGS)}
             tooltip='Z'
           />
+          <Button
+            onClick={state.toggleSound.bind(state)}
+            src={state.soundOn ? unmuted : muted}
+            tooltip='M'
+          />
+          <Button
+            onClick={[toggleTab, state.tabs.LAB]}
+            src={lab}
+            selected={isSelected(state.tabs.LAB)}
+            tooltip='P'
+          />
+          <div class='w-[56px]'></div>
+          <div class='w-[56px]'></div>
           <div class='inline-block relative'>
             <Button
               onClick={[toggleTab, state.tabs.TOWN]}
@@ -174,9 +175,10 @@ function Sidebar() {
               )}
           </div>
           <Button
-            onClick={state.toggleSound.bind(state)}
-            src={state.soundOn ? unmuted : muted}
-            tooltip='M'
+            onClick={[toggleTab, state.tabs.EDITOR]}
+            src={shovel}
+            selected={isSelected(state.tabs.EDITOR)}
+            tooltip='E'
           />
         </div>
         <Show when={state.selectedTab}>

@@ -32,6 +32,7 @@
       wake+_~
       set-name+(ot ~[name+so])
       set-back+background
+      set-autoconfirm-dinks+(ot ~[confirm+bo])
       size-turf+(ot ~[offset+svec2 size+vec2])
       add-form+form-spec
       del-form+(ot ~['formId'^pa])
@@ -154,7 +155,7 @@
   |=  jon=json
   ^-  ^add-shade-spec
   %.  jon
-  (ot ~['isLunk'^bo pos+svec2 'formId'^pa variation+ni])
+  (ot ~['isGate'^bo pos+svec2 'formId'^pa variation+ni])
 ++  fx  (ar reflex)
 ++  reflex
   |=  jon=json
@@ -226,7 +227,7 @@
   |=  jon=json
   ^-  ^effect
   %.  jon
-  %+  ol  effect-type
+  %+  ol  (cork so effect-type)
   :~  list+(ot ~[serial+fx-serial effects+(ar effect)])
       noop+ul
       port+ni

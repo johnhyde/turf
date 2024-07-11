@@ -15,6 +15,7 @@ import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils.js';
 import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf.js';
 import { Pond } from 'lib/pond.js';
 import { Mist } from 'lib/mist.js';
+import { newFxRootCondition } from 'lib/effects.js';
 export const StateContext = createContext();
 
 export const lsKeys = {
@@ -173,68 +174,71 @@ export function getState() {
   });
 
   portals = createMemo(() => {
-    const sort = (p1, p2) => {
-      return p1.id - p2.id;
-    };
-    const portalsDraft = [];
+    // const portalsDraft = [];
     const portalsTo = [];
     const portalsFrom = [];
     const portalsWith = [];
+    const portalsWithout = [];
     const dinksPending = [];
-    const dinksApproved = [];
+    // const dinksApproved = [];
     const dinksConfirmed = [];
+    const dinksHoused = [];
     let lunk = null;
-    Object.entries(state.e?.portals || {}).forEach(([portalId, portal]) => {
-      const portalObj = {
+    const portalEntries = Object.entries(state.e?.portals || {})
+      .map(([portalId, portal]) => ({
         id: Number.parseInt(portalId),
         ...portal,
-      };
-      if (
-        portal.shadeId !== undefined && state.e.lunk?.shadeId === portal.shadeId
-      ) {
-        lunk = portalObj;
+      }));
+    portalEntries.sort((p1, p2) => {
+      return p1.id - p2.id;
+    });
+    portalEntries.forEach((portal) => {
+      if (state.e.lunk != null && state.e.lunk === portal.id) {
+        lunk = portal;
         return;
       }
-      const dinkApproved = state.e.dinks?.[portalId];
-      const isDink = dinkApproved !== undefined;
+      const isDink = state.e.dinks?.[portal.id];
+      const dinkHoused = isDink && portal.outlet != null;
       let dest;
       if (isDink) {
         if (portal.at === null) {
           console.error(
-            `Portal #${portalId} is supposedly a dink, but has null "at"`,
+            `Portal #${portal.id} is supposedly a dink, but has null "at"`,
           );
-        } else {
-          portalObj.approved = dinkApproved;
+          return;
         }
       }
-      if (portal.shadeId !== null) {
+      if (portal.pending) {
         if (portal.at === null) {
           dest = portalsTo;
         } else {
-          dest = isDink ? dinksConfirmed : portalsWith;
+          dest = isDink ? dinksPending : portalsFrom;
         }
       } else {
         if (portal.at === null) {
-          dest = portalsDraft;
+          dest = portalsWithout;
         } else {
           if (isDink) {
-            dest = dinkApproved ? dinksApproved : dinksPending;
+            dest = dinkHoused ? dinksHoused : dinksConfirmed;
           } else {
-            dest = portalsFrom;
+            dest = portalsWith;
           }
         }
       }
-      dest.push(portalObj);
+
+      dest.push(portal);
     });
     return {
-      draft: portalsDraft.sort(sort),
-      to: portalsTo.sort(sort),
-      from: portalsFrom.sort(sort),
-      with: portalsWith.sort(sort),
+      // draft: portalsDraft,
+      to: portalsTo,
+      from: portalsFrom,
+      with: portalsWith,
+      without: portalsWithout,
       dinks: {
-        pending: dinksPending.sort(sort),
-        approved: dinksApproved.sort(sort),
-        confirmed: dinksConfirmed.sort(sort),
+        pending: dinksPending,
+        // approved: dinksApproved,
+        confirmed: dinksConfirmed,
+        housed: dinksHoused,
       },
       lunk,
     };
@@ -348,6 +352,9 @@ export function getState() {
     setBack(type, arg) {
       this.sendPondWave('set-back', { [type]: arg });
     },
+    setAutoconfirmDinks(confirm = true) {
+      this.sendPondWave('set-autoconfirm-dinks', { confirm });
+    },
     resizeTurf(offset, size) {
       if (size.x <= 0 && size.y <= 0) return false;
       this.sendPondWave('size-turf', {
@@ -372,9 +379,9 @@ export function getState() {
       if (delFormId) await this.sendOurPondWave({ formId: delFormId });
       if (form) return await this.sendOurPondWave('add-form', form);
     },
-    addShade(pos, formId, variation = 0, isLunk = false) {
+    addShade(pos, formId, variation = 0, isGate = false) {
       return this.sendPondWave('add-shade', {
-        isLunk,
+        isGate,
         pos,
         formId,
         variation: Number.parseInt(variation),
@@ -515,15 +522,15 @@ export function getState() {
     displayText(text) {
       $state('text', text);
     },
-    approveDink(portalId) {
-      this.sendPondWave('approve-dink', {
-        portalId: Number(portalId),
-      });
-    },
-    createBridge(shade, portal, trigger = 'step') {
+    // approveDink(portalId) {
+    //   this.sendPondWave('approve-dink', {
+    //     portalId: Number(portalId),
+    //   });
+    // },
+    createBridge(shade, portal, trigger) {
       if (typeof shade === 'object') {
         shade = {
-          isLunk: false,
+          isGate: false,
           ...shade,
         };
       } else {
@@ -531,7 +538,7 @@ export function getState() {
       }
       this.sendPondWave('create-bridge', {
         shade,
-        trigger,
+        trigger: trigger != null ? trigger : newFxRootCondition('step'),
         portal,
       });
     },
@@ -546,8 +553,24 @@ export function getState() {
     },
     discardPortal(portalId) {
       this.sendPondWave('del-portal', {
-        from: Number(portalId),
+        portalId: Number(portalId),
         loud: true,
+      });
+    },
+    setPortalOutlet(portalId, outlet) {
+      this.sendPondWave('set-portal-outlet', {
+        portalId: Number(portalId),
+        outlet: outlet != null ? Number(outlet) : null,
+      });
+    },
+    confirmPortal(portalId) {
+      this.sendPondWave('confirm-portal', {
+        portalId: Number(portalId),
+      });
+    },
+    revivePortal(portalId) {
+      this.sendPondWave('revive-portal', {
+        portalId: Number(portalId),
       });
     },
     delPlayer(ship) {
@@ -672,7 +695,7 @@ export function getState() {
           pos: vec2(state.e.offset),
           formId: '/portal',
           variation: 0,
-          isLunk: false,
+          isGate: false,
           ...shade,
         };
       } else {
@@ -753,7 +776,7 @@ export function getState() {
   });
   window.addEventListener('pond-roar-effect-read', ({ roar, turfId }) => {
     setTimeout(() => {
-      _state.displayText(roar.arg);
+      _state.displayText(roar.arg.note);
     }, 200);
   });
   window.addEventListener('pond-err', ({ _, turfId }) => {

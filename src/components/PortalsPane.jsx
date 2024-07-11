@@ -1,15 +1,33 @@
-import { createSignal, createMemo, createSelector, onMount, onCleanup } from 'solid-js';
-import { createStore } from "solid-js/store";
+import {
+  createMemo,
+  createSelector,
+  createSignal,
+  onCleanup,
+  onMount,
+} from 'solid-js';
+import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state.jsx';
-import { bind, input, autofocus, createNow, now5, normalizeTermIsh, uuidv4 } from 'lib/utils';
-import SmallButton from '@/SmallButton';
-import Heading from '@/Heading';
-import Modal from '@/Modal';
-import BridgeBuilder from '@/BridgeBuilder';
+import {
+  autofocus,
+  bind,
+  createNow,
+  input,
+  normalizeTermIsh,
+  now5,
+  uuidv4,
+} from 'lib/utils.js';
+import SmallButton from '@/SmallButton.jsx';
+import Heading from '@/Heading.jsx';
+import Modal from '@/Modal.jsx';
+import BridgeBuilder from '@/BridgeBuilder.jsx';
+import { ShowShadeButton } from '@/ShowShadeButton.jsx';
+import { ShadeSelectButton } from '@/ShadeSelectButton.jsx';
+import { PlacePortalButton } from '@/PlacePortalButton.jsx';
 import portalFrom from 'assets/icons/portal-from.png';
 import portalTo from 'assets/icons/portal-to.png';
 import portalWith from 'assets/icons/portal-with.png';
-import resize from 'assets/icons/resize.png';
+import portalWithout from 'assets/icons/portal-without.png';
+import cycle from 'assets/icons/cycle.png';
 
 export default function PortalsPane() {
   const state = useState();
@@ -42,7 +60,7 @@ export default function PortalsPane() {
       state.clearHuskToPlace();
       e.preventDefault();
     }
-  }
+  };
 
   document.body.addEventListener('keydown', onKeyDown);
   onCleanup(() => {
@@ -50,24 +68,39 @@ export default function PortalsPane() {
   });
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto">
+    <div class='flex flex-col h-full overflow-y-auto'>
       <Show when={!state.thisIsUs}>
-        <SmallButton onClick={goHome} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Go Home</SmallButton>
+        <SmallButton
+          onClick={goHome}
+          class='!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2'
+        >
+          Go Home
+        </SmallButton>
       </Show>
       <Show when={state.thisIsUs}>
-        <SmallButton onClick={[$inviteDialog, true]} class="!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2">Host an Event</SmallButton>
+        <SmallButton
+          onClick={[$inviteDialog, true]}
+          class='!px-3 !py-1.5 !rounded-md !mx-auto my-1 !border-2'
+        >
+          Host an Event
+        </SmallButton>
         <Show when={inviteDialog()} keyed>
           <InviteDialog close={() => $inviteDialog(false)} />
         </Show>
       </Show>
       <Show when={activeInvites().length > 0}>
-        <div class="my-2">
+        <div class='my-2'>
           <Heading>
             Events
           </Heading>
-          <For each={activeInvites()} >
+          <For each={activeInvites()}>
             {(invite) => {
-              return <Invite invite={invite} discard={() => state.delInvite(invite.id)} />;
+              return (
+                <Invite
+                  invite={invite}
+                  discard={() => state.delInvite(invite.id)}
+                />
+              );
             }}
           </For>
         </div>
@@ -77,50 +110,86 @@ export default function PortalsPane() {
           Create a Portal to:
         </Heading>
         <BridgeBuilder blockHigher blockLower />
-        <Show when={state.portals.draft.length > 0}>
-          <div class="my-2">
-            <Heading>
-              Portal Drafts
-            </Heading>
-            <For each={state.portals.draft} >
-              {(portal) => {
-                return <Portal icon={portalTo} label="DRAFT TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
-              }}
-            </For>
-          </div>
-        </Show>
         <Show when={state.portals.from.length > 0}>
-          <div class="my-2">
+          <div class='my-2'>
             <Heading>
               Incoming Portal Requests
             </Heading>
-            <For each={state.portals.from} >
+            <For each={state.portals.from}>
               {(portal) => {
-                return <Portal icon={portalFrom} label="FROM" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+                return (
+                  <Portal
+                    icon={portalFrom}
+                    label='from'
+                    portal={portal}
+                    placingPortal={placingPortal}
+                    place={placePortal}
+                    discard={discardPortal}
+                  />
+                );
               }}
             </For>
           </div>
         </Show>
         <Show when={state.portals.to.length > 0}>
-          <div class="my-2">
+          <div class='my-2'>
             <Heading>
               Outgoing Portal Requests
             </Heading>
-            <For each={state.portals.to} >
+            <For each={state.portals.to}>
               {(portal) => {
-                return <Portal icon={portalTo} label="TO" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+                return (
+                  <Portal
+                    icon={portalTo}
+                    label='to'
+                    portal={portal}
+                    placingPortal={placingPortal}
+                    place={placePortal}
+                    discard={discardPortal}
+                  />
+                );
               }}
             </For>
           </div>
         </Show>
         <Show when={state.portals.with.length > 0}>
-          <div class="my-2">
+          <div class='my-2'>
             <Heading>
               Active Portals
             </Heading>
-            <For each={state.portals.with} >
+            <For each={state.portals.with}>
               {(portal) => {
-                return <Portal icon={portalWith} label="WITH" portal={portal} placingPortal={placingPortal} place={placePortal} discard={discardPortal}/>;
+                return (
+                  <Portal
+                    icon={portalWith}
+                    label='with'
+                    portal={portal}
+                    placingPortal={placingPortal}
+                    place={placePortal}
+                    discard={discardPortal}
+                  />
+                );
+              }}
+            </For>
+          </div>
+        </Show>
+        <Show when={state.portals.without.length > 0}>
+          <div class='my-2'>
+            <Heading>
+              Closed Portals
+            </Heading>
+            <For each={state.portals.without}>
+              {(portal) => {
+                return (
+                  <Portal
+                    icon={portalWithout}
+                    label='with'
+                    portal={portal}
+                    placingPortal={placingPortal}
+                    place={placePortal}
+                    discard={discardPortal}
+                  />
+                );
               }}
             </For>
           </div>
@@ -131,28 +200,66 @@ export default function PortalsPane() {
 }
 
 function Portal(props) {
+  const state = useState();
   return (
-    <div class="flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700">
-      <div class="flex flex-wrap space-x-2 items-center flex-grow">
-        <img class="" src={props.icon} draggable={false} style={{ 'image-rendering': 'pixelated' }} />
-        <span class="font-bold text-xs">
-          {/* [{props.portal.id}] {props.label} */}
-          {props.label}
-        </span>
-        <span class="font-bold text-sm font-mono">
-          {props.portal.for.ship}
-        </span>
+    <div class='flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700'>
+      <div className='flex flex-col grow'>
+        <div class='flex flex-wrap space-x-2 items-center flex-grow'>
+          <img
+            class=''
+            src={props.icon}
+            draggable={false}
+            style={{ 'image-rendering': 'pixelated' }}
+          />
+          <span class='font-bold text-sm small-caps'>
+            {/* [{props.portal.id}] {props.label} */}
+            {props.label}
+          </span>
+          <span class='font-bold text-sm font-mono'>
+            {props.portal.for.ship}
+          </span>
+        </div>
+        <div class='flex flex-wrap space-x-1 items-center'>
+          <span>
+            outlet:
+          </span>
+          <Show
+            when={props.portal.outlet === null}
+            fallback={
+              <>
+                <SmallButton
+                  onClick={() => state.setPortalOutlet(props.portal.id, null)}
+                >
+                  x
+                </SmallButton>
+                <ShowShadeButton id={props.portal.outlet} />
+              </>
+            }
+          >
+            <PlacePortalButton
+              portalId={props.portal.id}
+              placingPortal={props.placingPortal}
+            />
+            <ShadeSelectButton
+              onShadeId={(shadeId) =>
+                state.setPortalOutlet(props.portal.id, shadeId)}
+            />
+          </Show>
+        </div>
       </div>
-      <Switch fallback="✓">
-        <Match when={props.portal.shadeId === null}>
-          {props.placingPortal(props.portal.id) ?          
-            <SmallButton onClick={[props.place, null]}>–</SmallButton>
-          :
-            <SmallButton onClick={[props.place, props.portal.id]}>+</SmallButton>
-          }
+      <Switch fallback='✓'>
+        <Match when={props.portal.pending && props.portal.at != null}>
+          <SmallButton onClick={() => state.confirmPortal(props.portal.id)}>
+            ✓
+          </SmallButton>
         </Match>
-        <Match when={props.portal.at === null}>
+        <Match when={props.portal.pending && props.portal.at == null}>
           ...
+        </Match>
+        <Match when={!props.portal.pending && props.portal.at == null}>
+          <SmallButton onClick={() => state.revivePortal(props.portal.id)}>
+            <img src={cycle} class='w-4 h-4 my-0.5' />
+          </SmallButton>
         </Match>
       </Switch>
       <SmallButton onClick={[props.discard, props.portal.id]}>x</SmallButton>
@@ -162,7 +269,8 @@ function Portal(props) {
 
 function Invite(props) {
   const state = useState();
-  const code = () => props.invite.id ? state.c.name + '/' + props.invite.id : null;
+  const code = () =>
+    props.invite.id ? state.c.name + '/' + props.invite.id : null;
   const command = () => '/join ' + code();
   const [copied, $copied] = createSignal(null);
 
@@ -173,17 +281,19 @@ function Invite(props) {
   }
 
   return (
-    <div class="flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700">
-      <span class="font-bold text-sm font-mono flex-grow">
+    <div class='flex px-1.5 py-1 m-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700'>
+      <span class='font-bold text-sm font-mono flex-grow'>
         {props.invite.name}
-        <span class="mx-2 font-normal">
+        <span class='mx-2 font-normal'>
           {copied()}
         </span>
       </span>
-      <SmallButton onClick={copyCommand} class="ml-2 !font-bold text-lg">
+      <SmallButton onClick={copyCommand} class='ml-2 !font-bold text-lg'>
         ⎘
       </SmallButton>
-      {(state.thisIsUs && props.discard) && <SmallButton onClick={[props.discard, props.invite.id]}>x</SmallButton>}
+      {(state.thisIsUs && props.discard) && (
+        <SmallButton onClick={[props.discard, props.invite.id]}>x</SmallButton>
+      )}
     </div>
   );
 }
@@ -199,11 +309,14 @@ function InviteDialog(props) {
   const [copied, $copied] = createSignal(null);
 
   function create() {
-    $invite('id', normalizeTermIsh(invite.name + '-' + uuidv4().substring(0,4)));
+    $invite(
+      'id',
+      normalizeTermIsh(invite.name + '-' + uuidv4().substring(0, 4)),
+    );
     state.addInvite({
       id: invite.id,
       name: invite.name,
-      till: Date.now() + invite.long*60*1000,
+      till: Date.now() + invite.long * 60 * 1000,
     });
   }
 
@@ -215,35 +328,37 @@ function InviteDialog(props) {
 
   return (
     <Modal
-      class="top-0 left-0 flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700"
+      class='top-0 left-0 flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'
       onClose={props.close}
     >
-      <p class="text-xl text-center">
+      <p class='text-xl text-center'>
         New Event
       </p>
-      <p class="text-center">
-        Anyone with the event code will be able to join your turf for the duration of the event.
-        The event will be shared in the %portal app if you have it installed.
+      <p class='text-center'>
+        Anyone with the event code will be able to join your turf for the
+        duration of the event. The event will be shared in the %portal app if
+        you have it installed.
       </p>
-      <p class="font-semibold">
+      <p class='font-semibold'>
         Event Name
       </p>
       <input
         use:bind={[
           () => invite.name,
-          (s) => $invite('name', s)
+          (s) => $invite('name', s),
         ]}
         use:autofocus
-        class="rounded-input"
+        class='rounded-input'
         disabled={code()}
       />
 
-      <p class="font-semibold">
+      <p class='font-semibold'>
         Duration (minutes)
       </p>
-      <input type="number"
-        class="rounded-md pl-1"
-        min="1"
+      <input
+        type='number'
+        class='rounded-md pl-1'
+        min='1'
         max={invite.long * 10}
         use:bind={[
           () => invite.long,
@@ -255,14 +370,14 @@ function InviteDialog(props) {
         <p>
           People can join your turf by pasting this command in chat.
         </p>
-        <div class="flex justify-center space-x-2">
+        <div class='flex justify-center space-x-2'>
           {copied() || command()}
-          <SmallButton onClick={copyCommand} class="ml-2 !font-bold text-lg">
+          <SmallButton onClick={copyCommand} class='ml-2 !font-bold text-lg'>
             ⎘
           </SmallButton>
         </div>
       </Show>
-      <div class="flex justify-center space-x-2">
+      <div class='flex justify-center space-x-2'>
         <Show when={!code()}>
           <SmallButton onClick={create} disabled={!invite.long}>
             Create

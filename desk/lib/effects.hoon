@@ -109,7 +109,7 @@
             %+  turn  effects.effect
             |=  =^effect
             apply-effect+[effect trigger shade-id init-id]
-          ?:  =(%.y serial.effect)
+          ?:  =(%serial serial.effect)
             goals
           [%atomic goals]~
         %simult

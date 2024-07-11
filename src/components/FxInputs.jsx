@@ -1,15 +1,20 @@
+import { splitProps } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { bindNum, input, toPairs, vecToStr } from 'lib/utils.js';
+import { bind, bindNum, input, jClone, toPairs, vecToStr } from 'lib/utils.js';
 import {
+  newFxCondition,
   newFxDir,
   newFxDir8,
+  newFxItemTarget,
   newFxLocation,
   newFxOffset,
+  newFxRootCondition,
   newFxTarget,
 } from 'lib/effects.js';
 import Select from '@/Select.jsx';
+import Radio from '@/Radio.jsx';
 import PatpInput from '@/PatpInput.jsx';
-// import SmallButton from '@/SmallButton.jsx';
+import SmallButton from '@/SmallButton.jsx';
 import { Group, Indent } from '@/GroupIndent.jsx';
 import { ShadeSelectButton } from '@/ShadeSelectButton.jsx';
 import { SelectPositionButton } from '@/SelectPositionButton.jsx';
@@ -17,9 +22,19 @@ import { ShowShadeButton } from '@/ShowShadeButton.jsx';
 import dir from 'assets/icons/dir.png';
 import dir8 from 'assets/icons/dir8.png';
 
-const targetTypes = toPairs('this, user, item, player');
+const triggerTypes = toPairs(
+  'step, leave, bump, interact, click, tell  item trigger',
+);
+const conditionTypes = [
+  ...triggerTypes,
+  ...toPairs(
+    'eq  equals, initiator  initiator type, initiator-eq  initiator is, user-eq  user is, item-exists  item exists, variation, move-collide  moved w/ collision, move-smooth  moved smoothly, loc-eq  locations equal',
+  ),
+];
+const targetTypes = toPairs('this, user, initiator, item, player');
+const itemTargetTypes = toPairs('this, initiator, item');
 const locTypes = toPairs(
-  'target  entity position, offset  offset position, absolute  position',
+  'target  entity position, offset  offset position, mover-pos  mover position, absolute  position',
 );
 const offsetTypes = toPairs(
   'relative  distance, direction, rotate  rotated offset, flip-x  flipped ↔, flip-y  flipped ↕, combine  combined offset, absolute  offset',
@@ -30,6 +45,11 @@ const dirTypes = toPairs(
 const dir8Types = toPairs(
   'face, relative-8  relative, round, rotate-8  rotate, flip-x-8  flipped ↔, flip-y-8  flipped ↕, absolute-8  absolute',
 );
+
+const radioProps = {
+  bg: 'border border-yellow-950',
+  bgActive: 'border border-yellow-950 bg-yellow-600',
+};
 
 function make$arg(input) {
   return (arg, key) => {
@@ -43,9 +63,372 @@ function make$arg(input) {
   };
 }
 
+export function FxCondition(props) {
+  const [conProps, restProps] = splitProps(props, [
+    'condition',
+    '$condition',
+  ]);
+  const groupTypes = 'or and not'.split(' ');
+  const group = () => groupTypes.includes(conProps.condition.type);
+  return (
+    <Dynamic
+      component={group() ? FxConditionGroup : FxConditionItem}
+      value={conProps.condition}
+      $value={conProps.$condition}
+      {...restProps}
+    />
+  );
+}
+
+function getConditionSelector(condition) {
+  if (condition.type === 'trigger') {
+    if (condition.arg.type === 'move') {
+      return condition.arg.arg.type === 'onto' ? 'step' : 'leave';
+    }
+    return condition.arg.type;
+  }
+  return condition.type;
+}
+
+export function FxConditionItem(props) {
+  const newCon = (...args) =>
+    props.root ? newFxRootCondition(...args) : newFxCondition(...args);
+  const type = () => getConditionSelector(props.value);
+  function $type(type) {
+    props.$value(newCon(type));
+  }
+  const $arg = make$arg(() => [props.value, props.$value]);
+
+  function wrapAnd() {
+    props.$value(newCon('and', props.value));
+  }
+  function wrapOr() {
+    props.$value(newCon('or', props.value));
+  }
+  function wrapNot() {
+    if (props.root) return;
+    props.$value(newCon('not', props.value));
+  }
+
+  return (
+    <>
+      <Show when={props.deleteSelf}>
+        <SmallButton onClick={props.deleteSelf}>
+          x
+        </SmallButton>
+      </Show>
+      <Select
+        value={type()}
+        $value={$type}
+        options={props.root ? triggerTypes : conditionTypes}
+      />
+      <Switch>
+        <Match when={type() === 'tell'}>
+          <input
+            use:input
+            use:bind={[() => props.value.arg.arg.arg || '', (msg) =>
+              $arg({ type: 'eq', arg: msg }, 'arg')]}
+            class='rounded-input shrink min-w-0'
+          />
+        </Match>
+        <Match when={type() === 'eq'}>
+          <Indent>
+            <FxCondition
+              condition={props.value.arg.a}
+              $condition={(con) =>
+                $arg(con, 'a')}
+            />
+          </Indent>
+          <Indent>
+            <FxCondition
+              condition={props.value.arg.b}
+              $condition={(con) => $arg(con, 'b')}
+            />
+          </Indent>
+        </Match>
+        <Match when={type() === 'initiator'}>
+          <Group>
+            <Radio
+              value={props.value.arg}
+              $value={(v) => $arg(v)}
+              items={[['item', 'Item'], ['player', 'Player']]}
+              {...radioProps}
+            />
+          </Group>
+        </Match>
+        <Match when={type() === 'initiator-eq'}>
+          <Group>
+            <FxTargetInput value={props.value.arg} $value={$arg} />
+          </Group>
+        </Match>
+        <Match when={type() === 'user-eq'}>
+          <PatpInput value={props.value.arg} $validValue={$arg} normalize />
+        </Match>
+        <Match when={type() === 'item-exists'}>
+          <Group>
+            <FxItemTargetInput value={props.value.arg} $value={$arg} />
+          </Group>
+        </Match>
+        <Match when={type() === 'variation'}>
+          <Indent>
+            <FxItemTargetInput
+              value={props.value.arg.item}
+              $value={(v) => $arg(v, 'item')}
+            />
+          </Indent>
+          <Indent>
+            <FxIntRel
+              value={props.value.arg.con}
+              $value={(v) => $arg(v, 'con')}
+            />
+          </Indent>
+        </Match>
+        <Match when={type() === 'move-collide'}>
+          <Group>
+            <Radio
+              value={JSON.stringify(props.value.arg)}
+              $value={(v) => $arg(JSON.parse(v))}
+              items={[['true', 'With Collision'], ['false', 'Without']]}
+              {...radioProps}
+            />
+          </Group>
+        </Match>
+        <Match when={type() === 'move-smooth'}>
+          <Group>
+            <Radio
+              value={JSON.stringify(props.value.arg)}
+              $value={(v) => $arg(JSON.parse(v))}
+              items={[['true', 'Smoothly'], ['false', 'Instantly']]}
+              {...radioProps}
+            />
+          </Group>
+        </Match>
+        <Match when={type() === 'loc-eq'}>
+          <Indent>
+            <FxLocationInput
+              value={props.value.arg.a}
+              $value={(v) => $arg(v, 'a')}
+            />
+          </Indent>
+          <Indent>
+            <FxLocationInput
+              value={props.value.arg.b}
+              $value={(v) => $arg(v, 'b')}
+            />
+          </Indent>
+        </Match>
+      </Switch>
+      <Show when={!props.root && !props.dontNot}>
+        <SmallButton onClick={wrapNot}>
+          not
+        </SmallButton>
+      </Show>
+      <SmallButton onClick={wrapAnd}>
+        and
+      </SmallButton>
+      <SmallButton onClick={wrapOr}>
+        or
+      </SmallButton>
+    </>
+  );
+}
+
+export function FxConditionGroup(props) {
+  const type = () => getConditionSelector(props.value);
+  const groupStarter = (type) => {
+    switch (type) {
+      case 'or':
+        return 'either';
+      case 'and':
+        return 'both';
+      default:
+        return type;
+    }
+  };
+  // function $type(type) {
+  //   props.$value(newCon(type));
+  // }
+  const $arg = make$arg(() => [props.value, props.$value]);
+  const newCon = (...args) =>
+    props.root ? newFxRootCondition(...args) : newFxCondition(...args);
+
+  function wrapAnd() {
+    props.$value(newCon('and', props.value));
+  }
+  function wrapOr() {
+    props.$value(newCon('or', props.value));
+  }
+
+  function addCondition(rootAnd = false) {
+    if (rootAnd) {
+      $arg([...props.value.arg.cons, newFxCondition()], 'cons');
+    } else {
+      $arg([...props.value.arg, newCon()]);
+    }
+  }
+
+  function deleteCondition(i, rootAnd = false) {
+    const cons = rootAnd ? props.value.arg.cons : props.value.arg;
+    const newCons = cons.toSpliced(i, 1);
+    if (rootAnd) {
+      if (newCons.length === 0) {
+        props.$value(jClone(props.value.arg.root));
+      } else {
+        $arg(newCons, 'cons');
+      }
+    } else {
+      if (newCons.length < 2) {
+        props.$value(jClone(newCons[0]));
+      } else {
+        $arg(newCons);
+      }
+    }
+  }
+
+  function deleteSelf() {
+    props.$value(jClone(props.value.arg));
+  }
+
+  return (
+    <>
+      <Show when={props.deleteSelf}>
+        <SmallButton onClick={props.deleteSelf}>
+          x
+        </SmallButton>
+      </Show>
+      <span class='font-semibold small-caps'>{groupStarter(type())}</span>
+      <Switch>
+        <Match when={type() === 'and' && props.root}>
+          <Indent>
+            <FxCondition
+              condition={props.value.arg.root}
+              $condition={(newRoot) => $arg(newRoot, 'root')}
+              root
+            />
+          </Indent>
+          <For each={props.value.arg.cons}>
+            {(con, i) => {
+              return (
+                <>
+                  <span class='font-semibold small-caps'>{type()}</span>
+                  <Indent>
+                    <FxCondition
+                      condition={con}
+                      $condition={(newCon) => {
+                        $arg(
+                          props.value.arg.cons.toSpliced(i(), 1, newCon),
+                          'cons',
+                        );
+                      }}
+                      deleteSelf={() => deleteCondition(i(), true)}
+                    />
+                  </Indent>
+                </>
+              );
+            }}
+          </For>
+          <SmallButton onClick={[addCondition, true]}>
+            +
+          </SmallButton>
+          <SmallButton onClick={wrapOr}>
+            or
+          </SmallButton>
+        </Match>
+        <Match when={type() === 'or' || (type() === 'and' && !props.root)}>
+          <For each={props.value.arg}>
+            {(con, i) => {
+              return (
+                <>
+                  <Show when={i() !== 0}>
+                    <span class='font-semibold small-caps'>{type()}</span>
+                  </Show>
+                  <Indent>
+                    <FxCondition
+                      condition={con}
+                      $condition={(newCon) =>
+                        $arg(props.value.arg.toSpliced(i(), 1, newCon))}
+                      root={props.root}
+                      deleteSelf={props.value.arg.length > 1
+                        ? () => deleteCondition(i())
+                        : null}
+                    />
+                  </Indent>
+                </>
+              );
+            }}
+          </For>
+          <SmallButton onClick={[addCondition, false]}>
+            +
+          </SmallButton>
+          <Show
+            when={type() === 'or'}
+            fallback={
+              <SmallButton onClick={wrapOr}>
+                or
+              </SmallButton>
+            }
+          >
+            <SmallButton onClick={wrapAnd}>
+              and
+            </SmallButton>
+          </Show>
+        </Match>
+        <Match when={type() === 'not'}>
+          <SmallButton onClick={deleteSelf} class='line-through'>
+            not
+          </SmallButton>
+          <FxCondition
+            condition={props.value.arg}
+            $condition={$arg}
+            dontNot
+          />
+        </Match>
+      </Switch>
+    </>
+  );
+}
+
+export function FxIntRel(props) {
+  const $arg = make$arg(() => [props.value, props.$value]);
+  return (
+    <>
+      equals:
+      <input
+        type='number'
+        class='rounded-md pl-1'
+        min={0}
+        max={99}
+        use:input
+        use:bindNum={[
+          () => props.value.arg,
+          $arg,
+        ]}
+      />
+    </>
+  );
+}
+
 export function FxMoveInput(props) {
   return (
     <>
+      <Group>
+        <Radio
+          value={JSON.stringify(props.value.smooth)}
+          $value={(v) =>
+            props.$value({ ...props.value, smooth: JSON.parse(v) })}
+          items={[['true', 'Smoothly'], ['false', 'Instantly']]}
+          {...radioProps}
+        />
+      </Group>
+      <Group>
+        <Radio
+          value={JSON.stringify(props.value.collide)}
+          $value={(v) =>
+            props.$value({ ...props.value, collide: JSON.parse(v) })}
+          items={[['true', 'With Collision'], ['false', 'Without']]}
+          {...radioProps}
+        />
+      </Group>
       <Indent>
         <FxTargetInput
           value={props.value.target}
@@ -72,6 +455,28 @@ export function FxMoveInput(props) {
   );
 }
 
+export function FxTellInput(props) {
+  return (
+    <>
+      <Indent>
+        <FxItemTargetInput
+          value={props.value.target}
+          $value={(target) => props.$value({ ...props.value, target })}
+        />
+      </Indent>
+      <Indent>
+        message:
+        <input
+          use:input
+          use:bind={[() => props.value.msg || '', (msg) =>
+            props.$value({ ...props.value, msg })]}
+          class='rounded-input shrink min-w-0'
+        />
+      </Indent>
+    </>
+  );
+}
+
 export function FxTargetInput(props) {
   const type = () => props.value?.type ?? props.value;
   function $type(type) {
@@ -91,6 +496,26 @@ export function FxTargetInput(props) {
       <Show when={type() === 'player'}>
         <span>{props.value.arg}</span>
         <PatpInput value={props.value.arg} $validValue={$arg} normalize />
+      </Show>
+    </>
+  );
+}
+
+export function FxItemTargetInput(props) {
+  const type = () => props.value?.type ?? props.value;
+  function $type(type) {
+    props.$value(newFxItemTarget(type));
+  }
+
+  const $arg = make$arg(() => [props.value, props.$value]);
+  return (
+    <>
+      <Select value={type()} $value={$type} options={itemTargetTypes} />
+      <Show when={typeof props.value === 'object'}>
+        <span>:</span>
+      </Show>
+      <Show when={type() === 'item'}>
+        <ShadeIdInput value={props.value.arg} $value={$arg} />
       </Show>
     </>
   );
@@ -126,6 +551,13 @@ export function FxLocationInput(props) {
               $value={(v) => $arg(v, 'offset')}
             />
           </Indent>
+        </Match>
+        <Match when={type() === 'mover-pos'}>
+          <Select
+            value={props.value?.arg}
+            $value={$arg}
+            options={toPairs('start, end')}
+          />
         </Match>
         <Match when={type() === 'absolute'}>
           <PositionInput value={props.value?.arg} $value={$arg} />
