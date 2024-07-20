@@ -101,8 +101,7 @@ export default function EditPane() {
           sprite: '',
         }],
         collidable: false,
-        effects: {},
-        seeds: {},
+        fx: [],
       },
     });
   }

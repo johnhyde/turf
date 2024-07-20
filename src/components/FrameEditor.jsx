@@ -116,7 +116,7 @@ export default function FrameEditor(props) {
   return (
     <>
       <div class='w-full flex gap-2'>
-        <Show when={props.frameCount > 2 || props.frame}>
+        <Show when={props.frameCount > 1 || props.frame}>
           <SmallButton onClick={() => props.onDel?.()} class='grow'>
             {props.frameCount > 1 ? 'Delete' : 'Clear'} Frame
           </SmallButton>

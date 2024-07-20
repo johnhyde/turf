@@ -48,19 +48,6 @@ export default function FormEditor(props) {
   const formId = () => formDef.formId;
   const form = () => formDef.form;
   const fx = () => form().fx;
-  // const fx = () => {
-  //   if (!form()) return {};
-  //   const merged = mergeProps(
-  //     form().seeds,
-  //     form().fx,
-  //   );
-  //   return mapValues(merged, (effect) => {
-  //     if (typeof effect === 'string') {
-  //       return { type: effect, arg: null };
-  //     }
-  //     return effect;
-  //   });
-  // };
   const $fx = (...args) => $newForm('form', 'fx', ...args);
   const notGarb = () => form()?.type !== 'garb';
   const [idValid, $idValid] = createSignal(null);
@@ -300,7 +287,6 @@ export default function FormEditor(props) {
                   fx={fx()}
                   $fx={$fx}
                   form={form()}
-                  allowSeeds
                 />
               </div>
             </Show>

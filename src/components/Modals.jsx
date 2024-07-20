@@ -258,16 +258,23 @@ export default function Modals() {
           </Show>
         </Modal>
       </Show>
-      <Show when={state.text}>
+      <Show when={state.note.text}>
         <Modal
           class='border-yellow-950 border-4 rounded-md bg-yellow-700'
-          onClose={() => state.displayText(null)}
+          onClose={() => state.closeNote()}
         >
           <p class='text-xl mb-4 text-center whitespace-pre-wrap'>
-            {state.text}
+            {state.note.text}
           </p>
           <div class='mt-4 text-center'>
-            <MediumButton onClick={() => state.displayText(null)}>
+            <Index each={state.note.actions}>
+              {(action, i) => (
+                <MediumButton onClick={() => state.noteAction(i)}>
+                  {action()}
+                </MediumButton>
+              )}
+            </Index>
+            <MediumButton onClick={() => state.closeNote()}>
               Close
             </MediumButton>
           </div>

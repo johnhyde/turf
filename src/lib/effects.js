@@ -275,9 +275,34 @@ export function newEffect() {
   return { type: '', arg: null };
 }
 
+export function newEffectArg(type, turf) {
+  switch (type) {
+    case 'list':
+      return {
+        serial: 'simult',
+        effects: [{ type: '', arg: null }],
+      };
+    case 'port':
+      return '';
+    case 'read':
+      return newFxRead();
+    case 'swap':
+      return '/';
+    case 'seem':
+    case 'vary':
+      return 0;
+    case 'move':
+      return newFxMove();
+    case 'tell':
+      return newFxTell();
+    default:
+      return null;
+  }
+}
+
 export function newFxRead() {
   return {
-    note: '',
+    text: '',
     actions: [],
   };
 }

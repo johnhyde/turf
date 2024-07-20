@@ -386,7 +386,7 @@ function createShade(shade, id, turf) {
           addText(turfIdToName(portal.for));
         }
       } else if (readEffect) {
-        addText(readEffect.arg.note);
+        addText(readEffect.arg.text);
       }
 
       if (clickEffects.length) {

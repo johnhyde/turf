@@ -11,7 +11,13 @@ import {
   turfIdToName,
   vec2,
 } from 'lib/utils.js';
-import { newFxMove, newFxRead, newFxTell, newReflex } from 'lib/effects.js';
+import {
+  newEffectArg,
+  newFxMove,
+  newFxRead,
+  newFxTell,
+  newReflex,
+} from 'lib/effects.js';
 import { Group, Indent } from '@/GroupIndent.jsx';
 import ListItemPicker from '@/ListItemPicker.jsx';
 import SmallButton from '@/SmallButton.jsx';
@@ -19,37 +25,17 @@ import ItemButton from '@/ItemButton.jsx';
 import Select from '@/Select.jsx';
 import PathInput from '@/PathInput.jsx';
 import Radio from '@/Radio.jsx';
-import { FxCondition, FxMoveInput, FxTellInput } from '@/FxInputs.jsx';
+import {
+  FxCondition,
+  FxMoveInput,
+  FxReadInput,
+  FxTellInput,
+} from '@/FxInputs.jsx';
 
 const effectTypes = toPairs(
   'list  multiple, port  teleport, read  show text, swap  replace item, ' +
     'seem  show variation, vary  change variation, move, tell  trigger item',
 );
-
-function defaultArg(type, turf) {
-  switch (type) {
-    case 'list':
-      return {
-        serial: 'simult',
-        effects: [{ type: '', arg: null }],
-      };
-    case 'port':
-      return '';
-    case 'read':
-      return newFxRead();
-    case 'swap':
-      return '/';
-    case 'seem':
-    case 'vary':
-      return 0;
-    case 'move':
-      return newFxMove();
-    case 'tell':
-      return newFxTell();
-    default:
-      return null;
-  }
-}
 
 export default function EffectsEditor(props) {
   // props.fx, props.$fx
@@ -88,7 +74,7 @@ export default function EffectsEditor(props) {
             }
 
             function $type(type) {
-              setArg(i(), type, defaultArg(type, state.e));
+              setArg(i(), type, newEffectArg(type, state.e));
             }
 
             function $arg(arg) {
@@ -142,30 +128,32 @@ export default function EffectsEditor(props) {
   );
 }
 
-function EffectEditor(props) {
+export function EffectEditor(props) {
   return (
     <>
-      <div class='flex gap-1 items-center'>
-        <span>do</span>
-        <EffectTypeSelector
-          type={props.type}
-          $type={props.$type}
-        />
-      </div>
-      <ArgInput
-        type={props.type}
-        arg={props.arg}
-        $arg={props.$arg}
-        form={props.form}
-        allowSeeds={props.allowSeeds}
-      />
+      <Show
+        when={props.type === 'wipe'}
+        fallback={
+          <>
+            <div class='flex gap-1 items-center'>
+              <span>do</span>
+              <EffectTypeSelector
+                type={props.type}
+                $type={props.$type}
+              />
+            </div>
+            <ArgInput
+              type={props.type}
+              arg={props.arg}
+              $arg={props.$arg}
+              form={props.form}
+            />
+          </>
+        }
+      >
+        clear {props.arg.length} effect{props.arg.length > 1 ? 's' : ''}
+      </Show>
     </>
-  );
-}
-
-function TriggerSelector(props) {
-  return (
-    <Select value={props.trigger} $value={props.$trigger} options={triggers} />
   );
 }
 
@@ -207,7 +195,7 @@ function ArgInput(props) {
         {props.arg === null
           ? (
             <SmallButton
-              onClick={[props.$arg, defaultArg(props.type, state.e)]}
+              onClick={[props.$arg, newEffectArg(props.type, state.e)]}
             >
               Configure Effect
             </SmallButton>
@@ -231,21 +219,24 @@ function ArgInput(props) {
                     bg='border border-yellow-950'
                     bgActive='border border-yellow-950 bg-yellow-600'
                   />
-                  <For each={props.arg.effects}>
+                  <Index each={props.arg.effects}>
                     {(effect, i) => {
                       function $type(type) {
                         const newList = [...props.arg.effects];
-                        newList[i()] = { type, arg: defaultArg(type, state.e) };
+                        newList[i] = {
+                          type,
+                          arg: newEffectArg(type, state.e),
+                        };
                         props.$arg({ ...props.arg, effects: newList });
                       }
                       function $arg(arg) {
                         const newList = [...props.arg.effects];
-                        newList[i()] = { ...newList[i()], arg };
+                        newList[i] = { ...newList[i], arg };
                         props.$arg({ ...props.arg, effects: newList });
                       }
                       function delEffect() {
                         const newList = [...props.arg.effects];
-                        newList.splice(i(), 1);
+                        newList.splice(i, 1);
                         props.$arg({ ...props.arg, effects: newList });
                       }
                       return (
@@ -254,17 +245,16 @@ function ArgInput(props) {
                             x
                           </SmallButton>
                           <EffectEditor
-                            type={effect.type}
-                            arg={effect.arg}
+                            type={effect().type}
+                            arg={effect().arg}
                             $type={$type}
                             $arg={$arg}
                             form={props.form}
-                            allowSeeds={props.allowSeeds}
                           />
                         </Indent>
                       );
                     }}
-                  </For>
+                  </Index>
                   <SmallButton onClick={addListEffect}>
                     +
                   </SmallButton>
@@ -282,14 +272,10 @@ function ArgInput(props) {
                   />
                 </Match>
                 <Match when={props.type === 'read'}>
-                  <textarea
-                    class='rounded-input max-w-[160px]'
-                    use:autofocus
-                    use:input
-                    use:bind={[
-                      () => props.arg.note,
-                      (s) => props.$arg({ ...props.arg, note: s || '' }),
-                    ]}
+                  <FxReadInput
+                    value={props.arg}
+                    $value={props.$arg}
+                    form={props.form}
                   />
                 </Match>
                 <Match when={props.type === 'swap'}>
@@ -341,11 +327,6 @@ function ArgInput(props) {
                   <FxTellInput value={props.arg} $value={props.$arg} />
                 </Match>
               </Switch>
-              <Show when={props.allowSeeds}>
-                <SmallButton onClick={[props.$arg, null]}>
-                  x
-                </SmallButton>
-              </Show>
             </>
           )}
         {/* </div> */}

@@ -671,10 +671,10 @@
       (pairs ~[target+(fx-item-target target.eff) msg+s+msg.eff])
   ==
 ++  fx-read
-  |=  [note=@t actions=(list [name=@t =^effect])]
+  |=  [text=@t actions=(list [name=@t =^effect])]
   ^-  json
   %-  pairs
-  :~  note+s+note
+  :~  text+s+text
       ::
       :-  'actions'
       :-  %a

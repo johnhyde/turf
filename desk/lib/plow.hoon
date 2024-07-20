@@ -484,6 +484,9 @@
       :: ~&  (~(get by players.ephemera.turf) ~nec)
       :: ~&  (~(get by cave.plot.turf) shade-id.goal)
       ``(pull-trigger-on-shade turf src.bowl trigger shade-id.goal ~)
+    %tell
+      =/  trigger  [%tell msg.goal]
+      ``(pull-trigger-on-shade turf src.bowl trigger shade-id.goal ~)
     %pull-trigger
       ?:  top  ``~
       ``(pull-trigger-on-shade turf src.bowl ctx.goal)

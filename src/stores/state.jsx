@@ -105,7 +105,11 @@ export function getState() {
       return Math.pow(2, Math.round(this.scaleLog));
     },
     notifications: [],
-    text: null,
+    note: {
+      shadeId: null,
+      text: null,
+      actions: [],
+    },
     soundOn: localStorage.getItem(lsKeys.SOUND_ON) !== 'false',
     gameLoaded: false,
     portOffer: null,
@@ -519,8 +523,26 @@ export function getState() {
         shadeId: Number(shadeId),
       });
     },
-    displayText(text) {
-      $state('text', text);
+    displayText(text, actions = []) {
+      $state('note', () => ({ shadeId: null, text, actions: [] }));
+    },
+    showNote(shadeId, text, actions) {
+      $state('note', () => ({ shadeId, text, actions }));
+    },
+    shadeTell(shadeId, msg) {
+      this.sendPondWave('tell', { shadeId, msg });
+    },
+    closeNote() {
+      if (this.note.shadeId != null) {
+        this.shadeTell(this.note.shadeId, 'clear-note');
+      }
+      this.showNote(null, null, []);
+    },
+    noteAction(index) {
+      if (this.note.shadeId != null) {
+        this.shadeTell(this.note.shadeId, 'note: ' + index);
+      }
+      this.showNote(null, null, []);
     },
     // approveDink(portalId) {
     //   this.sendPondWave('approve-dink', {
@@ -776,7 +798,12 @@ export function getState() {
   });
   window.addEventListener('pond-roar-effect-read', ({ roar, turfId }) => {
     setTimeout(() => {
-      _state.displayText(roar.arg.note);
+      const { shadeId, arg } = roar;
+      _state.showNote(
+        shadeId,
+        arg.text,
+        arg.actions.map((a) => a.name),
+      );
     }, 200);
   });
   window.addEventListener('pond-err', ({ _, turfId }) => {

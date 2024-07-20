@@ -53,8 +53,7 @@ export default function Lab() {
           newVar('fore'),
         ],
         collidable: false,
-        effects: {},
-        seeds: {},
+        fx: [],
       },
     });
   }

@@ -114,6 +114,7 @@
       [%send-chat from=ship text=cord]
       [%click =shade-id]
       [%interact =shade-id]
+      [%tell =shade-id msg=@t]
       :: init-id refers to the item that triggered the effect, if any
       [%pull-trigger ctx=fx-ctx]
       [%apply-effect =effect ctx=fx-ctx]

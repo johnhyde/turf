@@ -231,7 +231,7 @@
       ::  [%sleep ms=@ud]  :: if this appears in a list, don't run the rest of the list until the sleep is done
       [%noop ~]
       [%port =portal-id]  :: port player to turf
-      [%read note=@t actions=fx-actions-def]  :: show dialog box
+      [%read text=@t actions=fx-actions-def]  :: show dialog box
       [%wipe actions=(list root-condition)]
       [%swap with=form-id]  :: for opening/closing doors
       [%seem var=@ud]  :: display item variation

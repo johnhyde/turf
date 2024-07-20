@@ -1,7 +1,17 @@
 import { splitProps } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { bind, bindNum, input, jClone, toPairs, vecToStr } from 'lib/utils.js';
 import {
+  autofocus,
+  bind,
+  bindNum,
+  input,
+  jClone,
+  toPairs,
+  vecToStr,
+} from 'lib/utils.js';
+import {
+  newEffectArg,
+  newFxAction,
   newFxCondition,
   newFxDir,
   newFxDir8,
@@ -11,6 +21,7 @@ import {
   newFxRootCondition,
   newFxTarget,
 } from 'lib/effects.js';
+import { EffectEditor } from '@/EffectsEditor.jsx';
 import Select from '@/Select.jsx';
 import Radio from '@/Radio.jsx';
 import PatpInput from '@/PatpInput.jsx';
@@ -404,6 +415,104 @@ export function FxIntRel(props) {
           $arg,
         ]}
       />
+    </>
+  );
+}
+
+export function FxReadInput(props) {
+  const state = useState();
+  function addAction() {
+    props.$value({
+      ...props.value,
+      actions: [...props.value.actions, newFxAction()],
+    });
+  }
+
+  return (
+    <>
+      <Indent>
+        <textarea
+          class='rounded-input max-w-[160px]'
+          use:input
+          use:bind={[
+            () => props.value.text,
+            (s) => {
+              props.$value({ ...props.value, text: s || '' });
+              console.log('hm');
+            },
+          ]}
+        />
+      </Indent>
+      <Indent>
+        <span>actions</span>
+        <Index each={props.value.actions}>
+          {(action, i) => {
+            function $name(name) {
+              const newList = [...props.value.actions];
+              newList[i] = { ...newList[i], name };
+              props.$value({ ...props.value, actions: newList });
+            }
+            function $type(type) {
+              const newList = [...props.value.actions];
+              newList[i] = {
+                ...newList[i],
+                effect: {
+                  type,
+                  arg: newEffectArg(type, state.e),
+                },
+              };
+              props.$value({ ...props.value, actions: newList });
+            }
+            function $arg(arg) {
+              const newList = [...props.value.actions];
+              newList[i] = {
+                ...newList[i],
+                effect: {
+                  ...newList[i].effect,
+                  arg,
+                },
+              };
+              props.$value({ ...props.value, actions: newList });
+            }
+            function delAction() {
+              const newList = [...props.value.actions];
+              newList.splice(i(), 1);
+              props.$value({ ...props.value, actions: newList });
+            }
+            return (
+              <Indent>
+                <Group>
+                  <span>name</span>
+                  <input
+                    use:input
+                    use:bind={[
+                      () => action().name || '',
+                      (name) => $name(name),
+                    ]}
+                    class='rounded-input shrink min-w-0'
+                  />
+                </Group>
+                <Group>
+                  <span>effect</span>
+                  <SmallButton onClick={delAction}>
+                    x
+                  </SmallButton>
+                  <EffectEditor
+                    type={action().effect.type}
+                    arg={action().effect.arg}
+                    $type={$type}
+                    $arg={$arg}
+                    form={props.form}
+                  />
+                </Group>
+              </Indent>
+            );
+          }}
+        </Index>
+        <SmallButton onClick={addAction}>
+          +
+        </SmallButton>
+      </Indent>
     </>
   );
 }

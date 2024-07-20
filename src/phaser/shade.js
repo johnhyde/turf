@@ -43,7 +43,8 @@ export class Shade extends Phaser.GameObjects.Sprite {
     }
   }
 
-  preUpdate(_time, dt) {
+  preUpdate(time, dt) {
+    super.preUpdate(time, dt);
     moveTheThing(this, dt, () => {}, this.setPosition.bind(this));
   }
 

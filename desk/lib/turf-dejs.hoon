@@ -66,6 +66,7 @@
       call+(cork (ot ~[ships+(cork (ar shp) silt)]) (late ~))
       click+(ot ~['shadeId'^ni])
       interact+(ot ~['shadeId'^ni])
+      tell+(ot ~['shadeId'^ni msg+so])
   ==
 ::
 ++  mist-stir
@@ -231,7 +232,7 @@
   :~  list+(ot ~[serial+fx-serial effects+(ar effect)])
       noop+ul
       port+ni
-      read+(ot ~[note+so actions+(ar (ot ~[name+so effect+effect]))])
+      read+(ot ~[text+so actions+(ar (ot ~[name+so effect+effect]))])
       wipe+(ar root-condition)
       swap+pa
       seem+ni
