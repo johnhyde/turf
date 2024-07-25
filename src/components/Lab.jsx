@@ -135,7 +135,7 @@ export default function Lab() {
       <Heading>
         Nickname
       </Heading>
-      <div className='flex items-center space-x-2 w-full px-1'>
+      <div className='flex items-center justify-center space-x-2 w-full px-1'>
         <input
           use:input={{ onSubmit: saveNick }}
           use:bind={[nick, $nick]}

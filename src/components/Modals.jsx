@@ -266,7 +266,7 @@ export default function Modals() {
           <p class='text-xl mb-4 text-center whitespace-pre-wrap'>
             {state.note.text}
           </p>
-          <div class='mt-4 text-center'>
+          <div class='flex flex-wrap gap-2 mt-4 text-center'>
             <Index each={state.note.actions}>
               {(action, i) => (
                 <MediumButton onClick={() => state.noteAction(i)}>

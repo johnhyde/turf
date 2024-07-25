@@ -126,6 +126,7 @@
       [%add-port-offer ship portal-id.effect]~
     %read
       =/  effects
+        %-  flop
         =|  count=@ud
         =|  effects=(list [root-condition (unit ^effect)])
         |-  ^-  _effects

@@ -44,6 +44,7 @@ export default function CallInfo(props) {
       ? noobs()
       : noobs().filter((n) => crew().filtered?.includes(n));
   const absentPeers = () => peers().filter((p) => !activePeers().includes(p));
+  const ourName = () => state.e?.players[our]?.avatar.nick || our;
 
   const orderedConns = window.ocon = createMemo(() => {
     return Object.values(conns()).sort((a, b) => {
@@ -266,7 +267,7 @@ export default function CallInfo(props) {
         }}
       </For>
       <div style={videoStyle()}>
-        <VideoSquare stream={ourStream()} label={`You (${our})`} us />
+        <VideoSquare stream={ourStream()} label={`You (${ourName()})`} us />
       </div>
       <Show when={ourScreen()}>
         <div style={videoStyle()}>
@@ -393,6 +394,7 @@ export default function CallInfo(props) {
 }
 
 function Conn(props) {
+  const state = useState();
   const [chan, $chan] = createSignal(props?.conn?.channel);
   const [msgs, $msgs] = createSignal([]);
   const [msg, $msg] = createSignal('');
@@ -400,6 +402,7 @@ function Conn(props) {
   const [theirScreen, $theirScreen] = createSignal();
 
   const patp = () => '~' + props.conn.peer;
+  const playerName = () => state.e?.players[patp()]?.avatar.nick || patp();
 
   createEffect(() => {
     const controller = new AbortController();
@@ -528,7 +531,7 @@ function Conn(props) {
   return (
     <>
       <div style={props.videoStyle}>
-        <VideoSquare stream={theirStream()} label={'~' + props.conn.peer}>
+        <VideoSquare stream={theirStream()} label={playerName()}>
           {props.admin &&
             (
               <button
@@ -544,7 +547,7 @@ function Conn(props) {
         <div style={props.videoStyle}>
           <VideoSquare
             stream={theirScreen()}
-            label={patp() + "'s screen"}
+            label={playerName() + "'s screen"}
           />
         </div>
       </Show>

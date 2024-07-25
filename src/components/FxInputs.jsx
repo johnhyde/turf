@@ -317,27 +317,27 @@ export function FxConditionGroup(props) {
               root
             />
           </Indent>
-          <For each={props.value.arg.cons}>
+          <Index each={props.value.arg.cons}>
             {(con, i) => {
               return (
                 <>
                   <span class='font-semibold small-caps'>{type()}</span>
                   <Indent>
                     <FxCondition
-                      condition={con}
+                      condition={con()}
                       $condition={(newCon) => {
                         $arg(
-                          props.value.arg.cons.toSpliced(i(), 1, newCon),
+                          props.value.arg.cons.toSpliced(i, 1, newCon),
                           'cons',
                         );
                       }}
-                      deleteSelf={() => deleteCondition(i(), true)}
+                      deleteSelf={() => deleteCondition(i, true)}
                     />
                   </Indent>
                 </>
               );
             }}
-          </For>
+          </Index>
           <SmallButton onClick={[addCondition, true]}>
             +
           </SmallButton>
@@ -346,28 +346,28 @@ export function FxConditionGroup(props) {
           </SmallButton>
         </Match>
         <Match when={type() === 'or' || (type() === 'and' && !props.root)}>
-          <For each={props.value.arg}>
+          <Index each={props.value.arg}>
             {(con, i) => {
               return (
                 <>
-                  <Show when={i() !== 0}>
+                  <Show when={i !== 0}>
                     <span class='font-semibold small-caps'>{type()}</span>
                   </Show>
                   <Indent>
                     <FxCondition
-                      condition={con}
+                      condition={con()}
                       $condition={(newCon) =>
-                        $arg(props.value.arg.toSpliced(i(), 1, newCon))}
+                        $arg(props.value.arg.toSpliced(i, 1, newCon))}
                       root={props.root}
                       deleteSelf={props.value.arg.length > 1
-                        ? () => deleteCondition(i())
+                        ? () => deleteCondition(i)
                         : null}
                     />
                   </Indent>
                 </>
               );
             }}
-          </For>
+          </Index>
           <SmallButton onClick={[addCondition, false]}>
             +
           </SmallButton>

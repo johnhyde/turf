@@ -760,6 +760,18 @@ const filters = {
       goals: pullTriggerOnShade(turf, our, trig('interact'), goal.arg.shadeId),
     };
   },
+  'tell': (turf, goal) => {
+    return {
+      roars: [],
+      grits: [],
+      goals: pullTriggerOnShade(
+        turf,
+        our,
+        trig('tell', goal.arg.msg),
+        goal.arg.shadeId,
+      ),
+    };
+  },
   'pull-trigger': (turf, goal) => {
     return {
       roars: [],

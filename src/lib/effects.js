@@ -197,7 +197,7 @@ export function newFxTriggerCondition(type, ...args) {
 export function newReflex() {
   return {
     root: { type: '', arg: null },
-    effect: { type: '', arg: null },
+    effect: newEffect(),
   };
 }
 
@@ -272,7 +272,7 @@ export function newFxIntRel() {
 }
 
 export function newEffect() {
-  return { type: '', arg: null };
+  return { type: 'noop', arg: null };
 }
 
 export function newEffectArg(type, turf) {
@@ -280,7 +280,7 @@ export function newEffectArg(type, turf) {
     case 'list':
       return {
         serial: 'simult',
-        effects: [{ type: '', arg: null }],
+        effects: [newEffect()],
       };
     case 'port':
       return '';
@@ -295,6 +295,7 @@ export function newEffectArg(type, turf) {
       return newFxMove();
     case 'tell':
       return newFxTell();
+    case 'noop':
     default:
       return null;
   }
@@ -489,6 +490,15 @@ export function newFxFromTo() {
 
 export function applyEffect(ctx, effect) {
   const { turf, ship, trigger, shadeId, initId } = ctx;
+  const defaultReturn = {
+    roars: [{
+      type: 'effect-' + effect.type,
+      arg: effect.arg,
+      ship,
+      shadeId,
+    }],
+    goals: [],
+  };
   switch (effect.type) {
     case 'list': {
       if (effect.arg.serial === 'simult') {
@@ -533,6 +543,91 @@ export function applyEffect(ctx, effect) {
           type: 'add-port-offer',
           arg: { ship, from: effect.arg },
         }],
+      };
+    }
+    case 'read': {
+      const { actions } = effect.arg;
+      if (actions.length === 0) return defaultReturn;
+      const reflexes = actions.map((action, i) => {
+        return {
+          root: {
+            type: 'and',
+            arg: {
+              root: {
+                type: 'trigger',
+                arg: {
+                  type: 'tell',
+                  arg: { type: 'eq', arg: 'note: ' + i },
+                },
+              },
+              cons: [{
+                type: 'user-eq',
+                arg: ship,
+              }],
+            },
+          },
+          effect: {
+            type: 'list',
+            arg: {
+              serial: 'serial',
+              effects: [
+                {
+                  type: 'tell',
+                  arg: { target: 'this', msg: 'clear-note' },
+                },
+                action.effect,
+              ],
+            },
+          },
+        };
+      });
+      const clearCondition = {
+        type: 'and',
+        arg: {
+          root: {
+            type: 'trigger',
+            arg: {
+              type: 'tell',
+              arg: { type: 'eq', arg: 'clear-note' },
+            },
+          },
+          cons: [{
+            type: 'user-eq',
+            arg: ship,
+          }],
+        },
+      };
+      reflexes.unshift({
+        root: clearCondition,
+        effect: {
+          type: 'wipe',
+          arg: [jClone(clearCondition), ...reflexes.map((r) => r.root)],
+        },
+      });
+
+      return {
+        roars: defaultReturn.roars,
+        goals: reflexes.map((reflex) => ({
+          type: 'set-shade-effect',
+          arg: {
+            shadeId,
+            trigger: reflex.root,
+            effect: reflex.effect,
+          },
+        })),
+      };
+    }
+    case 'wipe': {
+      return {
+        roars: [],
+        goals: effect.arg.map((root) => ({
+          type: 'set-shade-effect',
+          arg: {
+            shadeId,
+            trigger: root,
+            effect: null,
+          },
+        })),
       };
     }
     case 'swap': {
@@ -596,15 +691,7 @@ export function applyEffect(ctx, effect) {
       };
     }
     default: {
-      return {
-        roars: [{
-          type: 'effect-' + effect.type,
-          arg: effect.arg,
-          ship,
-          shadeId,
-        }],
-        goals: [],
-      };
+      return defaultReturn;
     }
   }
 }

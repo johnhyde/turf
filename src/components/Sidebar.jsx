@@ -93,7 +93,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[288px] sm:min-w-[245px] ' +
+      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[307px] sm:min-w-[307px] ' +
         (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show

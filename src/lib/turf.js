@@ -19,7 +19,7 @@ export function generateHusk(formId, variation = 0) {
     variation,
     offset: vec2(),
     collidable: null,
-    effects: {},
+    fx: null,
   };
 }
 export function jabBySpaces(turf, pos, fn) {

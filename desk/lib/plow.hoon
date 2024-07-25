@@ -469,6 +469,9 @@
       ?.  =(portal-id.req from.goal)
         `~[goal]~
       ``[%import-player ship.goal `from.goal avatar.req]~
+    %add-player
+      :-  [%player-add ship.goal]~
+      ~[goal]~
     %del-player
       ?.  |(=(our src):bowl =(ship.goal src.bowl))  ``~
       :-  [%player-del ship.goal]~
