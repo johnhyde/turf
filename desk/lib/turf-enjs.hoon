@@ -707,6 +707,7 @@
   ?@  target  s+target
   %+  labeled  -.target
   ?-  -.target
+    %top-shade-at-loc  (fx-loc loc.target)
     %item  (numb shade-id.target)
     %player  (ship-json ship.target)
   ==
@@ -716,6 +717,7 @@
   ?@  target  s+target
   %+  labeled  -.target
   ?-  -.target
+    %top-shade-at-loc  (fx-loc loc.target)
     %item  (numb shade-id.target)
   ==
 ++  fx-loc

@@ -184,13 +184,13 @@ export function isLunkApproved(turf) {
   return turf.lunk?.approved === true;
 }
 
-export function isHuskCollidable(husk) {
-  return !!(husk.collidable ?? husk.form.collidable);
+export function isThingCollidable(thing) {
+  return !!(thing.collidable ?? thing.form.collidable);
 }
 
 export function getCollision(turf, pos) {
-  const shades = getThingsAtPos(turf, pos);
-  return shades.some(isHuskCollidable);
+  const things = getThingsAtPos(turf, pos);
+  return things.some(isThingCollidable);
 }
 
 export function delShade(turf, shadeId) {

@@ -567,7 +567,7 @@ export class Player extends Phaser.GameObjects.Container {
         // const playerColliding = getCollision(this.t, this.tilePos);
         const willBeColliding = getCollision(this.t, newTilePos);
         // const willBump = willBeColliding && !playerColliding;
-        const willBump = willBeColliding;
+        const willBump = willBeColliding && tilePosChanged;
         if (!willBump) this.bumped = false;
         if (tilePosChanged && !this.bumped && (!this.turning || justMoved)) {
           if (willBump) {

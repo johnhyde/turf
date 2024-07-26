@@ -42,8 +42,12 @@ const conditionTypes = [
     'eq  equals, initiator  initiator type, initiator-eq  initiator is, user-eq  user is, item-exists  item exists, variation, move-collide  moved w/ collision, move-smooth  moved smoothly, loc-eq  locations equal',
   ),
 ];
-const targetTypes = toPairs('this, user, initiator, item, player');
-const itemTargetTypes = toPairs('this, initiator, item');
+const targetTypes = toPairs(
+  'this, user, initiator, top-shade-at-loc  at location, item, player',
+);
+const itemTargetTypes = toPairs(
+  'this, initiator, top-shade-at-loc  at location, item',
+);
 const locTypes = toPairs(
   'target  entity position, offset  offset position, mover-pos  mover position, absolute  position',
 );
@@ -599,6 +603,9 @@ export function FxTargetInput(props) {
       <Show when={typeof props.value === 'object'}>
         <span>:</span>
       </Show>
+      <Show when={type() === 'top-shade-at-loc'}>
+        <FxLocationInput value={props.value.arg} $value={$arg} />
+      </Show>
       <Show when={type() === 'item'}>
         <ShadeIdInput value={props.value.arg} $value={$arg} />
       </Show>
@@ -622,6 +629,9 @@ export function FxItemTargetInput(props) {
       <Select value={type()} $value={$type} options={itemTargetTypes} />
       <Show when={typeof props.value === 'object'}>
         <span>:</span>
+      </Show>
+      <Show when={type() === 'top-shade-at-loc'}>
+        <FxLocationInput value={props.value.arg} $value={$arg} />
       </Show>
       <Show when={type() === 'item'}>
         <ShadeIdInput value={props.value.arg} $value={$arg} />

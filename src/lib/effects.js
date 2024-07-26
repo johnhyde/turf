@@ -8,7 +8,12 @@ import {
   vecToDir,
   vecToDir8,
 } from 'lib/utils.js';
-import { getShade, getShadeWithForm } from 'lib/turf.js';
+import {
+  getShade,
+  getShadeWithForm,
+  getSpace,
+  isThingCollidable,
+} from 'lib/turf.js';
 
 export function getEffectsByShadeId(turf, shadeId, trigger, opts = {}) {
   const comp = getShadeWithForm(turf, shadeId);
@@ -70,6 +75,7 @@ export function matchCondition(ctx, con) {
     case 'initiator-eq': {
       if (arg === 'initiator') return true;
       const target = absolutizeTarget(apCtx(ctx), arg);
+      if (!target) return false;
       if (ctx.initId == null) {
         return target.type === 'player' && target.arg === ctx.ship;
       }
@@ -106,6 +112,11 @@ export function matchTriggerCondition(ctx, ton) {
   const { arg } = ton;
   if (ton.type !== ctx.trigger.type) return false;
   switch (ton.type) {
+    case 'bump': {
+      const thing = getShadeWithForm(ctx.turf, ctx.comp.id);
+      if (!thing) return false;
+      return isThingCollidable(thing);
+    }
     case 'move':
       switch (arg.type) {
         case 'onto':
@@ -659,6 +670,7 @@ export function applyEffect(ctx, effect) {
       const pos = resolveFxLoc(ctx, to);
       if (!pos) return { roars: [], goals: [] };
       const absTarget = absolutizeTarget(ctx, target);
+      if (!absTarget) return { roars: [], goals: [] };
       const isPlayer = absTarget.type === 'player';
       const goal = {
         type: isPlayer ? 'move' : 'move-shade',
@@ -726,6 +738,7 @@ export function resolveTargetPos(ctx, target) {
 
 export function resolveTarget(ctx, target) {
   const absTarget = absolutizeTarget(ctx, target);
+  if (!absTarget) return null;
   if (absTarget.type === 'player') {
     const player = ctx.turf.players[absTarget.arg];
     if (!player) return null;
@@ -937,6 +950,13 @@ export function absolutizeTarget(ctx, target) {
       type: 'player',
       arg: ctx.ship,
     };
+  } else if (target.type === 'top-shade-at-loc') {
+    const absTarget = absolutizeTargetAtLoc(ctx, target.arg);
+    if (absTarget == null) return null;
+    return {
+      type: 'item',
+      arg: absTarget,
+    };
   } else {
     return target;
   }
@@ -949,6 +969,18 @@ export function absolutizeItemTarget(ctx, target) {
   if (target === 'this') {
     return ctx.shadeId;
   }
+  if (target.type === 'top-shade-at-loc') {
+    return absolutizeTargetAtLoc(ctx, target.arg);
+  }
   // type = 'item'
   return target.arg;
+}
+
+export function absolutizeTargetAtLoc(ctx, loc) {
+  const pos = resolveFxLoc(ctx, loc);
+  if (!pos) return null;
+  const space = getSpace(ctx.turf, pos);
+  if (!space) return null;
+  if (space.shades.length) return space.shades[0];
+  return space.tile; // may be null
 }

@@ -658,12 +658,14 @@
         ~
         [goal]~
     ==
-  :*  %pass  /pond-stir  %agent
+  :*  %pass
+      /pond-stir/(scot %p ship.turf-id)
+      %agent
       [ship.turf-id %turf]
       [%poke %pond-stir !>(stir)]
   ==
 ++  mist-stir-card
-  |=  [=wire who=ship =goal:mist]
+  |=  [who=ship =goal:mist]
   ^-  card
   =/  stir=stir:mist
     :*  dmpath
@@ -671,7 +673,7 @@
         [goal]~
     ==
   :*  %pass
-      wire
+      /mist-stir/(scot %p who)
       %agent
       [who %turf]
       [%poke %mist-stir !>([stir])]
@@ -706,44 +708,44 @@
     |=  [=roar:mist [cards=(list card) sub-state=_state]]
     =.  state  sub-state
     =^  new-cards  state
-      ?-    -.roar
-          %port-offer-accept
-        :_  state
-        :-  %+  pond-stir-card
-                ::  /port-request
-              for.roar
-            [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
-        :: if we have been invited somewhere
-        :: or invited ourselves home,
-        :: don't accept port offer
-        ?@  via.roar  ~
-        :_  ~
-        %+  pond-stir-card
-            ::  /port-offer-accept
-          of.u.via.roar
-        [%port-offer-accepted our.bowl from.u.via.roar]
-          %port-offer-reject
-        :_  state
-        :_  ~
-        %+  pond-stir-card
-            ::  /port-offer-reject
-          of.roar
-        [%port-offer-rejected our.bowl from.roar]
-          %turf-join
-        =^  cards  sub-pond
-          ?:  =(our.bowl ship.turf-id.roar)  `sub-pond
-          (surf:da-pond (turf-id-to-sub-key turf-id.roar))
-        cards^state
-          %turf-exit
-        =.  sub-pond
-          (quit:da-pond (turf-id-to-sub-key turf-id.roar))
-        :-  ?~  old-tid  ~
-            :_  ~
-            %+  pond-stir-card
-                ::  (weld /pond-stir (drop id.stir))
-              u.old-tid
-            [%del-player our.bowl]
-        state
+      ?-  -.roar
+        %port-offer-accept
+          :_  state
+          :-  %+  pond-stir-card
+                  ::  /port-request
+                for.roar
+              [%add-port-req our.bowl from=?@(via.roar via.roar `at.u.via.roar) avatar:(need (default-mist:hc))]
+          :: if we have been invited somewhere
+          :: or invited ourselves home,
+          :: don't accept port offer
+          ?@  via.roar  ~
+          :_  ~
+          %+  pond-stir-card
+              ::  /port-offer-accept
+            of.u.via.roar
+          [%port-offer-accepted our.bowl from.u.via.roar]
+        %port-offer-reject
+          :_  state
+          :_  ~
+          %+  pond-stir-card
+              ::  /port-offer-reject
+            of.roar
+          [%port-offer-rejected our.bowl from.roar]
+        %turf-join
+          =^  cards  sub-pond
+            ?:  =(our.bowl ship.turf-id.roar)  `sub-pond
+            (surf:da-pond (turf-id-to-sub-key turf-id.roar))
+          cards^state
+        %turf-exit
+          =.  sub-pond
+            (quit:da-pond (turf-id-to-sub-key turf-id.roar))
+          :-  ?~  old-tid  ~
+              :_  ~
+              %+  pond-stir-card
+                  ::  (weld /pond-stir (drop id.stir))
+                u.old-tid
+              [%del-player our.bowl]
+          state
       ==
     (weld cards new-cards)^state
   =^  pond-cards=(list card)  state  (sync-avatar)
@@ -855,22 +857,19 @@
           %port-offer
         :_  state
         :_  ~
-        %^    mist-stir-card
-            /port-offer
+        %+  mist-stir-card
           ship.roar
         [%port-offered for.roar `[turf-id.stir from.roar at.roar]]
           %port-reject
         :_  state
         :_  ~
-        %^    mist-stir-card
-            /port-reject
+        %+  mist-stir-card
           ship.roar
         [%port-rejected turf-id.stir]
           %player-add
         =^  cards  sub-mist  (surf:da-mist ship.roar %turf dmpath)
         =/  mist-card=card
-          %^    mist-stir-card
-              /port-accept
+          %+  mist-stir-card
             ship.roar
           [%port-accepted turf-id.stir]
         [mist-card cards]^state
@@ -878,8 +877,7 @@
         =.  sub-mist  (quit:da-mist ship.roar %turf dmpath)
         :_  state
         :_  ~
-        %^    mist-stir-card
-            /kick
+        %+  mist-stir-card
           ship.roar
         [%kicked turf-id.stir]
           %host-call

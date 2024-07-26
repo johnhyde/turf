@@ -59,10 +59,11 @@
         ?=(%item type.con)
       %initiator-eq
         ?:  ?=(%initiator target.con)  %.y
-        =/  abs  (absolutize-target ap-ctx target.con)
-        ?-  -.abs
-          %item  =(`+.abs init-id.ctx)
-          %player  &(=(~ init-id.ctx) =(+.abs ship.ctx))
+        ?~  abs=(absolutize-target ap-ctx target.con)
+          %.n
+        ?-  -.u.abs
+          %item  =(`+.u.abs init-id.ctx)
+          %player  &(=(~ init-id.ctx) =(+.u.abs ship.ctx))
         ==
       %user-eq  =(ship.ctx ship.con)
       %trigger  (match-trigger-condition trigger.con)
@@ -84,6 +85,11 @@
     |=  ton=trigger-condition
     ^-  ?
     ?+  -.ton  =(ton trigger.ctx)
+      %bump
+        ?.  ?=(%bump -.trigger.ctx)  %.n
+        ?~  comp=(get-comp-by-shade-id turf.ctx shade-id.ctx)
+          %.n
+        (is-thing-collidable turf.ctx (comp-to-thing u.comp))
       %move
         ?.  ?=(%move -.trigger.ctx)  %.n
         .=  pos.comp.ctx
@@ -160,13 +166,14 @@
     %move
       =/  pos  (resolve-fx-loc ctx to.effect)
       ?~  pos  `~
-      =/  target  (absolutize-target ctx target.effect)
+      ?~  target=(absolutize-target ctx target.effect)
+        `~
       =/  deets  [u.pos collide.effect smooth.effect]
-      ?-  -.target
+      ?-  -.u.target
         %player
-          `[%move ship.target deets]~
+          `[%move ship.u.target deets]~
         %item
-          `[%move-shade shade-id.target deets]~
+          `[%move-shade shade-id.u.target deets]~
       ==
     %tell
       =/  tar  (absolutize-item-target ctx target.effect)
@@ -204,14 +211,15 @@
   |=  [ctx=ap-ctx =target]
   =,  ctx
   ^-  (unit (each player shade))
-  =.  target  (absolutize-target ctx target)  
-  ?-  -.target
+  ?~  abs-tar=(absolutize-target ctx target)  
+    ~
+  ?-  -.u.abs-tar
     %player
-      ?~  plr=(~(gut by players.ephemera.turf) ship.target ~)
+      ?~  plr=(~(gut by players.ephemera.turf) ship.u.abs-tar ~)
         ~
       `[%.y plr]
     %item
-      ?~  shade=(~(gut by cave.plot.turf) shade-id.target ~)
+      ?~  shade=(~(gut by cave.plot.turf) shade-id.u.abs-tar ~)
         ~
       `[%.n shade]
   ==
@@ -371,16 +379,20 @@
     %absolute-8  `dir.dir
   ==
 ++  absolutize-target
-  |=  [ctx=ap-ctx =target]
+  |=  [ctx=ap-ctx tar=target]
   =,  ctx
-  ^-  absolute-target
-  ?+  target  target
-    %this  [%item shade-id]
-    %user  [%player ship]
+  ^-  (unit absolute-target)
+  ?+  tar  `tar
+    %this  `[%item shade-id]
+    %user  `[%player ship]
     %initiator
       ?~  init-id.ctx
-        [%player ship]
-      [%item u.init-id.ctx]
+        `[%player ship]
+      `[%item u.init-id.ctx]
+    [%top-shade-at-loc *]
+      ?~  shade-id=(absolutize-target-at-loc ctx loc.tar)
+        ~
+      `item+u.shade-id
   ==
 ++  absolutize-item-target
   |=  [ctx=ap-ctx tar=item-target]
@@ -389,6 +401,17 @@
   ?-  tar
     %this  `shade-id
     %initiator  init-id
+    [%top-shade-at-loc *]
+      (absolutize-target-at-loc ctx loc.tar)
     [%item *]  `shade-id.tar
   ==
+++  absolutize-target-at-loc
+  |=  [ctx=ap-ctx loc=fx-loc]
+  ^-  (unit shade-id)
+  ?~  pos=(resolve-fx-loc ctx loc)
+    ~
+  =/  space  (get-space spaces.plot.turf.ctx u.pos)
+  ?~  shades.space
+    tile.space
+  `i.shades.space
 --

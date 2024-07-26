@@ -262,15 +262,20 @@
     (target +.jon)
   %.  jon
   %+  ol
-    (cork so (tags absolute-target))
-  ~[item+ni player+shp]
+    (cork so (tags target))
+  :~  top-shade-at-loc+fx-loc
+      item+ni
+      player+shp
+  ==
 ++  fx-item-target
   |=  jon=json
   ?:  ?=([%s *] jon)
     (item-target +.jon)
   %.  jon
-  %+  ol  (cork so ,%item)
-  ~[item+ni]
+  %+  ol  (cork so (tags item-target))
+  :~  top-shade-at-loc+fx-loc
+      item+ni
+  ==
 ++  fx-loc
   |=  jon=json
   ^-  ^fx-loc

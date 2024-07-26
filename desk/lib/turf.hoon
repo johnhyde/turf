@@ -280,6 +280,10 @@
       :-  (~(gut by spaces) tl [~ ~])
       $(y.tl (sum:si y.tl --1))
   $(x.tl (sum:si x.tl --1))
+++  comp-to-thing
+  |=  =comp
+  ^-  thing
+  [+<+.comp +>.comp]
 ::
 ++  round-dir-8
   |=  [round=?(%ud %lr) =dir-8]

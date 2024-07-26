@@ -242,7 +242,10 @@
 +$  fx-actions-def  (list [name=@t =effect])
 +$  fx-serial  ?(%serial %simult %atomic)
 +$  target
-  $@  ?(%this %user %initiator)  absolute-target
+  $@  ?(%this %user %initiator)
+  $%  [%top-shade-at-loc loc=fx-loc]
+      absolute-target
+  ==
 +$  absolute-target
   $%  [%item =shade-id]
       [%player =ship]
@@ -250,7 +253,9 @@
   ==
 +$  item-target
   $@  ?(%this %initiator)
-  [%item =shade-id]
+  $%  [%top-shade-at-loc loc=fx-loc]
+      [%item =shade-id]
+  ==
 +$  absolute-item-target  (unit shade-id)  :: null if initiator not item
 +$  fx-loc
   $%  [%target =target]
