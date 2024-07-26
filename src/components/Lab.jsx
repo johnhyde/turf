@@ -49,7 +49,7 @@ export default function Lab() {
         variations: [
           newVar('fore'),
           newVar('fore'),
-          newVar('back'),
+          newVar('fore'),
           newVar('fore'),
         ],
         collidable: false,

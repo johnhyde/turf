@@ -1,26 +1,44 @@
 import { useState } from 'stores/state.jsx';
-import { createEffect, createSignal, on, onCleanup, onMount } from 'solid-js';
+import {
+  batch,
+  createEffect,
+  createSignal,
+  on,
+  onCleanup,
+  onMount,
+} from 'solid-js';
 import { equalsV, makeImage, maxV, minV, roundV, vec2 } from 'lib/utils.js';
 import { getVariationWithIndex } from 'lib/turf.js';
 
 export default function OffsetInput(props) {
   const state = useState();
   const [bgBitmap, $bgBitmap] = createSignal(null);
+  const [bgFlipX, $bgFlipX] = createSignal(false);
   const bgImage = () => {
     if (props.type !== 'garb') return null;
+    const form = state.m.avatar.body.thing.form;
     const sprite = getVariationWithIndex(
-      state.m.avatar.body.thing.form,
+      form,
       props.variation || 0,
     )?.sprite;
     if (!sprite) return null;
-    if (typeof sprite === 'string') return sprite;
-    return sprite.frames[(props.frame || 0) % sprite.frames.length];
+    const flipX = form.variations.length < 4 &&
+      props.variation === 3;
+    if (typeof sprite === 'string') return { url: sprite, flipX };
+    return {
+      url: sprite.frames[(props.frame || 0) % sprite.frames.length],
+      flipX,
+    };
   };
   createEffect(async () => {
-    const url = bgImage();
-    if (url) {
+    const result = bgImage();
+    if (result) {
+      const { url, flipX } = result;
       const imageStuff = await makeImage(url);
-      $bgBitmap(imageStuff.bitmap);
+      batch(() => {
+        $bgBitmap(imageStuff.bitmap);
+        $bgFlipX(flipX);
+      });
     }
   });
   let canvas;
@@ -31,8 +49,8 @@ export default function OffsetInput(props) {
   let offset = vec2();
 
   createEffect(on(
-    () => [props.bitmap, bgBitmap(), props.deep],
-    ([bitmap, _bg, _deep]) => {
+    () => [props.bitmap, bgBitmap(), bgFlipX(), props.deep],
+    ([bitmap, _bg, _bgFlipX, _deep]) => {
       if (bitmap && canvas) {
         canvas.width = props.bitmap.width + tileSize;
         canvas.height = props.bitmap.height + tileSize;
@@ -69,6 +87,10 @@ export default function OffsetInput(props) {
     if (bg) {
       ctx.save();
       ctx.globalAlpha = 0.5;
+      if (bgFlipX()) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
       ctx.drawImage(
         bg,
         props.offset.x + tileSize / 2,
