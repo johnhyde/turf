@@ -6,8 +6,8 @@ const speed = 170 * factor;
 export function moveTheThing(ob, dt, setDir, setPos) {
   const aq = ob.actionQueue;
   //Action queue retirement here. The objects in the action queue are just grits. The code that fills the actionQueue is the event handlers, window.addEventListener lines in game.js:startPhaser. These trigger on either predicted or confirmed events. So, the point is that this is a little sneaky side-state that only applies to the presentation, to avoid additional bookkeeping requirements the presentation doesn't need.
-  if (aq.length > 100) {
-    aq.splice(0, aq.length - 10);
+  if (aq.length > 200) {
+    aq.splice(0, aq.length - 20);
   }
   while (
     aq[0] &&

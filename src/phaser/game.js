@@ -49,6 +49,7 @@ let gritController = new AbortController();
 var game, scene, cam, cursors, keys = {}, player, earth, flats, stand, preview;
 var shadeSelectCallback = null, posSelectCallback = null, posSelected = null;
 var players = {}, shades = {};
+window.frameCount = 0;
 window.shades = shades;
 
 function addGritListener(eventName, handler) {
@@ -183,7 +184,7 @@ function createShade(shade, id, turf) {
   );
   const index = siblings.length - i - 1; // reverse since bottom/first is most recent
   const indexDepthMod = isTile ? 0 : index / 1000;
-  const sprite = new Shade(scene, shade, turf, indexDepthMod);
+  const sprite = new Shade(scene, shade, id, turf, indexDepthMod);
   sprite.id = id;
   sprite.isTile = isTile;
   const { formId } = shade;
@@ -672,6 +673,7 @@ export function startPhaser(_owner, _container) {
         const now = Date.now();
         const dt = now - updateTime;
         updateTime = now;
+        frameCount++;
         if (!cam.roundPixels) cam.setRoundPixels(true);
         // if (keys.f.isDown) {
         //   keys.f.reset();

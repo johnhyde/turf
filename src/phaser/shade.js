@@ -3,7 +3,7 @@ import { getForm, getSpriteFps, spriteName } from 'lib/turf.js';
 import { moveTheThing } from './move.js';
 
 export class Shade extends Phaser.GameObjects.Sprite {
-  constructor(scene, shade, turf, indexDepthMod) {
+  constructor(scene, shade, id, turf, indexDepthMod) {
     const huskPos = vec2(shade.pos).scale(tileFactor);
     super(
       scene,
@@ -13,6 +13,7 @@ export class Shade extends Phaser.GameObjects.Sprite {
     );
     this.turf = turf;
     this.shade = jClone(shade);
+    this.ord = (id || 0) % 10;
     this.form = getForm(turf, shade.formId);
     this.tilePos = vec2(shade.pos);
     if (!this.form) {
@@ -45,6 +46,16 @@ export class Shade extends Phaser.GameObjects.Sprite {
 
   preUpdate(time, dt) {
     super.preUpdate(time, dt);
+    // if (Math.random() > 0.7) {
+    if (frameCount % 10 === this.ord) {
+      const cam = this.scene.cameras.main;
+      this.setVisible(
+        !(this.x + 2 * this.displayWidth < cam.worldView.x ||
+          this.x - this.displayWidth > cam.worldView.x + cam.worldView.width ||
+          this.y + 2 * this.displayHeight < cam.worldView.y ||
+          this.y - this.displayHeight > cam.worldView.y + cam.worldView.height),
+      );
+    }
     moveTheThing(this, dt, () => {}, this.setPosition.bind(this));
   }
 

@@ -82,6 +82,7 @@ if [ -z "$WATCH_MODE" ]; then
     port=$(cat $PIER/.http.ports | grep loopback | tr -s ' ' '\n' | head -n 1)
     # Now, the commands themselves:
     lensa 'hood' "+hood/new-desk %$DESK"
+    lensa 'hood' "+hood/unmount %$DESK"
     lensa 'hood' "+hood/mount %$DESK"
 
     rm -r $DESK_DIR/*

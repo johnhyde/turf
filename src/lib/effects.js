@@ -348,6 +348,11 @@ export function newFxTarget(type = 'this') {
     case 'user':
     case 'initiator':
       return type;
+    case 'top-shade-at-loc':
+      return {
+        type,
+        arg: newFxLocation(),
+      };
     default: // item & player
       return {
         type,
@@ -360,6 +365,11 @@ export function newFxItemTarget(type = 'this') {
     case 'this':
     case 'initiator':
       return type;
+    case 'top-shade-at-loc':
+      return {
+        type,
+        arg: newFxLocation(),
+      };
     default: // item
       return {
         type,
