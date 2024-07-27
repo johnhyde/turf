@@ -1,4 +1,4 @@
-import { onMount, onCleanup } from 'solid-js';
+import { onCleanup, onMount } from 'solid-js';
 
 export default function Modal(props) {
   onMount(() => {
@@ -23,14 +23,23 @@ export default function Modal(props) {
     }
   }
 
-
-  return (<>
-    <div class="absolute top-0 left-0 w-full h-full z-20 bg-gray-500 opacity-30">
-    </div>
-    <div class="absolute top-0 left-0 w-full h-full flex z-20" onClick={(e) => props.onClose?.(e)} on:keydown={onKeyDown}>
-      <div class={"m-auto max-w-md max-h-full p-4 rounded-2xl overflow-auto " + (props.class || '')} onClick={e => e.stopPropagation()}>
-        {props.children}
+  return (
+    <>
+      <div class='absolute top-0 left-0 w-full h-full z-20 bg-gray-500 opacity-30'>
       </div>
-    </div>
-  </>);
+      <div
+        class='absolute top-0 left-0 w-full h-full p-4 flex z-20'
+        onClick={(e) => props.onClose?.(e)}
+        on:keydown={onKeyDown}
+      >
+        <div
+          class={'m-auto max-w-md max-h-full p-4 rounded-2xl overflow-auto ' +
+            (props.class || '')}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {props.children}
+        </div>
+      </div>
+    </>
+  );
 }

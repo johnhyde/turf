@@ -436,7 +436,7 @@ export function FxReadInput(props) {
     <>
       <Indent>
         <textarea
-          class='rounded-input max-w-[160px]'
+          class='rounded-input'
           use:input
           use:bind={[
             () => props.value.text,
@@ -445,6 +445,7 @@ export function FxReadInput(props) {
               console.log('hm');
             },
           ]}
+          placeholder='text or html (tailwind enabled)'
         />
       </Indent>
       <Indent>

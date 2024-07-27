@@ -259,26 +259,60 @@ export default function Modals() {
         </Modal>
       </Show>
       <Show when={state.note.text}>
-        <Modal
-          class='border-yellow-950 border-4 rounded-md bg-yellow-700'
-          onClose={() => state.closeNote()}
-        >
-          <p class='text-xl mb-4 text-center whitespace-pre-wrap'>
-            {state.note.text}
-          </p>
-          <div class='flex flex-wrap gap-2 mt-4 text-center'>
-            <Index each={state.note.actions}>
-              {(action, i) => (
-                <MediumButton onClick={() => state.noteAction(i)}>
-                  {action()}
+        {() => {
+          const [stable, $stable] = createSignal(false);
+          let iframe, interval;
+          onMount(() => {
+            let oldWidth, oldHeight;
+            const start = Date.now();
+            const size = () => {
+              if (!iframe) return;
+              const bod = iframe.contentWindow.document.body;
+              const newWidth = bod.scrollWidth + 'px';
+              const newHeight = bod.scrollHeight + 'px';
+              $stable(
+                (newWidth === oldWidth &&
+                  newHeight === oldHeight) ||
+                  Date.now() - start > 1000,
+              );
+              iframe.style.width = oldWidth = newWidth;
+              iframe.style.height = oldHeight = newHeight;
+            };
+            setTimeout(size, 100);
+            interval = setInterval(size, 200);
+          });
+          onCleanup(() => {
+            clearInterval(interval);
+          });
+          return (
+            <Modal
+              class={'!max-w-max border-yellow-950 border-4 rounded-md bg-yellow-700' +
+                ' ' + (stable() ? '' : 'invisible')}
+              onClose={() => state.closeNote()}
+            >
+              <iframe
+                ref={iframe}
+                srcdoc={'<html><head>' +
+                  '<script type="module" src="https://cdn.skypack.dev/twind/shim"></script>' +
+                  '</head><body class="m-0 text-center">' +
+                  state.note.text +
+                  '</body></html>'}
+              />
+              <div class='flex flex-wrap gap-2 mt-4 text-center'>
+                <Index each={state.note.actions}>
+                  {(action, i) => (
+                    <MediumButton onClick={() => state.noteAction(i)}>
+                      {action()}
+                    </MediumButton>
+                  )}
+                </Index>
+                <MediumButton onClick={() => state.closeNote()}>
+                  Close
                 </MediumButton>
-              )}
-            </Index>
-            <MediumButton onClick={() => state.closeNote()}>
-              Close
-            </MediumButton>
-          </div>
-        </Modal>
+              </div>
+            </Modal>
+          );
+        }}
       </Show>
       <Show when={Object.keys(phone.calls).length == 0 && phone.rings.length}>
         <Modal class='bg-teal-700 text-slate-100 w-96'>
