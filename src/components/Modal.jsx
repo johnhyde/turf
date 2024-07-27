@@ -25,10 +25,14 @@ export default function Modal(props) {
 
   return (
     <>
-      <div class='absolute top-0 left-0 w-full h-full z-20 bg-gray-500 opacity-30'>
+      <div
+        class={'absolute top-0 left-0 w-full h-full z-20 bg-gray-500 opacity-30' +
+          ' ' + (props.invisible ? 'invisible' : '')}
+      >
       </div>
       <div
-        class='absolute top-0 left-0 w-full h-full p-4 flex z-20'
+        class={'absolute top-0 left-0 w-full h-full p-4 flex z-20' + ' ' +
+          (props.invisible ? 'invisible' : '')}
         onClick={(e) => props.onClose?.(e)}
         on:keydown={onKeyDown}
       >

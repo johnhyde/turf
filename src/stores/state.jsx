@@ -539,10 +539,13 @@ export function getState() {
       this.showNote(null, null, []);
     },
     noteAction(index) {
-      if (this.note.shadeId != null) {
-        this.shadeTell(this.note.shadeId, 'note: ' + index);
+      const shadeId = this.note.shadeId;
+      if (shadeId != null) {
+        batch(() => {
+          this.showNote(null, null, []);
+          this.shadeTell(shadeId, 'note: ' + index);
+        });
       }
-      this.showNote(null, null, []);
     },
     // approveDink(portalId) {
     //   this.sendPondWave('approve-dink', {
@@ -695,6 +698,9 @@ export function getState() {
         ) {
           this.setScaleLog(1);
         }
+        if (state.editor.editing && tab !== state.tabs.EDITOR) {
+          this.selectTool(null);
+        }
         $state('selectedTab', tab);
         $state('editor', 'huskToPlace', null);
         this.selectShade(null);
@@ -797,14 +803,14 @@ export function getState() {
     }, 200);
   });
   window.addEventListener('pond-roar-effect-read', ({ roar, turfId }) => {
-    setTimeout(() => {
-      const { shadeId, arg } = roar;
-      _state.showNote(
-        shadeId,
-        arg.text,
-        arg.actions.map((a) => a.name),
-      );
-    }, 200);
+    // setTimeout(() => {
+    const { shadeId, arg } = roar;
+    _state.showNote(
+      shadeId,
+      arg.text,
+      arg.actions.map((a) => a.name),
+    );
+    // }, 200);
   });
   window.addEventListener('pond-err', ({ _, turfId }) => {
     _state.clearTurf(turfId);

@@ -1,4 +1,10 @@
-import { createSelector, createSignal, onCleanup, onMount } from 'solid-js';
+import {
+  createEffect,
+  createSelector,
+  createSignal,
+  onCleanup,
+  onMount,
+} from 'solid-js';
 import { useState } from 'stores/state.jsx';
 import { usePhone } from 'stores/phone.jsx';
 import * as api from 'lib/api.js';
@@ -258,22 +264,28 @@ export default function Modals() {
           </Show>
         </Modal>
       </Show>
-      <Show when={state.note.text}>
+      <Show when={state.note.text} keyed>
         {() => {
           const [stable, $stable] = createSignal(false);
+          const [now, $now] = createSignal(Date.now());
           let iframe, interval;
+          createEffect(() => {
+            if (state.note.text) {
+              $now(Date.now());
+              $stable(false);
+            }
+          });
           onMount(() => {
             let oldWidth, oldHeight;
-            const start = Date.now();
             const size = () => {
-              if (!iframe) return;
-              const bod = iframe.contentWindow.document.body;
+              const bod = iframe?.contentWindow.document.body;
+              if (!bod) return;
               const newWidth = bod.scrollWidth + 'px';
               const newHeight = bod.scrollHeight + 'px';
               $stable(
                 (newWidth === oldWidth &&
                   newHeight === oldHeight) ||
-                  Date.now() - start > 1000,
+                  Date.now() - now() > 1000,
               );
               iframe.style.width = oldWidth = newWidth;
               iframe.style.height = oldHeight = newHeight;
@@ -286,8 +298,8 @@ export default function Modals() {
           });
           return (
             <Modal
-              class={'!max-w-max border-yellow-950 border-4 rounded-md bg-yellow-700' +
-                ' ' + (stable() ? '' : 'invisible')}
+              invisible={!stable()}
+              class='!max-w-max border-yellow-950 border-4 rounded-md bg-yellow-700'
               onClose={() => state.closeNote()}
             >
               <iframe
