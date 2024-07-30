@@ -5,10 +5,11 @@ import {
   createSelector,
   createSignal,
   mergeProps,
+  onCleanup,
 } from 'solid-js';
 import { createStore, produce, reconcile, unwrap } from 'solid-js/store';
 import { getForm } from 'lib/turf.js';
-import { bind, input, jClone, vec2 } from 'lib/utils.js';
+import { bind, input, isTextInputFocused, jClone, vec2 } from 'lib/utils.js';
 import mapValues from 'lodash/mapValues';
 import isEqual from 'lodash/isEqual';
 import { useState } from 'stores/state.jsx';
@@ -114,6 +115,21 @@ export default function ShadeEditor(props) {
   function deleteItem() {
     state.delShade(shade().id);
   }
+
+  const onKeyDown = (e) => {
+    if (!e.defaultPrevented && !isTextInputFocused() && !e.metaKey) {
+      if ('123456789'.split('').includes(e.key)) {
+        setShadeVariation(
+          (Number(e.key) - 1) % form().variations.length,
+        );
+      }
+    }
+  };
+
+  document.body.addEventListener('keydown', onKeyDown);
+  onCleanup(() => {
+    document.body.removeEventListener('keydown', onKeyDown);
+  });
 
   return (
     <Show when={shade()}>

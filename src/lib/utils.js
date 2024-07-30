@@ -17,10 +17,18 @@ const Vector2 = Phaser.Math.Vector2;
  * b = vec2();         // set b to (0, 0)
  * @memberof Utilities
  */
-export const vec2 = (x = 0, y) =>
-  x.x == undefined
-    ? new Vector2(Number(x), y == undefined ? Number(x) : Number(y))
-    : new Vector2(Number(x.x), Number(x.y));
+// export const vec2 = (x = 0, y) =>
+//   x.x == undefined
+//     ? new Vector2(Number(x), y == undefined ? Number(x) : Number(y))
+//     : new Vector2(Number(x.x), Number(x.y));
+export const vec2 = (...args) => {
+  const v = new Vector2(...args);
+  if (typeof v.x === 'string' || typeof v.y === 'string') {
+    console.error('there should not be astring in a vec2!');
+  }
+  return v;
+};
+// export const vec2 = (...args) => new Vector2(...args);
 window.vec2 = vec2;
 
 export function minV(a, b) {

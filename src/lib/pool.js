@@ -341,14 +341,17 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       let [temp, $temp] = [rock, this.updateFake.bind(this)];
       if (!apply) [temp, $temp] = createStore(hydrate(cloneDeep(rock)));
       goals = goals.map((g) => this.preFilterGoal(temp, g)).filter((g) => g);
-      let newGoals = [], grits = [], roars = [];
-      goals.forEach((goal) => {
-        const res = this.fGoals(temp, $temp, [goal]);
-        if (res.grits.length || res.roars.length) {
-          newGoals.push(goal);
-          grits = [...grits, ...res.grits];
-          roars = [...roars, ...res.roars];
-        }
+      const newGoals = [];
+      let grits = [], roars = [];
+      batch(() => {
+        goals.forEach((goal) => {
+          const res = this.fGoals(temp, $temp, [goal]);
+          if (res.grits.length || res.roars.length) {
+            newGoals.push(goal);
+            grits = [...grits, ...res.grits];
+            roars = [...roars, ...res.roars];
+          }
+        });
       });
       if (options.onNewRoars) options.onNewRoars(roars);
       if (options.onNewFakeGrits) options.onNewFakeGrits(grits);

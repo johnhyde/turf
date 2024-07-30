@@ -87,11 +87,13 @@
     ?+  -.ton  =(ton trigger.ctx)
       %bump
         ?.  ?=(%bump -.trigger.ctx)  %.n
+        ?:  =(`shade-id.ctx init-id.ctx)  %.n
         ?~  comp=(get-comp-by-shade-id turf.ctx shade-id.ctx)
           %.n
         (is-thing-collidable turf.ctx (comp-to-thing u.comp))
       %move
         ?.  ?=(%move -.trigger.ctx)  %.n
+        ?:  =(`shade-id.ctx init-id.ctx)  %.n
         .=  pos.comp.ctx
         ?-  -.con.ton
           %onto  end.trigger.ctx

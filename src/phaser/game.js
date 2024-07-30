@@ -28,6 +28,7 @@ import {
   vecToStr,
 } from 'lib/utils.js';
 import {
+  getIndexDepthMod,
   getShadeWithForm,
   getSpace,
   getWallVariationAtPos,
@@ -50,6 +51,7 @@ var game, scene, cam, cursors, keys = {}, player, earth, flats, stand, preview;
 var shadeSelectCallback = null, posSelectCallback = null, posSelected = null;
 var players = {}, shades = {};
 window.frameCount = 0;
+window.standNeedsSort = false;
 window.shades = shades;
 
 function addGritListener(eventName, handler) {
@@ -177,14 +179,13 @@ function loadImageUnsafe(id, url, config = {}) {
 let lastClickedShadeId = null;
 function createShade(shade, id, turf) {
   const isTile = state.e?.skye?.[shade.formId]?.type === 'tile';
-  const siblings = getSpace(turf, shade.pos)?.shades || []; // tile depth mod = 0
-  const i = Math.min(
-    siblings.length - 1,
-    siblings.findIndex((s) => Number(s) === Number(id)),
+  const sprite = new Shade(
+    scene,
+    shade,
+    id,
+    turf,
+    getIndexDepthMod(turf, id, shade.pos),
   );
-  const index = siblings.length - i - 1; // reverse since bottom/first is most recent
-  const indexDepthMod = isTile ? 0 : index / 1000;
-  const sprite = new Shade(scene, shade, id, turf, indexDepthMod);
   sprite.id = id;
   sprite.isTile = isTile;
   const { formId } = shade;
@@ -217,6 +218,7 @@ function createShade(shade, id, turf) {
       const form = state.e.skye[shade().formId];
       const variation = form?.variations?.[shade().variation];
       sprite.depthMod = 0;
+      sprite.indexDepthMod = getIndexDepthMod(turf, id, shade().pos);
       if (form?.type === 'tile') {
         earth.add(sprite);
         earth.sort('depth');
@@ -332,7 +334,9 @@ function createShade(shade, id, turf) {
           state.delShade(id);
           event.stopPropagation();
         }
-        if (shade && shade.form.type === 'wall') {
+        if (
+          shade && shade.form.type === 'wall' && state.editor.autoOrientWalls
+        ) {
           state.updateWallsAroundPos(shade.pos, false, [id]);
         }
         console.log('try to remove shade');
@@ -480,21 +484,29 @@ export function startPhaser(_owner, _container) {
         function mapEdit(pos) {
           if (state.c.selectedForm) {
             if (state.c.selectedForm.type === 'wall') {
-              const variation = getWallVariationAtPos(
-                state.e,
-                pos,
-                0,
-                15,
-                state.editor.selectedFormId,
-              );
+              const variation = !state.editor.autoOrientWalls
+                ? state.editor.selectedVariation
+                : getWallVariationAtPos(
+                  state.e,
+                  pos,
+                  0,
+                  15,
+                  state.editor.selectedFormId,
+                );
               const added = state.addShade(
                 pos,
                 state.editor.selectedFormId,
                 variation,
               );
-              if (added) state.updateWallsAroundPos(pos, false);
+              if (added && state.editor.autoOrientWalls) {
+                state.updateWallsAroundPos(pos, false);
+              }
             } else {
-              state.addShade(pos, state.editor.selectedFormId);
+              state.addShade(
+                pos,
+                state.editor.selectedFormId,
+                state.editor.selectedVariation,
+              );
             }
           }
         }
@@ -559,8 +571,10 @@ export function startPhaser(_owner, _container) {
             const pos = pixelsToTiles(vec2(pointer.worldX, pointer.worldY));
             const oldPos = state.e?.cave?.[state.huskToPlace.shade]?.pos;
             state.teleShade(state.huskToPlace.shade, pos);
-            if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
-            state.updateWallsAroundPos(pos, true);
+            if (state.editor.autoOrientWalls) {
+              if (oldPos) state.updateWallsAroundPos(vec2(oldPos));
+              state.updateWallsAroundPos(pos, true);
+            }
             state.clearHuskToPlace();
           }
           if (posSelected) {
@@ -674,6 +688,10 @@ export function startPhaser(_owner, _container) {
         const dt = now - updateTime;
         updateTime = now;
         frameCount++;
+        if (standNeedsSort) {
+          standNeedsSort = false;
+          stand.sort('depth');
+        }
         if (!cam.roundPixels) cam.setRoundPixels(true);
         // if (keys.f.isDown) {
         //   keys.f.reset();
@@ -742,11 +760,21 @@ export function startPhaser(_owner, _container) {
         }
       }));
       createEffect(
-        on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
-          if (gameInited()) {
-            initShades(state.e);
-          }
-        }, { defer: true }),
+        // on(() => [loader.state, JSON.stringify(state.e?.cave)], () => {
+        on(
+          () => [
+            loader.state,
+            Object.entries(state.e?.cave || {}).map(
+              ([id, shade]) => [id, shade.pos.x, shade.pos.y, shade.variation],
+            ),
+          ],
+          () => {
+            if (gameInited()) {
+              initShades(state.e);
+            }
+          },
+          { defer: true },
+        ),
       );
       createEffect(
         on(

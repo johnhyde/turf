@@ -596,9 +596,10 @@ export class Player extends Phaser.GameObjects.Container {
       this.speechBubbleContainer.setVisible(showSpeechBubbleNow);
     }
 
-    if (this.depth !== this.properDepth && this.parentContainer) {
+    if (this.depth !== this.properDepth) {
       this.setDepth(this.properDepth);
-      this.parentContainer.sort('depth');
+      standNeedsSort = true;
+      // this.parentContainer.sort('depth');
     }
   }
 

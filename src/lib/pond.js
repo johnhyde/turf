@@ -101,11 +101,11 @@ export class Pond { // we use a class so we can put it inside a store without ge
     this._ = getPool(wash, hydrate, apiSendWave, options);
     this.$ = this._.$;
 
-    this._grid = createMemo(() => {
-      if (!this.ether) return null;
-      if (!this.ether.offset) return null;
-      return getTurfGrid(this.ether);
-    });
+    // this._grid = createMemo(() => {
+    //   if (!this.ether) return null;
+    //   if (!this.ether.offset) return null;
+    //   return getTurfGrid(this.ether);
+    // });
     this.sub = null;
     this.subscribe();
   }
@@ -118,9 +118,9 @@ export class Pond { // we use a class so we can put it inside a store without ge
     return this._.fake;
   }
 
-  get grid() {
-    return this._grid();
-  }
+  // get grid() {
+  //   return this._grid();
+  // }
 
   get new() {
     return this.isNew();
@@ -529,10 +529,12 @@ export class PondEvent extends Event {
 // otherwise, returns the goal (possibly modified)
 const preFilters = {
   'add-shade': (turf, goal) => {
-    const { pos, formId } = goal.arg;
+    const { pos, formId, variation } = goal.arg;
     if (!isInTurf(turf, pos)) return false;
-    const dupsOfForm = getThingsAtPosByFormId(turf, pos, formId);
-    // todo: check if variation is same and allow different variations to stack?
+    const dupsOfForm = getThingsAtPosByFormId(turf, pos, formId)
+      .filter((thing) =>
+        thing.form.type === 'wall' || thing.variation === variation
+      );
     if (dupsOfForm.length === 0) {
       return goal;
     }

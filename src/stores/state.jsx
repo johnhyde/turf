@@ -26,7 +26,9 @@ export const lsKeys = {
 
 function initEditorState() {
   return {
+    autoOrientWalls: true,
     selectedFormId: null,
+    selectedVariation: null,
     selectedShadeId: null,
     // secondary select, e.g. in effects editor
     // map of shade id (204) or pos ('5,6') to count of people showing it
@@ -383,12 +385,12 @@ export function getState() {
       if (delFormId) await this.sendOurPondWave({ formId: delFormId });
       if (form) return await this.sendOurPondWave('add-form', form);
     },
-    addShade(pos, formId, variation = 0, isGate = false) {
+    addShade(pos, formId, variation, isGate = false) {
       return this.sendPondWave('add-shade', {
         isGate,
         pos,
         formId,
-        variation: Number.parseInt(variation),
+        variation: Number.parseInt(variation || 0),
       });
     },
     delShade(shadeId) {
@@ -629,8 +631,14 @@ export function getState() {
       $state('lab', 'editing', (editing) => !editing);
     },
     selectForm(id) {
-      $state('editor', 'selectedFormId', id);
-      if (id) this.selectTool(this.editor.tools.BRUSH);
+      batch(() => {
+        $state('editor', 'selectedFormId', id);
+        this.selectVariation(null);
+        if (id) this.selectTool(this.editor.tools.BRUSH);
+      });
+    },
+    selectVariation(vari) {
+      $state('editor', 'selectedVariation', vari);
     },
     selectShade(id, _) {
       batch(() => {

@@ -166,6 +166,14 @@ export function getWallVariationAtPos(
   return [0, 1, 2, 7, 3, 5, 8, 11, 4, 10, 6, 14, 9, 13, 12, 15][flags];
 }
 
+export function getIndexDepthMod(turf, shadeId, pos) {
+  const siblings = getSpace(turf, pos)?.shades || []; // tile depth mod = 0
+  const i = siblings.findIndex((s) => Number(s) === Number(shadeId));
+  if (i === -1) return 0;
+  const index = siblings.length - i; // reverse since bottom/first is most recent
+  return index / 1000;
+}
+
 export function getPortalByShadeId(turf, shadeId) {
   if (shadeId === undefined) return null;
   return Object.values(turf.portals).find((portal) => {

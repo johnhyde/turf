@@ -45,11 +45,13 @@ export class Preview extends Phaser.GameObjects.Container {
             : editor.selectedFormId;
           const shadeDef = {
             formId,
-            variation: placing ? (placingShade?.variation || 0) : 0,
+            variation: placing
+              ? (placingShade?.variation || 0)
+              : (editor.selectedVariation || 0),
             pos: vec2(),
           };
           if (!shadeDef.formId) return;
-          this.shade = new Shade(this.scene, shadeDef, 0, this.turf());
+          this.shade = new Shade(this.scene, shadeDef, null, this.turf());
           if (!this.shade.active) return;
           this.shade.setAlpha(0.7);
           this.add([this.shade]);

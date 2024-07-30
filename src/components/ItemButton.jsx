@@ -44,7 +44,7 @@ export default function ItemButton(props) {
     return sprite;
   };
 
-  const formOffset = () => variation().offset || vec2();
+  const formOffset = () => variation()?.offset || vec2();
   const scale = () =>
     Math.min(
       totalWidth() ? 64 / totalWidth() : 1,
@@ -75,7 +75,7 @@ export default function ItemButton(props) {
     );
   };
 
-  const imgZ = () => (variation().deep === 'fore') ? 10 : 3;
+  const imgZ = () => (variation()?.deep === 'fore') ? 10 : 3;
   const bgZ = () => props.playerImage ? 5 : 0;
 
   const imgStyles = () => ({
@@ -97,10 +97,7 @@ export default function ItemButton(props) {
         (props.selected ? ' bg-yellow-600' : '')}
       onClick={() => props.onClick?.()}
     >
-      <div
-        class='relative pointer-events-none w-[64px] h-[64px]'
-
-      >
+      <div class='relative pointer-events-none w-[64px] h-[64px]'>
         <Show when={props.playerImage || props.bgImage}>
           <img
             ref={onBg}
@@ -129,7 +126,7 @@ export default function ItemButton(props) {
           class='absolute top-0 left-0 origin-top-left pointer-events-auto'
           style={imgStyles()}
         />
-        <Show when={variation().tint != null}>
+        <Show when={variation()?.tint != null}>
           <div
             draggable={false}
             class='absolute top-0 left-0 origin-top-left pointer-events-auto'

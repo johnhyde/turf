@@ -13,7 +13,7 @@ export class Shade extends Phaser.GameObjects.Sprite {
     );
     this.turf = turf;
     this.shade = jClone(shade);
-    this.ord = (id || 0) % 10;
+    this.ord = id != null ? (id || 0) % 10 : null;
     this.form = getForm(turf, shade.formId);
     this.tilePos = vec2(shade.pos);
     if (!this.form) {
@@ -47,7 +47,7 @@ export class Shade extends Phaser.GameObjects.Sprite {
   preUpdate(time, dt) {
     super.preUpdate(time, dt);
     // if (Math.random() > 0.7) {
-    if (frameCount % 10 === this.ord) {
+    if (this.ord != null && frameCount % 10 === this.ord) {
       const cam = this.scene.cameras.main;
       this.setVisible(
         !(this.x + 2 * this.displayWidth < cam.worldView.x ||
@@ -60,7 +60,11 @@ export class Shade extends Phaser.GameObjects.Sprite {
   }
 
   updateDepth() {
+    // console.log(
+    //   `this.y ${this.y} / tileFactor + this.depthMod ${this.depthMod} + this.indexDepthMod ${this.indexDepthMod}`,
+    // );
     this.setDepth(this.y / tileFactor + this.depthMod + this.indexDepthMod);
+    standNeedsSort = true;
   }
 
   seemVariation(varI) {

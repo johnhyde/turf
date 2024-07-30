@@ -113,11 +113,13 @@ export function matchTriggerCondition(ctx, ton) {
   if (ton.type !== ctx.trigger.type) return false;
   switch (ton.type) {
     case 'bump': {
+      if (ctx.comp.id === ctx.initId) return false;
       const thing = getShadeWithForm(ctx.turf, ctx.comp.id);
       if (!thing) return false;
       return isThingCollidable(thing);
     }
     case 'move':
+      if (ctx.comp.id === ctx.initId) return false;
       switch (arg.type) {
         case 'onto':
           return equalsV(ctx.comp.pos, ctx.trigger.arg.end);
