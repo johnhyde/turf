@@ -12,7 +12,7 @@ import {
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils.js';
-import { getWallsAtPos, getWallVariationAtPos } from 'lib/turf.js';
+import { getWallsAtPos, getWallVariationAtPos, hasPerm } from 'lib/turf.js';
 import { Pond } from 'lib/pond.js';
 import { Mist } from 'lib/mist.js';
 import { newFxRootCondition } from 'lib/effects.js';
@@ -58,6 +58,7 @@ export function getState() {
       if (!player) return null;
       return player;
     },
+    pondError: null,
     selectedTab: null,
     tabs: {
       HELP: 'help',
@@ -69,6 +70,7 @@ export function getState() {
     },
     editor: {
       get editing() {
+        if (!current().canEdit) return false;
         return selectedTab() === 'editor';
       },
       tools: {
@@ -143,12 +145,20 @@ export function getState() {
           return parent.mist?.vapor;
         },
         get selectedForm() {
-          if (!parent.editor.editing) return null;
+          if (selectedTab() !== parent.tabs.EDITOR) return null;
           if (!this.ether) return null;
           return this.ether.skye[parent.editor.selectedFormId] || null;
         },
         get peers() { // people no more than two spaces away
           return peers();
+        },
+        get canEdit() {
+          if (!this.ether) return false;
+          return hasPerm(this.ether, our, 'add');
+        },
+        get canAdmin() {
+          if (!this.ether) return false;
+          return hasPerm(this.ether, our, 'admin');
         },
       };
       return current;
@@ -262,6 +272,7 @@ export function getState() {
   });
 
   const selectedTab = () => state.selectedTab;
+  const current = () => state.current;
   const owner = getOwner();
 
   const _state = mergeProps(state, {
@@ -316,6 +327,12 @@ export function getState() {
       if (this.mist) {
         return this.mist.sendWave(type, arg, id);
       }
+    },
+    setError(kind, id) {
+      $state('pondError', { kind, id });
+    },
+    clearError() {
+      $state('pondError', null);
     },
     wake() {
       this.sendPondWave('wake', null);
@@ -554,6 +571,15 @@ export function getState() {
     //     portalId: Number(portalId),
     //   });
     // },
+    setDefaultPerm(perm) {
+      this.sendPondWave('set-default-perm', { perm });
+    },
+    setPlayerPerm(ship, perm) {
+      this.sendPondWave('set-player-perm', { ship, perm });
+    },
+    delPlayerPerm(ship) {
+      this.sendPondWave('del-player-perm', { ship });
+    },
     createBridge(shade, portal, trigger) {
       if (typeof shade === 'object') {
         shade = {
@@ -820,9 +846,10 @@ export function getState() {
     );
     // }, 200);
   });
-  window.addEventListener('pond-err', ({ _, turfId }) => {
-    _state.clearTurf(turfId);
-    _state.mist.enterVoid();
+  window.addEventListener('pond-error', ({ error, turfId }) => {
+    _state.setError(error, turfId);
+    // _state.clearTurf(turfId);
+    // _state.mist.enterVoid();
   });
 
   window.addEventListener('beforeunload', (e) => {

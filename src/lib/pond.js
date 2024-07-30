@@ -77,9 +77,15 @@ export class Pond { // we use a class so we can put it inside a store without ge
       },
       onFuture: () => {
         this.$error('future');
+        window.dispatchEvent(new PondEvent('error', 'future', id));
       },
       onUnavailable: () => {
         this.$error('unavailable');
+        window.dispatchEvent(new PondEvent('error', 'unavailable', id));
+      },
+      onKicked: () => {
+        this.$error('kicked');
+        window.dispatchEvent(new PondEvent('error', 'kicked', id));
       },
       preFilters,
       filters,
@@ -324,6 +330,18 @@ const pondGrits = {
         ...newHusk,
       };
     }
+  },
+  'set-default-perm': (turf, arg) => {
+    const { perm } = arg;
+    turf.perms.default = perm;
+  },
+  'set-player-perm': (turf, arg) => {
+    const { ship, perm } = arg;
+    turf.perms.except[ship] = perm;
+  },
+  'del-player-perm': (turf, arg) => {
+    const { ship } = arg;
+    delete turf.perms.except[ship];
   },
   'set-gate': (turf, arg) => {
     turf.gate = arg.gate;

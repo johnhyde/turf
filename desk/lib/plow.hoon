@@ -79,10 +79,12 @@
       ?.  =(`for.goal ctid.rock)  ~
       [%turf-join for.goal]~
     ?(%port-rejected %kicked)
+      ?.  =(ship.for.goal src.bowl)  ``~
+      ?.  =(`for.goal ctid.rock)  ``~
+      :-  ?:  ?=(%port-rejected -.goal)
+            [%turf-gone for.goal]~
+          [%kicked for.goal]~
       :-  ~
-      :-  ~
-      ?.  =(ship.for.goal src.bowl)  ~
-      ?.  =(`for.goal ctid.rock)  ~
       [%set-ctid ~]~
   ==
 ++  filter-pond-goal
@@ -112,6 +114,10 @@
         `~[goal]~
     ==
   =*  turf  u.uturf
+  =/  perm  (required-perm:pond -.goal)
+  ?:  &(top !(has-perm turf our.bowl src.bowl perm))
+    ``~
+  =/  src-is-admin  (has-perm turf our.bowl src.bowl %admin)
   ?+  -.goal  `~[goal]~
     %atomic
     :: todo: fix this so that it actually does things in order
@@ -185,11 +191,26 @@
         (pull-trigger-at-pos turf src.bowl trigger pos `shade-id.goal)
       :+  ~  grits
       :(weld goals leave-goals step-goals)
-    %set-gate
-      ?:  &(top !=(our src):bowl)  ``~
-      `~[goal]~
+    %set-default-perm
+      :+  ~  ~[goal]
+      ?.  ?=(%n perm.goal)  ~
+      %+  murn  ~(tap in ~(key by players.ephemera.turf))
+      |=  =ship
+      ?:  (~(has by except.perms.deed.turf) ship)
+        ~
+      ?:  =(our.bowl ship)  ~
+      `[%del-player ship]
+    %set-player-perm
+      :+  ~  ~[goal]
+      ?.  ?=(%n perm.goal)  ~
+      ?:  =(our.bowl ship.goal)  ~
+      [%del-player ship.goal]~
+    %del-player-perm
+      :+  ~  ~[goal]
+      ?.  ?=(%n default.perms.deed.turf)  ~
+      ?:  =(our.bowl ship.goal)  ~
+      [%del-player ship.goal]~
     %set-lunk
-      ?:  &(top !=(our src):bowl)  ``~
       ?:  =(lunk.goal lunk.deed.turf)  ``~
       :+  ~  [goal]~
       %-  murn  :_  same
@@ -205,12 +226,6 @@
           ?~  +.goal  ~  :: don't del in this case to avoid infinite loop
           `[%del-portal u.lunk.deed.turf loud=%.y]
       ==
-    %add-dink
-      ?:  &(top !=(our src):bowl)  ``~
-      `~[goal]~
-    %del-dink
-      ?:  &(top !=(our src):bowl)  ``~
-      `~[goal]~
     ::
     %create-bridge
       :: $:  %create-bridge
@@ -226,7 +241,8 @@
         ?~  at.portal  %.n
         ?:  pending.portal  %.n
         =(src.bowl ship.for.portal)
-      ?:  &(top !=(our src):bowl !is-approved-dink)  ``~
+      ?:  &(top !is-approved-dink !src-is-admin)
+        ``~
       =/  shade-id
         ?@  shade.goal  shade.goal
         stuff-counter.plot.turf
@@ -258,7 +274,6 @@
       ``goals
     ::
     %add-portal
-      ?:  &(top !=(our src):bowl)  ``~
       =/  is-link  !=((is-host our.bowl) (is-host ship.for.goal))
       =/  is-dink  &(is-link (gth ship.for.goal our.bowl))
       =/  portal-id  stuff-counter.plot.turf
@@ -274,7 +289,6 @@
       [%set-lunk `portal-id]~
     ::
     %del-portal
-      ?:  &(top !=(our src):bowl)  ``~
       =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
       :-  ?.  loud.goal  ~
@@ -293,7 +307,6 @@
         ~
       [%set-lunk ~]~
     %set-portal-outlet
-      ?:  &(top !=(our src):bowl)  ``~
       =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
       :+  ~  [goal]~
@@ -301,14 +314,12 @@
       ?.  pending.portal  ~
       [%confirm-portal portal-id.goal]~
     %confirm-portal
-      ?:  &(top !=(our src):bowl)  ``~
       =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
       ?~  at.portal  ``~
       :-  [%portal-confirm from=portal-id.goal for.portal u.at.portal]~
       ~[goal]~
     %revive-portal
-      ?:  &(top !=(our src):bowl)  ``~
       =/  portal  (~(gut by portals.deed.turf) portal-id.goal ~)
       ?~  portal  ``~
       ?^  at.portal  ``~
@@ -368,7 +379,7 @@
       ``[%chat from.goal now.bowl text.goal]~
     %move
       ?:  &(top !=(src.bowl ship.goal))  ``~
-      ?:  &(top !=(src our):bowl |(!collide.goal !smooth.goal))  ``~
+      ?:  &(top !src-is-admin |(!collide.goal !smooth.goal))  ``~
       =*  players  players.ephemera.turf
       =/  player  (~(get by players) ship.goal)
       ?~  player  ``~
@@ -410,7 +421,6 @@
       ``[%del-port-offer ship.goal]~
     ::
     %import-player
-      ?:  &(top !=(our src):bowl)  ``~
       :-  ~
       :-  ~
       =/  pos=(unit svec2)
@@ -443,8 +453,10 @@
     %add-port-req
       =/  rgg
         ?.  =(ship.goal src.bowl)  ``~
+        :: ~&  [our.bowl src.bowl %in (has-perm turf our.bowl src.bowl %in)]
+        ?.  (has-perm turf our.bowl src.bowl %in)  ``~
         ?@  from.goal
-          ?:  =(ship.goal our.bowl)
+          ?:  src-is-admin
             ``[%import-player +.goal]~
           ?:  ?=([~ ~] (~(get by port-offers.deed.turf) ship.goal))
             :: allow people to retrace their steps if a port goes bad
@@ -473,7 +485,7 @@
       :-  [%player-add ship.goal]~
       ~[goal]~
     %del-player
-      ?.  |(=(our src):bowl =(ship.goal src.bowl))  ``~
+      ?.  |(src-is-admin =(ship.goal src.bowl))  ``~
       :-  [%player-del ship.goal]~
       :-  [goal]~
       ?:  ?=([~ ~] (~(get by port-offers.deed.turf) ship.goal))
@@ -491,10 +503,8 @@
       =/  trigger  [%tell msg.goal]
       ``(pull-trigger-on-shade turf src.bowl trigger shade-id.goal ~)
     %pull-trigger
-      ?:  top  ``~
       ``(pull-trigger-on-shade turf src.bowl ctx.goal)
     %apply-effect
-      ?:  top  ``~
       =+  (apply-effect [turf src.bowl ctx.goal] effect.goal)
       [roars ~ goals]
   ==

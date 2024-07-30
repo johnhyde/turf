@@ -49,6 +49,9 @@
       [%set-shade-effect =shade-id trigger=root-condition effect=(unit effect)]
       [%set-shade-collidable =shade-id collidable=(unit ?)]
       [%set-shade-form-id =shade-id =form-id]
+      [%set-default-perm =perm]
+      [%set-player-perm =ship =perm]
+      [%del-player-perm =ship]
       ::  secret grits
       [%set-gate gate=(unit shade-id)]
       [%set-lunk lunk=(unit portal-id)]
@@ -93,8 +96,9 @@
   ==
 ::
 +$  stirred
-  $%  [what=%unavailable ~]
-      [what=%future ~]
+  $%  [what=%future ~]
+      [what=%unavailable ~]
+      [what=%kicked ~]
       [what=%rock =rock]
       [what=%wave foam =grits]
 
@@ -196,6 +200,11 @@
     %set-shade-effect  (set-shade-effect turf +.grit)
     %set-shade-collidable  (set-shade-collidable turf +.grit)
     %set-shade-form-id  (set-shade-form-id turf +.grit)
+    %set-default-perm  turf(default.perms.deed perm.grit)
+    %set-player-perm
+      turf(except.perms.deed (~(put by except.perms.deed.turf) ship.grit perm.grit))
+    %del-player-perm
+      turf(except.perms.deed (~(del by except.perms.deed.turf) ship.grit))
     ::
     %set-gate  turf(gate.deed gate.grit)
     %set-lunk  turf(lunk.deed lunk.grit)
@@ -297,6 +306,67 @@
       =.  invites.deed.turf
         (~(del by invites.deed.turf) id.grit)
       turf
+  ==
+::
+++  required-perm
+  |=  act=?((tags cur-grit) (tags goal))
+  ^-  perm
+  ?-  act
+    $?  %portal-confirmed  %portal-discarded
+        %add-port-rec  %add-port-req
+        %del-player
+        %atomic
+        %portal-requested  %portal-retracted
+        %port-offer-accepted  %port-offer-rejected
+    ==
+      %n
+    ::
+    $?  %noop  %wake  %move  %face
+        %ping-player
+        %create-bridge
+        %call  %send-chat
+        %click  %interact  %tell
+    ==
+      %in
+    ::
+    $?  %size-turf
+        %add-form  %del-form
+        %add-shade  %del-shade
+        %move-shade
+        %cycle-shade
+        %set-shade-var
+        %set-shade-fx
+        %set-shade-effect
+        %set-shade-collidable
+        %set-shade-form-id
+    ==
+      %add
+    ::
+    :: %claim
+    ::   %take
+    ::
+    $?  %set-turf  %del-turf
+        %set-name  %set-back
+        %set-autoconfirm-dinks
+        %set-default-perm
+        %set-player-perm  %del-player-perm
+        %set-avatar
+        %add-portal  %del-portal
+        %set-portal-outlet
+        %confirm-portal  %revive-portal
+        %add-invite  %del-invite
+    ==
+      %admin
+    ::
+    $?  %chat
+        %set-gate  %set-lunk
+        %add-dink  %del-dink
+        %add-port-offer  %nil-port-offer  %del-port-offer
+        %del-port-req  %del-port-rec  %del-port-recs
+        %add-player  %import-player
+        %pull-trigger  %apply-effect
+    ==
+      %secret
   ==
 ::
 :: upgrades

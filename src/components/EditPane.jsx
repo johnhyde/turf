@@ -118,61 +118,80 @@ export default function EditPane() {
 
   return (
     <div class='flex flex-col h-full'>
-      <div class='flex flex-wrap justify-evenly content-evenly'>
-        <Button
-          onClick={[selectTool, null]}
-          src={point}
-          selected={isToolSelected(null)}
-          tooltip='Escape'
-          ref={buttons.point}
-        />
-        <Button
-          onClick={[selectTool, tools.ERASER]}
-          src={erase}
-          selected={isToolSelected(tools.ERASER)}
-          tooltip='Delete'
-          ref={buttons.erase}
-        />
-        <Button
-          onClick={[selectTool, tools.DROPPER]}
-          src={dropper}
-          selected={isToolSelected(tools.DROPPER)}
-          tooltip='I'
-          ref={buttons.dropper}
-        />
-        <Button
-          onClick={[selectTool, tools.RESIZER]}
-          src={resize}
-          selected={isToolSelected(tools.RESIZER)}
-          tooltip='R'
-          ref={buttons.resize}
-        />
-      </div>
-      <MediumButton onClick={initNewForm}>
-        Create Item
-      </MediumButton>
-      <FormEditor form={newForm} $form={$newForm} skye={state.e?.skye} />
+      <Show when={state.c.canEdit}>
+        <div class='flex flex-wrap justify-evenly content-evenly'>
+          <Button
+            onClick={[selectTool, null]}
+            src={point}
+            selected={isToolSelected(null)}
+            tooltip='Escape'
+            ref={buttons.point}
+          />
+          <Button
+            onClick={[selectTool, tools.ERASER]}
+            src={erase}
+            selected={isToolSelected(tools.ERASER)}
+            tooltip='Delete'
+            ref={buttons.erase}
+          />
+          <Button
+            onClick={[selectTool, tools.DROPPER]}
+            src={dropper}
+            selected={isToolSelected(tools.DROPPER)}
+            tooltip='I'
+            ref={buttons.dropper}
+          />
+          <Button
+            onClick={[selectTool, tools.RESIZER]}
+            src={resize}
+            selected={isToolSelected(tools.RESIZER)}
+            tooltip='R'
+            ref={buttons.resize}
+          />
+        </div>
+        <MediumButton onClick={initNewForm}>
+          Create Item
+        </MediumButton>
+        <FormEditor form={newForm} $form={$newForm} skye={state.e?.skye} />
+      </Show>
       <Show when={state.c.selectedForm}>
-        <div class='flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'>
+        <div class='relative flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'>
           <FormInfo formId={state.editor.selectedFormId} />
-          <Show when={state.c.selectedForm.type === 'wall'}>
-            <div class='flex justify-center items-center gap-2'>
-              <label for='auto-orient'>
-                Auto-orient walls/paths:
-              </label>
-              <input
-                type='checkbox'
-                id='auto-orient'
-                use:input
-                checked={state.editor.autoOrientWalls}
-                onInput={(e) =>
-                  state.$('editor', 'autoOrientWalls', e.currentTarget.checked)}
-              />
-            </div>
+          <Show
+            when={state.c.canEdit}
+            fallback={
+              <SmallButton
+                onClick={[selectTool, null]}
+                tooltip='Esc'
+                class='absolute top-0 right-0 m-2'
+              >
+                x
+              </SmallButton>
+            }
+          >
+            <Show when={state.c.selectedForm.type === 'wall'}>
+              <div class='flex justify-center items-center gap-2'>
+                <label for='auto-orient'>
+                  Auto-orient walls/paths:
+                </label>
+                <input
+                  type='checkbox'
+                  id='auto-orient'
+                  use:input
+                  checked={state.editor.autoOrientWalls}
+                  onInput={(e) =>
+                    state.$(
+                      'editor',
+                      'autoOrientWalls',
+                      e.currentTarget.checked,
+                    )}
+                />
+              </div>
+            </Show>
           </Show>
           <Show
             when={!(state.c.selectedForm.type === 'wall' &&
-              state.editor.autoOrientWalls)}
+              state.editor.autoOrientWalls) || !state.c.canEdit}
           >
             <ListItemPicker
               wall={state.c.selectedForm.type === 'wall'}

@@ -482,7 +482,7 @@ export function startPhaser(_owner, _container) {
           f: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes['F']),
         };
         function mapEdit(pos) {
-          if (state.c.selectedForm) {
+          if (state.editor.editing && state.c.selectedForm) {
             if (state.c.selectedForm.type === 'wall') {
               const variation = !state.editor.autoOrientWalls
                 ? state.editor.selectedVariation

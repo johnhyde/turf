@@ -10,6 +10,7 @@ export default function SmallButton(props) {
       onClick={props.onClick}
       disabled={props.disabled ?? false}
       tabindex={props.tabindex}
+      title={props.tooltip}
     >
       {props.children}
     </button>

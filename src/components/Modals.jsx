@@ -86,45 +86,45 @@ export default function Modals() {
         }}
       </Show>
       <Show when={state.m && (!state.e || !state.player)} keyed>
-        <Switch>
-          <Match when={state.p?.error?.()}>
-            <Modal class='bg-orange-700 text-slate-100 w-96'>
+        <Modal
+          class={'text-slate-100 w-96' + ' ' +
+            (!state.pondError ? 'bg-teal-700' : 'bg-orange-800')}
+        >
+          <Switch>
+            <Match when={state.pondError}>
               <Switch
                 fallback={
                   <p class='text-xl mb-4 text-center'>
-                    Unknown error in teleporting to {state.c.name}:{' '}
-                    {state.p.error()}
+                    Unknown error in teleporting to{' '}
+                    {stripPathPrefix(state.pondError.id)}:{' '}
+                    {state.pondError.kind}
                   </p>
                 }
               >
-                <Match when={state.p?.unavailable}>
+                <Match when={state.pondError.kind === 'future'}>
                   <p class='text-xl mb-4 text-center'>
-                    {state.c.name} is not available
-                  </p>
-                </Match>
-                <Match when={state.p?.future}>
-                  <p class='text-xl mb-4 text-center'>
-                    {state.c.name} is running a newer version of Turf
+                    {stripPathPrefix(state.pondError.id)}{' '}
+                    is running a newer version of Turf
                   </p>
                   <p class='mb-2'>
                     You won't be able to visit until you get the latest software
                     update from ~pandux
                   </p>
                 </Match>
+                <Match when={state.pondError.kind === 'unavailable'}>
+                  <p class='text-xl mb-4 text-center'>
+                    {stripPathPrefix(state.pondError.id)} is not available
+                  </p>
+                </Match>
+                <Match when={state.pondError.kind === 'kicked'}>
+                  <p class='text-xl mb-4 text-center'>
+                    You have been kicked from{' '}
+                    {stripPathPrefix(state.pondError.id)}
+                  </p>
+                </Match>
               </Switch>
-              <div class='flex w-full justify-center mt-4 space-x-4'>
-                <button
-                  use:autofocus
-                  class='bg-orange-800 rounded-lg px-4 py-2'
-                  onClick={goHome}
-                >
-                  Go Home {state.c.id ? 'Instead' : ''}
-                </button>
-              </div>
-            </Modal>
-          </Match>
-          <Match when={!state.p?.error?.()}>
-            <Modal class='bg-teal-700 text-slate-100 w-96'>
+            </Match>
+            <Match when={!state.pondError}>
               <p class='text-xl mb-4 text-center'>
                 {state.c.id
                   ? `Teleporting to ${state.c.name}...`
@@ -137,32 +137,40 @@ export default function Modals() {
                     : 'Connected! Waiting for the latest update...'}
                 </p>
               )}
-              <div class='flex w-full justify-center mt-4 space-x-4'>
-                <Show when={ourPond !== state.c.id}>
-                  <button
-                    use:autofocus
-                    class='bg-teal-800 rounded-lg px-4 py-2'
-                    onClick={goHome}
-                  >
-                    Go Home {state.c.id ? 'Instead' : ''}
-                  </button>
-                </Show>
-                <Show
-                  when={state.c.id && state.mist.possibleReturn() &&
-                    state.mist.possibleReturn() !== ourPond}
-                >
-                  <button
-                    class='bg-teal-800 rounded-lg px-4 py-2'
-                    onClick={() => state.mist.returnWhenceCame()}
-                  >
-                    Return to{' '}
-                    {turfIdToName(pathToTurfId(state.mist.possibleReturn()))}
-                  </button>
-                </Show>
-              </div>
-            </Modal>
-          </Match>
-        </Switch>
+            </Match>
+          </Switch>
+          <div class='flex w-full justify-center mt-4 space-x-4'>
+            <Show when={ourPond !== state.c.id}>
+              <button
+                use:autofocus
+                class={'rounded-lg px-4 py-2' + ' ' +
+                  (!state.pondError ? 'bg-teal-700' : 'bg-orange-800')}
+                onClick={() => {
+                  goHome();
+                  state.clearError();
+                }}
+              >
+                Go Home {state.c.id ? 'Instead' : ''}
+              </button>
+            </Show>
+            <Show
+              when={state.c.id && state.mist.possibleReturn() &&
+                state.mist.possibleReturn() !== ourPond}
+            >
+              <button
+                class={'rounded-lg px-4 py-2' + ' ' +
+                  (!state.pondError ? 'bg-teal-700' : 'bg-orange-800')}
+                onClick={() => {
+                  state.mist.returnWhenceCame();
+                  state.clearError();
+                }}
+              >
+                Return to{' '}
+                {turfIdToName(pathToTurfId(state.mist.possibleReturn()))}
+              </button>
+            </Show>
+          </div>
+        </Modal>
       </Show>
       <Show when={state.thisIsUs && state.p?.new} keyed>
         <Modal class='bg-teal-700 text-slate-100' onClose={optOut}>

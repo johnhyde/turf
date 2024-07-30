@@ -44,6 +44,11 @@
       set-shade-fx+(ot ~['shadeId'^ni fx+(mayb fx)])
       set-shade-effect+(ot ~['shadeId'^ni trigger+root-condition effect+(mayb effect)])
       set-shade-collidable+(ot ~['shadeId'^ni collidable+bo:soft])
+      ::
+      set-default-perm+(ot ~[perm+(cork so perm)])
+      set-player-perm+(ot ~[ship+shp perm+(cork so perm)])
+      del-player-perm+(ot ~[ship+shp])
+      ::
       :-  %create-bridge
       %-  ot
       :~  shade+(maybe-ni add-shade-spec)

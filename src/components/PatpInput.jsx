@@ -14,13 +14,15 @@ export default function PatpInput(props) {
     if (isValidPatp(p)) props.$validValue?.(p);
   };
   const inputColor = () => {
+    const nonError = props.warn ? 'bg-orange-200' : '';
+    if (props.emptyOk && patp() === '') return nonError;
     if (props.invalid || !isValidPatp(patp())) return 'bg-red-200';
-    return props.warn ? 'bg-orange-200' : '';
+    return nonError;
   };
   return (
     <input
       class={'rounded-input ' + inputColor()}
-      use:input
+      use:input={{ onSubmit: props.onSubmit }}
       autofocus={props.autofocus}
       use:bind={[
         patp,

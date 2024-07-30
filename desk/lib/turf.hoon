@@ -469,6 +469,21 @@
     (fun shade u.form)
   turf
 ::
+++  perm-ok
+  |=  [actual=perm needed=perm]
+  ^-  ?
+  (gte actual needed)
+++  get-perm
+  |=  [=turf host=ship =ship]
+  ^-  perm
+  ?:  =(host ship)  %admin
+  ?~  perm=(~(get by except.perms.deed.turf) ship)
+    default.perms.deed.turf
+  u.perm
+++  has-perm
+  |=  [=turf host=ship =ship =perm]
+  ^-  ?
+  (perm-ok (get-perm turf host ship) perm)
 ++  portal-is-lunk
   |=  [=turf =portal-id]
   ^-  ?

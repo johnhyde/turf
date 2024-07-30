@@ -79,6 +79,8 @@
       [%port-offer-reject of=turf-id from=portal-id]
       [%turf-join =turf-id]
       [%turf-exit =turf-id]
+      [%turf-gone =turf-id]
+      [%kicked =turf-id]
   ==
 +$  roars  (list roar)
 ::

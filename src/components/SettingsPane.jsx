@@ -15,11 +15,14 @@ import {
   input,
   intToHex,
   makeImage,
+  toPairs,
 } from 'lib/utils.js';
 import SmallButton from '@/SmallButton.jsx';
 import Heading from '@/Heading.jsx';
 import Radio from '@/Radio.jsx';
+import Select from '@/Select.jsx';
 import UploadButton from '@/UploadButton.jsx';
+import PatpInput from '@/PatpInput.jsx';
 
 export default function SettingsPane() {
   const state = useState();
@@ -54,7 +57,7 @@ export default function SettingsPane() {
   }
 
   return (
-    <Show when={state.e}>
+    <Show when={state.e && state.c.canAdmin}>
       <div class='flex flex-col space-y-2 items-center h-full overflow-y-auto m-1 mt-0'>
         <Heading>
           Turf Name
@@ -117,7 +120,89 @@ export default function SettingsPane() {
             />
           </div>
         </Show>
+        <Heading tooltip='Set whether anyone can join this turf and edit'>
+          Turf Access
+        </Heading>
+        {
+          /* <p>
+          Visitors can:
+        </p> */
+        }
+        <Radio
+          value={state.e.perms.default}
+          $value={(p) => state.setDefaultPerm(p)}
+          // items={toPairs('n  Get Lost, in  Explore, add  Edit, take  Claim Land, admin  Do Anything')}
+          items={toPairs('n  Closed, in  Explore, add  Edit')}
+          bg='border border-yellow-950 bg-yellow-700'
+          bgActive='border border-yellow-950 bg-yellow-600'
+        />
+        {
+          /* <p>
+          Except:
+        </p> */
+        }
+        <Heading>Special Permissions</Heading>
+        <PermExceptions />
       </div>
     </Show>
+  );
+}
+
+function PermExceptions() {
+  const state = useState();
+  const [patp, $patp] = createSignal('');
+  const exceptions = createMemo(() => {
+    return Object.entries(state.e.perms.except)
+      .sort(([shipA, permA], [shipB, permB]) => {
+        if (permA.length < permB.length) {
+          return 1;
+        } else if (permA.length > permB.length) {
+          return -1;
+        } else {
+          return shipA.localeCompare(shipB);
+        }
+      });
+  });
+  function addException() {
+    state.setPlayerPerm(patp(), state.e.perms.default);
+  }
+
+  return (
+    <>
+      <div className='flex justify-center items-center space-x-2 w-full'>
+        <PatpInput
+          value={patp()}
+          $validValue={$patp}
+          onSubmit={addException}
+          normalize
+          emptyOk
+          placeholder='@p to permission'
+        />
+        <SmallButton onClick={addException}>+</SmallButton>
+      </div>
+      <For each={exceptions()}>
+        {([ship, perm], i) => (
+          <div class='w-full flex px-1.5 py-1 my-1 space-x-2 items-center border-yellow-950 border-4 rounded-md bg-yellow-700'>
+            <div class='flex flex-wrap space-x-2 items-center flex-grow'>
+              <span class='font-bold text-sm font-mono'>
+                {ship}
+              </span>
+            </div>
+            <Select
+              value={perm}
+              $value={(p) => state.setPlayerPerm(ship, p)}
+              options={toPairs(
+                'n  Banned, in  Visitor, add  Editor, admin  Admin',
+              )}
+            />
+            {state.c.canAdmin && (
+              <SmallButton onClick={() => state.delPlayerPerm(ship)}>
+                x
+              </SmallButton>
+            )}
+          </div>
+        )}
+      </For>
+    </>
   );
 }

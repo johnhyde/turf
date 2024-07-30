@@ -4,6 +4,7 @@ import {
   jClone,
   maxV,
   minV,
+  pathToTurfId,
   uuidv4,
   vec2,
   vecToStr,
@@ -22,6 +23,12 @@ export function generateHusk(formId, variation = 0) {
     fx: null,
   };
 }
+
+export function getHost(turf) {
+  const id = pathToTurfId(turf.id);
+  return id.ship;
+}
+
 export function jabBySpaces(turf, pos, fn) {
   const id = vecToStr(pos);
   let space = turf.spaces[id] || {};
@@ -174,22 +181,14 @@ export function getIndexDepthMod(turf, shadeId, pos) {
   return index / 1000;
 }
 
-export function getPortalByShadeId(turf, shadeId) {
-  if (shadeId === undefined) return null;
-  return Object.values(turf.portals).find((portal) => {
-    if (portal.shadeId == shadeId) return true;
-  });
+export function getPerm(turf, ship) {
+  const host = getHost(turf);
+  if (host === ship) return 'admin';
+  return turf.perms.except[ship] || turf.perms.default;
 }
 
-export function getTownHost(turf) {
-  const shadeId = turf.lunk?.shadeId;
-  if (shadeId === undefined) return null;
-  const portal = getPortalByShadeId(turf, shadeId);
-  return portal?.for?.ship || null;
-}
-
-export function isLunkApproved(turf) {
-  return turf.lunk?.approved === true;
+export function hasPerm(turf, ship, perm) {
+  return getPerm(turf, ship).length >= perm.length;
 }
 
 export function isThingCollidable(thing) {

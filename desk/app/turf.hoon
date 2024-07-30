@@ -746,6 +746,14 @@
                 u.old-tid
               [%del-player our.bowl]
           state
+        %turf-gone
+          :_  state
+          :_  ~
+          (give-pond-unavailable turf-id.roar)
+        %kicked
+          :_  state
+          :_  ~
+          (give-pond-kicked turf-id.roar)
       ==
     (weld cards new-cards)^state
   =^  pond-cards=(list card)  state  (sync-avatar)
@@ -937,6 +945,10 @@
   |=  id=turf-id
   ^-  card
   [%give %fact [(turf-id-to-path id)]~ %pond-stirred !>(unavailable+~)]
+++  give-pond-kicked
+  |=  id=turf-id
+  ^-  card
+  [%give %fact [(turf-id-to-path id)]~ %pond-stirred !>(kicked+~)]
 ++  give-mist-rock
   |=  [mpath=mist-path on-watch=?]
   ^-  (quip card _state)

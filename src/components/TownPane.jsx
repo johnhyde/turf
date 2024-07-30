@@ -6,8 +6,7 @@ import {
   onMount,
 } from 'solid-js';
 import { useState } from 'stores/state.jsx';
-import { getTownHost, isLunkApproved } from 'lib/turf';
-import { bind, input, isTextInputFocused, normalizeId } from 'lib/utils';
+import { bind, input, isTextInputFocused, normalizeId } from 'lib/utils.js';
 import { isValidPatp } from 'urbit-ob';
 import SmallButton from '@/SmallButton.jsx';
 import MediumButton from '@/MediumButton.jsx';
@@ -20,6 +19,8 @@ export default function TownPane() {
   const weAreHost = our.length <= 7;
   const thisIsTown = () => state.c.host.length <= 7;
   const thisHost = createMemo(() => state.portals.lunk?.for?.ship);
+  const lunkApproved = () =>
+    state.portals.lunk?.pending === false && state.portals.lunk?.at != null;
   const hostEstranged = () =>
     state.portals.lunk?.pending === false && state.portals.lunk?.at == null;
   const gateExists = () => state.e?.gate != null && state.e.cave[state.e.gate];
@@ -45,7 +46,7 @@ export default function TownPane() {
     } else {
       const resident = state.c.host;
       if (thisHost()) {
-        if (isLunkApproved(state.e)) {
+        if (lunkApproved()) {
           a = isUs ? 'Your' : resident + "'s";
           b = 'home Town is ' + thisHost() + '.';
         } else {
@@ -116,73 +117,111 @@ export default function TownPane() {
   const pClass = 'm-1 p-4 space-y-4 bg-yellow-950 rounded-lg text-yellow-50';
 
   return (
-    <div class='flex flex-col h-full overflow-y-auto'>
-      <Show when={state.thisIsUs}>
-        <p class={pClass}>
-          Your Gate is where you enter your turf.{' '}
-          {!weAreHost && 'It is also how you travel to your home Town.'}
-        </p>
-        <MediumButton onClick={placeGate} enabled={!movingGate()}>
-          {gateExists() ? (movingGate() ? 'Moving' : 'Move') : 'Place'} Gate
-        </MediumButton>
-      </Show>
-      <Show when={isHomeTownText()}>
-        <p class={pClass}>
-          {isHomeTownText()}
-        </p>
-      </Show>
-      <p class={pClass}>
-        {summary()}
-      </p>
-      <Show when={state.thisIsUs && weAreHost}>
-        <Heading>Confirm Residents</Heading>
-        <Radio
-          value={JSON.stringify(!!state.e?.autoconfirmDinks)}
-          $value={(v) => state.setAutoconfirmDinks(JSON.parse(v))}
-          items={[['true', 'Automatically'], ['false', 'Manually']]}
-          class='justify-center'
-          bg='border border-yellow-950 bg-yellow-700'
-          bgActive='border border-yellow-950 bg-yellow-600'
-        />
-      </Show>
-      <Show when={ourHomeTown() && !weAreHoused()}>
-        <MediumButton onClick={placeHouse}>
-          Place House
-        </MediumButton>
-      </Show>
-      <Show when={state.thisIsUs && !weAreHost}>
-        <Show when={thisHost()}>
-          <MediumButton onClick={leaveHost}>
-            Leave {thisHost()}
+    <Show when={state.e}>
+      <div class='flex flex-col h-full overflow-y-auto'>
+        <Show when={state.thisIsUs}>
+          <p class={pClass}>
+            Your Gate is where you enter your turf.{' '}
+            {!weAreHost && 'It is also how you travel to your home Town.'}
+          </p>
+          <MediumButton onClick={placeGate} enabled={!movingGate()}>
+            {gateExists() ? (movingGate() ? 'Moving' : 'Move') : 'Place'} Gate
           </MediumButton>
-          <Show when={hostEstranged()}>
-            <MediumButton onClick={reviveHost}>
-              Resend Request
+        </Show>
+        <Show when={isHomeTownText()}>
+          <p class={pClass}>
+            {isHomeTownText()}
+          </p>
+        </Show>
+        <p class={pClass}>
+          {summary()}
+        </p>
+        <Show when={state.thisIsUs && weAreHost}>
+          <Heading>Confirm Residents</Heading>
+          <Radio
+            value={JSON.stringify(!!state.e?.autoconfirmDinks)}
+            $value={(v) => state.setAutoconfirmDinks(JSON.parse(v))}
+            items={[['true', 'Automatically'], ['false', 'Manually']]}
+            class='justify-center'
+            bg='border border-yellow-950 bg-yellow-700'
+            bgActive='border border-yellow-950 bg-yellow-600'
+          />
+        </Show>
+        <Show when={ourHomeTown() && !weAreHoused()}>
+          <MediumButton onClick={placeHouse}>
+            Place House
+          </MediumButton>
+        </Show>
+        <Show when={state.thisIsUs && !weAreHost}>
+          <Show when={thisHost()}>
+            <MediumButton onClick={leaveHost}>
+              Leave {thisHost()}
             </MediumButton>
+            <Show when={hostEstranged()}>
+              <MediumButton onClick={reviveHost}>
+                Resend Request
+              </MediumButton>
+            </Show>
+          </Show>
+          <p class={'mb-2 ' + pClass}>
+            Pick a {thisHost() ? 'new' : ''}{' '}
+            star to request admission to its Town.
+            <br />
+            (try ~pandux, it's open)
+          </p>
+          <BridgeBuilder
+            formId='/gate'
+            isGate={true}
+            shadeId={state.e?.gate}
+            blockLower
+            blockSame
+            placeholder='~pandux'
+          />
+        </Show>
+        <Show when={state.thisIsUs}>
+          <Show when={state.portals.dinks.pending.length > 0}>
+            <div class='my-2'>
+              <Heading>
+                Pending Requests
+              </Heading>
+              <For each={state.portals.dinks.pending}>
+                {(portal) => {
+                  return (
+                    <Dink
+                      portal={portal}
+                      approve={approveDink}
+                      discard={discardDink}
+                    />
+                  );
+                }}
+              </For>
+            </div>
+          </Show>
+          <Show when={state.portals.dinks.confirmed.length > 0}>
+            <div class='my-2'>
+              <Heading>
+                Confirmed Residents
+              </Heading>
+              <For each={state.portals.dinks.confirmed}>
+                {(portal) => {
+                  return (
+                    <Dink
+                      portal={portal}
+                      approve={approveDink}
+                      discard={discardDink}
+                    />
+                  );
+                }}
+              </For>
+            </div>
           </Show>
         </Show>
-        <p class={'mb-2 ' + pClass}>
-          Pick a {thisHost() ? 'new' : ''}{' '}
-          star to request admission to its Town.
-          <br />
-          (try ~pandux, it's open)
-        </p>
-        <BridgeBuilder
-          formId='/gate'
-          isGate={true}
-          shadeId={state.e?.gate}
-          blockLower
-          blockSame
-          placeholder='~pandux'
-        />
-      </Show>
-      <Show when={state.thisIsUs}>
-        <Show when={state.portals.dinks.pending.length > 0}>
+        <Show when={state.portals.dinks.housed.length > 0}>
           <div class='my-2'>
             <Heading>
-              Pending Requests
+              Housed Residents
             </Heading>
-            <For each={state.portals.dinks.pending}>
+            <For each={state.portals.dinks.housed}>
               {(portal) => {
                 return (
                   <Dink
@@ -195,44 +234,8 @@ export default function TownPane() {
             </For>
           </div>
         </Show>
-        <Show when={state.portals.dinks.confirmed.length > 0}>
-          <div class='my-2'>
-            <Heading>
-              Confirmed Residents
-            </Heading>
-            <For each={state.portals.dinks.confirmed}>
-              {(portal) => {
-                return (
-                  <Dink
-                    portal={portal}
-                    approve={approveDink}
-                    discard={discardDink}
-                  />
-                );
-              }}
-            </For>
-          </div>
-        </Show>
-      </Show>
-      <Show when={state.portals.dinks.housed.length > 0}>
-        <div class='my-2'>
-          <Heading>
-            Housed Residents
-          </Heading>
-          <For each={state.portals.dinks.housed}>
-            {(portal) => {
-              return (
-                <Dink
-                  portal={portal}
-                  approve={approveDink}
-                  discard={discardDink}
-                />
-              );
-            }}
-          </For>
-        </div>
-      </Show>
-    </div>
+      </div>
+    </Show>
   );
 }
 

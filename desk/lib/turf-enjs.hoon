@@ -15,6 +15,8 @@
   ?-    what.strd
       %unavailable
     (frond 'unavailable' ~)
+      %kicked
+    (frond 'kicked' ~)
       %future
     (frond 'future' ~)
       %rock
@@ -99,6 +101,12 @@
           (pairs ~['shadeId'^(numb shade-id.grit) collidable+((mayb (lead %b)) collidable.grit)])
         %set-shade-form-id
           (pairs ~['shadeId'^(numb shade-id.grit) 'formId'^(path form-id.grit)])
+        %set-default-perm
+          (frond 'perm' s+perm.grit)
+        %set-player-perm
+          (pairs ~[ship+(ship-json ship.grit) perm+s+perm.grit])
+        %del-player-perm
+          (frond 'ship' (ship-json ship.grit))
         %set-gate
           :: (frond 'gate' ?~(gate.grit ~ (numb u.gate.grit)))
           (frond 'gate' ((mayb numb) gate.grit))
@@ -291,7 +299,7 @@
       chats+a+(turn chats chat)
       name+s+name
       invites+invites
-      :: todo: add perms (?)
+      perms+perms
       portals+portals
       'portReqs'^port-reqs
       'portRecs'^port-recs
@@ -319,6 +327,19 @@
     %-  pairs
     :~  name+s+name.inv
         till+(time till.inv)
+    ==
+  ++  perms
+    ^-  json
+    %-  pairs
+    :~  default+s+default.^perms
+        ::
+        :-  %except
+        %-  pairs
+        %+  turn  ~(tap by except.^perms)
+        |=  [who=^ship pem=perm]
+        ^-  [@t json]
+        :-  (ship-cord who)
+        s+pem
     ==
   ++  portals
     ^-  json

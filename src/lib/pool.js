@@ -150,6 +150,8 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
           options.onFuture?.();
         } else if (res.hasOwnProperty('unavailable')) {
           options.onUnavailable?.();
+        } else if (res.hasOwnProperty('kicked')) {
+          options.onKicked?.();
         } else {
           console.error('Pool response not a rock or wave???', res);
         }

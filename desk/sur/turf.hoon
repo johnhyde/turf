@@ -71,7 +71,7 @@
   $:  default=$~(%in perm)  :: the perm that applies to most
       except=(map ship perm) :: the people with different perms
   ==
-+$  perm  ?(%admin %take %add %in %n)
++$  perm  ?(%secret %admin %take %add %in %n)
 +$  portals  (map portal-id portal)
 +$  portal-id  shade-id
 +$  portal

@@ -128,6 +128,7 @@ function Sidebar() {
             tooltip='H or ?'
           />
           <Button
+            disabled={!state.c.canAdmin}
             onClick={[toggleTab, state.tabs.SETTINGS]}
             src={gear}
             selected={isSelected(state.tabs.SETTINGS)}
@@ -187,7 +188,7 @@ function Sidebar() {
               {state.selectedTab === state.tabs.TOWN && <TownPane />}
               {state.selectedTab === state.tabs.PORTALS && <PortalsPane />}
               {state.selectedTab === state.tabs.SETTINGS && <SettingsPane />}
-              {state.editor.editing && <EditPane />}
+              {state.selectedTab === state.tabs.EDITOR && <EditPane />}
               {state.lab.editing && <Lab />}
               {state.selectedTab === state.tabs.HELP && <Help />}
             </div>
