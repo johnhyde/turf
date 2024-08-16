@@ -39,14 +39,14 @@ const triggerTypes = toPairs(
 const conditionTypes = [
   ...triggerTypes,
   ...toPairs(
-    'eq  equals, initiator  initiator type, initiator-eq  initiator is, user-eq  user is, item-exists  item exists, variation, move-collide  moved w/ collision, move-smooth  moved smoothly, loc-eq  locations equal',
+    'eq  equals, initiator  initiator type, initiator-eq  initiated by, user-eq  user is, item-exists  item exists, variation, move-collide  moved w/ collision, move-smooth  moved smoothly, loc-eq  locations equal',
   ),
 ];
 const targetTypes = toPairs(
-  'this, user, initiator, top-shade-at-loc  at location, item, player',
+  'this, user, initiator, top-shade-at-loc  item @ location, item, player',
 );
 const itemTargetTypes = toPairs(
-  'this, initiator, top-shade-at-loc  at location, item',
+  'this, initiator, top-shade-at-loc  item @ location, item',
 );
 const locTypes = toPairs(
   'target  entity position, offset  offset position, mover-pos  mover position, absolute  position',

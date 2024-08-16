@@ -170,14 +170,16 @@ export default function Lab() {
           Equipped Features
         </Heading>
         <Show when={avatar() !== undefined} fallback={'Loading Avatar'}>
-          <FormSelect
-            forms={things()()}
-            select={delThing}
-            buttons={[['Delete', 'del'], ['Edit', 'edit']]}
-            onButton={onEquippedButton}
-            fallback={'No Features Equipped'}
-            playerImage={bodyImage()}
-          />
+          <div class='flex flex-wrap justify-center'>
+            <FormSelect
+              forms={things()()}
+              select={delThing}
+              buttons={[['Delete', 'del'], ['Edit', 'edit']]}
+              onButton={onEquippedButton}
+              fallback={'No Features Equipped'}
+              playerImage={bodyImage()}
+            />
+          </div>
         </Show>
       </div>
       <div class=''>
@@ -188,14 +190,17 @@ export default function Lab() {
           when={state.mist.closet !== undefined}
           fallback={'Loading Closet'}
         >
-          <FormSelect
-            forms={Object.entries(state.mist.closet || {})}
-            select={addThing}
-            buttons={[['Add', 'add'], ['Edit', 'edit'], ['Copy', 'copy']]}
-            onButton={onClosetButton}
-            bgImage={bodyImage()}
-            sort={true}
-          />
+          <div class='flex flex-wrap justify-center'>
+            <FormSelect
+              forms={Object.entries(state.mist.closet || {})}
+              select={addThing}
+              buttons={[['Add', 'add'], ['Edit', 'edit'], ['Copy', 'copy']]}
+              onButton={onClosetButton}
+              bgImage={bodyImage()}
+              sort
+              fold
+            />
+          </div>
         </Show>
       </div>
     </div>

@@ -61,6 +61,7 @@
       set-portal-outlet+(ot ~['portalId'^ni outlet+ni:soft])
       confirm-portal+(ot ~['portalId'^ni])
       revive-portal+(ot ~['portalId'^ni])
+      move-to-entry+_~
       send-chat+(ot ~[from+shp text+so])
       move+(ot ~[ship+shp pos+svec2 collide+bo smooth+bo])
       face+(ot ~[ship+shp dir+dir])

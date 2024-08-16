@@ -340,6 +340,10 @@ export function isValidPath(path) {
   return /^(\/[-~._0-9a-z]*)+$/.test(path);
 }
 
+export function splitPath(path) {
+  return path.matchAll(/\/[^\/]*/g).map((m) => m[0]);
+}
+
 export function jClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }

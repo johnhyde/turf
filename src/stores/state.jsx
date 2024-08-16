@@ -11,7 +11,7 @@ import {
 } from 'solid-js';
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
-import { flattenGrid, hexToInt, vec2, vecToStr } from 'lib/utils.js';
+import { flattenGrid, hexToInt, splitPath, vec2, vecToStr } from 'lib/utils.js';
 import { getWallsAtPos, getWallVariationAtPos, hasPerm } from 'lib/turf.js';
 import { Pond } from 'lib/pond.js';
 import { Mist } from 'lib/mist.js';
@@ -21,6 +21,9 @@ export const StateContext = createContext();
 export const lsKeys = {
   get SOUND_ON() {
     return our + '/turf/soundOn';
+  },
+  get COLLAPSE_FORM() {
+    return our + '/turf/collapseForm';
   },
 };
 
@@ -38,6 +41,9 @@ function initEditorState() {
     // selectingPos: false,
     // selectedPos: null,
     huskToPlace: null,
+    collapseForm: JSON.parse(
+      localStorage.getItem(lsKeys.COLLAPSE_FORM) || '{}',
+    ),
   };
 }
 
@@ -339,6 +345,9 @@ export function getState() {
     },
     setPortOffer(portOffer) {
       $state('portOffer', portOffer);
+    },
+    goToGate() {
+      return this.sendPondWave('move-to-entry', null);
     },
     sendChat(message) {
       this.sendPondWave('send-chat', {
@@ -660,7 +669,14 @@ export function getState() {
       batch(() => {
         $state('editor', 'selectedFormId', id);
         this.selectVariation(null);
-        if (id) this.selectTool(this.editor.tools.BRUSH);
+        if (id) {
+          this.selectTool(this.editor.tools.BRUSH);
+          let partial = '';
+          splitPath(id).forEach((part) => {
+            partial = partial + part;
+            this.setCollapseForm(partial, true);
+          });
+        }
       });
     },
     selectVariation(vari) {
@@ -772,6 +788,12 @@ export function getState() {
     clearHuskToPlace() {
       $state('editor', 'huskToPlace', null);
     },
+    setCollapseForm(id, open) {
+      $state('editor', 'collapseForm', id, open || undefined);
+    },
+    toggleCollapseForm(id) {
+      $state('editor', 'collapseForm', id, (c) => c ? undefined : true);
+    },
     toggleSound() {
       $state('soundOn', (muted) => !muted);
     },
@@ -818,6 +840,12 @@ export function getState() {
 
   createEffect(() => {
     localStorage.setItem(lsKeys.SOUND_ON, _state.soundOn);
+  });
+  createEffect(() => {
+    localStorage.setItem(
+      lsKeys.COLLAPSE_FORM,
+      JSON.stringify(_state.editor.collapseForm),
+    );
   });
   const pinger = setInterval(() => {
     api.ping();

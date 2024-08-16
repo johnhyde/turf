@@ -3,6 +3,8 @@ import { connection } from 'lib/api';
 import Heading from '@/Heading';
 import SmallButton from '@/SmallButton';
 import CallCenter from '@/CallCenter';
+import home from 'assets/icons/home.png';
+import gate from 'assets/icons/gate.png';
 
 export default function Overlay() {
   const state = useState();
@@ -25,20 +27,47 @@ export default function Overlay() {
       <div class='basis-1/2'></div>
       <div class='shrink-0 flex flex-col'>
         <Show when={state.c.id}>
-          <Heading class='text-xl mt-3 h-fit flex items-center pointer-events-auto'>
-            {state.e?.name ? `${state.e.name} @ ` : ''} {state.c.name}
-            <div
-              class={'ml-2 mr-1 w-2 h-2 rounded-full ' + dotColor()}
-            >
-            </div>
-            {/* <Show when={connection() === 'reconnecting' || connection() === 'errored'}> */}
-            {
-              /* <SmallButton class="ml-1 !pr-0.5 !pt-[-0.5] !bg-transparent border-0 hover:!bg-yellow-700" onClick={state.resetConnection.bind(state)}>
+          <div className='flex justify-center items-center space-x-2 pt-2'>
+            <Heading class='text-xl !mx-0 h-fit flex space-x-2 items-center pointer-events-auto'>
+              {/* <div class='flex flex-col'> */}
+              {/* </div> */}
+              <Show when={state.e?.name} fallback={<span>{state.c.name}</span>}>
+                <div class='flex flex-col text-center'>
+                  <span>{state.e.name}</span>
+                  <span class='text-sm'>{state.c.name}</span>
+                </div>
+              </Show>
+              <div
+                class={'ml-2 mr-1 w-2 h-2 rounded-full ' + dotColor()}
+              >
+              </div>
+              {/* <Show when={connection() === 'reconnecting' || connection() === 'errored'}> */}
+              {
+                /* <SmallButton class="ml-1 !pr-0.5 !pt-[-0.5] !bg-transparent border-0 hover:!bg-yellow-700" onClick={state.resetConnection.bind(state)}>
                 ⟳
               </SmallButton> */
-            }
-            {/* </Show> */}
-          </Heading>
+              }
+              {/* </Show> */}
+            </Heading>
+            <Show when={!state.thisIsUs}>
+              <SmallButton
+                class='pointer-events-auto'
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => state.mist.goHome()}
+                tooltip='Return to Your Turf'
+              >
+                <img src={home} class='w-4 h-4 my-0.5' />
+              </SmallButton>
+            </Show>
+            <SmallButton
+              class='pointer-events-auto'
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={() => state.goToGate()}
+              tooltip='Return to Turf Entrypoint'
+            >
+              <img src={gate} class='w-4 h-4 my-0.5' />
+            </SmallButton>
+          </div>
         </Show>
         <div class='flex flex-col items-center space-y-2 mt-2 pointer-events-auto'>
           <For each={state.notifications}>

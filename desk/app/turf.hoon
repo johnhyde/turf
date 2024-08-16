@@ -131,6 +131,7 @@
   ?>  ?=(_-:*current-state -.old)
   =.  state  old
   :: =^  upgrade-cards  state  (upgrade:hc)
+  =.  pub-pond  (rule:du-pond dppath `30 30)
   =^  cards-1  state  (init-defaults:hc)
   :: ~&  ~(wyt by +.pub-pond)
   =^  cards-2  state
@@ -614,6 +615,8 @@
   ?~  -  %.n
   ?=(^ turf.u.-)
 ++  init-turf
+  ^-  (quip card _state)
+  =.  pub-pond  (rule:du-pond dppath `30 30)
   (give-pond-goal dtid set-turf+(default-turf:gen our.bowl [15 13] [--0 --0] ~))
 ++  init-defaults
   |.

@@ -374,6 +374,8 @@
         `[%del-portal from.goal loud=%.n]~
       ~[goal]~
       ::
+    %move-to-entry
+      ``[%move src.bowl (get-entry-pos turf) %.n %.n]~
     %send-chat
       ?.  =(src.bowl from.goal)  ``~
       ``[%chat from.goal now.bowl text.goal]~

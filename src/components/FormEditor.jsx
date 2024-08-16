@@ -181,10 +181,7 @@ export default function FormEditor(props) {
   return (
     <Show when={props.form?.form} keyed>
       <Portal mount={document.getElementById('modals')}>
-        <Modal
-          class='top-0 left-0 !max-w-full flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700 text-left'
-          onClose={cancel}
-        >
+        <Modal class='top-0 left-0 !max-w-full flex flex-col space-y-2 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700 text-left'>
           <div class='flex'>
             <div class='flex flex-col space-y-2 p-2 max-w-[220px] border-r border-yellow-950 pr-4 mr-2'>
               {/* <div class='flex flex-col space-y-2 p-2 max-w-[220px]'> */}

@@ -37,14 +37,12 @@ export default function EditPane() {
     state.selectForm(formId);
     if (formId === null) state.selectTool(null);
   }
-  const entries = () => Object.entries(state.e?.skye || {});
+  const entries = createMemo(() => {
+    return Object.entries(state.e?.skye || {})
+      .filter(([id, _form]) => !isSpecialFormId(id));
+  });
   const formsByType = (type) => {
-    const specialFormIds = ['/portal', '/portal/house', '/gate'];
-    return entries()
-      .filter(([id, form]) => form.type === type && !isSpecialFormId(id))
-      .sort(([a, formA], [b, formB]) => {
-        return a > b ? 1 : (a < b ? -1 : 0);
-      });
+    return entries().filter(([_id, form]) => form.type === type);
   };
   const types = ['tile', 'item', 'wall'];
 
@@ -155,7 +153,7 @@ export default function EditPane() {
         <FormEditor form={newForm} $form={$newForm} skye={state.e?.skye} />
       </Show>
       <Show when={state.c.selectedForm}>
-        <div class='relative flex flex-col m-1 p-2 border-yellow-950 border-4 rounded-md bg-yellow-700'>
+        <div class='relative flex flex-col m-1 p-2 overflow-y-auto min-h-[218px] border-yellow-950 border-4 rounded-md bg-yellow-700'>
           <FormInfo formId={state.editor.selectedFormId} />
           <Show
             when={state.c.canEdit}
@@ -226,18 +224,27 @@ export default function EditPane() {
       </Show>
       <Show when={selectedShade() == null}>
         <div class='overflow-y-auto'>
-          <For each={types}>
-            {(type) => (
-              <FormSelect
-                forms={formsByType(type)}
-                select={(formId) =>
-                  state.editor.selectedFormId === formId
-                    ? selectForm(null)
-                    : selectForm(formId)}
-                selectedId={state.editor.selectedFormId}
-              />
-            )}
-          </For>
+          <Show
+            when={state.e}
+            fallback={props.fallback || <div>Loading...</div>}
+          >
+            <For each={types}>
+              {(type) => (
+                <div class='flex flex-wrap justify-center'>
+                  <FormSelect
+                    forms={formsByType(type)}
+                    select={(formId) =>
+                      state.editor.selectedFormId === formId
+                        ? selectForm(null)
+                        : selectForm(formId)}
+                    selectedId={state.editor.selectedFormId}
+                    sort
+                    fold
+                  />
+                </div>
+              )}
+            </For>
+          </Show>
         </div>
       </Show>
     </div>

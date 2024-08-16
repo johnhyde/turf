@@ -1,5 +1,6 @@
 import {
   dirs,
+  floorV,
   intToHex,
   jClone,
   maxV,
@@ -85,6 +86,15 @@ export function fillEmptySpace(turf, formId) {
       turf.cave[turf.stuffCounter] = tile;
       turf.stuffCounter++;
     }
+  }
+}
+
+export function getEntryPos(turf) {
+  const gate = getShade(turf, turf.gate);
+  if (gate == null) {
+    return vec2(turf.offset).add(floorV(vec2(turf.size).divide(vec2(2))));
+  } else {
+    return gate.pos;
   }
 }
 

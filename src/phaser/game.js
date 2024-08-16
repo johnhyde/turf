@@ -205,7 +205,10 @@ function createShade(shade, id, turf) {
     const state = useState();
     const shade = createMemo(() => state.e?.cave[id]);
     createEffect(() => {
-      if (!shade()) dispose();
+      if (!shade()) {
+        dispose();
+        removeText();
+      }
     });
     const shadeEffect = (fn) => {
       createEffect((...args) => {

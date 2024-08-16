@@ -339,30 +339,54 @@ export default function CallInfo(props) {
         class={'grow flex flex-wrap gap-[10px] ' + (popout()
           ? 'm-[10px] place-content-center overflow-hidden'
           : 'pointer-events-auto overflow-auto')}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {videos}
       </div>
       <div class='mt-2 flex flex-col items-center pointer-events-auto'>
-        <SmallButton onClick={togglePopout}>
+        <SmallButton
+          onClick={togglePopout}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           {popout() ? 'Pop In' : 'Pop Out'}
         </SmallButton>
         <div class='m-2 flex justify-center gap-2'>
-          <SmallButton onClick={() => $store('camera', (b) => !b)}>
+          <SmallButton
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              $store('camera', (b) => !b);
+              return false;
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {store.camera ? 'stop camera' : 'start camera'}
           </SmallButton>
-          <SmallButton onClick={() => $store('mic', (b) => !b)}>
+          <SmallButton
+            onClick={() => $store('mic', (b) => !b)}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {store.mic ? 'stop mic' : 'start mic'}
           </SmallButton>
-          <SmallButton onClick={() => $store('screen', (b) => !b)}>
+          <SmallButton
+            onClick={() => $store('screen', (b) => !b)}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {store.screen ? 'stop screenshare' : 'start screenshare'}
           </SmallButton>
         </div>
         <div class='m-2 flex justify-center gap-2'>
-          <SmallButton onClick={() => phone.hangUp(props.call)}>
+          <SmallButton
+            onClick={() => phone.hangUp(props.call)}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             Hang Up
           </SmallButton>
           <Show when={weAreAdmin()}>
-            <SmallButton onClick={() => phone.delete(props.call)}>
+            <SmallButton
+              onClick={() => phone.delete(props.call)}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
               End Call
             </SmallButton>
           </Show>

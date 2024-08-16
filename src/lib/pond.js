@@ -11,6 +11,7 @@ import {
   fillEmptySpace,
   generateHusk,
   getCollision,
+  getEntryPos,
   getForm,
   getShade,
   getShadeWithForm,
@@ -716,6 +717,17 @@ const filters = {
       grits: [],
       goals,
     };
+  },
+  'move-to-entry': (turf, goal) => {
+    return [{
+      type: 'move',
+      arg: {
+        ship: our,
+        pos: getEntryPos(turf),
+        collide: false,
+        smooth: false,
+      },
+    }];
   },
   'send-chat': (turf, goal) => {
     return [{
