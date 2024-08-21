@@ -93,8 +93,10 @@ export default function ItemButton(props) {
 
   return (
     <button
-      class={'rounded-lg p-[5px] w-[74px] h-[74px] flex justify-center items-center' +
-        (props.selected ? ' bg-yellow-600' : '')}
+      class={'rounded-lg w-[74px] h-[74px] flex justify-center items-center' +
+        ' ' +
+        (props.selected ? 'bg-yellow-600' : (props.bgClass ?? '')) + ' ' +
+        (props.borderClass ? 'p-[4px] border ' + props.borderClass : 'p-[5px]')}
       onClick={() => props.onClick?.()}
     >
       <div class='relative pointer-events-none w-[64px] h-[64px]'>

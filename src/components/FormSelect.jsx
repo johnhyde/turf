@@ -10,6 +10,7 @@ export default function FormSelect(props) {
     'forms',
     'convertedForms',
     'id',
+    'shownId',
     'fallback',
   ]);
   const [buttonProps, _rest] = splitProps(passThru, [
@@ -56,6 +57,9 @@ export default function FormSelect(props) {
         const i = () => index;
         const j = item;
         const id = () => (props.id ?? '') + j().id;
+        const shownId = () => (props.shownId ?? '');
+        const idToShow = () => id().substring(shownId().length);
+        const nextShownId = () => solo() ? shownId() : id();
         const form = () => j().form;
         const children = () => j().children;
         const preview = () => {
@@ -84,7 +88,21 @@ export default function FormSelect(props) {
                 form={props.form}
                 playerImage={props.playerImage}
                 bgImage={props.bgImage}
+                bgClass={props.bgClass}
+                borderClass={props.borderClass}
               />
+              <Show when={props.label}>
+                <button
+                  class={'absolute top-0 left-0 w-full z-[10] px-2 py-1 invisible group-hover:visible overflow-hidden text-ellipsis' +
+                    ' ' + props.bgClass + ' ' + props.borderClass + ' ' +
+                    (props.borderClass ? 'border' : '') + ' ' +
+                    'border-b-0 rounded-b-none'}
+                  onClick={() => props.onLabel?.()}
+                  title={props.label}
+                >
+                  {props.label}
+                </button>
+              </Show>
               <div class='absolute top-0 left-0 w-full h-full z-[15] flex flex-wrap gap-1 justify-center items-center pointer-events-none invisible group-hover:visible'>
                 <For each={props.buttons}>
                   {([label, buttonName]) => (
@@ -92,6 +110,7 @@ export default function FormSelect(props) {
                       onClick={() =>
                         props.onButton?.(buttonName, props.id, props.i)}
                       class='pointer-events-auto !bg-[#A1620780]'
+                      lowercase
                     >
                       {/* A16207 */}
                       {label}
@@ -107,38 +126,64 @@ export default function FormSelect(props) {
             <Show
               when={solo() || state.editor.collapseForm[id()]}
               fallback={
-                <Button
-                  form={preview()}
-                  onClick={collapse}
-                  playerImage={props.playerImage}
-                  bgImage={props.bgImage}
-                  buttons={[[j().id, '']]}
-                  onButton={collapse}
-                >
-                </Button>
+                <div class='m-1'>
+                  <Button
+                    form={preview()}
+                    onClick={collapse}
+                    playerImage={props.playerImage}
+                    bgImage={props.bgImage}
+                    label={idToShow()}
+                    onLabel={collapse}
+                    bgClass='bg-yellow-950 text-yellow-50'
+                    borderClass='rounded-md border-yellow-600'
+                  >
+                  </Button>
+                </div>
               }
             >
-              <Show when={!solo()}>
-                <SmallButton onClick={collapse}>
-                  {id()}
-                </SmallButton>
-              </Show>
-              <Show when={form()}>
-                <Button
-                  form={form()}
-                  id={id()}
-                  i={i()}
-                  onClick={onSelect}
-                  {...buttonProps}
-                />
-              </Show>
-              <Show when={children().length}>
-                <FormSelect
-                  convertedForms={children()}
-                  id={id()}
-                  {...passThru}
-                />
-              </Show>
+              <div
+                class={solo()
+                  ? ''
+                  : 'w-full m-1 flex justify-center overflow-x-auto'}
+              >
+                <div
+                  class={solo() ? '' : 'max-w-full flex flex-col items-start'}
+                >
+                  <Show when={!solo()}>
+                    <button
+                      onClick={collapse}
+                      class='rounded-t-md bg-yellow-950 px-2 py-1 border border-yellow-600 text-yellow-50 border-b-0 z-10 -mb-[1px]'
+                    >
+                      {/* {id()} */}
+                      {idToShow()}
+                    </button>
+                  </Show>
+                  <div
+                    class={'flex flex-wrap justify-center items-center' + ' ' +
+                      (solo()
+                        ? ''
+                        : 'rounded-md rounded-tl-none bg-yellow-950 p-1 border border-yellow-600')}
+                  >
+                    <Show when={form()}>
+                      <Button
+                        form={form()}
+                        id={id()}
+                        i={i()}
+                        onClick={onSelect}
+                        {...buttonProps}
+                      />
+                    </Show>
+                    <Show when={children().length}>
+                      <FormSelect
+                        convertedForms={children()}
+                        id={id()}
+                        shownId={nextShownId()}
+                        {...passThru}
+                      />
+                    </Show>
+                  </div>
+                </div>
+              </div>
             </Show>
           </>
         );

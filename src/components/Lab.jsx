@@ -190,7 +190,7 @@ export default function Lab() {
           when={state.mist.closet !== undefined}
           fallback={'Loading Closet'}
         >
-          <div class='flex flex-wrap justify-center'>
+          <div class='flex flex-wrap justify-center items-center'>
             <FormSelect
               forms={Object.entries(state.mist.closet || {})}
               select={addThing}

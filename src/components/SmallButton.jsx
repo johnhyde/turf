@@ -7,14 +7,16 @@ export default function SmallButton(props) {
     'class',
     'disabled',
     'tooltip',
+    'lowercase',
   ]);
   const buttonClasses =
-    'border-yellow-950 border rounded-md px-1 pb-0.5 leading-none align-super font-semibold small-caps disabled:opacity-50 ';
+    'border-yellow-950 border rounded-md px-1 pb-0.5 leading-none align-super font-semibold disabled:opacity-50 ';
   return (
     <button
       class={buttonClasses +
         (porps.selected ? ' bg-yellow-600' : ' bg-yellow-700') + ' ' +
-        (porps.class || '')}
+        (porps.class || '') + ' ' +
+        (porps.lowercase ? '' : 'small-caps')}
       disabled={porps.disabled ?? false}
       title={porps.tooltip}
       {...passThru}

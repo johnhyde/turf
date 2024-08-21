@@ -82,7 +82,7 @@
         ==
       ::
         :-  /fence/stone
-        =/  wall-stone-small  (new-form-variations %wall 'Smal Stone Wall' wall-stone-small [--0 --8])
+        =/  wall-stone-small  (new-form-variations %wall 'Small Stone Wall' wall-stone-small [--0 --8])
         wall-stone-small(collidable %.y)
       ::
         :-  /fence/wood

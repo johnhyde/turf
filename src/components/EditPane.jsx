@@ -230,7 +230,7 @@ export default function EditPane() {
           >
             <For each={types}>
               {(type) => (
-                <div class='flex flex-wrap justify-center'>
+                <div class='flex flex-wrap justify-center items-center'>
                   <FormSelect
                     forms={formsByType(type)}
                     select={(formId) =>
