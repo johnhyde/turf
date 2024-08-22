@@ -341,7 +341,7 @@ export function isValidPath(path) {
 }
 
 export function splitPath(path) {
-  return path.matchAll(/\/[^\/]*/g).map((m) => m[0]);
+  return [...path.matchAll(/\/[^\/]*/g)].map((m) => m[0]);
 }
 
 export function jClone(obj) {
