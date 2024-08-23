@@ -226,7 +226,7 @@ export default function EditPane() {
         <div class='overflow-y-auto'>
           <Show
             when={state.e}
-            fallback={props.fallback || <div>Loading...</div>}
+            fallback={<div>Loading...</div>}
           >
             <For each={types}>
               {(type) => (
