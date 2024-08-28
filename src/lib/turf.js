@@ -68,8 +68,8 @@ export function fillEmptySpace(turf, formId) {
   if (!form) return;
   if (form.type !== 'tile') return;
 
-  for (let x = 0; x < turf.size.x; x++) {
-    for (let y = 0; y < turf.size.y; y++) {
+  for (let y = 0; y < turf.size.y; y++) {
+    for (let x = 0; x < turf.size.x; x++) {
       const pos = vec2(x, y).add(vec2(turf.offset));
       const posStr = vecToStr(pos);
       if (turf.spaces[posStr]?.tile) continue;

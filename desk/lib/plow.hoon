@@ -2,6 +2,20 @@
 /+  *turf, *effects, vita-client
 |%
 :: +$  [=bowl:gall =rock:pond top=?]
+++  filter-mist-foam
+  |=  [=bowl:gall =rock:mist =foam:mist]
+  ^-  ?  :: yes means foam is ok
+  ?!
+  ?&  ?=(^ src.foam)  ?=(^ id.foam)
+      =(`(need id.foam) (~(get by stir-ids.rock) (need src.foam)))
+  ==
+++  filter-pond-foam
+  |=  [=bowl:gall =rock:pond =foam:pond]
+  ^-  ?  :: yes means foam is ok
+  ?!
+  ?&  ?=(^ src.foam)  ?=(^ id.foam)
+      =(`(need id.foam) (~(get by stir-ids.rock) (need src.foam)))
+  ==
 ++  filter-mist-goal
   |=  [[=bowl:gall =rock:mist top=?] [pre-roars=roars:mist closet=skye] =goal:mist]
   =*  roar  roar:mist

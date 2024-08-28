@@ -219,6 +219,10 @@
 ++  wash-grit
   |=  [=rock foam * grit=cur-grit]
   ^-  ^rock
+  :: ?:  ?&  ?=(^ src)  ?=(^ id)
+  ::         =(`(need id) (~(get by stir-ids.rock) (need src)))
+  ::     ==
+  ::   rock
   =?  stir-ids.rock  &(?=(^ src) ?=(^ id))
     (~(put by stir-ids.rock) (need src) (need id))
   :+  -.rock  stir-ids.rock

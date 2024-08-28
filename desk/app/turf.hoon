@@ -700,6 +700,7 @@
     :*  mpath.stir
         `foam`[%1 id.stir src `now.bowl]
         goals.stir
+        filter-mist-foam
         filter-mist-goal
     ==
   =/  cards=(list card)
@@ -785,6 +786,7 @@
     :*  ppath
         foam
         goals.stir
+        filter-pond-foam
         filter-pond-goal
     ==
   =/  cards=(list card)

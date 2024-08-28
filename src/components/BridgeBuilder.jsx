@@ -39,7 +39,7 @@ export default function BridgeBuilder(props) {
         ship: patp,
         path: '/',
       };
-      if (props.shadeId !== undefined) {
+      if (props.shadeId != null) {
         state.createBridge(props.shadeId, portal);
         updateToShip('');
       } else {
@@ -100,7 +100,10 @@ export default function BridgeBuilder(props) {
               : '✓'}
           </SmallButton>
         )}
-      <Show when={props.shadeId == null}>
+      <Show
+        when={state.huskToPlace?.portal?.ship === toShip() ||
+          props.shadeId === undefined}
+      >
         <SmallButton onClick={addPortal}>
           ✓
         </SmallButton>
