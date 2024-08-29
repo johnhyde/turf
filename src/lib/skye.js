@@ -1,5 +1,5 @@
 // import { createMemo, createResource } from "solid-js";
-import { createStore, produce, reconcile } from "solid-js/store";
+import { createStore, produce, reconcile } from 'solid-js/store';
 import * as api from 'lib/api.js';
 
 export class Skye { // we use a class so we can put it inside a store without getting proxied
@@ -72,7 +72,9 @@ export class Skye { // we use a class so we can put it inside a store without ge
   }
 
   delForm(formId) {
-    if (window.confirm(`Do you want to permanently delete the item: ${formId}?`)) {
+    if (
+      window.confirm(`Do you want to permanently delete the item: ${formId}?`)
+    ) {
       return this.sendStir('del-form', { formId });
     }
   }

@@ -51,7 +51,7 @@
       =/  =ctx  [bowl:du rock =(top 0)]
       ?~  goals  [[acc grits] rock]
       =.  dep  ?~(top 0 dep)
-      ?:  (gth dep 20)  [[acc grits] rock]
+      ?:  (gth dep 40)  [[acc grits] rock]
       =/  [new-acc=^acc sub-grits=^grits sub-goals=^goals]
         (fil-gol ctx acc i.goals)
       =.  top  ?~(top 0 (sub top 1))

@@ -119,6 +119,7 @@
   ^-  ret
   :: ~&  "filtering pond goal {<?@(goal goal -.goal)>}, top: {<top>}"
   :: ~&  "filtering pond goal {<-.goal>}, top: {<top>}"
+  :: ~&  "filtering pond goal {<goal>}, top: {<top>}"
   =/  uturf  turf.rock
   ?~  uturf
     ?+  goal  ``~

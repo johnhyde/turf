@@ -210,6 +210,7 @@
 +$  move-condition
   $%  [%onto ~]
       [%off ~]
+      [%self ~]
       :: [%enter radius=@ud]
       :: [%leave radius=@ud]
       :: [%within pos=?(%start %end) radius=@ud]

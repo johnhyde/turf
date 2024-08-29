@@ -375,7 +375,7 @@ export function getPool(wash, hydrate, apiSendWave, options = {}) {
       if (goals.length === 0) return ret();
       const top = distToTop === 0;
       if (top) depth = 0;
-      if (depth > 20) return ret();
+      if (depth > 40) return ret();
       const goal = goals[0];
       const filtered = filterGoal(filters, rock, goal, top);
       wash($rock, filtered.grits, our, Date.now());

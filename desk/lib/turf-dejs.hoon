@@ -215,6 +215,7 @@
   %+  ol  (cork so (tags ^move-condition))
   :~  onto+ul
       off+ul
+      self+ul
   ==
 ++  msg-condition
   |=  jon=json

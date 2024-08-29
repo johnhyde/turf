@@ -118,8 +118,10 @@ export function matchTriggerCondition(ctx, ton) {
       if (!thing) return false;
       return isThingCollidable(thing);
     }
-    case 'move':
-      if (ctx.comp.id === ctx.initId) return false;
+    case 'move': {
+      const isSelf = ctx.comp.id === ctx.initId;
+      if (arg.type === 'self') return isSelf;
+      if (isSelf) return false;
       switch (arg.type) {
         case 'onto':
           return equalsV(ctx.comp.pos, ctx.trigger.arg.end);
@@ -128,6 +130,7 @@ export function matchTriggerCondition(ctx, ton) {
         default:
           throw new Error('invalid move condition type: ' + arg.type);
       }
+    }
     case 'tell':
       return arg.arg === ctx.trigger.arg;
     default:
@@ -201,6 +204,8 @@ export function newFxTriggerCondition(type, ...args) {
       return newFxTriggerCondition('move', 'onto');
     case 'leave':
       return newFxTriggerCondition('move', 'off');
+    case 'moved':
+      return newFxTriggerCondition('move', 'self');
     default:
       // throw new Error('invalid trigger type: ' + type);
       return { type: '', arg: null };

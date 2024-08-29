@@ -1,4 +1,4 @@
-import { createEffect, batch, untrack } from "solid-js";
+import { batch, createEffect, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useState } from 'stores/state';
 import { roundV } from 'lib/utils';
@@ -21,14 +21,62 @@ export class Resizer extends Phaser.GameObjects.Container {
       new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
       new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xff0000, 1),
     ];
-    this.rects.forEach(r => r.setOrigin(0, 0));
+    this.rects.forEach((r) => r.setOrigin(0, 0));
     this.tris = [
-      new Phaser.GameObjects.Triangle(scene, 0, 0, 0, 0, 2, 0, 1, 1, 0xff0000, 1),
-      new Phaser.GameObjects.Triangle(scene, 0, 0, 0, 0, 2, 0, 1, 1, 0xff0000, 1).setAngle(-90),
-      new Phaser.GameObjects.Triangle(scene, 0, 0, 0, 0, 2, 0, 1, 1, 0xff0000, 1).setAngle(180),
-      new Phaser.GameObjects.Triangle(scene, 0, 0, 0, 0, 2, 0, 1, 1, 0xff0000, 1).setAngle(90),
+      new Phaser.GameObjects.Triangle(
+        scene,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        1,
+        1,
+        0xff0000,
+        1,
+      ),
+      new Phaser.GameObjects.Triangle(
+        scene,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        1,
+        1,
+        0xff0000,
+        1,
+      ).setAngle(-90),
+      new Phaser.GameObjects.Triangle(
+        scene,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        1,
+        1,
+        0xff0000,
+        1,
+      ).setAngle(180),
+      new Phaser.GameObjects.Triangle(
+        scene,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        1,
+        1,
+        0xff0000,
+        1,
+      ).setAngle(90),
     ];
-    
+
     this.tris.forEach((t, i) => {
       t.setInteractive({ draggable: true, cursor: 'pointer' });
       t.on('drag', (_pointer, dragX, dragY) => {
@@ -77,15 +125,17 @@ export class Resizer extends Phaser.GameObjects.Container {
   }
 
   tileSizeToSize(size) {
-    return vec2(size || 0).scale(tileFactor).add(vec2(this.stroke*2));
+    return vec2(size || 0).scale(tileFactor).add(vec2(this.stroke * 2));
   }
 
   offsetToTileOffset(offset) {
-    return roundV(vec2(offset).add(vec2(this.stroke)).scale(1/tileFactor));
+    return roundV(vec2(offset).add(vec2(this.stroke)).scale(1 / tileFactor));
   }
 
   sizeToTileSize(size) {
-    return roundV(vec2(size).subtract(vec2(this.stroke*2)).scale(1/tileFactor));
+    return roundV(
+      vec2(size).subtract(vec2(this.stroke * 2)).scale(1 / tileFactor),
+    );
   }
 
   updateShapes() {
@@ -99,7 +149,7 @@ export class Resizer extends Phaser.GameObjects.Container {
     this.rects[1].setSize(rectW, size.y);
     this.rects[2].setSize(size.x, rectW);
     this.rects[3].setSize(rectW, size.y);
-    const triOffset = rectW + (16 * this.scale); 
+    const triOffset = rectW + (16 * this.scale);
     this.tris[0].setPosition(size.x / 2, size.y + triOffset);
     this.tris[1].setPosition(size.x + triOffset, size.y / 2);
     this.tris[2].setPosition(size.x / 2, -triOffset);
@@ -112,7 +162,7 @@ export class Resizer extends Phaser.GameObjects.Container {
 
   updateN(dir, drag) {
     const rectW = this.stroke;
-    const min = 32*factor + rectW*2;
+    const min = 32 * factor + rectW * 2;
     const triOffset = rectW + (16 * this.scale);
     const br = vec2(this.offset).add(this.size);
     const offsetDrag = vec2(drag).add(this.offset).add(vec2(triOffset));
@@ -139,7 +189,8 @@ export class Resizer extends Phaser.GameObjects.Container {
               x: Math.max(min, br.x - offsetDrag.x),
               y: this.nSize.y,
             };
-          default: return null;
+          default:
+            return null;
         }
       });
       if (dir === 2) {
@@ -160,7 +211,7 @@ export class Resizer extends Phaser.GameObjects.Container {
   saveN() {
     this.s.resizeTurf(
       this.offsetToTileOffset(this.nOffset),
-      this.sizeToTileSize(this.nSize)
+      this.sizeToTileSize(this.nSize),
     );
   }
 
@@ -174,6 +225,6 @@ export class Resizer extends Phaser.GameObjects.Container {
       } else {
         this.setVisible(false);
       }
-    })
+    });
   }
 }

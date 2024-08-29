@@ -331,8 +331,8 @@ function createShade(shade, id, turf) {
   function onTouch(pointer, event) {
     console.log('got pointer down on shade', id, shade.formId);
     if (state.editor.editing) {
+      const shade = getShadeWithForm(state.e, id);
       if (state.editor.eraser) {
-        const shade = getShadeWithForm(state.e, id);
         if (shade.form.type !== 'tile') {
           state.delShade(id);
           event.stopPropagation();
@@ -344,7 +344,7 @@ function createShade(shade, id, turf) {
         }
         console.log('try to remove shade');
       } else if (state.editor.dropper) {
-        state.selectForm(shade.formId);
+        state.selectForm(shade.formId, shade.variation);
         event.stopPropagation();
       }
     }
@@ -691,7 +691,7 @@ export function startPhaser(_owner, _container) {
         const dt = now - updateTime;
         updateTime = now;
         frameCount++;
-        if (standNeedsSort) {
+        if (standNeedsSort && stand) {
           standNeedsSort = false;
           stand.sort('depth');
         }

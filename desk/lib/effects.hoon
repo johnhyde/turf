@@ -93,7 +93,10 @@
         (is-thing-collidable turf.ctx (comp-to-thing u.comp))
       %move
         ?.  ?=(%move -.trigger.ctx)  %.n
-        ?:  =(`shade-id.ctx init-id.ctx)  %.n
+        =/  is-self  =(`shade-id.ctx init-id.ctx)
+        ?:  ?=(%self -.con.ton)
+          is-self
+        ?:  is-self  %.n
         .=  pos.comp.ctx
         ?-  -.con.ton
           %onto  end.trigger.ctx

@@ -34,7 +34,7 @@ import dir from 'assets/icons/dir.png';
 import dir8 from 'assets/icons/dir8.png';
 
 const triggerTypes = toPairs(
-  'step, leave, bump, interact, click, tell  item trigger',
+  'step, leave, moved, bump, interact, click, tell  item trigger',
 );
 const conditionTypes = [
   ...triggerTypes,
@@ -98,7 +98,16 @@ export function FxCondition(props) {
 function getConditionSelector(condition) {
   if (condition.type === 'trigger') {
     if (condition.arg.type === 'move') {
-      return condition.arg.arg.type === 'onto' ? 'step' : 'leave';
+      switch (condition.arg.arg.type) {
+        case 'onto':
+          return 'step';
+        case 'off':
+          return 'leave';
+        case 'self':
+          return 'moved';
+        default:
+          return 'error';
+      }
     }
     return condition.arg.type;
   }

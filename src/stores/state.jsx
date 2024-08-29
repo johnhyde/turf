@@ -12,7 +12,12 @@ import {
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 import { flattenGrid, hexToInt, splitPath, vec2, vecToStr } from 'lib/utils.js';
-import { getWallsAtPos, getWallVariationAtPos, hasPerm } from 'lib/turf.js';
+import {
+  getShade,
+  getWallsAtPos,
+  getWallVariationAtPos,
+  hasPerm,
+} from 'lib/turf.js';
 import { Pond } from 'lib/pond.js';
 import { Mist } from 'lib/mist.js';
 import { newFxRootCondition } from 'lib/effects.js';
@@ -665,10 +670,10 @@ export function getState() {
     toggleLab() {
       $state('lab', 'editing', (editing) => !editing);
     },
-    selectForm(id) {
+    selectForm(id, varI) {
       batch(() => {
         $state('editor', 'selectedFormId', id);
-        this.selectVariation(null);
+        this.selectVariation(varI ?? null);
         if (id) {
           this.selectTool(this.editor.tools.BRUSH);
           let partial = '';

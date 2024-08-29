@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import UrbitApi from '@urbit/http-api';
 import { UrbitRTCApp } from 'lib/switchboard';
-import { vec2, randInt, uuidv4, makeTlonId } from 'lib/utils';
+import { makeTlonId, randInt, uuidv4, vec2 } from 'lib/utils';
 import { Horn } from 'lib/horn';
 
 window.imgData = {};
@@ -21,7 +21,7 @@ const ctx = canvas.getContext('2d');
 //     canvas.width = bitmap.width;
 //     canvas.height = bitmap.height;
 //     ctx.drawImage(bitmap, 0, 0);
-    
+
 //     let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 //     // addTile(imageData, id);
 //     let dataUrl = canvas.toDataURL();
@@ -80,7 +80,12 @@ export async function unsubscribeToPool(id) {
   await Promise.all(existingSubs.map(([subId, _]) => api.unsubscribe(subId)));
 }
 
-export async function subscribeToPool(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
+export async function subscribeToPool(
+  id,
+  onRes,
+  onErr = () => {},
+  onQuit = () => {},
+) {
   await unsubscribeToPool(id);
   return api.subscribe({
     app: 'turf',
@@ -89,15 +94,18 @@ export async function subscribeToPool(id, onRes, onErr=()=>{}, onQuit=()=>{}) {
       onRes(res);
     },
     err: (err) => {
-      console.error(`Subscription to turf${id} just got "err". Pool may not exist yet.`, err);
+      console.error(
+        `Subscription to turf${id} just got "err". Pool may not exist yet.`,
+        err,
+      );
       onErr(err);
     },
     quit: (data) => {
       console.error(`Subscription to turf${id} just got "quit"`, data);
       subscribeToPool(id, onRes, onErr, onQuit);
       onQuit(data);
-    }
-  })
+    },
+  });
 }
 
 export async function sendWave(mark, path, goals, stirId) {
@@ -118,7 +126,7 @@ export async function sendWave(mark, path, goals, stirId) {
     });
     return stirId;
   } catch (e) {
-    // if (e.message === 'Failed to fetch' || e.message === 'Failed to PUT channel') { 
+    // if (e.message === 'Failed to fetch' || e.message === 'Failed to PUT channel') {
     //   if (connection() === 'open') $connection('closed');
     // }
     throw e;
@@ -165,7 +173,7 @@ export async function setVitaEnabled(enabled) {
     mark: 'vita-client',
     json: {
       'set-enabled': enabled,
-    }
+    },
   });
 }
 
@@ -188,31 +196,41 @@ export async function sendDM(patp, msg) {
                 inline: [
                   msg,
                   {
-                    break: null
-                  }
+                    break: null,
+                  },
                 ],
-                block: []
-              }
-            }
-          }
-        }
-      }
-    }
+                block: [],
+              },
+            },
+          },
+        },
+      },
+    },
   });
 }
 
 async function fetchIceServers() {
-  const response = await fetch(`https://turf.metered.live/api/v1/turn/credentials?apiKey=${process.env.meteredApiKey}`);
+  const response = await fetch(
+    `https://turf.metered.live/api/v1/turn/credentials?apiKey=${process.env.meteredApiKey}`,
+  );
   const servers = await response.json();
   if (dev) return [];
   if (servers.length <= 2) return servers;
   return [servers[0], servers[servers.length - 1]];
 }
 export function initRTC(iceServers) {
-  window.rtc = rtc = new UrbitRTCApp('turf', { iceServers }, api, 'turf-switchboard');
+  window.rtc = rtc = new UrbitRTCApp(
+    'turf',
+    { iceServers },
+    api,
+    'turf-switchboard',
+  );
   rtc.initialize();
   rtc.addEventListener('incomingcall', (ring) => {
-    console.log('pardon me for mentioning it, ladies, but someone is ringing', ring);
+    console.log(
+      'pardon me for mentioning it, ladies, but someone is ringing',
+      ring,
+    );
   });
   return rtc;
 }
@@ -232,4 +250,4 @@ export function initHorn(rtc) {
   return horn;
 }
 
-export { api, rtc, connection, horn };
+export { api, connection, horn, rtc };

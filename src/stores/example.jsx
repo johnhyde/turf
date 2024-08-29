@@ -1,17 +1,23 @@
-import { createSignal, createContext, createEffect, createMemo, getOwner, runWithOwner, useContext, mergeProps, batch } from "solid-js";
+import {
+  batch,
+  createContext,
+  createEffect,
+  createMemo,
+  createSignal,
+  getOwner,
+  mergeProps,
+  runWithOwner,
+  useContext,
+} from 'solid-js';
 import { createStore, reconcile, unwrap } from 'solid-js/store';
 import * as api from 'lib/api.js';
 
 export const ExampleContext = createContext();
 
-
 export function getExample() {
-  const [example, $example] = createStore({
+  const [example, $example] = createStore({});
 
-  });
-
-  const _example = mergeProps(example, {
-  });
+  const _example = mergeProps(example, {});
   return _example;
 }
 
@@ -23,4 +29,6 @@ export function ExampleProvider(props) {
   );
 }
 
-export function useExample() { return useContext(ExampleContext); }
+export function useExample() {
+  return useContext(ExampleContext);
+}

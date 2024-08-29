@@ -9,7 +9,7 @@ import {
   uuidv4,
   vec2,
   vecToStr,
-} from 'lib/utils';
+} from 'lib/utils.js';
 
 export function isSpaceFormType(formType) {
   return ['tile', 'item', 'wall'].includes(formType);
@@ -145,7 +145,12 @@ export function getTileWithForm(turf, pos) {
 export function getThingsAtPos(turf, pos) {
   const space = getSpace(turf, pos);
   let shades = space?.shades || [];
-  if (space?.tile != null) shades = [...shades, space.tile];
+  if (space?.tile != null) {
+    shades = [...shades, space.tile];
+  } else {
+    shades = [...shades];
+  }
+  shades.reverse();
   return shades.map((sid) => getShadeWithForm(turf, sid))
     .filter((shade) => shade);
 }

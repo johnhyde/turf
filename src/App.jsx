@@ -1,5 +1,5 @@
 import { createEffect } from 'solid-js';
-import { Routes, Route, useSearchParams } from "@solidjs/router";
+import { Route, Routes, useSearchParams } from '@solidjs/router';
 import { StateProvider, useState } from 'stores/state.jsx';
 import { PhoneProvider, usePhone } from 'stores/phone.jsx';
 import Sidebar from '@/Sidebar';
@@ -8,11 +8,13 @@ import Game from '@/Game';
 
 function App() {
   return (
-    <StateProvider><PhoneProvider>
-      <Routes>
-        <Route path="/apps/turf/" component={MainScreen} />
-      </Routes>
-    </PhoneProvider></StateProvider>
+    <StateProvider>
+      <PhoneProvider>
+        <Routes>
+          <Route path='/apps/turf/' component={MainScreen} />
+        </Routes>
+      </PhoneProvider>
+    </StateProvider>
   );
 }
 
@@ -28,11 +30,13 @@ function MainScreen() {
     }
   });
 
-  return (<>
-    <Sidebar/>
-    <Modals/>
-    <Game/>
-  </>);
+  return (
+    <>
+      <Sidebar />
+      <Modals />
+      <Game />
+    </>
+  );
 }
 
 export default App;
