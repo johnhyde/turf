@@ -199,6 +199,7 @@
       [%interact ~]
       [%click ~]
       [%tell msg=@t]
+      [%raze ~]  :: item is about to be deleted
   ==
 +$  trigger-condition
   $%  [%move con=move-condition]
@@ -206,6 +207,7 @@
       [%interact ~]
       [%click ~]
       [%tell con=msg-condition]
+      [%raze ~]  :: item is about to be deleted
   ==
 +$  move-condition
   $%  [%onto ~]
@@ -239,6 +241,10 @@
       [%vary var=@ud]  :: set item variation
       [%move =target to=fx-loc collide=? smooth=?]
       [%tell target=item-target msg=@t]
+      [%yell loc=fx-loc msg=@t]
+      [%make loc=fx-loc =form-id var=@ud]
+      [%raze target=item-target]
+      [%flow target=item-target collidable=(unit ?)]
   ==
 +$  fx-actions-def  (list [name=@t =effect])
 +$  fx-serial  ?(%serial %simult %atomic)

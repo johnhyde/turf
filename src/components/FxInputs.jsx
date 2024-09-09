@@ -25,7 +25,9 @@ import { EffectEditor } from '@/EffectsEditor.jsx';
 import Select from '@/Select.jsx';
 import Radio from '@/Radio.jsx';
 import PatpInput from '@/PatpInput.jsx';
+import PathInput from '@/PathInput.jsx';
 import SmallButton from '@/SmallButton.jsx';
+import ItemButton from '@/ItemButton.jsx';
 import { Group, Indent } from '@/GroupIndent.jsx';
 import { ShadeSelectButton } from '@/ShadeSelectButton.jsx';
 import { SelectPositionButton } from '@/SelectPositionButton.jsx';
@@ -34,7 +36,7 @@ import dir from 'assets/icons/dir.png';
 import dir8 from 'assets/icons/dir8.png';
 
 const triggerTypes = toPairs(
-  'step, leave, moved, bump, interact, click, tell  item trigger',
+  'step, leave, moved, bump, interact, click, tell  item trigger, raze  item deleted',
 );
 const conditionTypes = [
   ...triggerTypes,
@@ -600,6 +602,94 @@ export function FxTellInput(props) {
   );
 }
 
+export function FxYellInput(props) {
+  return (
+    <>
+      <Indent>
+        <span>at</span>
+        <FxLocationInput
+          value={props.value.loc}
+          $value={(loc) => props.$value({ ...props.value, loc })}
+        />
+      </Indent>
+      <Indent>
+        message:
+        <input
+          use:input
+          use:bind={[() => props.value.msg || '', (msg) =>
+            props.$value({ ...props.value, msg })]}
+          class='rounded-input shrink min-w-0'
+        />
+      </Indent>
+    </>
+  );
+}
+
+export function FxMakeInput(props) {
+  return (
+    <>
+      <Indent>
+        <span>item id</span>
+        <FormIdInput
+          value={props.value.formId}
+          $value={(formId) => props.$value({ ...props.value, formId })}
+        />
+      </Indent>
+      <Indent>
+        <span>variation</span>
+        <input
+          type='number'
+          class='rounded-md pl-1'
+          min={0}
+          max={99}
+          use:input
+          use:bindNum={[
+            () => props.value.variation,
+            (variation) => props.$value({ ...props.value, variation }),
+          ]}
+        />
+      </Indent>
+      <Indent>
+        <span>at</span>
+        <FxLocationInput
+          value={props.value.loc}
+          $value={(loc) => props.$value({ ...props.value, loc })}
+        />
+      </Indent>
+    </>
+  );
+}
+
+export function FxFlowInput(props) {
+  return (
+    <>
+      <Indent>
+        <FxItemTargetInput
+          value={props.value.target}
+          $value={(target) => props.$value({ ...props.value, target })}
+        />
+      </Indent>
+      <Indent>
+        <span>collision</span>
+        <Radio
+          value={JSON.stringify(props.value.collidable)}
+          $value={(collidable) =>
+            props.$value({
+              ...props.value,
+              collidable: JSON.parse(collidable),
+            })}
+          items={[
+            ['null', 'Default'],
+            ['true', 'On'],
+            ['false', 'Off'],
+          ]}
+          {...radioProps}
+        />
+      </Indent>
+    </>
+  );
+}
+
 export function FxTargetInput(props) {
   const type = () => props.value?.type ?? props.value;
   function $type(type) {
@@ -985,6 +1075,22 @@ export function ShadeIdInput(props) {
       />
       <ShadeSelectButton onShadeId={props.$value} />
       <ShowShadeButton id={props.value} showByDefault />
+    </>
+  );
+}
+
+export function FormIdInput(props) {
+  const state = useState();
+  return (
+    <>
+      <PathInput
+        value={props.value}
+        $validValue={(p) => props.$value(p)}
+        warn={!state.e.skye[props.value]}
+      />
+      <Show when={state.e.skye[props.value]}>
+        <ItemButton form={state.e.skye[props.value]} />
+      </Show>
     </>
   );
 }

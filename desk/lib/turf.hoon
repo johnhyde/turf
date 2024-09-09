@@ -567,6 +567,12 @@
   ?:  &(?=(^ shade) (is-husk-collidable turf +.u.shade))
     %.y
   $(shade-ids t.shade-ids)
+++  get-collidable-for-shade
+  |=  [=turf pos=svec2]
+  ?:  (get-collidable turf pos)  %.y
+  %+  lien  ~(val by players.ephemera.turf)
+  |=  =player  ^-  ?
+  =(pos pos.player)
 ++  get-fx
   |=  =comp
   ?~  fx.comp

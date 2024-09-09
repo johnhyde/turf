@@ -28,6 +28,7 @@ import portalTo from 'assets/icons/portal-to.png';
 import portalWith from 'assets/icons/portal-with.png';
 import portalWithout from 'assets/icons/portal-without.png';
 import cycle from 'assets/icons/cycle.png';
+import copy from 'assets/icons/copy.png';
 
 export default function PortalsPane() {
   const state = useState();
@@ -93,16 +94,16 @@ export default function PortalsPane() {
           <Heading>
             Events
           </Heading>
-          <For each={activeInvites()}>
+          <Index each={activeInvites()}>
             {(invite) => {
               return (
                 <Invite
-                  invite={invite}
-                  discard={() => state.delInvite(invite.id)}
+                  invite={invite()}
+                  discard={() => state.delInvite(invite().id)}
                 />
               );
             }}
-          </For>
+          </Index>
         </div>
       </Show>
       <Show when={state.thisIsUs}>
@@ -289,7 +290,7 @@ function Invite(props) {
         </span>
       </span>
       <SmallButton onClick={copyCommand} class='ml-2 !font-bold text-lg'>
-        ⎘
+        <img src={copy} class='w-4 h-4 my-0.5' />
       </SmallButton>
       {(state.thisIsUs && props.discard) && (
         <SmallButton onClick={[props.discard, props.invite.id]}>x</SmallButton>
@@ -373,7 +374,7 @@ function InviteDialog(props) {
         <div class='flex justify-center space-x-2'>
           {copied() || command()}
           <SmallButton onClick={copyCommand} class='ml-2 !font-bold text-lg'>
-            ⎘
+            <img src={copy} class='w-4 h-4 my-0.5' />
           </SmallButton>
         </div>
       </Show>

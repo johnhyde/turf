@@ -3,7 +3,7 @@ import { getForm, getSpriteFps, spriteName } from 'lib/turf.js';
 import { moveTheThing } from './move.js';
 
 export class Shade extends Phaser.GameObjects.Sprite {
-  constructor(scene, shade, id, turf, indexDepthMod) {
+  constructor(scene, shade, id, turf, indexDepthMod, initData = {}) {
     const huskPos = vec2(shade.pos).scale(tileFactor);
     super(
       scene,
@@ -19,7 +19,8 @@ export class Shade extends Phaser.GameObjects.Sprite {
     if (!this.form) {
       this.destroy();
     } else {
-      this.actionQueue = [];
+      if (initData.pos) this.setPosition(initData.pos.x, initData.pos.y);
+      this.actionQueue = initData.actionQueue || [];
       this.depthMod = 0;
       this.indexDepthMod = indexDepthMod;
       this.offset = vec2(this.form.variations[shade.variation]?.offset).add(

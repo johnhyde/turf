@@ -562,16 +562,17 @@ export class Player extends Phaser.GameObjects.Container {
           this.s.setDir(newDir);
           setTimeout(() => {
             this.turning = false;
-          }, 50);
+          }, 70);
         }
         // const playerColliding = getCollision(this.t, this.tilePos);
-        const willBeColliding = getCollision(this.t, newTilePos);
-        // const willBump = willBeColliding && !playerColliding;
-        const willBump = willBeColliding && tilePosChanged;
-        if (!willBump) this.bumped = false;
+        const willBump = tilePosChanged && getCollision(this.t, newTilePos);
+        // if (!willBump) this.bumped = false;
         if (tilePosChanged && !this.bumped && (!this.turning || justMoved)) {
           if (willBump) {
             this.bumped = true;
+            setTimeout(() => {
+              this.bumped = false;
+            }, 70);
           }
           this.s.setPos(newTilePos);
           justMoved = true;

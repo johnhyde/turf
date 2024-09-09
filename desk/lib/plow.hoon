@@ -158,6 +158,7 @@
       :+  (weld roars.u.res roars)
         (weld grits.u.res grits)
       (weld goals.u.res goals)
+    %grit  `~[grit.goal]~
     %add-shade
       :-  ~
       =/  form-type  (get-form-type turf form-id.goal)
@@ -188,7 +189,7 @@
       ?.  ?=(space-form-type u.form-type)  ``~
       =/  pos  (clamp-pos pos.goal offset.plot.turf size.plot.turf)
       ?:  =(pos pos.shade)  ``~
-      ?:  &(collide.goal (get-collidable turf pos))
+      ?:  &(collide.goal (get-collidable-for-shade turf pos))
         =/  bump-goals=goals:pond
           (pull-trigger-at-pos turf src.bowl bump+~ pos `shade-id.goal)
         ``bump-goals

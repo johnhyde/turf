@@ -184,6 +184,30 @@
       =/  tar  (absolutize-item-target ctx target.effect)
       ?~  tar  `~
       `[%pull-trigger [%tell msg.effect] u.tar `shade-id]~
+    %yell
+      =/  pos  (resolve-fx-loc ctx loc.effect)
+      ?~  pos  `~
+      =/  shade-ids  (get-shade-ids turf.ctx u.pos)
+      :-  ~
+      %+  turn  shade-ids
+      |=  sid=^shade-id
+      ^-  goal:pond
+      [%pull-trigger [%tell msg.effect] sid `shade-id]
+    %make
+      =/  pos  (resolve-fx-loc ctx loc.effect)
+      ?~  pos  `~
+      `[%add-shade %.n u.pos form-id.effect var.effect]~
+    %raze
+      =/  tar  (absolutize-item-target ctx target.effect)
+      ?~  tar  `~
+      :-  ~
+      :~  [%pull-trigger [%raze ~] u.tar `shade-id]
+          [%del-shade u.tar]
+      ==
+    %flow
+      =/  tar  (absolutize-item-target ctx target.effect)
+      ?~  tar  `~
+      `[%set-shade-collidable u.tar collidable.effect]~
     ::
   ==
 ++  resolve-fx-loc

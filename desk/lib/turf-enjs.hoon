@@ -690,6 +690,20 @@
     %move  (fx-move +.eff)
     %tell
       (pairs ~[target+(fx-item-target target.eff) msg+s+msg.eff])
+    %yell
+      (pairs ~[loc+(fx-loc loc.eff) msg+s+msg.eff])
+    %make
+      %-  pairs
+      :~  loc+(fx-loc loc.eff)
+          'formId'^(path form-id.eff)
+          variation+(numb var.eff)
+      ==
+    %raze  (fx-item-target target.eff)
+    %flow
+      %-  pairs
+      :~  target+(fx-item-target target.eff)
+          collidable+((mayb (lead %b)) collidable.eff)
+      ==
   ==
 ++  fx-read
   |=  [text=@t actions=(list [name=@t =^effect])]

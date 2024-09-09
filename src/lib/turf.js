@@ -1,5 +1,6 @@
 import {
   dirs,
+  equalsV,
   floorV,
   intToHex,
   jClone,
@@ -142,16 +143,18 @@ export function getTileWithForm(turf, pos) {
   return getShadeWithForm(turf, tileId);
 }
 
-export function getThingsAtPos(turf, pos) {
+export function getShadeIds(turf, pos) {
   const space = getSpace(turf, pos);
   let shades = space?.shades || [];
   if (space?.tile != null) {
-    shades = [...shades, space.tile];
-  } else {
-    shades = [...shades];
+    shades = [space.tile, ...shades];
   }
-  shades.reverse();
-  return shades.map((sid) => getShadeWithForm(turf, sid))
+  return shades;
+}
+
+export function getThingsAtPos(turf, pos) {
+  return getShadeIds(turf, pos)
+    .map((sid) => getShadeWithForm(turf, sid))
     .filter((shade) => shade);
 }
 
@@ -213,6 +216,13 @@ export function isThingCollidable(thing) {
 export function getCollision(turf, pos) {
   const things = getThingsAtPos(turf, pos);
   return things.some(isThingCollidable);
+}
+
+export function getCollisionForShade(turf, pos) {
+  if (getCollision(turf, pos)) return true;
+  return Object.values(turf.players).every((player) => {
+    return equalsV(pos, player.pos);
+  });
 }
 
 export function delShade(turf, shadeId) {

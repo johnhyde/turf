@@ -20,15 +20,22 @@ import Select from '@/Select.jsx';
 import PathInput from '@/PathInput.jsx';
 import Radio from '@/Radio.jsx';
 import {
+  FormIdInput,
   FxCondition,
+  FxFlowInput,
+  FxItemTargetInput,
+  FxMakeInput,
   FxMoveInput,
   FxReadInput,
   FxTellInput,
+  FxYellInput,
 } from '@/FxInputs.jsx';
+import copy from 'assets/icons/copy.png';
+import paste from 'assets/icons/paste.png';
 
 const effectTypes = toPairs(
   'noop  nothing, list  multiple, port  teleport, read  show text, swap  replace item, ' +
-    'seem  show variation, vary  change variation, move, tell  trigger item',
+    'seem  show variation, vary  change variation, move, tell  trigger item, yell  trigger @ location, make  place item, raze  delete item, flow  set collision',
 );
 
 export default function EffectsEditor(props) {
@@ -41,6 +48,19 @@ export default function EffectsEditor(props) {
     //   setArg('', '', null);
     // }
     props.$fx((fx) => [...fx, newReflex()]);
+  }
+
+  async function pasteReflex() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const rx = JSON.parse(text);
+      if (!rx?.root || !rx.effect) {
+        throw new Error('Invalid reflex structure');
+      }
+      props.$fx((fx) => [...fx, rx]);
+    } catch (e) {
+      console.error(`Couldn't paste invalid reflex: ${text}`, e);
+    }
   }
 
   function setArg(index, type, arg) {
@@ -58,6 +78,10 @@ export default function EffectsEditor(props) {
           {(reflex, i) => {
             const root = () => reflex.root;
             const effect = () => reflex.effect;
+
+            function copyReflex() {
+              navigator.clipboard.writeText(JSON.stringify(reflex));
+            }
 
             function delReflex() {
               props.$fx(produce((fx) => fx.splice(i(), 1)));
@@ -85,17 +109,11 @@ export default function EffectsEditor(props) {
                   {JSON.stringify(effect(), null, 2)}
                 </div> */
                   }
-                  <div className='w-full flex gap-2 items-start'>
-                    <div class='grow flex flex-wrap items-center gap-1 mb-1'>
-                      <p>when</p>
-                      <Group>
-                        <FxCondition
-                          condition={root()}
-                          $condition={$root}
-                          root
-                        />
-                      </Group>
-                    </div>
+                  <div class='w-full flex items-center gap-2 mb-1'>
+                    <p class='grow'>when</p>
+                    <SmallButton onClick={copyReflex} title='copy'>
+                      <img src={copy} class='w-4 h-4 my-0.5' />
+                    </SmallButton>
                     <SmallButton
                       onClick={delReflex}
                       class=''
@@ -103,6 +121,16 @@ export default function EffectsEditor(props) {
                       x
                     </SmallButton>
                   </div>
+                  <div class='grow flex flex-wrap items-center gap-1 mb-1'>
+                    <Group>
+                      <FxCondition
+                        condition={root()}
+                        $condition={$root}
+                        root
+                      />
+                    </Group>
+                  </div>
+                  {/* <SmallButton onClick={copyReflex} class='ml-2 !font-bold text-lg'> */}
                   <EffectEditor
                     type={effect().type}
                     arg={effect().arg}
@@ -117,7 +145,12 @@ export default function EffectsEditor(props) {
           }}
         </For>
       </div>
-      <SmallButton onClick={addEmptyEffect}>New Effect</SmallButton>
+      <div class='w-full flex items-center gap-2 mb-1'>
+        <SmallButton onClick={addEmptyEffect}>New Effect</SmallButton>
+        <SmallButton onClick={pasteReflex} title='paste'>
+          <img src={paste} class='w-4 h-4 my-0.5' />
+        </SmallButton>
+      </div>
     </>
   );
 }
@@ -261,14 +294,10 @@ function ArgInput(props) {
           />
         </Match>
         <Match when={props.type === 'swap'}>
-          <PathInput
+          <FormIdInput
             value={props.arg}
-            $validValue={(p) => props.$arg(p)}
-            warn={!state.e.skye[props.arg]}
+            $value={props.$arg}
           />
-          <Show when={state.e.skye[props.arg]}>
-            <ItemButton form={state.e.skye[props.arg]} />
-          </Show>
         </Match>
         <Match when={props.type === 'seem' || props.type === 'vary'}>
           <ListItemPicker
@@ -307,6 +336,18 @@ function ArgInput(props) {
         </Match>
         <Match when={props.type === 'tell'}>
           <FxTellInput value={props.arg} $value={props.$arg} />
+        </Match>
+        <Match when={props.type === 'yell'}>
+          <FxYellInput value={props.arg} $value={props.$arg} />
+        </Match>
+        <Match when={props.type === 'make'}>
+          <FxMakeInput value={props.arg} $value={props.$arg} />
+        </Match>
+        <Match when={props.type === 'raze'}>
+          <FxItemTargetInput value={props.arg} $value={props.$arg} />
+        </Match>
+        <Match when={props.type === 'flow'}>
+          <FxFlowInput value={props.arg} $value={props.$arg} />
         </Match>
       </Switch>
     </>

@@ -10,7 +10,7 @@ export default function SmallButton(props) {
     'lowercase',
   ]);
   const buttonClasses =
-    'border-yellow-950 border rounded-md px-1 pb-0.5 leading-none align-super font-semibold disabled:opacity-50 ';
+    'border-yellow-950 border rounded-md px-1 pb-0.5 leading-none align-super font-semibold disabled:opacity-50 active:bg-yellow-800 ';
   return (
     <button
       class={buttonClasses +

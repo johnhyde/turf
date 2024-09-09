@@ -177,7 +177,7 @@ function loadImageUnsafe(id, url, config = {}) {
 }
 
 let lastClickedShadeId = null;
-function createShade(shade, id, turf) {
+function createShade(shade, id, turf, initData) {
   const isTile = state.e?.skye?.[shade.formId]?.type === 'tile';
   const sprite = new Shade(
     scene,
@@ -185,6 +185,7 @@ function createShade(shade, id, turf) {
     id,
     turf,
     getIndexDepthMod(turf, id, shade.pos),
+    initData,
   );
   sprite.id = id;
   sprite.isTile = isTile;
@@ -196,7 +197,7 @@ function createShade(shade, id, turf) {
   if (isTile) {
     sprite.setInteractive();
   } else {
-    sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 255 });
+    sprite.setInteractive({ pixelPerfect: true, alphaTolerance: 64 });
   }
   sprite.dispose = createRoot((dispose) => {
     onCleanup(() => {
@@ -898,9 +899,12 @@ export function startPhaser(_owner, _container) {
           shades[id].destroy();
           delete shades[id];
         }
-        function makeShade() {
+        function makeShade(pos, actionQueue = []) {
           if (isInTurf(turf, shadeData.pos)) {
-            shades[id] = createShade(shadeData, id, turf);
+            shades[id] = createShade(shadeData, id, turf, {
+              pos,
+              actionQueue,
+            });
           }
         }
         if (!shadeData) {
@@ -908,8 +912,10 @@ export function startPhaser(_owner, _container) {
         } else if (!shadeObject) {
           makeShade();
         } else if (shadeData.formId !== shadeObject.shade.formId) {
+          const oldPos = vec2(shadeObject.x, shadeObject.y);
+          const oldActions = shadeObject.actionQueue || [];
           destroyShade();
-          makeShade();
+          makeShade(oldPos, oldActions);
         } else {
           if (shadeObject.shade.variation !== shadeData.variation) {
             shadeObject.varyVariation(shadeData.variation);

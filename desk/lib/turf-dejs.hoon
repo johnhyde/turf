@@ -207,6 +207,7 @@
       interact+ul
       click+ul
       tell+msg-condition
+      raze+ul
   ==
 ++  move-condition
   |=  jon=json
@@ -246,6 +247,10 @@
       vary+ni
       move+(ot ~[target+fx-target to+fx-loc collide+bo smooth+bo])
       tell+(ot ~[target+fx-item-target msg+so])
+      yell+(ot ~[loc+fx-loc msg+so])
+      make+(ot ~[loc+fx-loc 'formId'^pa variation+ni])
+      raze+fx-item-target
+      flow+(ot ~[target+fx-item-target collidable+bo:soft])
   ==
 ++  port-offer
   |=  jon=json

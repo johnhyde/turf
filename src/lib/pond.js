@@ -11,6 +11,7 @@ import {
   fillEmptySpace,
   generateHusk,
   getCollision,
+  getCollisionForShade,
   getEntryPos,
   getForm,
   getShade,
@@ -594,6 +595,9 @@ const filters = {
     // }
     return { roars, grits, goals };
   },
+  'grit': (turf, goal) => {
+    return [goal.arg.grit];
+  },
   'add-shade': (turf, goal) => {
     const { pos, formId, isGate } = goal.arg;
     const formType = getForm(turf, formId)?.type;
@@ -634,7 +638,7 @@ const filters = {
     goal.arg.pos = clampToTurf(turf, pos);
     if (goal.arg.pos.equals(shade.pos)) return [];
 
-    if (collide && getCollision(turf, goal.arg.pos)) {
+    if (collide && getCollisionForShade(turf, goal.arg.pos)) {
       return {
         roars: [],
         grits: [],

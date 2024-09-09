@@ -10,6 +10,7 @@ import {
 } from 'lib/utils.js';
 import {
   getShade,
+  getShadeIds,
   getShadeWithForm,
   getSpace,
   isThingCollidable,
@@ -164,6 +165,7 @@ export function trig(type, ...args) {
     case 'bump':
     case 'interact':
     case 'click':
+    case 'raze':
       return { type, arg: null };
     case 'tell':
       return {
@@ -193,6 +195,7 @@ export function newFxTriggerCondition(type, ...args) {
     case 'bump':
     case 'interact':
     case 'click':
+    case 'raze':
       return { type, arg: null };
     case 'tell':
       return {
@@ -313,6 +316,14 @@ export function newEffectArg(type, turf) {
       return newFxMove();
     case 'tell':
       return newFxTell();
+    case 'yell':
+      return newFxYell();
+    case 'make':
+      return newFxMake();
+    case 'raze':
+      return newFxItemTarget();
+    case 'flow':
+      return newFxFlow();
     case 'noop':
     default:
       return null;
@@ -346,6 +357,28 @@ export function newFxTell() {
   return {
     target: newFxItemTarget(),
     msg: '',
+  };
+}
+
+export function newFxYell() {
+  return {
+    loc: newFxLocation(),
+    msg: '',
+  };
+}
+
+export function newFxMake() {
+  return {
+    loc: newFxLocation(),
+    formId: '/',
+    variation: 0,
+  };
+}
+
+export function newFxFlow() {
+  return {
+    target: newFxItemTarget(),
+    collidable: null,
   };
 }
 
@@ -715,6 +748,76 @@ export function applyEffect(ctx, effect) {
             trigger: trig('tell', msg),
             shadeId: targetId,
             initId: shadeId,
+          },
+        }],
+      };
+    }
+    case 'yell': {
+      const { loc, msg } = effect.arg;
+      const pos = resolveFxLoc(ctx, loc);
+      if (!pos) return { roars: [], goals: [] };
+      const shadeIds = getShadeIds(ctx.turf, pos);
+      return {
+        roars: [],
+        goals: shadeIds.map((sid) => ({
+          type: 'pull-trigger',
+          arg: {
+            trigger: trig('tell', msg),
+            shadeId: sid,
+            initId: shadeId,
+          },
+        })),
+      };
+    }
+    case 'make': {
+      const { loc, formId, variation } = effect.arg;
+      const pos = resolveFxLoc(ctx, loc);
+      if (!pos) return { roars: [], goals: [] };
+      return {
+        roars: [],
+        goals: [{
+          type: 'add-shade',
+          arg: {
+            isGate: false,
+            pos,
+            formId,
+            variation,
+          },
+        }],
+      };
+    }
+    case 'raze': {
+      const target = effect.arg;
+      const targetId = absolutizeItemTarget(ctx, target);
+      if (targetId == null) return { roars: [], goals: [] };
+      return {
+        roars: [],
+        goals: [{
+          type: 'pull-trigger',
+          arg: {
+            trigger: trig('raze'),
+            shadeId: targetId,
+            initId: shadeId,
+          },
+        }, {
+          type: 'del-shade',
+          arg: {
+            shadeId: targetId,
+          },
+        }],
+      };
+    }
+    case 'flow': {
+      const { target, collidable } = effect.arg;
+      const targetId = absolutizeItemTarget(ctx, target);
+      if (targetId == null) return { roars: [], goals: [] };
+      return {
+        roars: [],
+        goals: [{
+          type: 'set-shade-collidable',
+          arg: {
+            shadeId: targetId,
+            collidable,
           },
         }],
       };

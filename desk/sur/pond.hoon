@@ -114,6 +114,7 @@
 +$  goal
   $%  cur-grit
       [%atomic goals=(list goal)]
+      [%grit grit=cur-grit]
       [%move-to-entry ~]
       [%call ships=(set ship) ~]
       [%send-chat from=ship text=cord]
@@ -205,7 +206,8 @@
     ==
       %admin
     ::
-    $?  %chat
+    $?  %grit
+        %chat
         %set-gate  %set-lunk
         %add-dink  %del-dink
         %add-port-offer  %nil-port-offer  %del-port-offer
