@@ -7,7 +7,7 @@ import {
   onCleanup,
 } from 'solid-js';
 import { createStore, produce, reconcile } from 'solid-js/store';
-import { bind, bindNum, hexToInt, intToHex } from 'lib/utils.js';
+import { autofocus, bind, bindNum, hexToInt, intToHex } from 'lib/utils.js';
 import { getSpriteFps } from 'lib/turf.js';
 import { useState } from 'stores/state.jsx';
 import SmallButton from '@/SmallButton.jsx';
@@ -153,6 +153,8 @@ export default function VariationEditor(props) {
             // but there an be many bmps of different size
             // max={spriteBmp()?.width || 0}
             max='99'
+            use:autofocus
+            autofocus
             use:bindNum={[
               () => props.var.offset?.x || 0,
               (n) => $offset(vec2(n, props.var.offset?.y)),

@@ -273,23 +273,26 @@ export default function Modals() {
         </Modal>
       </Show>
       <Show when={state.note.text} keyed>
-        {() => {
+        {(text) => {
           const [stable, $stable] = createSignal(false);
           const [now, $now] = createSignal(Date.now());
           let iframe, interval;
           createEffect(() => {
-            if (state.note.text) {
+            if (text) {
               $now(Date.now());
               $stable(false);
             }
           });
           onMount(() => {
+            // console.log('on mount new note');
             let oldWidth, oldHeight;
             const size = () => {
               const bod = iframe?.contentWindow.document.body;
               if (!bod) return;
               const newWidth = bod.scrollWidth + 'px';
-              const newHeight = bod.scrollHeight + 'px';
+              const newHeight = bod.scrollHeight +
+                (bod.scrollWidth - bod.offsetWidth) + 'px';
+              // const widthScroll;
               $stable(
                 (newWidth === oldWidth &&
                   newHeight === oldHeight) ||
@@ -303,6 +306,7 @@ export default function Modals() {
           });
           onCleanup(() => {
             clearInterval(interval);
+            // console.log('cleaning up note');
           });
           return (
             <Modal
@@ -311,22 +315,26 @@ export default function Modals() {
               onClose={() => state.closeNote()}
             >
               <iframe
+                class='mx-auto'
                 ref={iframe}
-                srcdoc={'<html><head>' +
+                srcdoc={'<html hidden><head>' +
                   '<script type="module" src="https://cdn.skypack.dev/twind/shim"></script>' +
                   '</head><body class="m-0 text-center">' +
-                  state.note.text +
+                  text +
                   '</body></html>'}
               />
-              <div class='flex flex-wrap gap-2 mt-4 text-center'>
+              <div class='flex flex-wrap gap-2 mt-4 justify-center text-center'>
                 <Index each={state.note.actions}>
                   {(action, i) => (
-                    <MediumButton onClick={() => state.noteAction(i)}>
+                    <MediumButton
+                      onClick={() => state.noteAction(i)}
+                      class='!mx-0'
+                    >
                       {action()}
                     </MediumButton>
                   )}
                 </Index>
-                <MediumButton onClick={() => state.closeNote()}>
+                <MediumButton onClick={() => state.closeNote()} class='!mx-0'>
                   Close
                 </MediumButton>
               </div>

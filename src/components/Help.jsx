@@ -22,6 +22,9 @@ export default function Help() {
           Use arrow keys, WASD, or tap/click to move
         </p>
         <p>
+          Press X to interact with certain items
+        </p>
+        <p>
           Scroll up/down to zoom in/out
         </p>
         <p>

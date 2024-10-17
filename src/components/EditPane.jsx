@@ -63,11 +63,13 @@ export default function EditPane() {
           if (buttons.point) buttons.point.focus();
           e.stopPropagation();
         }
-      } else if ('123456789'.split('').includes(e.key)) {
+      } else if ('0123456789'.split('').includes(e.key)) {
         if (state.c.selectedForm) {
-          state.selectVariation(
-            (Number(e.key) - 1) % state.c.selectedForm.variations.length,
-          );
+          let variation = Number(e.key);
+          if (variation === 0) variation = 10;
+          variation--;
+          variation = variation % state.c.selectedForm.variations.length;
+          state.selectVariation(variation);
         }
       } else {
         switch (e.key) {

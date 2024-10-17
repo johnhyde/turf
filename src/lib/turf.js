@@ -220,7 +220,7 @@ export function getCollision(turf, pos) {
 
 export function getCollisionForShade(turf, pos) {
   if (getCollision(turf, pos)) return true;
-  return Object.values(turf.players).every((player) => {
+  return Object.values(turf.players).some((player) => {
     return equalsV(pos, player.pos);
   });
 }

@@ -93,7 +93,7 @@ function Sidebar() {
 
   return (
     <div
-      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[307px] sm:min-w-[307px] ' +
+      class={'p-1 flex flex-col h-full w-full min-w-full pointer-events-none z-10 sm:w-[363px] sm:min-w-[363px] ' +
         (!state.selectedTab ? 'absolute' : 'bg-yellow-800 h-full p-1')}
     >
       <Show
@@ -145,8 +145,10 @@ function Sidebar() {
             selected={isSelected(state.tabs.LAB)}
             tooltip='P'
           />
-          <div class='w-[56px]'></div>
-          <div class='w-[56px]'></div>
+          {
+            /* <div class='w-[56px]'></div>
+          <div class='w-[56px]'></div> */
+          }
           <div class='inline-block relative'>
             <Button
               onClick={[toggleTab, state.tabs.TOWN]}
@@ -161,6 +163,10 @@ function Sidebar() {
                 />
               )}
           </div>
+          <div class='w-[56px]'></div>
+          <div class='w-[56px]'></div>
+          <div class='w-[56px]'></div>
+          <div class='w-[56px]'></div>
           <div class='inline-block relative'>
             <Button
               onClick={[toggleTab, state.tabs.PORTALS]}
